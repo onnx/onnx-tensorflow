@@ -17,3 +17,6 @@ wget -O /tmp/pylintrc https://raw.githubusercontent.com/tensorflow/tensorflow/ma
 ```
 pylint --rcfile=/tmp/pylintrc myfile.py
 ```
+
+### Documentation Standard:
+http://sphinxcontrib-napoleon.readthedocs.io/en/latest/example_google.html
