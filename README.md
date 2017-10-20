@@ -1,7 +1,7 @@
 ### Development Install
 - Make sure tensorflow and onnx is installed.
 - Run `pip install -e .` on root.
-
+- Backend dev follows conventions [here](https://github.com/onnx/onnx-caffe2/blob/master/onnx_caffe2/backend.py).
 ### Folder Structure:
 - __onnxtf__ main source code file.
 - __test__ test files.
