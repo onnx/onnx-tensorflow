@@ -54,30 +54,22 @@ class TensorflowBackend(Backend):
 
     input_dict = dict(map(lambda x: (x[0], tf.constant(x[1])), \
                           feed_dict_raw.items()))
-    outputs = cls._onnx_node_to_tensorflow_op(node, input_dict)
-    output_dict = {}
+    ops = cls._onnx_node_to_tensorflow_op(node, input_dict)
+    output_vals = []
     with tf.Session() as sess:
       with tf.device(device_option):
-        for key, val in outputs.items():
-          output_dict[key] = sess.run(val)
-    return output_dict
+        output_vals = map(sess.run, ops)
+    return namedtupledict('Outputs', node.output)(*output_vals)
 
   @classmethod
   def _onnx_node_to_tensorflow_op(cls, node, input_dict):
-    def _merge_two_dicts(x, y):
-      z = x.copy()
-      z.update(y)
-      return z
-    output_dict = dict()
     method_to_call = getattr(cls, "handle_" + node.op_type.lower())
-    output_dict = _merge_two_dicts(output_dict, \
-                                   method_to_call(node, input_dict))
-    return output_dict
+    return method_to_call(node, input_dict)
 
   @classmethod
   def handle_relu(cls, node, input_dict):
     output_name = node.output[0]
     input_name = node.input[0]
-    return dict([(output_name, tf.nn.relu(input_dict[input_name]))])
+    return [tf.nn.relu(input_dict[input_name])]
 
 run_node = TensorflowBackend.run_node
