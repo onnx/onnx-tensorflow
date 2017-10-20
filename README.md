@@ -20,3 +20,6 @@ pylint --rcfile=/tmp/pylintrc myfile.py
 
 ### Documentation Standard:
 http://sphinxcontrib-napoleon.readthedocs.io/en/latest/example_google.html
+
+### Test Standard:
+https://docs.python.org/2/library/unittest.html
