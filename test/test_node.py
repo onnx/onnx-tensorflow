@@ -5,7 +5,7 @@ from __future__ import unicode_literals
 
 import unittest
 import numpy as np
-from onnxtf.convert import run_node
+from onnxtf.backend import run_node
 from onnx import helper
 
 class TestStringMethods(unittest.TestCase):

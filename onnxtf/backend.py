@@ -48,7 +48,6 @@ class TensorflowBackend(Backend):
 			feed_dict_raw = dict(zip(node.input, inputs))
 
 		input_dict = dict(map(lambda x: (x[0], tf.constant(x[1])), feed_dict_raw.items()))
-		print(input_dict)
 		outputs = cls._onnx_node_to_tensorflow_op(node, input_dict)
 		output_dict = {}
 		with tf.Session() as sess:
