@@ -25,7 +25,6 @@ from onnx.backend.base import (
 from onnx import onnx_pb2, helper
 import tensorflow as tf
 
-
 def get_device_option(device):
   m = {DeviceType.CPU: '/cpu:0',
        DeviceType.CUDA: '/gpu:0'}
@@ -37,6 +36,10 @@ def get_type(onnx_type):
 class TensorflowBackend(Backend):
   """ Tensorflow Backend for ONNX
   """
+  onnx_tf_attribute_map = {
+    "scale": "stddev",
+  }
+
   @classmethod
   def run_node(cls, node, inputs, device='CPU'):
     super(TensorflowBackend, cls).run_node(node, inputs, device)
@@ -63,13 +66,28 @@ class TensorflowBackend(Backend):
 
   @classmethod
   def _onnx_node_to_tensorflow_op(cls, node, input_dict):
-    method_to_call = getattr(cls, "handle_" + node.op_type.lower())
-    return method_to_call(node, input_dict)
+    handler_name = "handle_" + node.op_type.lower()
+    # Check if specialized handler exists.
+    if handler_name in dir(cls):
+      method_to_call = getattr(cls, handler_name)
+      return method_to_call(node, input_dict)
 
   @classmethod
   def handle_relu(cls, node, input_dict):
     output_name = node.output[0]
     input_name = node.input[0]
     return [tf.nn.relu(input_dict[input_name])]
+
+  @classmethod
+  def handle_prelu(cls, node, input_dict):
+    """
+    Reference implementation at
+    https://github.com/tflearn/tflearn/blob/4ba8c8d78bf1bbdfc595bf547bad30580cb4c20b/tflearn/activations.py#L191
+    """
+    x = input_dict[node.input[0]]
+    alpha = input_dict[node.input[1]]
+    pos = tf.nn.relu(x)
+    neg = alphas * (x - abs(x)) * 0.5
+    return [pos + neg]
 
 run_node = TensorflowBackend.run_node
