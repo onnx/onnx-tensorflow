@@ -20,9 +20,7 @@ class TestStringMethods(unittest.TestCase):
     node_def = helper.make_node("Relu", ["X"], ["Y"])
     X = np.random.uniform(-1, 1, 1000)
     output = run_node(node_def, [X])
-    with tf.Session() as sess:
-      ref_output = sess.run(tf.nn.relu(tf.constant(X)))
-    np.testing.assert_almost_equal(output["Y"], ref_output)
+    np.testing.assert_almost_equal(output["Y"], np.maximum(X, 0))
 
   def test_run_all(self):
     dummy_inputs = [self._get_rnd([100]) for i in range(10)]
