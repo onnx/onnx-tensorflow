@@ -33,76 +33,71 @@ def get_device_option(device):
 def get_type(onnx_type):
   pass
 
+
 # TODO: Move this into ONNX main library
 def convertAttributeProto(onnx_arg):
-    """
-    Convert an ONNX AttributeProto into an appropriate Python object
-    for the type.
-    NB: Tensor attribute gets returned as the straight proto.
-    """
-    if onnx_arg.HasField('f'):
-        return onnx_arg.f
-    elif onnx_arg.HasField('i'):
-        return onnx_arg.i
-    elif onnx_arg.HasField('s'):
-        return onnx_arg.s
-    elif onnx_arg.HasField('t'):
-        return onnx_arg.t  # this is a proto!
-    elif len(onnx_arg.floats):
-        return list(onnx_arg.floats)
-    elif len(onnx_arg.ints):
-        return list(onnx_arg.ints)
-    elif len(onnx_arg.strings):
-        return list(onnx_arg.strings)
-    else:
-        raise ValueError("Unsupported ONNX attribute: {}".format(onnx_arg))
+  """
+  Convert an ONNX AttributeProto into an appropriate Python object
+  for the type.
+  NB: Tensor attribute gets returned as the straight proto.
+  """
+  if onnx_arg.HasField('f'):
+    return onnx_arg.f
+  elif onnx_arg.HasField('i'):
+    return onnx_arg.i
+  elif onnx_arg.HasField('s'):
+    return onnx_arg.s
+  elif onnx_arg.HasField('t'):
+    return onnx_arg.t  # this is a proto!
+  elif onnx_arg.floats:
+    return list(onnx_arg.floats)
+  elif onnx_arg.ints:
+    return list(onnx_arg.ints)
+  elif onnx_arg.strings:
+    return list(onnx_arg.strings)
+  else:
+    raise ValueError("Unsupported ONNX attribute: {}".format(onnx_arg))
 
 class OnnxAttributes(dict):
-    """
-    This is a more convenient way to work with ONNX/Caffe2 attributes
-    that is not the protobuf representation.
-    """
-    @staticmethod
-    def from_onnx(args):
-        d = OnnxAttributes()
-        for arg in args:
-            d[arg.name] = convertAttributeProto(arg)
-        return d
+  """
+  This is a more convenient way to work with ONNX/Caffe2 attributes
+  that is not the protobuf representation.
+  """
+  @staticmethod
+  def from_onnx(args):
+    d = OnnxAttributes()
+    for arg in args:
+      d[arg.name] = convertAttributeProto(arg)
+    return d
 
-    def caffe2(self, kmap=lambda k: k):
-        for k, v in self.items():
-            yield caffe2.python.utils.MakeArgument(kmap(k), v)
+  def caffe2(self, kmap=lambda x: x):
+    for k, v in self.items():
+      yield caffe2.python.utils.MakeArgument(kmap(k), v)
 
 # TODO: Move this into ONNX main library
 class OnnxNode(object):
-    """
-    Reimplementation of NodeProto from ONNX, but in a form
-    more convenient to work with from Python.
-    We may temporarily edit these nodes to get them into Caffe2 form,
-    before actually translating into the Caffe2 protobuf, since this
-    is easier than decomposing everything, and putting it back together
-    when we're ready.
-    """
-    def __init__(self, node):
-        self.name = str(node.name)
-        self.op_type = str(node.op_type)
-        self.attrs = OnnxAttributes.from_onnx(node.attribute)
-        self.consumed_inputs = self.attrs.pop("consumed_inputs", None)
-        self.inputs = list(node.input)
-        self.outputs = list(node.output)
-
-def pack_attributes(args):
-  d = {}
-  for arg in args:
-      d[arg.name] = convertAttributeProto(arg)
-  return d
+  """
+  Reimplementation of NodeProto from ONNX, but in a form
+  more convenient to work with from Python.
+  We may temporarily edit these nodes to get them into Caffe2 form,
+  before actually translating into the Caffe2 protobuf, since this
+  is easier than decomposing everything, and putting it back together
+  when we're ready.
+  """
+  def __init__(self, node):
+    self.name = str(node.name)
+    self.op_type = str(node.op_type)
+    self.attrs = OnnxAttributes.from_onnx(node.attribute)
+    self.consumed_inputs = self.attrs.pop("consumed_inputs", None)
+    self.inputs = list(node.input)
+    self.outputs = list(node.output)
 
 class TensorflowBackend(Backend):
   """ Tensorflow Backend for ONNX
   """
 
   onnx_tf_attribute_map = {
-    "scale": "stddev",
+      "scale": "stddev",
   }
 
   @classmethod
@@ -120,13 +115,13 @@ class TensorflowBackend(Backend):
       assert len(node.inputs) == len(inputs)
       feed_dict_raw = dict(zip(node.inputs, inputs))
 
-    input_dict = dict(map(lambda x: (x[0], tf.constant(x[1])), \
-                          feed_dict_raw.items()))
+    input_dict = dict([(x[0], tf.constant(x[1])) for x in \
+                       feed_dict_raw.items()])
     ops = cls._onnx_node_to_tensorflow_op(node, input_dict)
     output_vals = []
     with tf.Session() as sess:
       with tf.device(device_option):
-        output_vals = map(sess.run, ops)
+        output_vals = [sess.run(op) for op in ops]
     return namedtupledict('Outputs', node.outputs)(*output_vals)
 
   @classmethod
@@ -161,8 +156,8 @@ class TensorflowBackend(Backend):
     value = node.attrs["value"]
     num_dim = int(len(node.attrs["paddings"])/2)
     padding = tf.constant(np.array(node.attrs["paddings"])
-                            .reshape([num_dim, 2])
-                            .astype(np.int32)) # tf requires int32 paddings
+                          .reshape([num_dim, 2])
+                          .astype(np.int32)) # tf requires int32 paddings
     return [tf.pad(input_dict[node.inputs[0]], padding, mode, None, value)]
 
 run_node = TensorflowBackend.run_node
