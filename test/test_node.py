@@ -19,17 +19,21 @@ class TestStringMethods(unittest.TestCase):
 
   def test_relu(self):
     node_def = helper.make_node("Relu", ["X"], ["Y"])
-    X = np.random.uniform(-1, 1, 1000)
-    output = run_node(node_def, [X])
-    np.testing.assert_almost_equal(output["Y"], np.maximum(X, 0))
+    x = np.random.uniform(-1, 1, 1000)
+    output = run_node(node_def, [x])
+    np.testing.assert_almost_equal(output["Y"], np.maximum(x, 0))
 
   def test_pad(self):
     node_def = helper.make_node("Pad", ["X"], ["Y"],
-                              mode="constant",
-                              paddings=[1, 1, 1, 1],
-                              value=1.0)
-    X = self._get_rnd([100, 100])
-    np.testing.assert_almost_equal(output["Y"], np.lib.pad(X, ((1,1), (1,1)), 'constant', constant_values=(1, 1)))
+                                mode="constant",
+                                paddings=[1, 1, 1, 1],
+                                value=2.0)
+    x = self._get_rnd([100, 100])
+    output = run_node(node_def, [x])
+    np.testing.assert_almost_equal(output["Y"],
+                                   np.lib.pad(x, ((1, 1), (1, 1)),
+                                              'constant',
+                                              constant_values=(2, 2)))
 
   def test_run_all(self):
     dummy_inputs = [self._get_rnd([100]) for _ in range(10)]
