@@ -23,6 +23,14 @@ class TestStringMethods(unittest.TestCase):
     output = run_node(node_def, [X])
     np.testing.assert_almost_equal(output["Y"], np.maximum(X, 0))
 
+  def test_pad(self):
+    node_def = helper.make_node("Pad", ["X"], ["Y"],
+                              mode="constant",
+                              paddings=[1, 1, 1, 1],
+                              value=1.0)
+    X = self._get_rnd([100, 100])
+    np.testing.assert_almost_equal(output["Y"], np.lib.pad(X, ((1,1), (1,1)), 'constant', constant_values=(1, 1)))
+
   def test_run_all(self):
     dummy_inputs = [self._get_rnd([100]) for _ in range(10)]
     run_node(helper.make_node("Relu", ["X"], ["Y"]), dummy_inputs[0:1])
