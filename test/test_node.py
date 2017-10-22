@@ -14,7 +14,7 @@ class TestStringMethods(unittest.TestCase):
   """
 
   def _get_rnd(self, shape):
-    return np.random.uniform(-1, 1, np.prod(shape)).reshape(shape)
+    return np.random.uniform(-1, 1, np.prod(shape)).reshape(shape).astype(np.float32)
 
   def test_relu(self):
     node_def = helper.make_node("Relu", ["X"], ["Y"])
@@ -25,8 +25,10 @@ class TestStringMethods(unittest.TestCase):
     np.testing.assert_almost_equal(output["Y"], ref_output)
 
   def test_run_all(self):
-    X = self._get_rnd([100])
-    run_node(helper.make_node("Relu", ["X"], ["Y"]), [X])
+    dummy_inputs = [self._get_rnd([100]) for i in range(10)]
+    run_node(helper.make_node("Relu", ["X"], ["Y"]), dummy_inputs[0:1])
+    run_node(helper.make_node("PRelu", ["X", "Slope"], ["Y"]), dummy_inputs[0:2])
+    run_node(helper.make_node("Pad", ["X"], ["Y"], mode="constant", paddings=[1,1], value=1.0), dummy_inputs[0:1])
 
 if __name__ == '__main__':
   unittest.main()
