@@ -9,6 +9,7 @@ from __future__ import unicode_literals
 
 import collections
 import re
+import warnings
 
 import numpy as np
 from onnx import checker
@@ -116,6 +117,7 @@ class TensorflowBackend(Backend):
       "reduce_min": tf.reduce_min,
       "reduce_prod": tf.reduce_prod,
       "reduce_sum": tf.reduce_sum,
+      "sigmoid": tf.sigmoid,
   }
 
   tensor_type_to_tf_type = {
@@ -249,6 +251,12 @@ class TensorflowBackend(Backend):
     tensor = input_dict[node.inputs[0]]
     shape = tf.constant(node.attrs["shape"])
     return [tf.reshape(tensor, shape)]
+
+  @classmethod
+  def handle_selu(cls, node, input_dict):
+    warnings.warn("Definition of Selu is incompatible"
+      "between onnx and tensorflow.", UserWarning)
+    return [tf.nn.selu(input_dict[node.inputs[0]])]
 
 run_node = TensorflowBackend.run_node
 

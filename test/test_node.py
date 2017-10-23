@@ -56,6 +56,12 @@ class TestStringMethods(unittest.TestCase):
     output = run_node(node_def, [x])
     np.testing.assert_almost_equal(output["Y"], x.reshape([10, 10]))
 
+  def test_sigmoid(self):
+    node_def = helper.make_node("Sigmoid", ["X"], ["Y"])
+    x = self._get_rnd([1000])
+    output = run_node(node_def, [x])
+    np.testing.assert_almost_equal(output["Y"], 1/(1 + np.exp(-x)))
+
   def test_run_all(self):
     dummy_inputs = [self._get_rnd([100]) for _ in range(10)]
     dummy_inputs_3d = [self._get_rnd([125]).reshape(5, 5, 5) \
@@ -109,6 +115,7 @@ class TestStringMethods(unittest.TestCase):
                dummy_inputs_3d[0:1])
     run_node(helper.make_node("Reshape", ["X"], ["Y"], shape=[5, 25]),
              dummy_inputs_3d[0:1])
-
+    run_node(helper.make_node("Selu", ["X"], ["Y"]), dummy_inputs[0:1])
+    run_node(helper.make_node("Sigmoid", ["X"], ["Y"]), dummy_inputs[0:1])
 if __name__ == '__main__':
   unittest.main()
