@@ -8,6 +8,7 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import collections
+import re
 
 import numpy as np
 from onnx import checker
@@ -106,15 +107,15 @@ class TensorflowBackend(Backend):
   onnx_tf_op_map = {
       "relu": tf.nn.relu,
       "pow": tf.pow,
-      "randomnormal": tf.random_normal,
-      "randomuniform": tf.random_uniform,
+      "random_normal": tf.random_normal,
+      "random_uniform": tf.random_uniform,
       "reciprocal": tf.reciprocal,
-      "reducelogsumexp": tf.reduce_logsumexp,
-      "reducemax": tf.reduce_max,
-      "reducemean": tf.reduce_mean,
-      "reducemin": tf.reduce_min,
-      "reduceprod": tf.reduce_prod,
-      "reducesum": tf.reduce_sum,
+      "reduce_log_sum_exp": tf.reduce_logsumexp,
+      "reduce_max": tf.reduce_max,
+      "reduce_mean": tf.reduce_mean,
+      "reduce_min": tf.reduce_min,
+      "reduce_prod": tf.reduce_prod,
+      "reduce_sum": tf.reduce_sum,
   }
 
   tensor_type_to_tf_type = {
@@ -164,11 +165,16 @@ class TensorflowBackend(Backend):
     return namedtupledict('Outputs', node.outputs)(*output_vals)
 
   @classmethod
+  def op_name_to_lower(cls, name):
+    return re.sub('(?<!^)(?=[A-Z])', '_', name).lower()
+
+  @classmethod
   def _onnx_node_to_tensorflow_op(cls, node, input_dict):
-    if node.op_type.lower() in cls.onnx_tf_op_map.keys():
+    op_name_lowered = cls.op_name_to_lower(node.op_type)
+    if op_name_lowered in cls.onnx_tf_op_map.keys():
       return cls.handle_trivial(node, input_dict)
 
-    handler_name = "handle_" + node.op_type.lower()
+    handler_name = "handle_" + op_name_lowered
     # Check if specialized handler exists.
     if handler_name in dir(cls):
       method_to_call = getattr(cls, handler_name)
@@ -195,11 +201,11 @@ class TensorflowBackend(Backend):
     # Substitute attribute names in attrs.
     attrs = dict([(attr_map[x], y) for (x, y) in attrs.items()])
     inputs = [input_dict[name] for name in node.inputs]
-    output_name = node.outputs[0]
-    return [cls.onnx_tf_op_map[node.op_type.lower()](*inputs, **attrs)]
+    return [cls.onnx_tf_op_map[cls.op_name_to_lower(node.op_type)] \
+      (*inputs, **attrs)]
 
   @classmethod
-  def handle_prelu(cls, node, input_dict):
+  def handle_p_relu(cls, node, input_dict):
     """
     Reference implementation at
     https://github.com/tflearn/tflearn/blob/4ba8c8d78bf1bbdfc595bf547bad30580cb4c20b/tflearn/activations.py#L191
@@ -220,9 +226,8 @@ class TensorflowBackend(Backend):
                           .astype(np.int32)) # tf requires int32 paddings
     return [tf.pad(input_dict[node.inputs[0]], padding, mode, None, value)]
 
-  # TODO: better naming
   @classmethod
-  def handle_randomnormallike(cls, node, input_dict):
+  def handle_random_normal_like(cls, node, input_dict):
     shape = tf.shape(input_dict[node.inputs[0]])
     mean = node.attrs["mean"]
     stddev = node.attrs["scale"]
@@ -231,7 +236,7 @@ class TensorflowBackend(Backend):
     return [tf.random_normal(shape, mean, stddev, dtype, seed)]
 
   @classmethod
-  def handle_randomuniformlike(cls, node, input_dict):
+  def handle_random_uniform_like(cls, node, input_dict):
     shape = tf.shape(input_dict[node.inputs[0]])
     minval = node.attrs["low"]
     maxval = node.attrs["high"]
