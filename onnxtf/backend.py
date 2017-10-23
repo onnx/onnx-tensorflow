@@ -101,9 +101,33 @@ class TensorflowBackend(Backend):
       "scale": "stddev",
   }
 
+  onnx_tf_per_op_attr_map = {}
+
   onnx_tf_op_map = {
       "relu": tf.nn.relu,
       "pow": tf.pow,
+      "randomnormal": tf.random_normal,
+  }
+
+  tensor_type_to_np_type = {
+      TensorProto.FLOAT: tf.float32,
+      TensorProto.UINT8: tf.uint8,
+      TensorProto.INT8: tf.int8,
+      TensorProto.UINT16: tf.uint16,
+      TensorProto.INT16: tf.int16,
+      TensorProto.INT32: tf.int32,
+      TensorProto.INT64: tf.int64,
+      TensorProto.BOOL: tf.bool,
+      TensorProto.FLOAT16: tf.float16,
+      TensorProto.DOUBLE: tf.float64,
+      TensorProto.COMPLEX64: tf.complex64,
+      TensorProto.COMPLEX128: tf.complex128,
+      TensorProto.UINT32: tf.uint32,
+      TensorProto.UINT64: tf.uint64,
+  }
+
+  attr_translator = {
+      "dtype": lambda cls, x: cls.tensor_type_to_np_type[x],
   }
 
   @classmethod
@@ -120,7 +144,7 @@ class TensorflowBackend(Backend):
     else:
       assert len(node.inputs) == len(inputs)
       feed_dict_raw = dict(zip(node.inputs, inputs))
-
+    # TODO: is constant the best way for feeding inputs?
     input_dict = dict([(x[0], tf.constant(x[1])) for x in \
                        feed_dict_raw.items()])
     ops = cls._onnx_node_to_tensorflow_op(node, input_dict)
@@ -143,9 +167,27 @@ class TensorflowBackend(Backend):
 
   @classmethod
   def handle_trivial(cls, node, input_dict):
+    # Perform automatic attribute value translation.
+    attrs = dict([(x, cls.attr_translator[x](cls, node.attrs[x]) \
+      if x in cls.attr_translator else node.attrs[x]) \
+      for x in node.attrs.keys()])
+
+    # Create an identity map from onnx attribute names to tf
+    # attribute names.
+    attr_map = dict([(x, x) for x in node.attrs.keys()])
+
+    # Modify the map accoridng to onnx_tf_attribute_map.
+    attr_map = dict([(x, cls.onnx_tf_attribute_map[x] \
+      if x in cls.onnx_tf_attribute_map.keys() else x) \
+      for x in attr_map.keys()])
+
+    # TODO: Per op attribute name mapping has the final say.
+
+    # Substitute attribute names in attrs.
+    attrs = dict([(attr_map[x], y) for (x, y) in attrs.items()])
     inputs = [input_dict[name] for name in node.inputs]
     output_name = node.outputs[0]
-    return [cls.onnx_tf_op_map[node.op_type.lower()](*inputs)]
+    return [cls.onnx_tf_op_map[node.op_type.lower()](*inputs, **attrs)]
 
   @classmethod
   def handle_prelu(cls, node, input_dict):
@@ -169,5 +211,6 @@ class TensorflowBackend(Backend):
                           .astype(np.int32)) # tf requires int32 paddings
     return [tf.pad(input_dict[node.inputs[0]], padding, mode, None, value)]
 
-
 run_node = TensorflowBackend.run_node
+
+run_model = TensorflowBackend.run_model
