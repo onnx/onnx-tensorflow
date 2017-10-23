@@ -70,6 +70,21 @@ class TestStringMethods(unittest.TestCase):
                               mean=0.0,
                               scale=1.0),
              dummy_inputs[0:1])
+    run_node(helper.make_node("RandomUniform",
+                              [],
+                              ["Y"],
+                              dtype=TensorProto.FLOAT,
+                              low=0.0,
+                              high=1.0,
+                              shape=[10, 10]),
+             [])
+    run_node(helper.make_node("RandomUniformLike",
+                              ["X"],
+                              ["Y"],
+                              dtype=TensorProto.FLOAT,
+                              low=0.0,
+                              high=1.0),
+             dummy_inputs[0:1])
 
 if __name__ == '__main__':
   unittest.main()

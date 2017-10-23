@@ -95,6 +95,8 @@ class TensorflowBackend(Backend):
 
   onnx_tf_attribute_map = {
       "scale": "stddev",
+      "high": "maxval",
+      "low": "minval",
   }
 
   onnx_tf_per_op_attr_map = {}
@@ -103,6 +105,7 @@ class TensorflowBackend(Backend):
       "relu": tf.nn.relu,
       "pow": tf.pow,
       "randomnormal": tf.random_normal,
+      "randomuniform": tf.random_uniform,
   }
 
   tensor_type_to_tf_type = {
@@ -216,6 +219,15 @@ class TensorflowBackend(Backend):
     dtype = cls.tensor_type_to_tf_type[node.attrs["dtype"]]
     seed = node.attrs["seed"] if "seed" in node.attrs.keys() else None
     return [tf.random_normal(shape, mean, stddev, dtype, seed)]
+
+  @classmethod
+  def handle_randomuniformlike(cls, node, input_dict):
+    shape = tf.shape(input_dict[node.inputs[0]])
+    minval = node.attrs["low"]
+    maxval = node.attrs["high"]
+    dtype = cls.tensor_type_to_tf_type[node.attrs["dtype"]]
+    seed = node.attrs["seed"] if "seed" in node.attrs.keys() else None
+    return [tf.random_normal(shape, minval, maxval, dtype, seed)]
 
 run_node = TensorflowBackend.run_node
 
