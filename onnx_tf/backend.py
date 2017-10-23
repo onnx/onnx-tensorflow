@@ -107,6 +107,11 @@ class TensorflowBackend(Backend):
 
   onnx_tf_op_map = {
       "relu": tf.nn.relu,
+      "dot": tf.contrib.keras.backend.dot,
+      "exp": tf.exp,
+      "floor": tf.floor,
+      "log": tf.log,
+      "neg": tf.negative,
       "pow": tf.pow,
       "random_normal": tf.random_normal,
       "random_uniform": tf.random_uniform,
@@ -206,6 +211,71 @@ class TensorflowBackend(Backend):
     inputs = [input_dict[name] for name in node.inputs]
     return [cls.onnx_tf_op_map[cls.op_name_to_lower(node.op_type)] \
       (*inputs, **attrs)]
+
+  @classmethod
+  def handle_div(cls, node, input_dict):
+    x = input_dict[node.inputs[0]]
+    y = input_dict[node.inputs[1]]
+    broadcast = node.attrs["broadcast"]
+    if broadcast == 0:
+      warnings.warn("Definition of Div with broadcast disabled is incompatible"
+        "between onnx and tensorflow.", UserWarning)
+    if "axis" in node.attrs.keys():
+      warnings.warn("Unsupported alpha attribute by Tensorflow in Div."
+        "This attribute will be ignored.", UserWarning)
+    return [tf.divide(x, y)]
+
+  @classmethod
+  def handle_elu(cls, node, input_dict):
+    x = input_dict[node.inputs[0]]
+    if "alpha" in node.attrs.keys():
+      warnings.warn("Unsupported alpha attribute by Tensorflow in Elu."
+        "This attribute will be ignored.", UserWarning)
+    return [tf.nn.elu(x)]
+
+  @classmethod
+  def handle_flatten(cls, node, input_dict):
+    tensor = input_dict[node.inputs[0]]
+    axis = node.attrs["axis"] if "axis" in node.attrs.keys() else 1
+    x_direction = 1;
+    y_direction = 1;
+    for i in range(axis):
+      x_direction = x_direction * tensor.shape[i]
+    for i in range(axis, tensor.shape.length):
+      y_direction = y_direction * tensor.shape[i]
+    shape = tf.constant([x_direction, y_direction])
+    return [tf.reshape(tensor, shape)]
+
+  @classmethod
+  def handle_floor(cls, node, input_dict):
+    x = input_dict[node.inputs[0]]
+    if "alpha" in node.attrs.keys():
+      warnings.warn("Unsupported alpha attribute by Tensorflow in Floor."
+        "This attribute will be ignored.", UserWarning)
+    return [tf.nn.elu(x)]
+
+  @classmethod
+  def handle_max(cls, node, input_dict):
+    values = [input_dict[a] for a in node.inputs]
+    return [tf.reduce_max(tf.stack(values), axis=0)]
+
+  @classmethod
+  def handle_min(cls, node, input_dict):
+    values = [input_dict[a] for a in node.inputs]
+    return [tf.reduce_min(tf.stack(values), axis=0)]
+
+  @classmethod
+  def handle_mul(cls, node, input_dict):
+    x = input_dict[node.inputs[0]]
+    y = input_dict[node.inputs[1]]
+    broadcast = node.attrs["broadcast"]
+    if broadcast == 0:
+      warnings.warn("Definition of Mul with broadcast disabled is incompatible"
+        "between onnx and tensorflow.", UserWarning)
+    if "axis" in node.attrs.keys():
+      warnings.warn("Unsupported alpha attribute by Tensorflow in Mul."
+        "This attribute will be ignored.", UserWarning)
+    return [tf.multiply(x, y)]
 
   @classmethod
   def handle_p_relu(cls, node, input_dict):

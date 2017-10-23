@@ -18,6 +18,98 @@ class TestStringMethods(unittest.TestCase):
                       .reshape(shape) \
                       .astype(np.float32)
 
+  def _elu(self, x):
+    # f(x) = alpha * (exp(x) - 1.) for x < 0,
+    # f(x) = x for x >= 0
+    if x < 0.:
+      return np.expm1(x)
+    return x
+
+  def test_div(self):
+    node_def = helper.make_node("Div", ["X", "Y"], ["Z"], broadcast=1)
+    x = self._get_rnd([10, 10])
+    y = self._get_rnd([10, 10])
+    output = run_node(node_def, [x, y])
+    np.testing.assert_almost_equal(output["Z"], np.divide(x, y))
+
+  def test_dot(self):
+    node_def = helper.make_node("Dot", ["X", "Y"], ["Z"])
+    x = np.floor(self._get_rnd([10, 10]));
+    y = np.floor(self._get_rnd([10, 10]));
+    output = run_node(node_def, [x, y])
+    np.testing.assert_almost_equal(output["Z"], np.dot(x, y))
+
+  def test_elu(self):
+    node_def = helper.make_node("Elu", ["X"], ["Y"])
+    x = self._get_rnd([100])
+    output = run_node(node_def, [x])
+    test_output = [self._elu(a) for a in x];
+    np.testing.assert_almost_equal(output["Y"], test_output)
+
+  def test_exp(self):
+    node_def = helper.make_node("Exp", ["X"], ["Y"])
+    x = self._get_rnd([100])
+    x = x - 3.6;
+    output = run_node(node_def, [x])
+    np.testing.assert_almost_equal(output["Y"], np.exp(x))
+
+  def test_flatten(self):
+    # If input tensor has shape (d_0, d_1, ... d_n) then the
+    # output will have shape:
+    #
+    # (d_0 X d_1 ... d_(axis-1), d_axis X d_(axis+1) ... X dn)
+    #
+    node_def = helper.make_node("Flatten", ["X"], ["Y"], axis=3)
+    x = self._get_rnd([10, 2, 3, 4, 5])
+    output = run_node(node_def, [x])
+    np.testing.assert_almost_equal(output["Y"], x.reshape([60, 20]))
+
+  def test_floor(self):
+    node_def = helper.make_node("Floor", ["X"], ["Y"])
+    x = self._get_rnd([100])
+    output = run_node(node_def, [x])
+    np.testing.assert_almost_equal(output["Y"], np.floor(x))
+
+  def test_log(self):
+    node_def = helper.make_node("Log", ["X"], ["Y"])
+    x = self._get_rnd([100])
+    x = x + 3.6;
+    output = run_node(node_def, [x])
+    np.testing.assert_almost_equal(output["Y"], np.log(x))
+
+  def test_max(self):
+    node_def = helper.make_node("Max", ["X1", "X2", "X3", "X4"], ["Z"])
+    x1 = self._get_rnd([10, 10])
+    x2 = self._get_rnd([10, 10])
+    x3 = self._get_rnd([10, 10])
+    x4 = self._get_rnd([10, 10])
+    output = run_node(node_def, [x1, x2, x3, x4])
+    test_output = np.maximum(np.maximum(np.maximum(x1, x2), x3), x4)
+    np.testing.assert_almost_equal(output["Z"], test_output)
+
+  def test_min(self):
+    node_def = helper.make_node("Min", ["X1", "X2", "X3", "X4"], ["Z"])
+    x1 = self._get_rnd([10, 10])
+    x2 = self._get_rnd([10, 10])
+    x3 = self._get_rnd([10, 10])
+    x4 = self._get_rnd([10, 10])
+    output = run_node(node_def, [x1, x2, x3, x4])
+    test_output = np.minimum(np.minimum(np.minimum(x1, x2), x3), x4)
+    np.testing.assert_almost_equal(output["Z"], test_output)
+
+  def test_mul(self):
+    node_def = helper.make_node("Mul", ["X", "Y"], ["Z"], broadcast=1)
+    x = self._get_rnd([10, 10])
+    y = self._get_rnd([10, 10])
+    output = run_node(node_def, [x, y])
+    np.testing.assert_almost_equal(output["Z"], np.multiply(x, y))
+
+  def test_neg(self):
+    node_def = helper.make_node("Neg", ["X"], ["Y"])
+    x = self._get_rnd([1000])
+    output = run_node(node_def, [x])
+    np.testing.assert_almost_equal(output["Y"], np.negative(x))
+
   def test_relu(self):
     node_def = helper.make_node("Relu", ["X"], ["Y"])
     x = self._get_rnd([1000])
