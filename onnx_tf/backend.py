@@ -101,6 +101,7 @@ class TensorflowBackend(Backend):
       "low": "minval",
       "axes": "axis",
       "keepdims": "keep_dims",
+      "axis": "dim",
   }
 
   onnx_tf_per_op_attr_map = {}
@@ -118,6 +119,10 @@ class TensorflowBackend(Backend):
       "reduce_prod": tf.reduce_prod,
       "reduce_sum": tf.reduce_sum,
       "sigmoid": tf.sigmoid,
+      # default parameter
+      "softmax": tf.nn.softmax,
+      "sqrt": tf.sqrt,
+
   }
 
   tensor_type_to_tf_type = {
@@ -259,18 +264,21 @@ class TensorflowBackend(Backend):
       "between onnx and tensorflow.", UserWarning)
     return [tf.nn.selu(input_dict[node.inputs[0]])]
 
-  # @classmethod
-  # def handle_slice(cls, node, input_dict):
-  #   print("hello")
-  #   zero_shape = tf.reshape(tf.rank(input_dict[node.inputs[0]]), tf.constant([1]))
-  #   zeros = tf.reshape(tf.zeros(zero_shape, dtype=tf.int32), zero_shape)
-  #   # zeros.set_shape(zero_shape)
-  #   zeros = tf.Variable(zeros)
+  # TODO: take care of negative indicies, discontinuous axes
+  @classmethod
+  def handle_slice(cls, node, input_dict):
+    shape = tf.reshape(tf.rank(input_dict[node.inputs[0]]), tf.constant([1]))
+    indices = tf.expand_dims(input_dict[node.inputs[1]], -1)
+    begin = tf.scatter_nd(indices, input_dict[node.inputs[2]], shape)
+    end = tf.scatter_nd(indices, input_dict[node.inputs[3]], shape)
+    size = end - begin
+    return [tf.slice(input_dict[node.inputs[0]], begin, size)]
 
-  #   # begin = tf.scatter_update(zeros, input_dict[node.inputs[1]], input_dict[node.inputs[2]])
-  #   # end = tf.scatter_update(zeros, input_dict[node.inputs[1]], input_dict[node.inputs[3]])
-  #   # size = end - begin
-  #   # return [tf.slice(input_dict[node.inputs[0]], begin, size)]
+  @classmethod
+  def handle_split(cls, node, input_dict):
+    split = tf.constant(node.attrs["split"]) if "split" in node.attrs else input_dict[node.inputs[1]]
+    axis = node.attrs["axis"]
+    return [tf.split(input_dict[node.inputs[0]], split, axis)]
 
 run_node = TensorflowBackend.run_node
 

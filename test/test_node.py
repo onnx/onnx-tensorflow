@@ -62,6 +62,26 @@ class TestStringMethods(unittest.TestCase):
     output = run_node(node_def, [x])
     np.testing.assert_almost_equal(output["Y"], 1/(1 + np.exp(-x)))
 
+  def test_slice(self):
+    node_def = helper.make_node("Slice", ["X", "Y", "Z", "W"], ["S"])
+    x = self._get_rnd([1000]).reshape([10, 10, 10])
+    output = run_node(node_def, [x, [0, 1, 2], [0, 0, 0], [2, 2, 2]])
+    np.testing.assert_almost_equal(output["S"], x[0:2, 0:2, 0:2])
+
+  def test_split(self):
+    node_def = helper.make_node("Split", ["X", "Y"], ["Z"], axis=0)
+    x = self._get_rnd([100]).reshape([10, 10])
+    split = [3, 3, 4]
+    output = run_node(node_def, [x, split])
+    for a, b in zip(output["Z"], np.split(x,np.cumsum(split))[:-1]):
+      np.testing.assert_almost_equal(a, b)
+
+  def test_sqrt(self):
+    node_def = helper.make_node("Sqrt", ["X"], ["Y"])
+    x = self._get_rnd([1000]) + 1.0
+    output = run_node(node_def, [x])
+    np.testing.assert_almost_equal(output["Y"], np.sqrt(x))
+
   def test_run_all(self):
     dummy_inputs = [self._get_rnd([100]) for _ in range(10)]
     dummy_inputs_3d = [self._get_rnd([125]).reshape(5, 5, 5) \
@@ -117,5 +137,10 @@ class TestStringMethods(unittest.TestCase):
              dummy_inputs_3d[0:1])
     run_node(helper.make_node("Selu", ["X"], ["Y"]), dummy_inputs[0:1])
     run_node(helper.make_node("Sigmoid", ["X"], ["Y"]), dummy_inputs[0:1])
+    run_node(helper.make_node("Slice", ["X", "Y", "Z", "W"], ["S"]), \
+             [dummy_inputs_3d[0], [0, 1, 2], [0, 0, 0], [2, 2, 2]])
+    run_node(helper.make_node("Softmax", ["X"], ["Y"]), dummy_inputs[0:1])
+    run_node(helper.make_node("Split", ["X", "Y"], ["Z"], axis=0), [dummy_inputs_3d[0], [2,2,1]])
+    run_node(helper.make_node("Sqrt", ["X"], ["Y"]), dummy_inputs[0:1])
 if __name__ == '__main__':
   unittest.main()
