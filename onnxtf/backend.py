@@ -211,6 +211,16 @@ class TensorflowBackend(Backend):
                           .astype(np.int32)) # tf requires int32 paddings
     return [tf.pad(input_dict[node.inputs[0]], padding, mode, None, value)]
 
+  # TODO: better naming
+  @classmethod
+  def handle_randomnormallike(cls, node, input_dict):
+    shape = tf.shape(input_dict[node.inputs[0]])
+    mean = node.attrs["mean"]
+    stddev = node.attrs["scale"]
+    dtype = cls.tensor_type_to_np_type[node.attrs["dtype"]]
+    seed = node.attrs["seed"] if "seed" in node.attrs.keys() else None
+    return [tf.random_normal(shape, mean, stddev, dtype, seed)]
+
 run_node = TensorflowBackend.run_node
 
 run_model = TensorflowBackend.run_model
