@@ -5,7 +5,7 @@ from __future__ import unicode_literals
 
 import unittest
 import numpy as np
-from onnxtf.backend import run_node
+from onnx_tf.backend import run_node
 from onnx import helper
 from onnx.onnx_pb2 import TensorProto
 
