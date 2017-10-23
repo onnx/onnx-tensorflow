@@ -237,7 +237,7 @@ class TensorflowBackend(Backend):
     maxval = node.attrs["high"]
     dtype = cls.tensor_type_to_tf_type[node.attrs["dtype"]]
     seed = node.attrs["seed"] if "seed" in node.attrs.keys() else None
-    return [tf.random_normal(shape, minval, maxval, dtype, seed)]
+    return [tf.random_uniform(shape, minval, maxval, dtype, seed)]
 
 run_node = TensorflowBackend.run_node
 
