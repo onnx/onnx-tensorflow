@@ -54,6 +54,7 @@ class TestStringMethods(unittest.TestCase):
                               paddings=[1, 1],
                               value=1.0),
              dummy_inputs[0:1])
+    run_node(helper.make_node("Pow", ["X", "Y"], ["Z"]), dummy_inputs[0:2])
     run_node(helper.make_node("RandomNormal",
                               [],
                               ["Y"],
@@ -62,6 +63,13 @@ class TestStringMethods(unittest.TestCase):
                               scale=1.0,
                               shape=[10, 10]),
              [])
+    run_node(helper.make_node("RandomNormalLike",
+                              ["X"],
+                              ["Y"],
+                              dtype=TensorProto.FLOAT,
+                              mean=0.0,
+                              scale=1.0),
+             dummy_inputs[0:1])
 
 if __name__ == '__main__':
   unittest.main()
