@@ -20,7 +20,7 @@ class TestStringMethods(unittest.TestCase):
 
   def test_relu(self):
     node_def = helper.make_node("Relu", ["X"], ["Y"])
-    x = np.random.uniform(-1, 1, 1000)
+    x = self._get_rnd([1000])
     output = run_node(node_def, [x])
     np.testing.assert_almost_equal(output["Y"], np.maximum(x, 0))
 
@@ -36,16 +36,24 @@ class TestStringMethods(unittest.TestCase):
                                               'constant',
                                               constant_values=(2, 2)))
 
+  def test_reciprocal(self):
+    node_def = helper.make_node("Reciprocal", ["X"], ["Y"])
+    x = self._get_rnd([1000])
+    output = run_node(node_def, [x])
+    np.testing.assert_almost_equal(output["Y"], 1.0/x);
+
   def test_pow(self):
     node_def = helper.make_node("Pow", ["X", "Y"], ["Z"])
-    x = np.random.uniform(0.5, 1, 1000)
-    y = np.random.uniform(0.5, 1, 1000)
+    x = self._get_rnd(1000)/2.0 + 0.5
+    y = self._get_rnd(1000)/2.0 + 0.5
     output = run_node(node_def, [x, y])
     np.testing.assert_almost_equal(output["Z"],
                                    np.power(x, y))
 
   def test_run_all(self):
     dummy_inputs = [self._get_rnd([100]) for _ in range(10)]
+    dummy_inputs_3d = [self._get_rnd([125]).reshape(5, 5, 5) \
+      for _ in range(10)]
     run_node(helper.make_node("Relu", ["X"], ["Y"]), dummy_inputs[0:1])
     run_node(helper.make_node("PRelu", ["X", "Slope"], ["Y"]), \
                                 dummy_inputs[0:2])
@@ -85,6 +93,14 @@ class TestStringMethods(unittest.TestCase):
                               low=0.0,
                               high=1.0),
              dummy_inputs[0:1])
+    run_node(helper.make_node("Reciprocal", ["X"], ["Y"]), dummy_inputs[0:1])
+    for reduce_op in ["LogSumExp", "Max", "Mean", "Min", "Prod", "Sum"]:
+      run_node(helper.make_node("Reduce" + reduce_op,
+                                ["X"],
+                                ["Y"],
+                                axes=[0, 1],
+                                keepdims=0),
+               dummy_inputs_3d[0:1])
 
 if __name__ == '__main__':
   unittest.main()

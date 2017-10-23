@@ -97,6 +97,8 @@ class TensorflowBackend(Backend):
       "scale": "stddev",
       "high": "maxval",
       "low": "minval",
+      "axes": "axis",
+      "keepdims": "keep_dims",
   }
 
   onnx_tf_per_op_attr_map = {}
@@ -106,6 +108,13 @@ class TensorflowBackend(Backend):
       "pow": tf.pow,
       "randomnormal": tf.random_normal,
       "randomuniform": tf.random_uniform,
+      "reciprocal": tf.reciprocal,
+      "reducelogsumexp": tf.reduce_logsumexp,
+      "reducemax": tf.reduce_max,
+      "reducemean": tf.reduce_mean,
+      "reducemin": tf.reduce_min,
+      "reduceprod": tf.reduce_prod,
+      "reducesum": tf.reduce_sum,
   }
 
   tensor_type_to_tf_type = {
@@ -127,6 +136,7 @@ class TensorflowBackend(Backend):
 
   attr_translator = {
       "dtype": lambda cls, x: cls.tensor_type_to_tf_type[x],
+      "keepdims": lambda cls, x: bool(x),
   }
 
   @classmethod
