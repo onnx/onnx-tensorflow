@@ -133,8 +133,9 @@ class TensorflowBackend(Backend):
       TensorProto.DOUBLE: tf.float64,
       TensorProto.COMPLEX64: tf.complex64,
       TensorProto.COMPLEX128: tf.complex128,
-      TensorProto.UINT32: tf.uint32,
-      TensorProto.UINT64: tf.uint64,
+      # TODO: uncomment this in the future
+      # TensorProto.UINT32: tf.uint32,
+      # TensorProto.UINT64: tf.uint64,
   }
 
   attr_translator = {
@@ -257,6 +258,19 @@ class TensorflowBackend(Backend):
     warnings.warn("Definition of Selu is incompatible"
       "between onnx and tensorflow.", UserWarning)
     return [tf.nn.selu(input_dict[node.inputs[0]])]
+
+  # @classmethod
+  # def handle_slice(cls, node, input_dict):
+  #   print("hello")
+  #   zero_shape = tf.reshape(tf.rank(input_dict[node.inputs[0]]), tf.constant([1]))
+  #   zeros = tf.reshape(tf.zeros(zero_shape, dtype=tf.int32), zero_shape)
+  #   # zeros.set_shape(zero_shape)
+  #   zeros = tf.Variable(zeros)
+
+  #   # begin = tf.scatter_update(zeros, input_dict[node.inputs[1]], input_dict[node.inputs[2]])
+  #   # end = tf.scatter_update(zeros, input_dict[node.inputs[1]], input_dict[node.inputs[3]])
+  #   # size = end - begin
+  #   # return [tf.slice(input_dict[node.inputs[0]], begin, size)]
 
 run_node = TensorflowBackend.run_node
 
