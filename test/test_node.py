@@ -7,6 +7,7 @@ import unittest
 import numpy as np
 from onnxtf.backend import run_node
 from onnx import helper
+from onnx.onnx_pb2 import TensorProto
 
 class TestStringMethods(unittest.TestCase):
   """ Tests for ops
@@ -53,6 +54,14 @@ class TestStringMethods(unittest.TestCase):
                               paddings=[1, 1],
                               value=1.0),
              dummy_inputs[0:1])
+    run_node(helper.make_node("RandomNormal",
+                              [],
+                              ["Y"],
+                              dtype=TensorProto.FLOAT,
+                              mean=0.0,
+                              scale=1.0,
+                              shape=[10, 10]),
+             [])
 
 if __name__ == '__main__':
   unittest.main()
