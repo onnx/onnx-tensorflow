@@ -122,7 +122,9 @@ class TensorflowBackend(Backend):
       # default parameter
       "softmax": tf.nn.softmax,
       "sqrt": tf.sqrt,
-
+      "squeeze": tf.squeeze,
+      "tanh": tf.tanh,
+      "transpose": tf.transpose,
   }
 
   tensor_type_to_tf_type = {
@@ -279,6 +281,24 @@ class TensorflowBackend(Backend):
     split = tf.constant(node.attrs["split"]) if "split" in node.attrs else input_dict[node.inputs[1]]
     axis = node.attrs["axis"]
     return [tf.split(input_dict[node.inputs[0]], split, axis)]
+
+  @classmethod
+  def handle_sub(cls, node, input_dict):
+    x = input_dict[node.inputs[0]]
+    y = input_dict[node.inputs[1]]
+    broadcast = node.attrs["broadcast"]
+    if broadcast == 0:
+      warnings.warn("Definition of Div with broadcast disabled is incompatible"
+        "between onnx and tensorflow.", UserWarning)
+    if "axis" in node.attrs.keys():
+      warnings.warn("Unsupported axis attribute by Tensorflow in Sub."
+        "This attribute will be ignored.", UserWarning)
+    return [tf.subtract(x, y)]
+
+  @classmethod
+  def handle_sum(cls, node, input_dict):
+    values = [input_dict[a] for a in node.inputs]
+    return [tf.reduce_sum(tf.stack(values), axis=0)]
 
 run_node = TensorflowBackend.run_node
 

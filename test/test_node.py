@@ -82,6 +82,42 @@ class TestStringMethods(unittest.TestCase):
     output = run_node(node_def, [x])
     np.testing.assert_almost_equal(output["Y"], np.sqrt(x))
 
+  def test_squeeze(self):
+    node_def = helper.make_node("Squeeze", ["X"], ["Y"], axes=[2])
+    x = np.array([[[0], [1], [2]]])
+    output = run_node(node_def, [x])
+    np.testing.assert_almost_equal(output["Y"],
+                                   np.squeeze(x, axis=2))
+
+  def test_sub(self):
+    node_def = helper.make_node("Sub", ["X", "Y"], ["Z"], broadcast=1)
+    x = self._get_rnd([10, 10])
+    y = self._get_rnd([10, 10])
+    output = run_node(node_def, [x, y])
+    np.testing.assert_almost_equal(output["Z"], np.subtract(x, y))
+
+  def test_sum(self):
+    node_def = helper.make_node("Sum", ["X1", "X2", "X3", "X4"], ["Z"])
+    x1 = self._get_rnd([10, 10])
+    x2 = self._get_rnd([10, 10])
+    x3 = self._get_rnd([10, 10])
+    x4 = self._get_rnd([10, 10])
+    output = run_node(node_def, [x1, x2, x3, x4])
+    test_output = x1 + x2 + x3 + x4
+    np.testing.assert_almost_equal(output["Z"], test_output)
+
+  def test_tanh(self):
+    node_def = helper.make_node("Tanh", ["X"], ["Y"])
+    x = self._get_rnd([1000]) + 1.0
+    output = run_node(node_def, [x])
+    np.testing.assert_almost_equal(output["Y"], np.tanh(x), decimal=5)
+
+  def test_transpose(self):
+    node_def = helper.make_node("Transpose", ["X"], ["Y"], perm=[0, 2, 1])
+    x = self._get_rnd([1000]).reshape([10, 10, 10])
+    output = run_node(node_def, [x])
+    np.testing.assert_almost_equal(output["Y"], np.transpose(x, (0, 2, 1)))
+
   def test_run_all(self):
     dummy_inputs = [self._get_rnd([100]) for _ in range(10)]
     dummy_inputs_3d = [self._get_rnd([125]).reshape(5, 5, 5) \
@@ -137,10 +173,15 @@ class TestStringMethods(unittest.TestCase):
              dummy_inputs_3d[0:1])
     run_node(helper.make_node("Selu", ["X"], ["Y"]), dummy_inputs[0:1])
     run_node(helper.make_node("Sigmoid", ["X"], ["Y"]), dummy_inputs[0:1])
-    run_node(helper.make_node("Slice", ["X", "Y", "Z", "W"], ["S"]), \
+    run_node(helper.make_node("Slice", ["X", "Y", "Z", "W"], ["S"]),
              [dummy_inputs_3d[0], [0, 1, 2], [0, 0, 0], [2, 2, 2]])
     run_node(helper.make_node("Softmax", ["X"], ["Y"]), dummy_inputs[0:1])
-    run_node(helper.make_node("Split", ["X", "Y"], ["Z"], axis=0), [dummy_inputs_3d[0], [2,2,1]])
+    run_node(helper.make_node("Split", ["X", "Y"], ["Z"], axis=0),
+             [dummy_inputs_3d[0], [2,2,1]])
     run_node(helper.make_node("Sqrt", ["X"], ["Y"]), dummy_inputs[0:1])
+    run_node(helper.make_node("Squeeze", ["X"], ["Y"], axes=[1]),
+             [np.expand_dims(dummy_inputs[0], axis=1)])
+
+
 if __name__ == '__main__':
   unittest.main()
