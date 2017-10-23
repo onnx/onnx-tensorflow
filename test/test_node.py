@@ -40,7 +40,7 @@ class TestStringMethods(unittest.TestCase):
     node_def = helper.make_node("Reciprocal", ["X"], ["Y"])
     x = self._get_rnd([1000])
     output = run_node(node_def, [x])
-    np.testing.assert_almost_equal(output["Y"], 1.0/x);
+    np.testing.assert_almost_equal(output["Y"], 1.0/x)
 
   def test_pow(self):
     node_def = helper.make_node("Pow", ["X", "Y"], ["Z"])
@@ -49,6 +49,12 @@ class TestStringMethods(unittest.TestCase):
     output = run_node(node_def, [x, y])
     np.testing.assert_almost_equal(output["Z"],
                                    np.power(x, y))
+
+  def test_reshape(self):
+    node_def = helper.make_node("Reshape", ["X"], ["Y"], shape=[10, 10])
+    x = self._get_rnd(100)
+    output = run_node(node_def, [x])
+    np.testing.assert_almost_equal(output["Y"], x.reshape([10, 10]))
 
   def test_run_all(self):
     dummy_inputs = [self._get_rnd([100]) for _ in range(10)]
@@ -101,6 +107,8 @@ class TestStringMethods(unittest.TestCase):
                                 axes=[0, 1],
                                 keepdims=0),
                dummy_inputs_3d[0:1])
+    run_node(helper.make_node("Reshape", ["X"], ["Y"], shape=[5, 25]),
+             dummy_inputs_3d[0:1])
 
 if __name__ == '__main__':
   unittest.main()

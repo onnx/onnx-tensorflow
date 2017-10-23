@@ -244,6 +244,12 @@ class TensorflowBackend(Backend):
     seed = node.attrs["seed"] if "seed" in node.attrs.keys() else None
     return [tf.random_uniform(shape, minval, maxval, dtype, seed)]
 
+  @classmethod
+  def handle_reshape(cls, node, input_dict):
+    tensor = input_dict[node.inputs[0]]
+    shape = tf.constant(node.attrs["shape"])
+    return [tf.reshape(tensor, shape)]
+
 run_node = TensorflowBackend.run_node
 
 run_model = TensorflowBackend.run_model
