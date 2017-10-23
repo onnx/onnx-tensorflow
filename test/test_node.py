@@ -35,6 +35,14 @@ class TestStringMethods(unittest.TestCase):
                                               'constant',
                                               constant_values=(2, 2)))
 
+  def test_pow(self):
+    node_def = helper.make_node("Pow", ["X", "Y"], ["Z"])
+    x = np.random.uniform(-1, 1, 1000)
+    y = np.random.uniform(-1, 1, 1000)
+    output = run_node(node_def, [x, y])
+    np.testing.assert_almost_equal(output["Z"],
+                                   np.power(x, y))
+
   def test_run_all(self):
     dummy_inputs = [self._get_rnd([100]) for _ in range(10)]
     run_node(helper.make_node("Relu", ["X"], ["Y"]), dummy_inputs[0:1])

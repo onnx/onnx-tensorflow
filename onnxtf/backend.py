@@ -25,6 +25,7 @@ from onnx.backend.base import (
 from onnx import onnx_pb2, helper
 import tensorflow as tf
 
+# TODO: allow more flexible placement
 def get_device_option(device):
   m = {DeviceType.CPU: '/cpu:0',
        DeviceType.CUDA: '/gpu:0'}
@@ -100,6 +101,11 @@ class TensorflowBackend(Backend):
       "scale": "stddev",
   }
 
+  onnx_tf_op_map = {
+      "relu": tf.nn.relu,
+      "pow": tf.pow,
+  }
+
   @classmethod
   def run_node(cls, node, inputs, device='CPU'):
     super(TensorflowBackend, cls).run_node(node, inputs, device)
@@ -126,6 +132,9 @@ class TensorflowBackend(Backend):
 
   @classmethod
   def _onnx_node_to_tensorflow_op(cls, node, input_dict):
+    if node.op_type.lower() in cls.onnx_tf_op_map.keys():
+      return cls.handle_trivial(node, input_dict)
+
     handler_name = "handle_" + node.op_type.lower()
     # Check if specialized handler exists.
     if handler_name in dir(cls):
@@ -133,10 +142,10 @@ class TensorflowBackend(Backend):
       return method_to_call(node, input_dict)
 
   @classmethod
-  def handle_relu(cls, node, input_dict):
+  def handle_trivial(cls, node, input_dict):
+    inputs = [input_dict[name] for name in node.inputs]
     output_name = node.outputs[0]
-    input_name = node.inputs[0]
-    return [tf.nn.relu(input_dict[input_name])]
+    return [cls.onnx_tf_op_map[node.op_type.lower()](*inputs)]
 
   @classmethod
   def handle_prelu(cls, node, input_dict):
@@ -159,5 +168,6 @@ class TensorflowBackend(Backend):
                           .reshape([num_dim, 2])
                           .astype(np.int32)) # tf requires int32 paddings
     return [tf.pad(input_dict[node.inputs[0]], padding, mode, None, value)]
+
 
 run_node = TensorflowBackend.run_node
