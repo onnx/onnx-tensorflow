@@ -37,8 +37,8 @@ class TestStringMethods(unittest.TestCase):
 
   def test_pow(self):
     node_def = helper.make_node("Pow", ["X", "Y"], ["Z"])
-    x = np.random.uniform(-1, 1, 1000)
-    y = np.random.uniform(-1, 1, 1000)
+    x = np.random.uniform(0.5, 1, 1000)
+    y = np.random.uniform(0.5, 1, 1000)
     output = run_node(node_def, [x, y])
     np.testing.assert_almost_equal(output["Z"],
                                    np.power(x, y))
