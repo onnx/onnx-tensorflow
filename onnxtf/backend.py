@@ -31,10 +31,6 @@ def get_device_option(device):
        DeviceType.CUDA: '/gpu:0'}
   return m[device.type]
 
-def get_type(onnx_type):
-  pass
-
-
 # TODO: Move this into ONNX main library
 def convertAttributeProto(onnx_arg):
   """
@@ -109,7 +105,7 @@ class TensorflowBackend(Backend):
       "randomnormal": tf.random_normal,
   }
 
-  tensor_type_to_np_type = {
+  tensor_type_to_tf_type = {
       TensorProto.FLOAT: tf.float32,
       TensorProto.UINT8: tf.uint8,
       TensorProto.INT8: tf.int8,
@@ -127,7 +123,7 @@ class TensorflowBackend(Backend):
   }
 
   attr_translator = {
-      "dtype": lambda cls, x: cls.tensor_type_to_np_type[x],
+      "dtype": lambda cls, x: cls.tensor_type_to_tf_type[x],
   }
 
   @classmethod
@@ -217,7 +213,7 @@ class TensorflowBackend(Backend):
     shape = tf.shape(input_dict[node.inputs[0]])
     mean = node.attrs["mean"]
     stddev = node.attrs["scale"]
-    dtype = cls.tensor_type_to_np_type[node.attrs["dtype"]]
+    dtype = cls.tensor_type_to_tf_type[node.attrs["dtype"]]
     seed = node.attrs["seed"] if "seed" in node.attrs.keys() else None
     return [tf.random_normal(shape, mean, stddev, dtype, seed)]
 
