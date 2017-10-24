@@ -110,6 +110,7 @@ class TensorflowBackend(Backend):
       "dot": tf.contrib.keras.backend.dot,
       "exp": tf.exp,
       "floor": tf.floor,
+      "gather": tf.gather,
       "log": tf.log,
       "neg": tf.negative,
       "pow": tf.pow,
@@ -226,6 +227,17 @@ class TensorflowBackend(Backend):
     return [tf.divide(x, y)]
 
   @classmethod
+  def handle_dropout(cls, node, input_dict):
+    x = input_dict[nodse.inputs[0]]
+    # Not supported by TF
+    is_test = node.attrs["is_test"] if "is_test" in node.attrs.keys() else 0
+    if is_test != 0:
+      warnings.warn("Unsupported is_test attribute by Tensorflow in Dropout."
+        "This attribute will be ignored.", UserWarning)
+    ratio = node.attrs["ratio"] if "ratio" in node.attrs.keys() else 0.5
+    return [tf.nn.dropout(x, 1 - ratio)]
+
+  @classmethod
   def handle_elu(cls, node, input_dict):
     x = input_dict[node.inputs[0]]
     if "alpha" in node.attrs.keys():
@@ -237,14 +249,12 @@ class TensorflowBackend(Backend):
   def handle_flatten(cls, node, input_dict):
     tensor = input_dict[node.inputs[0]]
     axis = node.attrs["axis"] if "axis" in node.attrs.keys() else 1
-    x_direction = 1;
-    y_direction = 1;
-    for i in range(axis):
-      x_direction = x_direction * tensor.shape[i]
-    for i in range(axis, tensor.shape.length):
-      y_direction = y_direction * tensor.shape[i]
-    shape = tf.constant([x_direction, y_direction])
-    return [tf.reshape(tensor, shape)]
+    shape = tf.shape(tensor)
+    split0, split1 = tf.split(shape, [axis, tf.size(shape) - axis])
+    split0 = tf.reduce_prod(split0)
+    split1 = tf.reduce_prod(split1)
+    output_shape = tf.stack([split0, split1])
+    return [tf.reshape(tensor, output_shape)]
 
   @classmethod
   def handle_floor(cls, node, input_dict):
@@ -253,6 +263,33 @@ class TensorflowBackend(Backend):
       warnings.warn("Unsupported alpha attribute by Tensorflow in Floor."
         "This attribute will be ignored.", UserWarning)
     return [tf.nn.elu(x)]
+
+  @classmethod
+  def handle_gemm(cls, node, input_dict):
+    x = input_dict[node.inputs[0]]
+    y = input_dict[node.inputs[1]]
+    z = input_dict[node.inputs[2]]
+    if "transA" in node.attrs.keys() and node.attrs["transA"] == 1:
+      x = tf.transpose(x)
+    if "transB" in node.attrs.keys() and node.attrs["transB"] == 1:
+      y = tf.transpose(y)
+    if "broadcast" in node.attrs.keys() and node.attrs["broadcast"] == 0:
+      warnings.warn("Unsupported disabling of broadcast in Gemm."
+        "This attribute will be ignored and a default of 1 used.", UserWarning)
+    alpha = node.attrs["alpha"] if "alpha" in node.attrs.keys() else 1.0
+    beta = node.attrs["beta"] if "beta" in node.attrs.keys() else 1.0
+    return [alpha * tf.multiply(x, y) + beta * z]
+
+  @classmethod
+  def handle_leaky_relu(cls, node, input_dict):
+    x = input_dict[node.inputs[0]]
+    if not "alpha" in node.attrs.keys():
+      warnings.warn("Provide an alpha value.", UserWarning)
+      alpha = 1.0
+    else:
+      alpha = node.attrs["alpha"]
+    tf_op = tf.nn.relu(x) - alpha * tf.nn.relu(-x)
+    return [tf_op]
 
   @classmethod
   def handle_max(cls, node, input_dict):

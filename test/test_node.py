@@ -25,6 +25,13 @@ class TestStringMethods(unittest.TestCase):
       return np.expm1(x)
     return x
 
+  def _leaky_relu(self, x, alpha):
+    # f(x) = alpha * x for x < 0,
+    # f(x) = x for x >= 0
+    if x < 0.:
+      return alpha * x
+    return x
+
   def test_div(self):
     node_def = helper.make_node("Div", ["X", "Y"], ["Z"], broadcast=1)
     x = self._get_rnd([10, 10])
@@ -59,16 +66,52 @@ class TestStringMethods(unittest.TestCase):
     #
     # (d_0 X d_1 ... d_(axis-1), d_axis X d_(axis+1) ... X dn)
     #
-    node_def = helper.make_node("Flatten", ["X"], ["Y"], axis=3)
+    # TODO: pass axis attribute which is supported in newer
+    # versions of onnx
+    node_def = helper.make_node("Flatten", ["X"], ["Y"])
     x = self._get_rnd([10, 2, 3, 4, 5])
     output = run_node(node_def, [x])
-    np.testing.assert_almost_equal(output["Y"], x.reshape([60, 20]))
+    # TODO: pass axis=3 and uncomment the line below
+    # np.testing.assert_almost_equal(output["Y"], x.reshape([60, 20]))
+    np.testing.assert_almost_equal(output["Y"], x.reshape([10, 120]))
+
+  def test_gather(self):
+    node_def = helper.make_node("Gather", ["X", "Y"], ["Z"])
+    x = self._get_rnd([10, 10])
+    y = [[0, 1], [1, 2]]
+    output = run_node(node_def, [x, y])
+    test_output = np.zeros((2, 2, 10))
+    for i in range(0, 2):
+      for j in range(0, 10):
+        test_output[0][i][j] = x[i][j]
+    for i in range(0, 2):
+      for j in range(0, 10):
+        test_output[1][i][j] = x[i + 1][j]
+    np.testing.assert_almost_equal(output["Z"], test_output)
+
+  def test_gemm(self):
+    # Compute Y = alpha * A * B + beta * C
+    node_def = helper.make_node("Gemm", ["A", "B", "C"], ["Y"],
+      transA=0, transB=0, broadcast=1, alpha=1.0, beta=1.0)
+    x = self._get_rnd([10, 10])
+    y = self._get_rnd([10, 10])
+    z = self._get_rnd([10, 10])
+    output = run_node(node_def, [x, y, z])
+    test_output = np.multiply(x, y) + z
+    np.testing.assert_almost_equal(output["Y"], test_output)
 
   def test_floor(self):
     node_def = helper.make_node("Floor", ["X"], ["Y"])
     x = self._get_rnd([100])
     output = run_node(node_def, [x])
     np.testing.assert_almost_equal(output["Y"], np.floor(x))
+
+  def test_leakyrelu(self):
+    node_def = helper.make_node("LeakyRelu", ["X"], ["Y"], alpha=2.0)
+    x = np.floor(self._get_rnd([100]))
+    output = run_node(node_def, [x])
+    test_output = [self._leaky_relu(a, 2.0) for a in x]
+    np.testing.assert_almost_equal(output["Y"], test_output)
 
   def test_log(self):
     node_def = helper.make_node("Log", ["X"], ["Y"])
