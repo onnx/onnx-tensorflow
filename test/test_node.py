@@ -5,6 +5,7 @@ from __future__ import unicode_literals
 
 import unittest
 import numpy as np
+import tensorflow as tf
 from onnx_tf.backend import run_node
 from onnx import helper
 from onnx.onnx_pb2 import TensorProto
@@ -31,6 +32,88 @@ class TestStringMethods(unittest.TestCase):
     if x < 0.:
       return alpha * x
     return x
+
+  def test_abs(self):
+    node_def = helper.make_node("Abs", ["X"], ["Y"])
+    x = self._get_rnd([1000])
+    output = run_node(node_def, [x])
+    np.testing.assert_almost_equal(output["Y"], np.abs(x))
+
+  def test_add(self):
+    node_def = helper.make_node("Add", ["A", "B"], ["C"], broadcast=1)
+    a = self._get_rnd([10, 10])
+    b = self._get_rnd([10, 10])
+    output = run_node(node_def, [a, b])
+    np.testing.assert_almost_equal(output["C"], np.add(a, b))
+
+    node_def = helper.make_node("Add", ["A", "B"], ["C"], broadcast=1)
+    a = self._get_rnd([10, 10])
+    b = self._get_rnd([10,])
+    output = run_node(node_def, [a, b])
+    np.testing.assert_almost_equal(output["C"], np.add(a, b))
+
+  def test_arg_max(self):
+    for axis in [0, 1]:
+      node_def = helper.make_node("ArgMax", ["data"], ["reduced"],
+                                  axis=axis,
+                                  keepdims=0)
+      data = self._get_rnd([10, 10])
+      output = run_node(node_def, [data])
+      np.testing.assert_almost_equal(output["reduced"],
+                                     np.argmax(data, axis=axis))
+
+  def test_arg_min(self):
+    for axis in [0, 1]:
+      node_def = helper.make_node("ArgMin", ["data"], ["reduced"],
+                                  axis=axis, keepdims=0)
+      data = self._get_rnd([10, 10])
+      output = run_node(node_def, [data])
+      np.testing.assert_almost_equal(output["reduced"],
+                                     np.argmin(data, axis=axis))
+
+  def _batch_normalization(self, x, mean, variance, bias, scale,
+                           variance_epsilon):
+    inv = np.reciprocal(np.sqrt(variance + variance_epsilon))
+    if scale is not None:
+      inv *= scale
+    return x * inv + (bias - mean * inv
+                      if bias is not None else -mean * inv)
+
+  def test_batch_normalization(self):
+    node_def = helper.make_node("BatchNormalization",
+                                ["X", "scale", "bias", "mean", "var"],
+                                ["Y"],
+                                consumed_inputs=[0, 0, 0, 1, 1],
+                                epsilon=0.001)
+    x_shape = [3, 5, 4, 2]
+    param_shape = [2]
+    x = np.random.random_sample(x_shape).astype(np.float32)
+    m = np.random.random_sample(param_shape).astype(np.float32)
+    v = np.random.random_sample(param_shape).astype(np.float32)
+    scale = np.random.random_sample(param_shape).astype(np.float32)
+    bias = np.random.random_sample(param_shape).astype(np.float32)
+    base = self._batch_normalization(x, m, v, bias, scale, 0.001)
+    output = run_node(node_def, [x, scale, bias, m, v])
+    np.testing.assert_almost_equal(output["Y"], base)
+
+  def test_cast(self):
+    for ty, tf_type in [("float", tf.float32),
+                        ("uint8", tf.uint8),
+                        ("int8", tf.int8),
+                        ("uint16", tf.uint16),
+                        ("int16", tf.int16),
+                        ("int32", tf.int32),
+                        ("int64", tf.int64),
+                        ("bool", tf.bool),
+                        ("float16", tf.float16),
+                        ("double", tf.float64),
+                        ("complex64", tf.complex64),
+                        ("complex128", tf.complex128)]:
+      node_def = helper.make_node("Cast", ["input"], ["output"],
+                                  to=ty)
+      vector = [2, 3]
+      output = run_node(node_def, [vector])
+      np.testing.assert_equal(output["output"].dtype, tf_type)
 
   def test_div(self):
     node_def = helper.make_node("Div", ["X", "Y"], ["Z"], broadcast=1)

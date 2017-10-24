@@ -107,6 +107,7 @@ class TensorflowBackend(Backend):
   onnx_tf_per_op_attr_map = {}
 
   onnx_tf_op_map = {
+      "abs": tf.abs,
       "relu": tf.nn.relu,
       "dot": tf.contrib.keras.backend.dot,
       "exp": tf.exp,
@@ -149,6 +150,24 @@ class TensorflowBackend(Backend):
       # TODO: uncomment this in the future
       # TensorProto.UINT32: tf.uint32,
       # TensorProto.UINT64: tf.uint64,
+  }
+
+  type_string_to_tf_type = {
+      "float": tf.float32,
+      "uint8": tf.uint8,
+      "int8": tf.int8,
+      "uint16": tf.uint16,
+      "int16": tf.int16,
+      "int32": tf.int32,
+      "int64": tf.int64,
+      "bool": tf.bool,
+      "float16": tf.float16,
+      "double": tf.float64,
+      "complex64": tf.complex64,
+      "complex128": tf.complex128,
+      # TODO: uncomment this in the future
+      # "uint32": tf.uint32,
+      # "uint64": tf.uint64,
   }
 
   attr_translator = {
@@ -221,11 +240,68 @@ class TensorflowBackend(Backend):
       (*inputs, **attrs)]
 
   @classmethod
-  def handle_div(cls, node, input_dict):
+  def handle_add(cls, node, input_dict):
     x = input_dict[node.inputs[0]]
     y = input_dict[node.inputs[1]]
     broadcast = node.attrs["broadcast"]
     if broadcast == 0:
+      warnings.warn("Definition of Add with broadcast disabled is incompatible"
+                    "between onnx and tensorflow.", UserWarning)
+    if "axis" in node.attrs.keys():
+      warnings.warn("Unsupported axis attribute by Tensorflow in Add."
+                    "This attribute will be ignored.", UserWarning)
+    return [tf.add(x, y)]
+
+  @classmethod
+  def handle_arg_max(cls, node, input_dict):
+    data = input_dict[node.inputs[0]]
+    axis = node.attrs["axis"]
+    keepdims = node.attrs["keepdims"]
+    if keepdims == 1:
+      warnings.warn("Definition of ArgMax with keepdims enabled is incompatible"
+                    "between onnx and tensorflow.", UserWarning)
+    return [tf.argmax(data, axis=axis)]
+
+  @classmethod
+  def handle_arg_min(cls, node, input_dict):
+    data = input_dict[node.inputs[0]]
+    axis = node.attrs["axis"]
+    keepdims = node.attrs["keepdims"]
+    if keepdims == 1:
+      warnings.warn("Definition of ArgMin with keepdims enabled is incompatible"
+                    "between onnx and tensorflow.", UserWarning)
+    return [tf.argmin(data, axis=axis)]
+
+  @classmethod
+  def handle_batch_normalization(cls, node, input_dict):
+    x = input_dict[node.inputs[0]]
+    scale = input_dict[node.inputs[1]]
+    bias = input_dict[node.inputs[2]]
+    mean = input_dict[node.inputs[3]]
+    variance = input_dict[node.inputs[4]]
+    variance_epsilon = node.attrs["epsilon"]
+    if "is_test" in node.attrs.keys():
+      warnings.warn("Unsupported is_test attribute by Tensorflow in"
+                    "batch_normalization. This attribute will be ignored.",
+                    UserWarning)
+    if "momentum" in node.attrs.keys():
+      warnings.warn("Unsupported momentum attribute by Tensorflow in"
+                    "batch_normalization. This attribute will be ignored.",
+                    UserWarning)
+    if "spatial" in node.attrs.keys():
+      warnings.warn("Unsupported spatial attribute by Tensorflow in"
+                    "batch_normalization. This attribute will be ignored.",
+                    UserWarning)
+    return [tf.nn.batch_normalization(x, mean, variance, bias, scale,
+                                      variance_epsilon)]
+
+  @classmethod
+  def handle_cast(cls, node, input_dict):
+    input = input_dict[node.inputs[0]]
+    dtype = cls.type_string_to_tf_type[node.attrs["to"]]
+    return [tf.cast(input, dtype)]
+
+  def handle_div(cls, node, input_dict):
       warnings.warn("Definition of Div with broadcast disabled is incompatible"
         "between onnx and tensorflow.", UserWarning)
     if "axis" in node.attrs.keys():
