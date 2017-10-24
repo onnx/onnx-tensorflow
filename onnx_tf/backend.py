@@ -29,8 +29,8 @@ import tensorflow as tf
 
 # TODO: allow more flexible placement
 def get_device_option(device):
-  m = {DeviceType.CPU: '/cpu:0',
-       DeviceType.CUDA: '/gpu:0'}
+  m = {DeviceType.CPU: '/cpu',
+       DeviceType.CUDA: '/gpu'}
   return m[device.type]
 
 # TODO: Move this into ONNX main library
@@ -288,7 +288,7 @@ class TensorflowBackend(Backend):
     y = input_dict[node.inputs[1]]
     broadcast = node.attrs["broadcast"]
     if broadcast == 0:
-      warnings.warn("Definition of Div with broadcast disabled is incompatible"
+      warnings.warn("Definition of Sub with broadcast disabled is incompatible"
         "between onnx and tensorflow.", UserWarning)
     if "axis" in node.attrs.keys():
       warnings.warn("Unsupported axis attribute by Tensorflow in Sub."
