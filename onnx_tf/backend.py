@@ -300,6 +300,10 @@ class TensorflowBackend(Backend):
     values = [input_dict[a] for a in node.inputs]
     return [tf.reduce_sum(tf.stack(values), axis=0)]
 
+prepare = TensorflowBackend.prepare
+
 run_node = TensorflowBackend.run_node
 
 run_model = TensorflowBackend.run_model
+
+supports_device = TensorflowBackend.supports_device
