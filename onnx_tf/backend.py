@@ -257,14 +257,6 @@ class TensorflowBackend(Backend):
     return [tf.reshape(tensor, output_shape)]
 
   @classmethod
-  def handle_floor(cls, node, input_dict):
-    x = input_dict[node.inputs[0]]
-    if "alpha" in node.attrs.keys():
-      warnings.warn("Unsupported alpha attribute by Tensorflow in Floor."
-        "This attribute will be ignored.", UserWarning)
-    return [tf.nn.elu(x)]
-
-  @classmethod
   def handle_gemm(cls, node, input_dict):
     x = input_dict[node.inputs[0]]
     y = input_dict[node.inputs[1]]
@@ -278,7 +270,7 @@ class TensorflowBackend(Backend):
         "This attribute will be ignored and a default of 1 used.", UserWarning)
     alpha = node.attrs["alpha"] if "alpha" in node.attrs.keys() else 1.0
     beta = node.attrs["beta"] if "beta" in node.attrs.keys() else 1.0
-    return [alpha * tf.multiply(x, y) + beta * z]
+    return [alpha * tf.matmul(x, y) + beta * z]
 
   @classmethod
   def handle_global_average_pool(cls, node, input_dict):

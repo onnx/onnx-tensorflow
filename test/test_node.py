@@ -93,11 +93,11 @@ class TestStringMethods(unittest.TestCase):
     # Compute Y = alpha * A * B + beta * C
     node_def = helper.make_node("Gemm", ["A", "B", "C"], ["Y"],
       transA=0, transB=0, broadcast=1, alpha=1.0, beta=1.0)
-    x = self._get_rnd([10, 10])
-    y = self._get_rnd([10, 10])
-    z = self._get_rnd([10, 10])
+    x = np.floor(self._get_rnd([10, 10]))
+    y = np.floor(self._get_rnd([10, 10]))
+    z = np.floor(self._get_rnd([10, 10]))
     output = run_node(node_def, [x, y, z])
-    test_output = np.multiply(x, y) + z
+    test_output = np.matmul(x, y) + z
     np.testing.assert_almost_equal(output["Y"], test_output)
 
   def test_global_average_pool(self):
