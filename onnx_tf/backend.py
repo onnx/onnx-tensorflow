@@ -260,7 +260,7 @@ class TensorflowBackend(Backend):
   def handle_arg_max(cls, node, input_dict):
     data = input_dict[node.inputs[0]]
     axis = node.attrs["axis"]
-    keepdims = getattr(node.attrs, "keepdims", 1)
+    keepdims = node.attrs.get("keepdims", 1)
     if keepdims == 1:
       warnings.warn("Definition of ArgMax with keepdims enabled is "
                     "incompatible between onnx and tensorflow.",
@@ -271,7 +271,7 @@ class TensorflowBackend(Backend):
   def handle_arg_min(cls, node, input_dict):
     data = input_dict[node.inputs[0]]
     axis = node.attrs["axis"]
-    keepdims = getattr(node.attrs, "keepdims", 1)
+    keepdims = node.attrs.get("keepdims", 1)
     if keepdims == 1:
       warnings.warn("Definition of ArgMin with keepdims enabled is "
                     "incompatible between onnx and tensorflow.",
