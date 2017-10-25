@@ -5,6 +5,7 @@ from __future__ import unicode_literals
 
 import unittest
 import numpy as np
+import tensorflow as tf
 from onnx_tf.backend import run_node
 from onnx import helper
 from onnx.onnx_pb2 import TensorProto
@@ -13,8 +14,8 @@ class TestStringMethods(unittest.TestCase):
   """ Tests for ops
   """
 
-  def _get_rnd(self, shape):
-    return np.random.uniform(-1, 1, np.prod(shape)) \
+  def _get_rnd(self, shape, low=-1.0, high=1.0):
+    return np.random.uniform(low, high, np.prod(shape)) \
                       .reshape(shape) \
                       .astype(np.float32)
 
@@ -31,6 +32,116 @@ class TestStringMethods(unittest.TestCase):
     if x < 0.:
       return alpha * x
     return x
+
+  def test_abs(self):
+    node_def = helper.make_node("Abs", ["X"], ["Y"])
+    x = self._get_rnd([1000])
+    output = run_node(node_def, [x])
+    np.testing.assert_almost_equal(output["Y"], np.abs(x))
+
+  def test_add(self):
+    node_def = helper.make_node("Add", ["A", "B"], ["C"], broadcast=1)
+    a = self._get_rnd([10, 10])
+    b = self._get_rnd([10, 10])
+    output = run_node(node_def, [a, b])
+    np.testing.assert_almost_equal(output["C"], np.add(a, b))
+
+    node_def = helper.make_node("Add", ["A", "B"], ["C"], broadcast=1)
+    a = self._get_rnd([10, 10])
+    b = self._get_rnd([10,])
+    output = run_node(node_def, [a, b])
+    np.testing.assert_almost_equal(output["C"], np.add(a, b))
+
+  def test_arg_max(self):
+    for axis in [0, 1]:
+      node_def = helper.make_node("ArgMax", ["data"], ["reduced"],
+                                  axis=axis,
+                                  keepdims=0)
+      data = self._get_rnd([10, 10])
+      output = run_node(node_def, [data])
+      np.testing.assert_almost_equal(output["reduced"],
+                                     np.argmax(data, axis=axis))
+
+  def test_arg_min(self):
+    for axis in [0, 1]:
+      node_def = helper.make_node("ArgMin", ["data"], ["reduced"],
+                                  axis=axis, keepdims=0)
+      data = self._get_rnd([10, 10])
+      output = run_node(node_def, [data])
+      np.testing.assert_almost_equal(output["reduced"],
+                                     np.argmin(data, axis=axis))
+
+  def _batch_normalization(self, x, mean, variance, bias, scale,
+                           variance_epsilon):
+    inv = np.reciprocal(np.sqrt(variance + variance_epsilon))
+    if scale is not None:
+      inv *= scale
+    return x * inv + (bias - mean * inv
+                      if bias is not None else -mean * inv)
+
+  def test_batch_normalization(self):
+    node_def = helper.make_node("BatchNormalization",
+                                ["X", "scale", "bias", "mean", "var"],
+                                ["Y"],
+                                consumed_inputs=[0, 0, 0, 1, 1],
+                                epsilon=0.001)
+    x_shape = [3, 5, 4, 2]
+    param_shape = [2]
+    x = self._get_rnd(x_shape, 0, 1)
+    m = self._get_rnd(param_shape, 0, 1)
+    v = self._get_rnd(param_shape, 0, 1)
+    scale = self._get_rnd(param_shape, 0, 1)
+    bias = self._get_rnd(param_shape, 0, 1)
+    golden = self._batch_normalization(x, m, v, bias, scale, 0.001)
+    output = run_node(node_def, [x, scale, bias, m, v])
+    np.testing.assert_almost_equal(output["Y"], golden)
+
+  def test_cast(self):
+    for ty, tf_type in [("float", tf.float32),
+                        ("uint8", tf.uint8),
+                        ("int8", tf.int8),
+                        ("uint16", tf.uint16),
+                        ("int16", tf.int16),
+                        ("int32", tf.int32),
+                        ("int64", tf.int64),
+                        ("bool", tf.bool),
+                        ("float16", tf.float16),
+                        ("double", tf.float64),
+                        ("complex64", tf.complex64),
+                        ("complex128", tf.complex128)]:
+      node_def = helper.make_node("Cast", ["input"], ["output"],
+                                  to=ty)
+      vector = [2, 3]
+      output = run_node(node_def, [vector])
+      np.testing.assert_equal(output["output"].dtype, tf_type)
+
+  def test_ceil(self):
+    node_def = helper.make_node("Ceil", ["X"], ["Y"])
+    x = self._get_rnd([1000])
+    output = run_node(node_def, [x])
+    np.testing.assert_almost_equal(output["Y"], np.ceil(x))
+
+  def test_concat(self):
+    shape = [10, 20, 5]
+    for axis in xrange(len(shape)):
+      node_def = helper.make_node("Concat", ["X1", "X2"], ["Y"], axis=axis)
+      x1 = self._get_rnd(shape)
+      x2 = self._get_rnd(shape)
+      output = run_node(node_def, [x1, x2])
+      np.testing.assert_almost_equal(output["Y"],
+                                     np.concatenate((x1, x2), axis))
+
+  def test_constant(self):
+    shape = [10, 20, 9]
+    values = np.random.randn(*shape).flatten().astype(float)
+    const2_onnx = helper.make_tensor("const2",
+                                     TensorProto.FLOAT,
+                                     shape,
+                                     values)
+    node_def = helper.make_node("Constant", [], ["Y"], value=const2_onnx)
+    output = run_node(node_def, [])
+    np.testing.assert_equal(output["Y"].shape, shape)
+    np.testing.assert_almost_equal(output["Y"].flatten(), values)
 
   def test_div(self):
     node_def = helper.make_node("Div", ["X", "Y"], ["Z"], broadcast=1)

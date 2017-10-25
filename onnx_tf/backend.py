@@ -102,11 +102,15 @@ class TensorflowBackend(Backend):
       "axes": "axis",
       "keepdims": "keep_dims",
       "axis": "dim",
+      "to": "dtype",
   }
 
   onnx_tf_per_op_attr_map = {}
 
   onnx_tf_op_map = {
+      "abs": tf.abs,
+      "cast": tf.cast,
+      "ceil": tf.ceil,
       "relu": tf.nn.relu,
       "dot": tf.contrib.keras.backend.dot,
       "exp": tf.exp,
@@ -151,9 +155,28 @@ class TensorflowBackend(Backend):
       # TensorProto.UINT64: tf.uint64,
   }
 
+  type_string_to_tf_type = {
+      "float": tf.float32,
+      "uint8": tf.uint8,
+      "int8": tf.int8,
+      "uint16": tf.uint16,
+      "int16": tf.int16,
+      "int32": tf.int32,
+      "int64": tf.int64,
+      "bool": tf.bool,
+      "float16": tf.float16,
+      "double": tf.float64,
+      "complex64": tf.complex64,
+      "complex128": tf.complex128,
+      # TODO: uncomment this in the future
+      # "uint32": tf.uint32,
+      # "uint64": tf.uint64,
+  }
+
   attr_translator = {
       "dtype": lambda cls, x: cls.tensor_type_to_tf_type[x],
       "keepdims": lambda cls, x: bool(x),
+      "to": lambda cls, x: cls.type_string_to_tf_type[x],
   }
 
   @classmethod
@@ -219,6 +242,77 @@ class TensorflowBackend(Backend):
     inputs = [input_dict[name] for name in node.inputs]
     return [cls.onnx_tf_op_map[cls.op_name_to_lower(node.op_type)] \
       (*inputs, **attrs)]
+
+  @classmethod
+  def handle_add(cls, node, input_dict):
+    x = input_dict[node.inputs[0]]
+    y = input_dict[node.inputs[1]]
+    broadcast = node.attrs["broadcast"]
+    if broadcast == 0:
+      warnings.warn("Definition of Add with broadcast disabled is incompatible"
+                    "between onnx and tensorflow.", UserWarning)
+    if "axis" in node.attrs.keys():
+      warnings.warn("Unsupported axis attribute by Tensorflow in Add."
+                    "This attribute will be ignored.", UserWarning)
+    return [tf.add(x, y)]
+
+  @classmethod
+  def handle_arg_max(cls, node, input_dict):
+    data = input_dict[node.inputs[0]]
+    axis = node.attrs["axis"]
+    keepdims = node.attrs.get("keepdims", 1)
+    if keepdims == 1:
+      warnings.warn("Definition of ArgMax with keepdims enabled is "
+                    "incompatible between onnx and tensorflow.",
+                    UserWarning)
+    return [tf.argmax(data, axis=axis)]
+
+  @classmethod
+  def handle_arg_min(cls, node, input_dict):
+    data = input_dict[node.inputs[0]]
+    axis = node.attrs["axis"]
+    keepdims = node.attrs.get("keepdims", 1)
+    if keepdims == 1:
+      warnings.warn("Definition of ArgMin with keepdims enabled is "
+                    "incompatible between onnx and tensorflow.",
+                    UserWarning)
+    return [tf.argmin(data, axis=axis)]
+
+  @classmethod
+  def handle_batch_normalization(cls, node, input_dict):
+    x = input_dict[node.inputs[0]]
+    scale = input_dict[node.inputs[1]]
+    bias = input_dict[node.inputs[2]]
+    mean = input_dict[node.inputs[3]]
+    variance = input_dict[node.inputs[4]]
+    variance_epsilon = node.attrs["epsilon"]
+    if "is_test" in node.attrs.keys():
+      warnings.warn("Unsupported is_test attribute by Tensorflow in "
+                    "batch_normalization. This attribute will be ignored.",
+                    UserWarning)
+    if "momentum" in node.attrs.keys():
+      warnings.warn("Unsupported momentum attribute by Tensorflow in "
+                    "batch_normalization. This attribute will be ignored.",
+                    UserWarning)
+    if "spatial" in node.attrs.keys():
+      warnings.warn("Unsupported spatial attribute by Tensorflow in "
+                    "batch_normalization. This attribute will be ignored.",
+                    UserWarning)
+    return [tf.nn.batch_normalization(x, mean, variance, bias, scale,
+                                      variance_epsilon)]
+
+  @classmethod
+  def handle_concat(cls, node, input_dict):
+    values = [input_dict[a] for a in node.inputs]
+    axis = node.attrs["axis"]
+    return [tf.concat(values, axis=axis)]
+
+  @classmethod
+  def handle_constant(cls, node, input_dict):
+    value = node.attrs["value"]
+    elements = onnx.numpy_helper.to_array(value).flatten().tolist()
+    dtype = cls.tensor_type_to_tf_type[value.data_type]
+    return [tf.constant(elements, dtype=dtype, shape=value.dims)]
 
   @classmethod
   def handle_div(cls, node, input_dict):
