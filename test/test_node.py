@@ -87,14 +87,14 @@ class TestStringMethods(unittest.TestCase):
                                 epsilon=0.001)
     x_shape = [3, 5, 4, 2]
     param_shape = [2]
-    x = np.random.random_sample(x_shape).astype(np.float32)
-    m = np.random.random_sample(param_shape).astype(np.float32)
-    v = np.random.random_sample(param_shape).astype(np.float32)
-    scale = np.random.random_sample(param_shape).astype(np.float32)
-    bias = np.random.random_sample(param_shape).astype(np.float32)
-    base = self._batch_normalization(x, m, v, bias, scale, 0.001)
+    x = self._get_rnd(x_shape, 0, 1)
+    m = self._get_rnd(param_shape, 0, 1)
+    v = self._get_rnd(param_shape, 0, 1)
+    scale = self._get_rnd(param_shape, 0, 1)
+    bias = self._get_rnd(param_shape, 0, 1)
+    golden = self._batch_normalization(x, m, v, bias, scale, 0.001)
     output = run_node(node_def, [x, scale, bias, m, v])
-    np.testing.assert_almost_equal(output["Y"], base)
+    np.testing.assert_almost_equal(output["Y"], golden)
 
   def test_cast(self):
     for ty, tf_type in [("float", tf.float32),

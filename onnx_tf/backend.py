@@ -102,12 +102,14 @@ class TensorflowBackend(Backend):
       "axes": "axis",
       "keepdims": "keep_dims",
       "axis": "dim",
+      "to": "dtype",
   }
 
   onnx_tf_per_op_attr_map = {}
 
   onnx_tf_op_map = {
       "abs": tf.abs,
+      "cast": tf.cast,
       "relu": tf.nn.relu,
       "dot": tf.contrib.keras.backend.dot,
       "exp": tf.exp,
@@ -173,6 +175,7 @@ class TensorflowBackend(Backend):
   attr_translator = {
       "dtype": lambda cls, x: cls.tensor_type_to_tf_type[x],
       "keepdims": lambda cls, x: bool(x),
+      "to": lambda cls, x: cls.type_string_to_tf_type[x],
   }
 
   @classmethod
@@ -256,20 +259,22 @@ class TensorflowBackend(Backend):
   def handle_arg_max(cls, node, input_dict):
     data = input_dict[node.inputs[0]]
     axis = node.attrs["axis"]
-    keepdims = node.attrs["keepdims"]
+    keepdims = getattr(node.attrs, "keepdims", 1)
     if keepdims == 1:
-      warnings.warn("Definition of ArgMax with keepdims enabled is incompatible"
-                    "between onnx and tensorflow.", UserWarning)
+      warnings.warn("Definition of ArgMax with keepdims enabled is "
+                    "incompatible between onnx and tensorflow.",
+                    UserWarning)
     return [tf.argmax(data, axis=axis)]
 
   @classmethod
   def handle_arg_min(cls, node, input_dict):
     data = input_dict[node.inputs[0]]
     axis = node.attrs["axis"]
-    keepdims = node.attrs["keepdims"]
+    keepdims = getattr(node.attrs, "keepdims", 1)
     if keepdims == 1:
-      warnings.warn("Definition of ArgMin with keepdims enabled is incompatible"
-                    "between onnx and tensorflow.", UserWarning)
+      warnings.warn("Definition of ArgMin with keepdims enabled is "
+                    "incompatible between onnx and tensorflow.",
+                    UserWarning)
     return [tf.argmin(data, axis=axis)]
 
   @classmethod
@@ -281,15 +286,15 @@ class TensorflowBackend(Backend):
     variance = input_dict[node.inputs[4]]
     variance_epsilon = node.attrs["epsilon"]
     if "is_test" in node.attrs.keys():
-      warnings.warn("Unsupported is_test attribute by Tensorflow in"
+      warnings.warn("Unsupported is_test attribute by Tensorflow in "
                     "batch_normalization. This attribute will be ignored.",
                     UserWarning)
     if "momentum" in node.attrs.keys():
-      warnings.warn("Unsupported momentum attribute by Tensorflow in"
+      warnings.warn("Unsupported momentum attribute by Tensorflow in "
                     "batch_normalization. This attribute will be ignored.",
                     UserWarning)
     if "spatial" in node.attrs.keys():
-      warnings.warn("Unsupported spatial attribute by Tensorflow in"
+      warnings.warn("Unsupported spatial attribute by Tensorflow in "
                     "batch_normalization. This attribute will be ignored.",
                     UserWarning)
     return [tf.nn.batch_normalization(x, mean, variance, bias, scale,
