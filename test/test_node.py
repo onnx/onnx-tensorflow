@@ -18,6 +18,218 @@ class TestStringMethods(unittest.TestCase):
                       .reshape(shape) \
                       .astype(np.float32)
 
+  def _elu(self, x):
+    # f(x) = alpha * (exp(x) - 1.) for x < 0,
+    # f(x) = x for x >= 0
+    if x < 0.:
+      return np.expm1(x)
+    return x
+
+  def _leaky_relu(self, x, alpha):
+    # f(x) = alpha * x for x < 0,
+    # f(x) = x for x >= 0
+    if x < 0.:
+      return alpha * x
+    return x
+
+  def test_div(self):
+    node_def = helper.make_node("Div", ["X", "Y"], ["Z"], broadcast=1)
+    x = self._get_rnd([10, 10])
+    y = self._get_rnd([10, 10])
+    output = run_node(node_def, [x, y])
+    np.testing.assert_almost_equal(output["Z"], np.divide(x, y))
+
+  def test_dot(self):
+    node_def = helper.make_node("Dot", ["X", "Y"], ["Z"])
+    x = np.floor(self._get_rnd([10, 10]));
+    y = np.floor(self._get_rnd([10, 10]));
+    output = run_node(node_def, [x, y])
+    np.testing.assert_almost_equal(output["Z"], np.dot(x, y))
+
+  def test_elu(self):
+    node_def = helper.make_node("Elu", ["X"], ["Y"])
+    x = self._get_rnd([100])
+    output = run_node(node_def, [x])
+    test_output = [self._elu(a) for a in x];
+    np.testing.assert_almost_equal(output["Y"], test_output)
+
+  def test_exp(self):
+    node_def = helper.make_node("Exp", ["X"], ["Y"])
+    x = self._get_rnd([100])
+    x = x - 3.6;
+    output = run_node(node_def, [x])
+    np.testing.assert_almost_equal(output["Y"], np.exp(x))
+
+  def test_flatten(self):
+    # If input tensor has shape (d_0, d_1, ... d_n) then the
+    # output will have shape:
+    #
+    # (d_0 X d_1 ... d_(axis-1), d_axis X d_(axis+1) ... X dn)
+    #
+    # TODO: pass axis attribute which is supported in newer
+    # versions of onnx
+    node_def = helper.make_node("Flatten", ["X"], ["Y"])
+    x = self._get_rnd([10, 2, 3, 4, 5])
+    output = run_node(node_def, [x])
+    # TODO: pass axis=3 and uncomment the line below
+    # np.testing.assert_almost_equal(output["Y"], x.reshape([60, 20]))
+    np.testing.assert_almost_equal(output["Y"], x.reshape([10, 120]))
+
+  def test_gather(self):
+    node_def = helper.make_node("Gather", ["X", "Y"], ["Z"])
+    x = self._get_rnd([10, 10])
+    y = [[0, 1], [1, 2]]
+    output = run_node(node_def, [x, y])
+    test_output = np.zeros((2, 2, 10))
+    for i in range(0, 2):
+      for j in range(0, 10):
+        test_output[0][i][j] = x[i][j]
+    for i in range(0, 2):
+      for j in range(0, 10):
+        test_output[1][i][j] = x[i + 1][j]
+    np.testing.assert_almost_equal(output["Z"], test_output)
+
+  def test_gemm(self):
+    # Compute Y = alpha * A * B + beta * C
+    node_def = helper.make_node("Gemm", ["A", "B", "C"], ["Y"],
+      transA=0, transB=0, broadcast=1, alpha=1.0, beta=1.0)
+    x = np.floor(self._get_rnd([10, 10]))
+    y = np.floor(self._get_rnd([10, 10]))
+    z = np.floor(self._get_rnd([10, 10]))
+    output = run_node(node_def, [x, y, z])
+    test_output = np.matmul(x, y) + z
+    np.testing.assert_almost_equal(output["Y"], test_output)
+
+  def test_global_average_pool(self):
+    #   Image case:  (N x C x H x W), where N is the batch size,
+    # C is the number of channels, and H and W are the height
+    # and the width of the data
+    #
+    #   Non-image case: (N x C x D1 x D2 ... Dn)
+    #
+    #   Output data tensor from pooling across the input tensor.
+    # Dimensions will be N x C x 1 x 1
+    node_def = helper.make_node("GlobalAveragePool", ["X"], ["Y"])
+    x = self._get_rnd([10, 10, 2, 3])
+    output = run_node(node_def, [x])
+    test_output = np.zeros([10, 10, 1, 1])
+    for i1 in range(0, 10):
+      for i2 in range(0, 10):
+        sum = 0
+        for j1 in range(0, 2):
+          for j2 in range(0, 3):
+            sum += x[i1][i2][j1][j2]
+        test_output[i1][i2][0][0] = sum / 6.
+    np.testing.assert_almost_equal(output["Y"], test_output)
+
+  def test_global_max_pool(self):
+    #   Image case:  (N x C x H x W), where N is the batch size,
+    # C is the number of channels, and H and W are the height
+    # and the width of the data
+    #
+    #   Non-image case: (N x C x D1 x D2 ... Dn)
+    #
+    #   Output data tensor from pooling across the input tensor.
+    # Dimensions will be N x C x 1 x 1
+    node_def = helper.make_node("GlobalMaxPool", ["X"], ["Y"])
+    x = self._get_rnd([10, 10, 2, 3])
+    output = run_node(node_def, [x])
+    test_output = np.zeros([10, 10, 1, 1])
+    for i1 in range(0, 10):
+      for i2 in range(0, 10):
+        max = x[i1][i2][0][0]
+        for j1 in range(0, 2):
+          for j2 in range(0, 3):
+            if max < x[i1][i2][j1][j2]:
+              max = x[i1][i2][j1][j2]
+        test_output[i1][i2][0][0] = max
+    np.testing.assert_almost_equal(output["Y"], test_output)
+
+  def test_l_r_n(self):
+    # Each input value is divided by:
+    #
+    # (bias+(alpha/size)*sum(xi^2 for every xi in the local region))^beta
+    alpha = 2.0
+    beta = 1.0
+    bias = 5.0
+    size = 3
+    node_def = helper.make_node("LRN", ["X"], ["Y"], alpha=alpha,
+      beta=beta, bias=bias, size=size)
+    x = self._get_rnd([10, 10, 2, 10])
+    output = run_node(node_def, [x])
+    test_output = np.zeros([10, 10, 2, 10])
+    for i1 in range(0, 10):
+      for i2 in range(0, 10):
+        for j1 in range(0, 2):
+          for j2 in range(0, 10):
+            sqr_sum = 0.;
+            # size of 3 means radius 1 in TF speak
+            # i.e. the immediate neighbouring values
+            # if "previous" neighbour exists
+            if j2 > 0:
+              sqr_sum += x[i1][i2][j1][j2 - 1] * x[i1][i2][j1][j2 - 1]
+            # current value
+            sqr_sum += x[i1][i2][j1][j2] * x[i1][i2][j1][j2]
+            # if "next" neighbour exists
+            if j2 < 10 - 1:
+              sqr_sum += x[i1][i2][j1][j2 + 1] * x[i1][i2][j1][j2 + 1]
+            test_output[i1][i2][j1][j2] = \
+              x[i1][i2][j1][j2] / ((bias + (alpha * 1. / size) * sqr_sum) ** beta)
+    np.testing.assert_almost_equal(output["Y"], test_output)
+
+  def test_floor(self):
+    node_def = helper.make_node("Floor", ["X"], ["Y"])
+    x = self._get_rnd([100])
+    output = run_node(node_def, [x])
+    np.testing.assert_almost_equal(output["Y"], np.floor(x))
+
+  def test_leakyrelu(self):
+    node_def = helper.make_node("LeakyRelu", ["X"], ["Y"], alpha=2.0)
+    x = np.floor(self._get_rnd([100]))
+    output = run_node(node_def, [x])
+    test_output = [self._leaky_relu(a, 2.0) for a in x]
+    np.testing.assert_almost_equal(output["Y"], test_output)
+
+  def test_log(self):
+    node_def = helper.make_node("Log", ["X"], ["Y"])
+    x = self._get_rnd([100])
+    x = x + 3.6;
+    output = run_node(node_def, [x])
+    np.testing.assert_almost_equal(output["Y"], np.log(x))
+
+  def test_max(self):
+    node_def = helper.make_node("Max", ["X1", "X2", "X3", "X4"], ["Z"])
+    x1 = self._get_rnd([10, 10])
+    x2 = self._get_rnd([10, 10])
+    x3 = self._get_rnd([10, 10])
+    x4 = self._get_rnd([10, 10])
+    output = run_node(node_def, [x1, x2, x3, x4])
+    test_output = np.maximum(np.maximum(np.maximum(x1, x2), x3), x4)
+    np.testing.assert_almost_equal(output["Z"], test_output)
+
+  def test_min(self):
+    node_def = helper.make_node("Min", ["X1", "X2", "X3", "X4"], ["Z"])
+    x1 = self._get_rnd([10, 10])
+    x2 = self._get_rnd([10, 10])
+    x3 = self._get_rnd([10, 10])
+    x4 = self._get_rnd([10, 10])
+    output = run_node(node_def, [x1, x2, x3, x4])
+    test_output = np.minimum(np.minimum(np.minimum(x1, x2), x3), x4)
+    np.testing.assert_almost_equal(output["Z"], test_output)
+
+  def test_mul(self):
+    node_def = helper.make_node("Mul", ["X", "Y"], ["Z"], broadcast=1)
+    x = self._get_rnd([10, 10])
+    y = self._get_rnd([10, 10])
+    output = run_node(node_def, [x, y])
+    np.testing.assert_almost_equal(output["Z"], np.multiply(x, y))
+
+  def test_neg(self):
+    node_def = helper.make_node("Neg", ["X"], ["Y"])
+    x = self._get_rnd([1000])
+    output = run_node(node_def, [x])
+    np.testing.assert_almost_equal(output["Y"], np.negative(x))
+
   def test_relu(self):
     node_def = helper.make_node("Relu", ["X"], ["Y"])
     x = self._get_rnd([1000])

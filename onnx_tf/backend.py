@@ -108,6 +108,12 @@ class TensorflowBackend(Backend):
 
   onnx_tf_op_map = {
       "relu": tf.nn.relu,
+      "dot": tf.contrib.keras.backend.dot,
+      "exp": tf.exp,
+      "floor": tf.floor,
+      "gather": tf.gather,
+      "log": tf.log,
+      "neg": tf.negative,
       "pow": tf.pow,
       "random_normal": tf.random_normal,
       "random_uniform": tf.random_uniform,
@@ -213,6 +219,122 @@ class TensorflowBackend(Backend):
     inputs = [input_dict[name] for name in node.inputs]
     return [cls.onnx_tf_op_map[cls.op_name_to_lower(node.op_type)] \
       (*inputs, **attrs)]
+
+  @classmethod
+  def handle_div(cls, node, input_dict):
+    x = input_dict[node.inputs[0]]
+    y = input_dict[node.inputs[1]]
+    broadcast = node.attrs["broadcast"]
+    if broadcast == 0:
+      warnings.warn("Definition of Div with broadcast disabled is incompatible"
+        "between onnx and tensorflow.", UserWarning)
+    if "axis" in node.attrs.keys():
+      warnings.warn("Unsupported alpha attribute by Tensorflow in Div."
+        "This attribute will be ignored.", UserWarning)
+    return [tf.divide(x, y)]
+
+  @classmethod
+  def handle_dropout(cls, node, input_dict):
+    x = input_dict[nodse.inputs[0]]
+    # Not supported by TF
+    is_test = node.attrs["is_test"] if "is_test" in node.attrs.keys() else 0
+    if is_test != 0:
+      warnings.warn("Unsupported is_test attribute by Tensorflow in Dropout."
+        "This attribute will be ignored.", UserWarning)
+    ratio = node.attrs["ratio"] if "ratio" in node.attrs.keys() else 0.5
+    return [tf.nn.dropout(x, 1 - ratio)]
+
+  @classmethod
+  def handle_elu(cls, node, input_dict):
+    x = input_dict[node.inputs[0]]
+    if "alpha" in node.attrs.keys():
+      warnings.warn("Unsupported alpha attribute by Tensorflow in Elu."
+        "This attribute will be ignored.", UserWarning)
+    return [tf.nn.elu(x)]
+
+  @classmethod
+  def handle_flatten(cls, node, input_dict):
+    tensor = input_dict[node.inputs[0]]
+    axis = node.attrs["axis"] if "axis" in node.attrs.keys() else 1
+    shape = tf.shape(tensor)
+    split0, split1 = tf.split(shape, [axis, tf.size(shape) - axis])
+    split0 = tf.reduce_prod(split0)
+    split1 = tf.reduce_prod(split1)
+    output_shape = tf.stack([split0, split1])
+    return [tf.reshape(tensor, output_shape)]
+
+  @classmethod
+  def handle_gemm(cls, node, input_dict):
+    x = input_dict[node.inputs[0]]
+    y = input_dict[node.inputs[1]]
+    z = input_dict[node.inputs[2]]
+    if "transA" in node.attrs.keys() and node.attrs["transA"] == 1:
+      x = tf.transpose(x)
+    if "transB" in node.attrs.keys() and node.attrs["transB"] == 1:
+      y = tf.transpose(y)
+    alpha = node.attrs["alpha"] if "alpha" in node.attrs.keys() else 1.0
+    beta = node.attrs["beta"] if "beta" in node.attrs.keys() else 1.0
+    return [alpha * tf.matmul(x, y) + beta * z]
+
+  @classmethod
+  def handle_global_average_pool(cls, node, input_dict):
+    x = input_dict[node.inputs[0]]
+    shape = tf.shape(x)
+    _, window_shape = tf.split(shape, [2, tf.size(shape) - 2])
+    return [tf.reduce_mean(x, axis=window_shape, keep_dims=True)]
+
+  @classmethod
+  def handle_global_max_pool(cls, node, input_dict):
+    x = input_dict[node.inputs[0]]
+    shape = tf.shape(x)
+    _, window_shape = tf.split(shape, [2, tf.size(shape) - 2])
+    return [tf.reduce_max(x, axis=window_shape, keep_dims=True)]
+
+  @classmethod
+  def handle_l_r_n(cls, node, input_dict):
+    x = input_dict[node.inputs[0]]
+    alpha = node.attrs["alpha"]
+    beta = node.attrs["beta"]
+    bias = node.attrs["bias"]
+    size = node.attrs["size"]
+    tf_alpha = alpha * 1.0 / size
+    depth_radius = np.floor([(size - 1) / 2.0])[0]
+    return [tf.nn.lrn(x, depth_radius=depth_radius,
+      bias=bias, alpha=tf_alpha, beta=beta)]
+
+  @classmethod
+  def handle_leaky_relu(cls, node, input_dict):
+    x = input_dict[node.inputs[0]]
+    if not "alpha" in node.attrs.keys():
+      warnings.warn("Provide an alpha value.", UserWarning)
+      alpha = 1.0
+    else:
+      alpha = node.attrs["alpha"]
+    tf_op = tf.nn.relu(x) - alpha * tf.nn.relu(-x)
+    return [tf_op]
+
+  @classmethod
+  def handle_max(cls, node, input_dict):
+    values = [input_dict[a] for a in node.inputs]
+    return [tf.reduce_max(tf.stack(values), axis=0)]
+
+  @classmethod
+  def handle_min(cls, node, input_dict):
+    values = [input_dict[a] for a in node.inputs]
+    return [tf.reduce_min(tf.stack(values), axis=0)]
+
+  @classmethod
+  def handle_mul(cls, node, input_dict):
+    x = input_dict[node.inputs[0]]
+    y = input_dict[node.inputs[1]]
+    broadcast = node.attrs["broadcast"]
+    if broadcast == 0:
+      warnings.warn("Definition of Mul with broadcast disabled is incompatible"
+        "between onnx and tensorflow.", UserWarning)
+    if "axis" in node.attrs.keys():
+      warnings.warn("Unsupported alpha attribute by Tensorflow in Mul."
+        "This attribute will be ignored.", UserWarning)
+    return [tf.multiply(x, y)]
 
   @classmethod
   def handle_p_relu(cls, node, input_dict):
