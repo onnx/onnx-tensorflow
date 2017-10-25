@@ -100,6 +100,83 @@ class TestStringMethods(unittest.TestCase):
     test_output = np.multiply(x, y) + z
     np.testing.assert_almost_equal(output["Y"], test_output)
 
+  def test_global_average_pool(self):
+    #   Image case:  (N x C x H x W), where N is the batch size,
+    # C is the number of channels, and H and W are the height
+    # and the width of the data
+    #
+    #   Non-image case: (N x C x D1 x D2 ... Dn)
+    #
+    #   Output data tensor from pooling across the input tensor.
+    # Dimensions will be N x C x 1 x 1
+    node_def = helper.make_node("GlobalAveragePool", ["X"], ["Y"])
+    x = self._get_rnd([10, 10, 2, 3])
+    output = run_node(node_def, [x])
+    test_output = np.zeros([10, 10, 1, 1])
+    for i1 in range(0, 10):
+      for i2 in range(0, 10):
+        sum = 0
+        for j1 in range(0, 2):
+          for j2 in range(0, 3):
+            sum += x[i1][i2][j1][j2]
+        test_output[i1][i2][0][0] = sum / 6.
+    np.testing.assert_almost_equal(output["Y"], test_output)
+
+  def test_global_max_pool(self):
+    #   Image case:  (N x C x H x W), where N is the batch size,
+    # C is the number of channels, and H and W are the height
+    # and the width of the data
+    #
+    #   Non-image case: (N x C x D1 x D2 ... Dn)
+    #
+    #   Output data tensor from pooling across the input tensor.
+    # Dimensions will be N x C x 1 x 1
+    node_def = helper.make_node("GlobalMaxPool", ["X"], ["Y"])
+    x = self._get_rnd([10, 10, 2, 3])
+    output = run_node(node_def, [x])
+    test_output = np.zeros([10, 10, 1, 1])
+    for i1 in range(0, 10):
+      for i2 in range(0, 10):
+        max = x[i1][i2][0][0]
+        for j1 in range(0, 2):
+          for j2 in range(0, 3):
+            if max < x[i1][i2][j1][j2]:
+              max = x[i1][i2][j1][j2]
+        test_output[i1][i2][0][0] = max
+    np.testing.assert_almost_equal(output["Y"], test_output)
+
+  def test_l_r_n(self):
+    # Each input value is divided by:
+    #
+    # (bias+(alpha/size)*sum(xi^2 for every xi in the local region))^beta
+    alpha = 2.0
+    beta = 1.0
+    bias = 5.0
+    size = 3
+    node_def = helper.make_node("LRN", ["X"], ["Y"], alpha=alpha,
+      beta=beta, bias=bias, size=size)
+    x = self._get_rnd([10, 10, 2, 10])
+    output = run_node(node_def, [x])
+    test_output = np.zeros([10, 10, 2, 10])
+    for i1 in range(0, 10):
+      for i2 in range(0, 10):
+        for j1 in range(0, 2):
+          for j2 in range(0, 10):
+            sqr_sum = 0.;
+            # size of 3 means radius 1 in TF speak
+            # i.e. the immediate neighbouring values
+            # if "previous" neighbour exists
+            if j2 > 0:
+              sqr_sum += x[i1][i2][j1][j2 - 1] * x[i1][i2][j1][j2 - 1]
+            # current value
+            sqr_sum += x[i1][i2][j1][j2] * x[i1][i2][j1][j2]
+            # if "next" neighbour exists
+            if j2 < 10 - 1:
+              sqr_sum += x[i1][i2][j1][j2 + 1] * x[i1][i2][j1][j2 + 1]
+            test_output[i1][i2][j1][j2] = \
+              x[i1][i2][j1][j2] / ((bias + (alpha * 1. / size) * sqr_sum) ** beta)
+    np.testing.assert_almost_equal(output["Y"], test_output)
+
   def test_floor(self):
     node_def = helper.make_node("Floor", ["X"], ["Y"])
     x = self._get_rnd([100])

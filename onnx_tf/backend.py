@@ -281,6 +281,32 @@ class TensorflowBackend(Backend):
     return [alpha * tf.multiply(x, y) + beta * z]
 
   @classmethod
+  def handle_global_average_pool(cls, node, input_dict):
+    x = input_dict[node.inputs[0]]
+    shape = tf.shape(x)
+    _, window_shape = tf.split(shape, [2, tf.size(shape) - 2])
+    return [tf.reduce_mean(x, axis=window_shape, keep_dims=True)]
+
+  @classmethod
+  def handle_global_max_pool(cls, node, input_dict):
+    x = input_dict[node.inputs[0]]
+    shape = tf.shape(x)
+    _, window_shape = tf.split(shape, [2, tf.size(shape) - 2])
+    return [tf.reduce_max(x, axis=window_shape, keep_dims=True)]
+
+  @classmethod
+  def handle_l_r_n(cls, node, input_dict):
+    x = input_dict[node.inputs[0]]
+    alpha = node.attrs["alpha"]
+    beta = node.attrs["beta"]
+    bias = node.attrs["bias"]
+    size = node.attrs["size"]
+    tf_alpha = alpha * 1.0 / size
+    depth_radius = np.floor([(size - 1) / 2.0])[0]
+    return [tf.nn.lrn(x, depth_radius=depth_radius,
+      bias=bias, alpha=tf_alpha, beta=beta)]
+
+  @classmethod
   def handle_leaky_relu(cls, node, input_dict):
     x = input_dict[node.inputs[0]]
     if not "alpha" in node.attrs.keys():
