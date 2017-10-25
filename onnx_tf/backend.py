@@ -314,7 +314,12 @@ class TensorflowBackend(Backend):
     dtype = cls.tensor_type_to_tf_type[value.data_type]
     return [tf.constant(elements, dtype=dtype, shape=value.dims)]
 
+  @classmethod
   def handle_div(cls, node, input_dict):
+    x = input_dict[node.inputs[0]]
+    y = input_dict[node.inputs[1]]
+    broadcast = node.attrs["broadcast"]
+    if broadcast == 0:
       warnings.warn("Definition of Div with broadcast disabled is incompatible"
         "between onnx and tensorflow.", UserWarning)
     if "axis" in node.attrs.keys():
