@@ -14,8 +14,8 @@ class TestStringMethods(unittest.TestCase):
   """ Tests for ops
   """
 
-  def _get_rnd(self, shape):
-    return np.random.uniform(-1, 1, np.prod(shape)) \
+  def _get_rnd(self, shape, low=-1.0, high=1.0):
+    return np.random.uniform(low, high, np.prod(shape)) \
                       .reshape(shape) \
                       .astype(np.float32)
 
@@ -114,6 +114,34 @@ class TestStringMethods(unittest.TestCase):
       vector = [2, 3]
       output = run_node(node_def, [vector])
       np.testing.assert_equal(output["output"].dtype, tf_type)
+
+  def test_ceil(self):
+    node_def = helper.make_node("Ceil", ["X"], ["Y"])
+    x = self._get_rnd([1000])
+    output = run_node(node_def, [x])
+    np.testing.assert_almost_equal(output["Y"], np.ceil(x))
+
+  def test_concat(self):
+    shape = [10, 20, 5]
+    for axis in xrange(len(shape)):
+      node_def = helper.make_node("Concat", ["X1", "X2"], ["Y"], axis=axis)
+      x1 = self._get_rnd(shape)
+      x2 = self._get_rnd(shape)
+      output = run_node(node_def, [x1, x2])
+      np.testing.assert_almost_equal(output["Y"],
+                                     np.concatenate((x1, x2), axis))
+
+  def test_constant(self):
+    shape = [10, 20, 9]
+    values = np.random.randn(*shape).flatten().astype(float)
+    const2_onnx = helper.make_tensor("const2",
+                                     TensorProto.FLOAT,
+                                     shape,
+                                     values)
+    node_def = helper.make_node("Constant", [], ["Y"], value=const2_onnx)
+    output = run_node(node_def, [])
+    np.testing.assert_equal(output["Y"].shape, shape)
+    np.testing.assert_almost_equal(output["Y"].flatten(), values)
 
   def test_div(self):
     node_def = helper.make_node("Div", ["X", "Y"], ["Z"], broadcast=1)

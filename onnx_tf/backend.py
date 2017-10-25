@@ -110,6 +110,7 @@ class TensorflowBackend(Backend):
   onnx_tf_op_map = {
       "abs": tf.abs,
       "cast": tf.cast,
+      "ceil": tf.ceil,
       "relu": tf.nn.relu,
       "dot": tf.contrib.keras.backend.dot,
       "exp": tf.exp,
@@ -301,10 +302,17 @@ class TensorflowBackend(Backend):
                                       variance_epsilon)]
 
   @classmethod
-  def handle_cast(cls, node, input_dict):
-    input = input_dict[node.inputs[0]]
-    dtype = cls.type_string_to_tf_type[node.attrs["to"]]
-    return [tf.cast(input, dtype)]
+  def handle_concat(cls, node, input_dict):
+    values = [input_dict[a] for a in node.inputs]
+    axis = node.attrs["axis"]
+    return [tf.concat(values, axis=axis)]
+
+  @classmethod
+  def handle_constant(cls, node, input_dict):
+    value = node.attrs["value"]
+    elements = onnx.numpy_helper.to_array(value).flatten().tolist()
+    dtype = cls.tensor_type_to_tf_type[value.data_type]
+    return [tf.constant(elements, dtype=dtype, shape=value.dims)]
 
   def handle_div(cls, node, input_dict):
       warnings.warn("Definition of Div with broadcast disabled is incompatible"
