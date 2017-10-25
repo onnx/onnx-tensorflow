@@ -265,9 +265,6 @@ class TensorflowBackend(Backend):
       x = tf.transpose(x)
     if "transB" in node.attrs.keys() and node.attrs["transB"] == 1:
       y = tf.transpose(y)
-    if "broadcast" in node.attrs.keys() and node.attrs["broadcast"] == 0:
-      warnings.warn("Unsupported disabling of broadcast in Gemm."
-        "This attribute will be ignored and a default of 1 used.", UserWarning)
     alpha = node.attrs["alpha"] if "alpha" in node.attrs.keys() else 1.0
     beta = node.attrs["beta"] if "beta" in node.attrs.keys() else 1.0
     return [alpha * tf.matmul(x, y) + beta * z]
