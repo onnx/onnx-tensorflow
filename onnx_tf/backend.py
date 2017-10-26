@@ -318,7 +318,6 @@ class TensorflowBackend(Backend):
     #    - strides
     # `dilations` is not supported by Tensorflow.
     # `pads` is replaced with Tensorflow's "SAME" padding.
-    # Only 3D and 4D tensors are supported natively by TF.
     x = input_dict[node.inputs[0]]
     if "dilations" in node.attrs.keys():
       dilations = node.attrs["dilations"]
@@ -337,13 +336,13 @@ class TensorflowBackend(Backend):
     if len(kernel_shape) == 4:
       return [tf.nn.max_pool(x, ksize=kernel_shape,
         strides=strides, padding="SAME")]
-    elif len(kernel_shape) == 3:
+    elif len(kernel_shape) >= 5:
       return [tf.nn.max_pool3d(x, ksize=kernel_shape,
         strides=strides, padding="SAME")]
     else:
       # TODO: do pooling using other TF operations.
-      warnings.warn("Max pool on non 3D or 4D tensors not natively"
-        " supported by Tensorflow.", UserWarning)
+      warnings.warn("Max pool not supported for this tensor size",
+        UserWarning)
       return []
 
   @classmethod
