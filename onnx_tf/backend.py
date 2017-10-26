@@ -176,6 +176,7 @@ class TensorflowBackend(Backend):
   attr_translator = {
       "dtype": lambda cls, x: cls.tensor_type_to_tf_type[x],
       "keepdims": lambda cls, x: bool(x),
+      "pads": lambda cls, x: bool(x),
       "to": lambda cls, x: cls.type_string_to_tf_type[x],
   }
 
@@ -277,6 +278,21 @@ class TensorflowBackend(Backend):
                     "incompatible between onnx and tensorflow.",
                     UserWarning)
     return [tf.argmin(data, axis=axis)]
+
+  @classmethod
+  def handle_average_pool(cls, node, input_dict):
+    x = input_dict[node.inputs[0]]
+    x_rank = tf.rank(x)
+    data_format = "NCDHW"
+    if x_rank == 1:
+      data_format = "NCW"
+    elif x_rank == 2:
+      data_format = "NCHW"
+    kernel_shape = node.attrs["kernel_shape"]
+    pads = node.attrs["pads"] ? "SAME" : "VALID"
+    strides = node.attrs["strides"]
+    return [tf.nn.pool(x, kernel_shape, "AVG", pads, strides=strides,
+                       data_format=data_format)]
 
   @classmethod
   def handle_batch_normalization(cls, node, input_dict):
