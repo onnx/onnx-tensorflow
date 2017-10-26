@@ -413,6 +413,40 @@ class TensorflowBackend(Backend):
     return [tf.reduce_max(tf.stack(values), axis=0)]
 
   @classmethod
+  def handle_max_pool(cls, node, input_dict):
+    # The only two attributes that are used as is are
+    #    - kernel_shape
+    #    - strides
+    # `dilations` is not supported by Tensorflow.
+    # `pads` is replaced with Tensorflow's "SAME" padding.
+    x = input_dict[node.inputs[0]]
+    if "dilations" in node.attrs.keys():
+      dilations = node.attrs["dilations"]
+      all_ones = True
+      for i in range(len(dilations)):
+        if dilations[i] != 1:
+          all_ones = False
+      if not all_ones:
+        warnings.warn("No dilations supported by Tensorflow.", UserWarning)
+    kernel_shape = node.attrs["kernel_shape"]
+    # TODO: map ONNX padding to TF padding. For now default to "SAME".
+    pads = node.attrs["pads"]
+    strides = node.attrs["strides"]
+    # Also takes data_format='NHWC'
+    # TF only works on 3D and 4D tensors
+    if len(kernel_shape) == 4:
+      return [tf.nn.max_pool(x, ksize=kernel_shape,
+        strides=strides, padding="SAME")]
+    elif len(kernel_shape) >= 5:
+      return [tf.nn.max_pool3d(x, ksize=kernel_shape,
+        strides=strides, padding="SAME")]
+    else:
+      # TODO: do pooling using other TF operations.
+      warnings.warn("Max pool not supported for this tensor size",
+        UserWarning)
+      return []
+
+  @classmethod
   def handle_min(cls, node, input_dict):
     values = [input_dict[a] for a in node.inputs]
     return [tf.reduce_min(tf.stack(values), axis=0)]

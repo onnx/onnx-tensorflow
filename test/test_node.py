@@ -318,6 +318,21 @@ class TestStringMethods(unittest.TestCase):
     test_output = np.maximum(np.maximum(np.maximum(x1, x2), x3), x4)
     np.testing.assert_almost_equal(output["Z"], test_output)
 
+  def test_max_pool(self):
+    node_def = helper.make_node("MaxPool", ["X"], ["Y"],
+      dilations=[1,1,1,1], kernel_shape=[1,1,1,2],
+      pads=[0,0,0,0], strides=[1,1,1,2])
+    x = self._get_rnd([10, 10, 4, 4])
+    output = run_node(node_def, [x])
+    test_output = np.zeros([10, 10, 4, 2])
+    for i1 in range(0, 10):
+      for i2 in range(0, 10):
+        for j1 in range(0, 4):
+          for j2 in range(0, 2):
+            test_output[i1][i2][j1][j2] = \
+              max(x[i1][i2][j1][2*j2], x[i1][i2][j1][2*j2 + 1])
+    np.testing.assert_almost_equal(output["Y"], test_output)
+
   def test_min(self):
     node_def = helper.make_node("Min", ["X1", "X2", "X3", "X4"], ["Z"])
     x1 = self._get_rnd([10, 10])
