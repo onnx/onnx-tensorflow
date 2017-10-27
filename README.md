@@ -49,4 +49,4 @@ Arpith Jacob
 
 Tian Jin
 
-Gheorghe-teod Bercea
+Gheorghe-Teodor Bercea
