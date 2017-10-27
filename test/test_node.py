@@ -71,6 +71,26 @@ class TestStringMethods(unittest.TestCase):
       np.testing.assert_almost_equal(output["reduced"],
                                      np.argmin(data, axis=axis))
 
+  def test_average_pool(self):
+    shape = [1, 1, 40, 40]
+    node_def = helper.make_node("AveragePool", ["X"], ["Y"],
+      kernel_shape=[1,2],
+      pads=[0, 0], strides=[1,1])
+    x = self._get_rnd(shape)
+    output = run_node(node_def, [x], device='CUDA')
+    test_output = np.zeros(shape)
+    for i1 in range(0, shape[0]):
+      for i2 in range(0, shape[1]):
+        for j1 in range(0, shape[2]):
+          for j2 in range(0, shape[3]):
+            test_output[i1][i2][j1][j2] = 0
+            count = 0
+            for k in range(j2, min(j2+2, shape[3])):
+              test_output[i1][i2][j1][j2] += x[i1][i2][j1][k]
+              count += 1
+            test_output[i1][i2][j1][j2] /= count
+    np.testing.assert_almost_equal(output["Y"], test_output)
+
   def _batch_normalization(self, x, mean, variance, bias, scale,
                            variance_epsilon):
     inv = np.reciprocal(np.sqrt(variance + variance_epsilon))
