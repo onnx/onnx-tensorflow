@@ -14,8 +14,11 @@ import warnings
 import numpy as np
 from onnx import checker
 from onnx.onnx_pb2 import GraphProto, TensorProto, AttributeProto
+from onnx_tf.tf_net import TensorflowNet
+from onnx_tf.backend_rep import TensorflowRep
 import onnx.numpy_helper
 import onnx.defs
+
 from onnx.backend.base import (
     Backend,
     BackendRep,
@@ -155,6 +158,25 @@ class TensorflowBackend(Backend):
       # TensorProto.UINT64: tf.uint64,
   }
 
+  tensor_type_enum = [
+      "undefined",
+      tf.float32,
+      tf.uint8,
+      tf.int8,
+      tf.uint16,
+      tf.int16,
+      tf.int32,
+      tf.int64,
+      tf.bool,
+      tf.float16,
+      tf.float64,
+      tf.complex64,
+      tf.complex128,
+      # TODO: uncomment this in the future
+      # tf.uint32,
+      # tf.uint64,
+  ]
+
   type_string_to_tf_type = {
       "float": tf.float32,
       "uint8": tf.uint8,
@@ -204,6 +226,78 @@ class TensorflowBackend(Backend):
     return namedtupledict('Outputs', node.outputs)(*output_vals)
 
   @classmethod
+  def onnx_graph_to_tf_net(cls, graph_def):
+    if graph_def.initializer:
+      input_dict_items = cls.onnx_initializer_to_input_dict_items(
+        graph_def.initializer)
+      initialized = {init.name for init in graph_def.initializer}
+    else:
+      input_dict_items = []
+      initialized = set()
+
+    predict_net = TensorflowNet()
+    predict_net.name = graph_def.name
+
+    predict_net.external_input.extend(
+      value_info.name for value_info in graph_def.input)
+    predict_net.external_output.extend(
+      value_info.name for value_info in graph_def.output)
+
+    # # Caffe2 predictor requires all input blobs (including the
+    # # real model inputs) are initialized in init_net
+    for value_info in graph_def.input:
+      if value_info.name in initialized:
+          continue
+
+      shape = list(d.dim_value for d in \
+        value_info.type.tensor_type.shape.dim)
+      x = tf.placeholder(cls.tensor_type_enum[value_info.type.tensor_type.elem_type],
+                         name=value_info.name, shape=shape)
+      input_dict_items.append([value_info.name, x])
+
+    input_dict = dict(input_dict_items)
+    # Input dict may be updated, therefore retaining
+    # a copy.
+    original_input_dict = dict(input_dict_items)
+    output_dict = dict()
+
+    for node in graph_def.node:
+      node = OnnxNode(node)
+      output_ops = cls._onnx_node_to_tensorflow_op(node, input_dict)
+      curr_node_output_map = zip(node.outputs, output_ops)
+      input_dict = dict(input_dict.items() + curr_node_output_map)
+      output_dict = dict(output_dict.items() + curr_node_output_map)
+      predict_net.op.extend(output_ops)
+
+    predict_net.output_dict = output_dict
+    return input_dict, original_input_dict, predict_net
+
+  @classmethod
+  def prepare(cls, model, device='CPU', **kwargs):
+    super(TensorflowBackend, cls).prepare(model, device, **kwargs)
+
+    input_dict, original_input_dict, predict_net = cls.onnx_graph_to_tf_net(model.graph)
+    # predict_net.device_option.CopyFrom(get_device_option(Device(device)))
+
+    initialized = {init.name for init in model.graph.initializer}
+    uninitialized = [x for x in predict_net.external_input
+                     if not x in initialized]
+
+    # ws = Workspace()
+    # with ws, core.DeviceScope(predict_net.device_option):
+        # workspace.RunNetOnce(init_net)
+
+    return TensorflowRep(predict_net, original_input_dict, uninitialized)
+
+  @classmethod
+  def onnx_initializer_to_input_dict_items(cls, initializer, init_net_name='init'):
+    def tensor2list(onnx_tensor):
+      # Use the onnx.numpy_helper because the data may be raw
+      return onnx.numpy_helper.to_array(onnx_tensor).flatten().tolist()
+    input_dict = [(tp.name, tf.constant(tensor2list(tp), shape=tp.dims)) for tp in initializer]
+    return input_dict
+
+  @classmethod
   def op_name_to_lower(cls, name):
     return re.sub('(?<!^)(?=[A-Z])', '_', name).lower()
 
@@ -247,7 +341,10 @@ class TensorflowBackend(Backend):
   def handle_add(cls, node, input_dict):
     x = input_dict[node.inputs[0]]
     y = input_dict[node.inputs[1]]
-    broadcast = node.attrs["broadcast"]
+    if "broadcast" in node.attrs.keys():
+      broadcast = node.attrs["broadcast"]
+    else:
+      broadcast = 1
     if broadcast == 0:
       warnings.warn("Definition of Add with broadcast disabled is incompatible"
                     "between onnx and tensorflow.", UserWarning)
@@ -455,7 +552,10 @@ class TensorflowBackend(Backend):
   def handle_mul(cls, node, input_dict):
     x = input_dict[node.inputs[0]]
     y = input_dict[node.inputs[1]]
-    broadcast = node.attrs["broadcast"]
+    if "broadcast" in node.attrs.keys():
+      broadcast = node.attrs["broadcast"]
+    else:
+      broadcast = 1
     if broadcast == 0:
       warnings.warn("Definition of Mul with broadcast disabled is incompatible"
         "between onnx and tensorflow.", UserWarning)
