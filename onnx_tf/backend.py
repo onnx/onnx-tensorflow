@@ -227,6 +227,9 @@ class TensorflowBackend(Backend):
 
   @classmethod
   def onnx_graph_to_tensorflow_net(cls, graph_def):
+    # initializer: TensorProtos representing the values to initialize
+    # a given tensor.
+    # initialized: A list of names of the initialized tensors.
     if graph_def.initializer:
       input_dict_items = cls.onnx_initializer_to_input_dict_items(
         graph_def.initializer)
@@ -254,9 +257,17 @@ class TensorflowBackend(Backend):
                          name=value_info.name, shape=shape)
       input_dict_items.append([value_info.name, x])
 
+    # input dict: this dictionary is a map from variable names
+    # to the latest produced tensors of the given name.
+    # This dictionary will get updated as build the graph because
+    # some ops may produce a result tensor with the same name as
+    # the input tensor. The input dict tracks the latest produced
+    # tensors.
     input_dict = dict(input_dict_items)
-    # Input dict may be updated, therefore retaining
-    # a copy.
+    # Since input dict may be updated, we need to keep a copy
+    # of the original input dict where we track the earliest
+    # defined tensors so we can have access to the placeholders
+    # to feed in input tensors when we run the graph.
     original_input_dict = dict(input_dict_items)
     output_dict = dict()
 

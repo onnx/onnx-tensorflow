@@ -18,7 +18,6 @@ class TensorflowRep(BackendRep):
   def run(self, inputs, **kwargs):
     super(TensorflowRep, self).run(inputs, **kwargs)
     # TODO: handle name scope if necessary
-    print(self.uninitialized)
     with tf.Session() as sess:
       if isinstance(inputs, dict):
         feed_dict = inputs
