@@ -40,5 +40,7 @@ https://docs.python.org/2/library/unittest.html
 
 ## Authors:
 Arpith Jacob
+
 Tian Jin
+
 Gheorghe-teod Bercea
