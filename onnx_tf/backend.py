@@ -622,7 +622,6 @@ class TensorflowBackend(Backend):
       states = [state]
     outputs = [output]
     outputs.extend(states)
-    print(outputs)
     return outputs
 
   @classmethod
