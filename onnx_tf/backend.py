@@ -176,7 +176,6 @@ class TensorflowBackend(Backend):
   attr_translator = {
       "dtype": lambda cls, x: cls.tensor_type_to_tf_type[x],
       "keepdims": lambda cls, x: bool(x),
-      "pads": lambda cls, x: bool(x),
       "to": lambda cls, x: cls.type_string_to_tf_type[x],
   }
 
@@ -280,19 +279,29 @@ class TensorflowBackend(Backend):
     return [tf.argmin(data, axis=axis)]
 
   @classmethod
-  def handle_average_pool(cls, node, input_dict):
+  def _pool(cls, node, input_dict, pooling_type):
     x = input_dict[node.inputs[0]]
-    x_rank = tf.rank(x)
+    x_rank = len(x.get_shape())
     data_format = "NCDHW"
-    if x_rank == 1:
+    if x_rank == 3:
       data_format = "NCW"
-    elif x_rank == 2:
+    elif x_rank == 4:
       data_format = "NCHW"
     kernel_shape = node.attrs["kernel_shape"]
-    pads = "SAME" if node.attrs["pads"] else "VALID"
     strides = node.attrs["strides"]
-    return [tf.nn.pool(x, kernel_shape, "AVG", pads, strides=strides,
+    if x_rank > 5:
+      warnings.warn("Unsupported tensor rank in pool operator.",
+                    UserWarning)
+    if "pads" in node.attrs.keys():
+      warnings.warn("Unsupported pads attribute by Tensorflow in "
+                    "pool operator. The SAME padding algorithm will be used.",
+                    UserWarning)
+    return [tf.nn.pool(x, kernel_shape, pooling_type, "SAME", strides=strides,
                        data_format=data_format)]
+
+  @classmethod
+  def handle_average_pool(cls, node, input_dict):
+    return cls._pool(node, input_dict, "AVG")
 
   @classmethod
   def handle_batch_normalization(cls, node, input_dict):
