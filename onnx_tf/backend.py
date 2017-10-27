@@ -226,7 +226,7 @@ class TensorflowBackend(Backend):
     return namedtupledict('Outputs', node.outputs)(*output_vals)
 
   @classmethod
-  def onnx_graph_to_tf_net(cls, graph_def):
+  def onnx_graph_to_tensorflow_net(cls, graph_def):
     if graph_def.initializer:
       input_dict_items = cls.onnx_initializer_to_input_dict_items(
         graph_def.initializer)
@@ -269,13 +269,13 @@ class TensorflowBackend(Backend):
       predict_net.op.extend(output_ops)
 
     predict_net.output_dict = output_dict
-    return input_dict, original_input_dict, predict_net
+    return original_input_dict, predict_net
 
   @classmethod
   def prepare(cls, model, device='CPU', **kwargs):
     super(TensorflowBackend, cls).prepare(model, device, **kwargs)
 
-    input_dict, original_input_dict, predict_net = cls.onnx_graph_to_tf_net(model.graph)
+    original_input_dict, predict_net = cls.onnx_graph_to_tensorflow_net(model.graph)
 
     initialized = {init.name for init in model.graph.initializer}
     uninitialized = [x for x in predict_net.external_input
