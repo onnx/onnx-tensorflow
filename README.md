@@ -6,12 +6,16 @@ run `python -m unittest discover test`
 
 ## Example:
 In this example, we will define and run a Relu node and print the result.
+This example is available as a python script at example/relu.py .
 ```python
+from onnx_tf.backend import run_node
+from onnx import helper
+
 node_def = helper.make_node("Relu", ["X"], ["Y"])
-x = self._get_rnd([1000])
-output = run_node(node_def, [x])
+output = run_node(node_def, [[-0.1, 0.1]])
 print(output["Y"])
 ```
+The result is `[ 0.   0.1]`
 
 ## Development Install:
 - Git clone
