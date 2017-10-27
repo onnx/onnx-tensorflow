@@ -11,8 +11,8 @@ from onnx_tf.backend import run_node, prepare
 from onnx import helper
 from onnx.onnx_pb2 import TensorProto
 
-class TestStringMethods(unittest.TestCase):
-  """ Tests for ops
+class TestModel(unittest.TestCase):
+  """ Tests for models
   """
   def test_relu_node_inplace(self):
     X = np.random.randn(3, 2).astype(np.float32)
