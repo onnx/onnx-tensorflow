@@ -243,8 +243,7 @@ class TensorflowBackend(Backend):
     predict_net.external_output.extend(
       value_info.name for value_info in graph_def.output)
 
-    # # Caffe2 predictor requires all input blobs (including the
-    # # real model inputs) are initialized in init_net
+    # creating placeholders for currently unkown inputs
     for value_info in graph_def.input:
       if value_info.name in initialized:
           continue
@@ -277,15 +276,10 @@ class TensorflowBackend(Backend):
     super(TensorflowBackend, cls).prepare(model, device, **kwargs)
 
     input_dict, original_input_dict, predict_net = cls.onnx_graph_to_tf_net(model.graph)
-    # predict_net.device_option.CopyFrom(get_device_option(Device(device)))
 
     initialized = {init.name for init in model.graph.initializer}
     uninitialized = [x for x in predict_net.external_input
                      if not x in initialized]
-
-    # ws = Workspace()
-    # with ws, core.DeviceScope(predict_net.device_option):
-        # workspace.RunNetOnce(init_net)
 
     return TensorflowRep(predict_net, original_input_dict, uninitialized)
 
