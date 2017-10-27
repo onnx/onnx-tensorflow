@@ -356,6 +356,23 @@ class TestStringMethods(unittest.TestCase):
     output = run_node(node_def, [x])
     np.testing.assert_almost_equal(output["Y"], np.negative(x))
 
+  # TODO: better testing for RNN. For now, we are just making sure
+  # that it runs.
+  def test_optimizedrnn(self):
+    node_def = helper.make_node("OptimizedRNN",
+                                ["W", "I", "H", "C"],
+                                ["O", "OH", "OC"], hidden_size=3, cell_type="lstm")
+    x = self._get_rnd([10, 10, 10])
+    dummy = np.array([0])
+    output = run_node(node_def, [dummy, x, dummy, dummy])
+
+    node_def = helper.make_node("OptimizedRNN",
+                                ["W", "I", "H", "C"],
+                                ["O", "OH"], hidden_size=3, cell_type="gru")
+    x = self._get_rnd([10, 10, 10])
+    dummy = np.array([0])
+    output = run_node(node_def, [dummy, x, dummy, dummy])
+
   def test_relu(self):
     node_def = helper.make_node("Relu", ["X"], ["Y"])
     x = self._get_rnd([1000])

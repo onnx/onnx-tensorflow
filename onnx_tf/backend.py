@@ -222,7 +222,9 @@ class TensorflowBackend(Backend):
     output_vals = []
     with tf.Session() as sess:
       with tf.device(device_option):
-        output_vals = [sess.run(op) for op in ops]
+        sess.run(tf.initialize_all_variables())
+        output_vals = sess.run(ops)
+
     return namedtupledict('Outputs', node.outputs)(*output_vals)
 
   @classmethod
@@ -568,6 +570,60 @@ class TensorflowBackend(Backend):
       warnings.warn("Unsupported alpha attribute by Tensorflow in Mul."
         "This attribute will be ignored.", UserWarning)
     return [tf.multiply(x, y)]
+
+  #TODO: better support optimized rnn
+  @classmethod
+  def handle_optimized_r_n_n(cls, node, input_dict):
+    if "direction" in node.attrs.keys():
+      direction = node.attrs["direction"]
+    else:
+      direction = 1
+    if "num_layers" in node.attrs.keys():
+      num_layers = node.attrs["num_layers"]
+    else:
+      num_layers = 1
+    if "skip_input_transform" in node.attrs.keys():
+      warnings.warn("We currently do not support skipping input transformation.")
+
+    hidden_size = node.attrs["hidden_size"]
+    if node.attrs["cell_type"] == "relu":
+      relu_layer = tf.contrib.rnn.BasicCell(hidden_size, activation=tf.nn.relu)
+      cell = tf.contrib.rnn.MultiRNNCell([relu_layer] * num_layers)
+    elif node.attrs["cell_type"] == "tanh":
+      tanh_layer = tf.contrib.rnn.BasicCell(hidden_size)
+      cell = tf.contrib.rnn.MultiRNNCell([tanh_layer] * num_layers)
+    elif node.attrs["cell_type"] == "gru":
+      gru_layer = tf.contrib.rnn.GRUCell(hidden_size)
+      cell = tf.contrib.rnn.MultiRNNCell([gru_layer] * num_layers)
+    elif node.attrs["cell_type"] == "lstm":
+      lstm_layer = tf.contrib.rnn.LSTMCell(hidden_size)
+      cell = tf.contrib.rnn.MultiRNNCell([lstm_layer] * num_layers)
+    else:
+      raise RuntimeError("unexpected cell type")
+
+    warnings.warn("Initial weight, hidden/cell states will be ignored for now.")
+    # TODO: handle data types
+    if direction == 1:
+      output, state = tf.nn.dynamic_rnn(cell,
+                                        input_dict[node.inputs[1]],
+                                        time_major=True,
+                                        dtype=tf.float32)
+    else:
+      output, state = tf.nn.bidirectional_dynamic_rnn(cell,
+                                                      input_dict[node.inputs[1]],
+                                                      time_major=True,
+                                                      dtype=tf.float32)
+
+    if node.attrs["cell_type"] == "lstm":
+      state = state[0]
+      c, h = state
+      states = [h, c]
+    else:
+      states = [state]
+    outputs = [output]
+    outputs.extend(states)
+    print(outputs)
+    return outputs
 
   @classmethod
   def handle_p_relu(cls, node, input_dict):
