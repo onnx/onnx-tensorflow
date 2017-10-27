@@ -26,6 +26,7 @@ from onnx.backend.base import (
 
 from onnx import onnx_pb2, helper
 import tensorflow as tf
+from tensorflow.python.client import device_lib
 
 # TODO: allow more flexible placement
 def get_device_option(device):
@@ -574,6 +575,15 @@ class TensorflowBackend(Backend):
   def handle_sum(cls, node, input_dict):
     values = [input_dict[a] for a in node.inputs]
     return [tf.reduce_sum(tf.stack(values), axis=0)]
+
+  @classmethod
+  def supports_device(cls, device):
+    if device == "GPU":
+      local_device_protos = device_lib.list_local_devices()
+      return len([x.name for x in local_device_protos if x.device_type == 'GPU']) > 0
+    else if device == "CPU":
+      return True
+    return False
 
 prepare = TensorflowBackend.prepare
 
