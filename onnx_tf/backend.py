@@ -14,8 +14,11 @@ import warnings
 import numpy as np
 from onnx import checker
 from onnx.onnx_pb2 import GraphProto, TensorProto, AttributeProto
+from onnx_tf.tf_net import TensorflowNet
+from onnx_tf.backend_rep import TensorflowRep
 import onnx.numpy_helper
 import onnx.defs
+
 from onnx.backend.base import (
     Backend,
     BackendRep,
@@ -156,6 +159,25 @@ class TensorflowBackend(Backend):
       # TensorProto.UINT64: tf.uint64,
   }
 
+  tensor_type_enum = [
+      "undefined",
+      tf.float32,
+      tf.uint8,
+      tf.int8,
+      tf.uint16,
+      tf.int16,
+      tf.int32,
+      tf.int64,
+      tf.bool,
+      tf.float16,
+      tf.float64,
+      tf.complex64,
+      tf.complex128,
+      # TODO: uncomment this in the future
+      # tf.uint32,
+      # tf.uint64,
+  ]
+
   type_string_to_tf_type = {
       "float": tf.float32,
       "uint8": tf.uint8,
@@ -201,8 +223,87 @@ class TensorflowBackend(Backend):
     output_vals = []
     with tf.Session() as sess:
       with tf.device(device_option):
-        output_vals = [sess.run(op) for op in ops]
+        sess.run(tf.initialize_all_variables())
+        output_vals = sess.run(ops)
+
     return namedtupledict('Outputs', node.outputs)(*output_vals)
+
+  @classmethod
+  def onnx_graph_to_tensorflow_net(cls, graph_def):
+    # initializer: TensorProtos representing the values to initialize
+    # a given tensor.
+    # initialized: A list of names of the initialized tensors.
+    if graph_def.initializer:
+      input_dict_items = cls.onnx_initializer_to_input_dict_items(
+        graph_def.initializer)
+      initialized = {init.name for init in graph_def.initializer}
+    else:
+      input_dict_items = []
+      initialized = set()
+
+    predict_net = TensorflowNet()
+    predict_net.name = graph_def.name
+
+    predict_net.external_input.extend(
+      value_info.name for value_info in graph_def.input)
+    predict_net.external_output.extend(
+      value_info.name for value_info in graph_def.output)
+
+    # creating placeholders for currently unkown inputs
+    for value_info in graph_def.input:
+      if value_info.name in initialized:
+          continue
+
+      shape = list(d.dim_value for d in \
+        value_info.type.tensor_type.shape.dim)
+      x = tf.placeholder(cls.tensor_type_enum[value_info.type.tensor_type.elem_type],
+                         name=value_info.name, shape=shape)
+      input_dict_items.append([value_info.name, x])
+
+    # input dict: this dictionary is a map from variable names
+    # to the latest produced tensors of the given name.
+    # This dictionary will get updated as build the graph because
+    # some ops may produce a result tensor with the same name as
+    # the input tensor. The input dict tracks the latest produced
+    # tensors.
+    input_dict = dict(input_dict_items)
+    # Since input dict may be updated, we need to keep a copy
+    # of the original input dict where we track the earliest
+    # defined tensors so we can have access to the placeholders
+    # to feed in input tensors when we run the graph.
+    original_input_dict = dict(input_dict_items)
+    output_dict = dict()
+
+    for node in graph_def.node:
+      node = OnnxNode(node)
+      output_ops = cls._onnx_node_to_tensorflow_op(node, input_dict)
+      curr_node_output_map = zip(node.outputs, output_ops)
+      input_dict = dict(input_dict.items() + curr_node_output_map)
+      output_dict = dict(output_dict.items() + curr_node_output_map)
+      predict_net.op.extend(output_ops)
+
+    predict_net.output_dict = output_dict
+    return original_input_dict, predict_net
+
+  @classmethod
+  def prepare(cls, model, device='CPU', **kwargs):
+    super(TensorflowBackend, cls).prepare(model, device, **kwargs)
+
+    original_input_dict, predict_net = cls.onnx_graph_to_tensorflow_net(model.graph)
+
+    initialized = {init.name for init in model.graph.initializer}
+    uninitialized = [x for x in predict_net.external_input
+                     if not x in initialized]
+
+    return TensorflowRep(predict_net, original_input_dict, uninitialized)
+
+  @classmethod
+  def onnx_initializer_to_input_dict_items(cls, initializer, init_net_name='init'):
+    def tensor2list(onnx_tensor):
+      # Use the onnx.numpy_helper because the data may be raw
+      return onnx.numpy_helper.to_array(onnx_tensor).flatten().tolist()
+    input_dict = [(tp.name, tf.constant(tensor2list(tp), shape=tp.dims)) for tp in initializer]
+    return input_dict
 
   @classmethod
   def op_name_to_lower(cls, name):
@@ -248,7 +349,10 @@ class TensorflowBackend(Backend):
   def handle_add(cls, node, input_dict):
     x = input_dict[node.inputs[0]]
     y = input_dict[node.inputs[1]]
-    broadcast = node.attrs["broadcast"]
+    if "broadcast" in node.attrs.keys():
+      broadcast = node.attrs["broadcast"]
+    else:
+      broadcast = 1
     if broadcast == 0:
       warnings.warn("Definition of Add with broadcast disabled is incompatible"
                     "between onnx and tensorflow.", UserWarning)
@@ -481,7 +585,10 @@ class TensorflowBackend(Backend):
   def handle_mul(cls, node, input_dict):
     x = input_dict[node.inputs[0]]
     y = input_dict[node.inputs[1]]
-    broadcast = node.attrs["broadcast"]
+    if "broadcast" in node.attrs.keys():
+      broadcast = node.attrs["broadcast"]
+    else:
+      broadcast = 1
     if broadcast == 0:
       warnings.warn("Definition of Mul with broadcast disabled is incompatible"
         "between onnx and tensorflow.", UserWarning)
@@ -489,6 +596,59 @@ class TensorflowBackend(Backend):
       warnings.warn("Unsupported alpha attribute by Tensorflow in Mul."
         "This attribute will be ignored.", UserWarning)
     return [tf.multiply(x, y)]
+
+  #TODO: better support optimized rnn
+  @classmethod
+  def handle_optimized_r_n_n(cls, node, input_dict):
+    if "direction" in node.attrs.keys():
+      direction = node.attrs["direction"]
+    else:
+      direction = 1
+    if "num_layers" in node.attrs.keys():
+      num_layers = node.attrs["num_layers"]
+    else:
+      num_layers = 1
+    if "skip_input_transform" in node.attrs.keys():
+      warnings.warn("We currently do not support skipping input transformation.")
+
+    hidden_size = node.attrs["hidden_size"]
+    if node.attrs["cell_type"] == "relu":
+      relu_layer = tf.contrib.rnn.BasicCell(hidden_size, activation=tf.nn.relu)
+      cell = tf.contrib.rnn.MultiRNNCell([relu_layer] * num_layers)
+    elif node.attrs["cell_type"] == "tanh":
+      tanh_layer = tf.contrib.rnn.BasicCell(hidden_size)
+      cell = tf.contrib.rnn.MultiRNNCell([tanh_layer] * num_layers)
+    elif node.attrs["cell_type"] == "gru":
+      gru_layer = tf.contrib.rnn.GRUCell(hidden_size)
+      cell = tf.contrib.rnn.MultiRNNCell([gru_layer] * num_layers)
+    elif node.attrs["cell_type"] == "lstm":
+      lstm_layer = tf.contrib.rnn.LSTMCell(hidden_size)
+      cell = tf.contrib.rnn.MultiRNNCell([lstm_layer] * num_layers)
+    else:
+      raise RuntimeError("unexpected cell type")
+
+    warnings.warn("Initial weight, hidden/cell states will be ignored for now.")
+    # TODO: handle data types
+    if direction == 1:
+      output, state = tf.nn.dynamic_rnn(cell,
+                                        input_dict[node.inputs[1]],
+                                        time_major=True,
+                                        dtype=tf.float32)
+    else:
+      output, state = tf.nn.bidirectional_dynamic_rnn(cell,
+                                                      input_dict[node.inputs[1]],
+                                                      time_major=True,
+                                                      dtype=tf.float32)
+
+    if node.attrs["cell_type"] == "lstm":
+      state = state[0]
+      c, h = state
+      states = [h, c]
+    else:
+      states = [state]
+    outputs = [output]
+    outputs.extend(states)
+    return outputs
 
   @classmethod
   def handle_p_relu(cls, node, input_dict):
