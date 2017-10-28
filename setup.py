@@ -1,7 +1,7 @@
 from setuptools import setup
 
 setup(name='onnx-tf',
-      version='0.1',
+      version='0.1.1',
       description='Tensorflow backend for ONNX.',
       install_requires=['onnx==0.2', 'tensorflow', 'numpy'],
       url='https://github.com/tjingrant',

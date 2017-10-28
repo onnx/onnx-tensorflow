@@ -223,7 +223,7 @@ class TensorflowBackend(Backend):
     output_vals = []
     with tf.Session() as sess:
       with tf.device(device_option):
-        sess.run(tf.initialize_all_variables())
+        sess.run(tf.global_variables_initializer())
         output_vals = sess.run(ops)
 
     return namedtupledict('Outputs', node.outputs)(*output_vals)
