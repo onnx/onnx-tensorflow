@@ -1,4 +1,5 @@
 # Experimental Tensorflow Backend for ONNX
+[![Build Status](https://travis-ci.org/tjingrant/onnx-tf.svg?branch=master)](https://travis-ci.org/tjingrant/onnx-tf)
 
 ## To install:
 run `pip install onnx-tf`
