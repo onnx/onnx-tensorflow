@@ -10,6 +10,7 @@ from __future__ import unicode_literals
 import collections
 import re
 import warnings
+import sys
 
 import numpy as np
 from onnx import checker
@@ -49,7 +50,8 @@ def convertAttributeProto(onnx_arg):
   elif onnx_arg.HasField('i'):
     return onnx_arg.i
   elif onnx_arg.HasField('s'):
-    return onnx_arg.s
+    return str(onnx_arg.s, 'utf-8') \
+      if sys.version_info[0] >= 3 else onnx_arg.s
   elif onnx_arg.HasField('t'):
     return onnx_arg.t  # this is a proto!
   elif onnx_arg.floats:
@@ -57,7 +59,10 @@ def convertAttributeProto(onnx_arg):
   elif onnx_arg.ints:
     return list(onnx_arg.ints)
   elif onnx_arg.strings:
-    return list(onnx_arg.strings)
+    str_list = list(onnx_arg.strings)
+    if sys.version_info[0] >= 3:
+      str_list = map(lambda x: str(x, 'utf-8'), str_list)
+    return str_list
   else:
     raise ValueError("Unsupported ONNX attribute: {}".format(onnx_arg))
 
@@ -277,9 +282,12 @@ class TensorflowBackend(Backend):
     for node in graph_def.node:
       node = OnnxNode(node)
       output_ops = cls._onnx_node_to_tensorflow_op(node, input_dict)
-      curr_node_output_map = zip(node.outputs, output_ops)
-      input_dict = dict(input_dict.items() + curr_node_output_map)
-      output_dict = dict(output_dict.items() + curr_node_output_map)
+      curr_node_output_map = list(zip(node.outputs, output_ops))
+      input_dict = dict(list(input_dict.items()) +
+                        curr_node_output_map)
+
+      output_dict = dict(list(output_dict.items()) +
+                         curr_node_output_map)
       predict_net.op.extend(output_ops)
 
     predict_net.output_dict = output_dict

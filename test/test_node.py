@@ -149,7 +149,7 @@ class TestNode(unittest.TestCase):
 
   def test_concat(self):
     shape = [10, 20, 5]
-    for axis in xrange(len(shape)):
+    for axis in range(len(shape)):
       node_def = helper.make_node("Concat", ["X1", "X2"], ["Y"], axis=axis)
       x1 = self._get_rnd(shape)
       x2 = self._get_rnd(shape)

@@ -8,5 +8,6 @@ pip install tensorflow-gpu
 onnx_tf_dir="$PWD"
 pip install -e $onnx_tf_dir
 
+python --version
 python test/test_node.py
 python test/test_model.py
