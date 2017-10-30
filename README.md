@@ -2,7 +2,9 @@
 [![Build Status](https://travis-ci.org/tjingrant/onnx-tf.svg?branch=master)](https://travis-ci.org/tjingrant/onnx-tf)
 
 ## To install:
-run `pip install onnx-tf`
+Firstly install [ONNX](https://github.com/onnx/onnx) which cannot be installed by pip unless protoc is available.
+
+Then, run `pip install onnx-tf`
 
 ## To test:
 run `python -m unittest discover test`
@@ -21,9 +23,11 @@ print(output["Y"])
 The result is `[ 0.   0.1]`
 
 ## Development Install:
+- Install ONNX
 - Git clone
 - Run `pip install -e .` on the root directory.
 - Backend dev follows conventions [here](https://github.com/onnx/onnx-caffe2/blob/master/onnx_caffe2/backend.py).
+
 ## Folder Structure:
 - __onnx_tf__ main source code file.
 - __test__ test files.
