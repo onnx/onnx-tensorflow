@@ -453,6 +453,50 @@ class TensorflowBackend(Backend):
     return [tf.constant(elements, dtype=dtype, shape=value.dims)]
 
   @classmethod
+  def _conv(cls, node, input_dict, transpose=False):
+    x = input_dict[node.inputs[0]]
+    x_rank = len(x.get_shape())
+    data_format = "NCDHW"
+    if x_rank == 3:
+      data_format = "NCW"
+    elif x_rank == 4:
+      data_format = "NCHW"
+    in_weights = input_dict[node.inputs[1]]
+    weights_rank = len(in_weights.get_shape())
+    if transpose:
+      # Translate weights from (M x C x KH x KW) to (KH x KW X C X M)
+      perm = list(range(2, weights_rank)) + [1, 0]
+    else:
+      # Translate weights from (C x M x KH x KW) to (KH x KW X C X M)
+      perm = list(range(2, weights_rank)) + [0, 1]
+    weights = tf.transpose(in_weights, perm)
+    dilations = node.attrs.get("dilations", None)
+    strides = node.attrs.get("strides", None)
+    if "group" in node.attrs.keys():
+      warnings.warn("Unsupported group attribute by Tensorflow in "
+                    "Conv. This attribute will be ignored.",
+                    UserWarning)
+    if "pads" in node.attrs.keys():
+      warnings.warn("Unsupported pads attribute by Tensorflow in "
+                    "Conv operator. The SAME padding algorithm will be used.",
+                    UserWarning)
+    if "kernel_shape" in node.attrs.keys():
+      warnings.warn("Unsupported kernel_shape attribute by Tensorflow in "
+                    "Conv operator. The attribute will be ignored.",
+                    UserWarning)
+    return [tf.nn.convolution(x, weights, "SAME", strides=strides,
+                              dilation_rate=dilations,
+                              data_format=data_format)]
+
+  @classmethod
+  def handle_conv(cls, node, input_dict):
+    return cls._conv(node, input_dict)
+
+  @classmethod
+  def handle_conv_transpose(cls, node, input_dict):
+    return cls._conv(node, input_dict, transpose=True)
+
+  @classmethod
   def handle_div(cls, node, input_dict):
     x = input_dict[node.inputs[0]]
     y = input_dict[node.inputs[1]]
