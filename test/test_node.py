@@ -7,6 +7,7 @@ import unittest
 import numpy as np
 import tensorflow as tf
 from onnx_tf.backend import run_node
+from onnx_tf.backend import supports_device
 from onnx import helper
 from onnx.onnx_pb2 import TensorProto
 
@@ -76,14 +77,16 @@ class TestNode(unittest.TestCase):
                                      np.argmin(data, axis=axis))
 
   def test_average_pool(self):
-    # TODO: uncomment this in the future
-    return
+    device = "CUDA"
+    if not supports_device(device):
+                raise unittest.SkipTest(
+                    "Backend doesn't support device {}".format(device))
     shape = [1, 1, 40, 40]
     node_def = helper.make_node("AveragePool", ["X"], ["Y"],
       kernel_shape=[1,2],
       pads=[0, 0], strides=[1,1])
     x = self._get_rnd(shape)
-    output = run_node(node_def, [x], device='CUDA')
+    output = run_node(node_def, [x], device=device)
     test_output = np.zeros(shape)
     for i1 in range(0, shape[0]):
       for i2 in range(0, shape[1]):
