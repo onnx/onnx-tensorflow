@@ -138,8 +138,6 @@ class TensorflowBackend(Backend):
       "reduce_prod": tf.reduce_prod,
       "reduce_sum": tf.reduce_sum,
       "sigmoid": tf.sigmoid,
-      # default parameter
-      "softmax": tf.nn.softmax,
       "sqrt": tf.sqrt,
       "squeeze": tf.squeeze,
       "tanh": tf.tanh,
@@ -208,6 +206,15 @@ class TensorflowBackend(Backend):
   }
 
   @classmethod
+  def guess_tf_pad(cls, pads):
+    tf_pad = "VALID" if pads[0] == 0 else "SAME"
+    warnings.warn("Unsupported pads attribute by Tensorflow in "
+                    "pool operator. Your padding is {}, we guess "
+                    "you want {} padding.".format(str(pads), tf_pad),
+                    UserWarning)
+    return tf_pad
+
+  @classmethod
   def run_node(cls, node, inputs, device='CPU'):
     super(TensorflowBackend, cls).run_node(node, inputs, device)
     node = OnnxNode(node)
@@ -245,7 +252,6 @@ class TensorflowBackend(Backend):
     else:
       input_dict_items = []
       initialized = set()
-
     predict_net = TensorflowNet()
     predict_net.name = graph_def.name
 
@@ -289,7 +295,6 @@ class TensorflowBackend(Backend):
       output_dict = dict(list(output_dict.items()) +
                          curr_node_output_map)
       predict_net.op.extend(output_ops)
-
     predict_net.output_dict = output_dict
     return original_input_dict, predict_net
 
@@ -405,11 +410,8 @@ class TensorflowBackend(Backend):
     if x_rank > 5:
       warnings.warn("Unsupported tensor rank in pool operator.",
                     UserWarning)
-    if "pads" in node.attrs.keys():
-      warnings.warn("Unsupported pads attribute by Tensorflow in "
-                    "pool operator. The SAME padding algorithm will be used.",
-                    UserWarning)
-    return [tf.nn.pool(x, kernel_shape, pooling_type, "SAME", strides=strides,
+    tf_pads = cls.guess_tf_pad(node.attrs["pads"])
+    return [tf.nn.pool(x, kernel_shape, pooling_type, tf_pads, strides=strides,
                        data_format=data_format)]
 
   @classmethod
@@ -442,7 +444,8 @@ class TensorflowBackend(Backend):
   @classmethod
   def handle_concat(cls, node, input_dict):
     values = [input_dict[a] for a in node.inputs]
-    axis = node.attrs["axis"]
+    # apparently this is what's needed for squeezenet to work
+    axis = node.attrs.get("axis", 1)
     return [tf.concat(values, axis=axis)]
 
   @classmethod
@@ -464,11 +467,12 @@ class TensorflowBackend(Backend):
     in_weights = input_dict[node.inputs[1]]
     weights_rank = len(in_weights.get_shape())
     if transpose:
-      # Translate weights from (M x C x KH x KW) to (KH x KW X C X M)
-      perm = list(range(2, weights_rank)) + [1, 0]
-    else:
       # Translate weights from (C x M x KH x KW) to (KH x KW X C X M)
       perm = list(range(2, weights_rank)) + [0, 1]
+    else:
+      # Translate weights from (M x C x KH x KW) to (KH x KW X C X M)
+      perm = list(range(2, weights_rank)) + [1, 0]
+
     weights = tf.transpose(in_weights, perm)
     dilations = node.attrs.get("dilations", None)
     strides = node.attrs.get("strides", None)
@@ -476,17 +480,19 @@ class TensorflowBackend(Backend):
       warnings.warn("Unsupported group attribute by Tensorflow in "
                     "Conv. This attribute will be ignored.",
                     UserWarning)
-    if "pads" in node.attrs.keys():
-      warnings.warn("Unsupported pads attribute by Tensorflow in "
-                    "Conv operator. The SAME padding algorithm will be used.",
-                    UserWarning)
     if "kernel_shape" in node.attrs.keys():
       warnings.warn("Unsupported kernel_shape attribute by Tensorflow in "
                     "Conv operator. The attribute will be ignored.",
                     UserWarning)
-    return [tf.nn.convolution(x, weights, "SAME", strides=strides,
+    tf_pads = cls.guess_tf_pad(node.attrs["pads"])
+    convolved = tf.nn.convolution(x, weights, tf_pads, strides=strides,
                               dilation_rate=dilations,
-                              data_format=data_format)]
+                              data_format=data_format)
+    if len(node.inputs) == 2:
+      return [convolved]
+    else:
+      bias = input_dict[node.inputs[2]]
+      return [tf.nn.bias_add(convolved, bias, data_format="NCHW")]
 
   @classmethod
   def handle_conv(cls, node, input_dict):
@@ -511,12 +517,11 @@ class TensorflowBackend(Backend):
 
   @classmethod
   def handle_dropout(cls, node, input_dict):
-    x = input_dict[nodse.inputs[0]]
+    x = input_dict[node.inputs[0]]
     # Not supported by TF
     is_test = node.attrs["is_test"] if "is_test" in node.attrs.keys() else 0
-    if is_test != 0:
-      warnings.warn("Unsupported is_test attribute by Tensorflow in Dropout."
-        "This attribute will be ignored.", UserWarning)
+    if is_test:
+      return [x]
     ratio = node.attrs["ratio"] if "ratio" in node.attrs.keys() else 0.5
     return [tf.nn.dropout(x, 1 - ratio)]
 
@@ -555,16 +560,16 @@ class TensorflowBackend(Backend):
   @classmethod
   def handle_global_average_pool(cls, node, input_dict):
     x = input_dict[node.inputs[0]]
-    shape = tf.shape(x)
-    _, window_shape = tf.split(shape, [2, tf.size(shape) - 2])
-    return [tf.reduce_mean(x, axis=window_shape, keep_dims=True)]
+    dims = tf.range(tf.rank(x))
+    _, dim_window = tf.split(dims, [2, tf.size(dims) - 2])
+    return [tf.reduce_mean(x, axis=dim_window, keep_dims=True)]
 
   @classmethod
   def handle_global_max_pool(cls, node, input_dict):
     x = input_dict[node.inputs[0]]
-    shape = tf.shape(x)
-    _, window_shape = tf.split(shape, [2, tf.size(shape) - 2])
-    return [tf.reduce_max(x, axis=window_shape, keep_dims=True)]
+    dims = tf.range(tf.rank(x))
+    _, dim_window = tf.split(dims, [2, tf.size(dims) - 2])
+    return [tf.reduce_max(x, axis=dim_window, keep_dims=True)]
 
   @classmethod
   def handle_l_r_n(cls, node, input_dict):
@@ -603,25 +608,26 @@ class TensorflowBackend(Backend):
     # `pads` is replaced with Tensorflow's "SAME" padding.
     x = input_dict[node.inputs[0]]
     if "dilations" in node.attrs.keys():
-      dilations = node.attrs["dilations"]
+      dilations = [1, 1] + node.attrs["dilations"]
       all_ones = True
       for i in range(len(dilations)):
         if dilations[i] != 1:
           all_ones = False
       if not all_ones:
         warnings.warn("No dilations supported by Tensorflow.", UserWarning)
-    kernel_shape = node.attrs["kernel_shape"]
+    kernel_shape = [1, 1] + node.attrs["kernel_shape"]
     # TODO: map ONNX padding to TF padding. For now default to "SAME".
-    pads = node.attrs["pads"]
-    strides = node.attrs["strides"]
-    # Also takes data_format='NHWC'
+    tf_pads = cls.guess_tf_pad(node.attrs["pads"])
+
+    strides = [1, 1] + node.attrs["strides"]
+    # Also takes data_format='NCHW'
     # TF only works on 3D and 4D tensors
     if len(kernel_shape) == 4:
       return [tf.nn.max_pool(x, ksize=kernel_shape,
-        strides=strides, padding="SAME")]
+        strides=strides, padding=tf_pads, data_format="NCHW")]
     elif len(kernel_shape) >= 5:
       return [tf.nn.max_pool3d(x, ksize=kernel_shape,
-        strides=strides, padding="SAME")]
+        strides=strides, padding=tf_pads, data_format="NCHW")]
     else:
       # TODO: do pooling using other TF operations.
       warnings.warn("Max pool not supported for this tensor size",
@@ -763,6 +769,14 @@ class TensorflowBackend(Backend):
     end = tf.scatter_nd(indices, input_dict[node.inputs[3]], shape)
     size = end - begin
     return [tf.slice(input_dict[node.inputs[0]], begin, size)]
+
+  @classmethod
+  def handle_softmax(cls, node, input_dict):
+    if "axis" in node.attrs:
+      axis = node.attrs["axis"]
+    else:
+      axis = 1
+    return [tf.nn.softmax(input_dict[node.inputs[0]], dim=axis)]
 
   @classmethod
   def handle_split(cls, node, input_dict):
