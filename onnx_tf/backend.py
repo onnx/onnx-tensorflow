@@ -425,7 +425,56 @@ class TensorflowBackend(Backend):
     return [tf.argmin(data, axis=axis)]
 
   @classmethod
+  def _compatibility_pool(cls, node, input_dict, pool_func, guess_or_manual_pad):
+    from math import ceil
+
+    x = input_dict[node.inputs[0]]
+    x_rank = len(x.get_shape())
+
+    kernel_shape = node.attrs["kernel_shape"]
+    strides = node.attrs["strides"]
+
+    pads = node.attrs.get("pads", [0,0,0,0])
+
+    def py_pool(x, kernel_shape, strides, pad):
+      out_h = int((x.shape[2] + pads[0] + pads[2] - kernel_shape[0]) // strides[0]) + 1
+      out_w = int((x.shape[3] + pads[1] + pads[3] - kernel_shape[1]) // strides[1]) + 1
+
+      out = np.zeros([x.shape[0], x.shape[1], out_h, out_w], dtype=np.float32)
+      for n in range(0, x.shape[0]):
+        for c in range(0, x.shape[1]):
+          for h in range(0 - pad[0], x.shape[2] + pad[2], strides[0]):
+            for w in range(0 - pad[1], x.shape[3] + pad[3], strides[1]):
+              # skip window if window is outside padded region
+              if (h + kernel_shape[0] > x.shape[2] + pad[2]) or \
+                 (w + kernel_shape[1] > x.shape[3] + pad[3]):
+                continue
+              count = 0
+              val = 0
+              for kh in range(0, kernel_shape[0]):
+                for kw in range(0, kernel_shape[1]):
+                  current_h = h+kh
+                  current_w = w+kw
+                  if (current_h >= 0) and (current_w >= 0 ) and \
+                     (current_h < x.shape[2]) and (current_w < x.shape[3]):
+                     count += 1
+                     val += x[n][c][current_h][current_w]
+              out[n][c][int((h + pad[0])//strides[0])][int((w + pad[1])//strides[1])] = val/count
+      return out
+
+    pooled = tf.py_func(py_pool, [x, kernel_shape, strides, pads], tf.float32)
+    x_shape = list(x.get_shape())
+
+    out_h = int((x_shape[2] + pads[0] + pads[2] - kernel_shape[0]) // strides[0]) + 1
+    out_w = int((x_shape[3] + pads[1] + pads[3] - kernel_shape[1]) // strides[1]) + 1
+    pooled.set_shape([x_shape[0], x_shape[1], out_h, out_w])
+
+    return [pooled]
+
+  @classmethod
   def _pool(cls, node, input_dict, pool_func, guess_or_manual_pad):
+    from math import ceil
+
     x = input_dict[node.inputs[0]]
     x_rank = len(x.get_shape())
 
@@ -452,6 +501,7 @@ class TensorflowBackend(Backend):
       pooled = pool_func(x, [1] + kernel_shape + [1], [1] + strides + [1], pad,
                          data_format=data_format)
       pooled = tf.transpose(pooled, perm=[0, 3, 1, 2])
+
     return [pooled]
 
   @classmethod
@@ -466,7 +516,7 @@ class TensorflowBackend(Backend):
       return cls.handle_global_average_pool(node, input_dict)
 
     # 0 = guess padding
-    return cls._pool(node, input_dict, tf.nn.avg_pool, 0)
+    return cls._compatibility_pool(node, input_dict, tf.nn.avg_pool, 0)
 
   @classmethod
   def handle_batch_normalization(cls, node, input_dict):

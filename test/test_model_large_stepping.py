@@ -24,7 +24,7 @@ class TestLargeModel(unittest.TestCase):
   MODEL_PATH = "../../onnx_models/"
 
   def test(self):
-    _model = onnx.load(self.MODEL_PATH + "inception_v1/model.pb")
+    _model = onnx.load(self.MODEL_PATH + "shufflenet/model.pb")
     node_count = len(_model.graph.node)
     more_outputs = []
     output_to_check = []
@@ -36,7 +36,7 @@ class TestLargeModel(unittest.TestCase):
     tf_rep = prepare(_model)
     cf_rep = prepare2(_model)
 
-    sample = np.load(self.MODEL_PATH + "inception_v1/test_data_{}.npz".format(str(1)), encoding='bytes')
+    sample = np.load(self.MODEL_PATH + "shufflenet/test_data_{}.npz".format(str(1)), encoding='bytes')
     inputs = list(sample['inputs'])
     outputs = list(sample['outputs'])
 
@@ -48,7 +48,7 @@ class TestLargeModel(unittest.TestCase):
         np.savetxt(op.replace("/", "__") + ".cf", cf_out[op].flatten(), delimiter='\t')
         np.savetxt(op.replace("/", "__") + ".tf", my_out[op].flatten(), delimiter='\t')
         np.testing.assert_allclose(my_out[op], cf_out[op], rtol=1e-2)
-        print("results of this layer are correct within tolerence.")
+        print(op, "results of this layer are correct within tolerence.")
       except Exception as e:
         np.set_printoptions(threshold=np.inf)
         mismatch_percent = (find_between(str(e), "(mismatch", "%)"))
