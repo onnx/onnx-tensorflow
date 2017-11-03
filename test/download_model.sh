@@ -1,3 +1,5 @@
+mkdir -p ../../onnx_models/
+
 wget https://s3.amazonaws.com/download.onnx/models/bvlc_alexnet.tar.gz --directory-prefix=../../onnx_models/
 pushd ../../onnx_models/ && tar -xzf bvlc_alexnet.tar.gz && popd
 

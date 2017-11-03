@@ -207,7 +207,7 @@ class TensorflowBackend(Backend):
 
   @classmethod
   def guess_tf_pad(cls, pads):
-    tf_pad = "VALID" if pads == None or pads[-1] == 0 else "SAME"
+    tf_pad = "VALID" if pads == None or pads[-1] == 0 or (pads[0] != pads[2]) else "SAME"
     warnings.warn("Unsupported pads attribute by Tensorflow in "
                     "pool operator. Your padding is {}, we guess "
                     "you want {} padding.".format(str(pads), tf_pad),
@@ -425,7 +425,7 @@ class TensorflowBackend(Backend):
     return [tf.argmin(data, axis=axis)]
 
   @classmethod
-  def _pool(cls, node, input_dict, pool_func):
+  def _pool(cls, node, input_dict, pool_func, guess_or_manual_pad):
     x = input_dict[node.inputs[0]]
     x_rank = len(x.get_shape())
 
@@ -435,22 +435,38 @@ class TensorflowBackend(Backend):
     kernel_shape = node.attrs["kernel_shape"]
     strides = node.attrs["strides"]
 
+    # By default, do not pad
+    pad = "VALID"
     if "pads" in node.attrs.keys():
-      x = cls.get_padding_as_op(x, node.attrs["pads"])
+      if (guess_or_manual_pad == 0):
+        pad = cls.guess_tf_pad(node.attrs["pads"])
+      else:
+        x = cls.get_padding_as_op(x, node.attrs["pads"])
+        pad = "VALID"
 
     if support_cuda:
-      pooled = pool_func(x, [1, 1] + kernel_shape, [1, 1] + strides, "VALID",
+      pooled = pool_func(x, [1, 1] + kernel_shape, [1, 1] + strides, pad,
                          data_format=data_format)
     else:
       x = tf.transpose(x, perm=[0, 2, 3, 1])
-      pooled = pool_func(x, [1] + kernel_shape + [1], [1] + strides + [1], "VALID",
+      pooled = pool_func(x, [1] + kernel_shape + [1], [1] + strides + [1], pad,
                          data_format=data_format)
       pooled = tf.transpose(pooled, perm=[0, 3, 1, 2])
     return [pooled]
 
   @classmethod
   def handle_average_pool(cls, node, input_dict):
-    return cls._pool(node, input_dict, tf.nn.avg_pool)
+    spatial_dim = list(input_dict[node.inputs[0]].get_shape()[2:])
+    kernel_shape = node.attrs.get("kernel_shape", [])
+    global_pool = True
+    for i in range(len(spatial_dim)):
+      global_pool = global_pool and (spatial_dim[i] < kernel_shape[i])
+
+    if global_pool:
+      return cls.handle_global_average_pool(node, input_dict)
+
+    # 0 = guess padding
+    return cls._pool(node, input_dict, tf.nn.avg_pool, 0)
 
   @classmethod
   def handle_batch_normalization(cls, node, input_dict):
@@ -703,7 +719,8 @@ class TensorflowBackend(Backend):
 
   @classmethod
   def handle_max_pool(cls, node, input_dict):
-    return cls._pool(node, input_dict, tf.nn.max_pool)
+    # 1 = pad manually
+    return cls._pool(node, input_dict, tf.nn.max_pool, 1)
 
   @classmethod
   def handle_min(cls, node, input_dict):
