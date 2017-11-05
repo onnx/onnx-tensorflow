@@ -36,6 +36,8 @@ class TensorflowRep(BackendRep):
       feed_dict = { self.input_dict[key]: feed_dict[key] for key in self.uninitialized }
 
       sess.run(tf.global_variables_initializer())
-      output_values = sess.run(list(self.predict_net.output_dict.values()), feed_dict=feed_dict)
+      external_output = dict(filter(lambda kv: kv[0] in self.predict_net.external_output, list(self.predict_net.output_dict.items())))
+
+      output_values = sess.run(list(external_output.values()), feed_dict=feed_dict)
       return namedtupledict('Outputs',
-        list(self.predict_net.output_dict.keys()))(*output_values)
+        list(external_output.keys()))(*output_values)

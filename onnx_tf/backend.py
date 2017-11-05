@@ -240,6 +240,26 @@ class TensorflowBackend(Backend):
     return tensor
 
   @classmethod
+  def _bin_op(cls, node, input_dict, op_func):
+    x = input_dict[node.inputs[0]]
+    y = input_dict[node.inputs[1]]
+    broadcast = node.attrs.get("broadcast", 1)
+    if broadcast == 0:
+      warnings.warn("Definition of {} with broadcast disabled is not "
+                    "yet supported.".format(node.type), UserWarning)
+
+    if "axis" in node.attrs.keys():
+      num_ones_to_append = len(x.get_shape()) - \
+                           len(y.get_shape()) - \
+                           node.attrs["axis"]
+      if (num_ones_to_append > 0):
+        ones = tf.ones([num_ones_to_append], tf.int32)
+        broadcasted_shape = tf.concat([tf.shape(y), ones], axis=0)
+        y = tf.reshape(y, broadcasted_shape)
+
+    return op_func(x, y)
+
+  @classmethod
   def run_node(cls, node, inputs, device='CPU'):
     super(TensorflowBackend, cls).run_node(node, inputs, device)
     node = OnnxNode(node)
@@ -388,19 +408,7 @@ class TensorflowBackend(Backend):
 
   @classmethod
   def handle_add(cls, node, input_dict):
-    x = input_dict[node.inputs[0]]
-    y = input_dict[node.inputs[1]]
-    if "broadcast" in node.attrs.keys():
-      broadcast = node.attrs["broadcast"]
-    else:
-      broadcast = 0
-    if broadcast == 0:
-      warnings.warn("Definition of Add with broadcast disabled is incompatible"
-                    "between onnx and tensorflow.", UserWarning)
-    if "axis" in node.attrs.keys():
-      warnings.warn("Unsupported axis attribute by Tensorflow in Add."
-                    "This attribute will be ignored.", UserWarning)
-    return [tf.add(x, cls._explicit_broadcast(y, broadcast))]
+    return [cls._bin_op(node, input_dict, tf.add)]
 
   @classmethod
   def handle_arg_max(cls, node, input_dict):
@@ -665,16 +673,7 @@ class TensorflowBackend(Backend):
 
   @classmethod
   def handle_div(cls, node, input_dict):
-    x = input_dict[node.inputs[0]]
-    y = input_dict[node.inputs[1]]
-    broadcast = node.attrs["broadcast"]
-    if broadcast == 0:
-      warnings.warn("Definition of Div with broadcast disabled is incompatible"
-        "between onnx and tensorflow.", UserWarning)
-    if "axis" in node.attrs.keys():
-      warnings.warn("Unsupported alpha attribute by Tensorflow in Div."
-        "This attribute will be ignored.", UserWarning)
-    return [tf.divide(x, y)]
+    return [cls._bin_op(node, input_dict, tf.divide)]
 
   @classmethod
   def handle_dropout(cls, node, input_dict):
@@ -779,20 +778,7 @@ class TensorflowBackend(Backend):
 
   @classmethod
   def handle_mul(cls, node, input_dict):
-    x = input_dict[node.inputs[0]]
-    y = input_dict[node.inputs[1]]
-    if "broadcast" in node.attrs.keys():
-      broadcast = node.attrs["broadcast"]
-    else:
-      broadcast = 0
-    if broadcast == 0:
-      warnings.warn("Definition of Mul with broadcast disabled is incompatible"
-        "between onnx and tensorflow.", UserWarning)
-    if "axis" in node.attrs.keys():
-      warnings.warn("Unsupported axis attribute by Tensorflow in Mul."
-        "This attribute will be ignored.", UserWarning)
-
-    return [tf.multiply(x, cls._explicit_broadcast(y, broadcast))]
+    return [cls._bin_op(node, input_dict, tf.multiply)]
 
   #TODO: better support optimized rnn
   @classmethod
@@ -861,12 +847,22 @@ class TensorflowBackend(Backend):
 
   @classmethod
   def handle_pad(cls, node, input_dict):
-    mode = node.attrs["mode"]
-    value = node.attrs["value"]
     num_dim = int(len(node.attrs["paddings"])/2)
+    mode = node.attrs["mode"]
+
+    def _compatibility_edge_pad(x, pads):
+      x = np.pad(x, pads, mode="edge")
+      return x
+
+    value = node.attrs.get("value", 0)
     padding = tf.constant(np.array(node.attrs["paddings"])
                           .reshape([num_dim, 2])
                           .astype(np.int32)) # tf requires int32 paddings
+
+    x = input_dict[node.inputs[0]]
+    if mode.lower() == "edge":
+      return [tf.py_func(_compatibility_edge_pad, [x, padding], x.dtype)]
+
     return [tf.pad(input_dict[node.inputs[0]], padding, mode, None, value)]
 
   @classmethod
@@ -895,19 +891,31 @@ class TensorflowBackend(Backend):
 
   @classmethod
   def handle_selu(cls, node, input_dict):
-    warnings.warn("Definition of Selu is incompatible"
+    warnings.warn("Definition of Selu is different "
       "between onnx and tensorflow.", UserWarning)
     return [tf.nn.selu(input_dict[node.inputs[0]])]
 
-  # TODO: take care of negative indicies, discontinuous axes
   @classmethod
   def handle_slice(cls, node, input_dict):
-    shape = tf.reshape(tf.rank(input_dict[node.inputs[0]]), tf.constant([1]))
-    indices = tf.expand_dims(input_dict[node.inputs[1]], -1)
-    begin = tf.scatter_nd(indices, input_dict[node.inputs[2]], shape)
-    end = tf.scatter_nd(indices, input_dict[node.inputs[3]], shape)
-    size = end - begin
-    return [tf.slice(input_dict[node.inputs[0]], begin, size)]
+    x = input_dict[node.inputs[0]]
+
+    full_sizes = x.get_shape().as_list()
+    full_begin = [0] * len(full_sizes)
+
+    starts = node.attrs.get("starts")
+    ends = node.attrs.get("ends")
+    slice_len = len(starts)
+    axes = node.attrs.get("axes", list(range(slice_len)))
+
+    for i in range(slice_len):
+      ends[i] = full_sizes[axes[i]] + ends[i] \
+                if ends[i] < 0 else ends[i]
+      full_sizes[axes[i]] = ends[i] - starts[i]
+      full_begin[axes[i]] = starts[i]
+
+    return [tf.slice(input_dict[node.inputs[0]],
+                     tf.constant(full_begin),
+                     tf.constant(full_sizes))]
 
   @classmethod
   def handle_softmax(cls, node, input_dict):
@@ -925,21 +933,17 @@ class TensorflowBackend(Backend):
 
   @classmethod
   def handle_sub(cls, node, input_dict):
-    x = input_dict[node.inputs[0]]
-    y = input_dict[node.inputs[1]]
-    broadcast = node.attrs["broadcast"]
-    if broadcast == 0:
-      warnings.warn("Definition of Sub with broadcast disabled is incompatible"
-        "between onnx and tensorflow.", UserWarning)
-    if "axis" in node.attrs.keys():
-      warnings.warn("Unsupported axis attribute by Tensorflow in Sub."
-        "This attribute will be ignored.", UserWarning)
-    return [tf.subtract(x, y)]
+    return [cls._bin_op(node, input_dict, tf.subtract)]
 
   @classmethod
   def handle_sum(cls, node, input_dict):
     values = [input_dict[a] for a in node.inputs]
     return [tf.reduce_sum(tf.stack(values), axis=0)]
+
+  @classmethod
+  def handle_mat_mul(cls, node, input_dict):
+    return [tf.matmul(input_dict[node.inputs[0]],
+                      input_dict[node.inputs[1]])]
 
   @classmethod
   def supports_device(cls, device):
