@@ -11,6 +11,8 @@ import collections
 import re
 import warnings
 import sys
+import itertools
+from math import ceil, floor
 
 import numpy as np
 from onnx import checker
@@ -205,14 +207,31 @@ class TensorflowBackend(Backend):
       "to": lambda cls, x: cls.type_string_to_tf_type[x],
   }
 
+  # input_shape, kernel_shape, strides are specified for
+  # spatial dims only.
   @classmethod
-  def guess_tf_pad(cls, pads):
-    tf_pad = "VALID" if pads == None or pads[-1] == 0 or (pads[0] != pads[2]) else "SAME"
-    warnings.warn("Unsupported pads attribute by Tensorflow in "
-                    "pool operator. Your padding is {}, we guess "
-                    "you want {} padding.".format(str(pads), tf_pad),
-                    UserWarning)
-    return tf_pad
+  def get_tf_pad(cls, input_shape, kernel_shape, strides, pads):
+    num_dim = int(len(input_shape))
+    num_sp_dim = int(len(kernel_shape))
+
+    if pads == [0] * num_sp_dim * 2 or pads == None:
+      return "VALID"
+
+    current_dim = 0
+    is_same_padding = True
+    for input_size, stride_size, kernel_size in itertools.izip(input_shape, strides, kernel_shape):
+      output_size = ceil(float(input_size) / float(stride_size))
+      padding_total = int((output_size - 1) * stride_size + kernel_size - input_size)
+      padding_left = int(floor(float(padding_total) / 2.0))
+      padding_right = padding_total - padding_left
+      is_same_padding = is_same_padding and (pads[current_dim] == padding_left and \
+        pads[current_dim + num_sp_dim] == padding_right)
+      current_dim += 1
+
+    if is_same_padding:
+      return "SAME"
+
+    return None
 
   @classmethod
   def get_padding_as_op(cls, x, pads):
@@ -433,7 +452,7 @@ class TensorflowBackend(Backend):
     return [tf.argmin(data, axis=axis)]
 
   @classmethod
-  def _compatibility_pool(cls, node, input_dict, pool_func, guess_or_manual_pad):
+  def _compatibility_avg_pool(cls, node, input_dict, pool_func, guess_or_manual_pad):
     from math import ceil
 
     x = input_dict[node.inputs[0]]
@@ -480,7 +499,7 @@ class TensorflowBackend(Backend):
     return [pooled]
 
   @classmethod
-  def _pool(cls, node, input_dict, pool_func, guess_or_manual_pad):
+  def _pool(cls, node, input_dict, pool_func, can_pad_zero):
     from math import ceil
 
     x = input_dict[node.inputs[0]]
@@ -494,12 +513,15 @@ class TensorflowBackend(Backend):
 
     # By default, do not pad
     pad = "VALID"
+
     if "pads" in node.attrs.keys():
-      if (guess_or_manual_pad == 0):
-        pad = cls.guess_tf_pad(node.attrs["pads"])
-      else:
+      pad = cls.get_tf_pad(x.get_shape().as_list(), kernel_shape, strides, node.attrs["pads"])
+      if pad is None and can_pad_zero:
         x = cls.get_padding_as_op(x, node.attrs["pads"])
         pad = "VALID"
+      if pad is None and not can_pad_zero:
+        # Currently it's always average pooling
+        return cls._compatibility_avg_pool(node, input_dict, tf.nn.avg_pool, 0)
 
     if support_cuda:
       pooled = pool_func(x, [1, 1] + kernel_shape, [1, 1] + strides, pad,
@@ -523,8 +545,8 @@ class TensorflowBackend(Backend):
     if global_pool:
       return cls.handle_global_average_pool(node, input_dict)
 
-    # 0 = guess padding
-    return cls._compatibility_pool(node, input_dict, tf.nn.avg_pool, 0)
+    # 0 = cannot pad zero
+    return cls._pool(node, input_dict, tf.nn.avg_pool, 0)
 
   @classmethod
   def handle_batch_normalization(cls, node, input_dict):
@@ -768,7 +790,7 @@ class TensorflowBackend(Backend):
 
   @classmethod
   def handle_max_pool(cls, node, input_dict):
-    # 1 = pad manually
+    # 1 = can pad zero
     return cls._pool(node, input_dict, tf.nn.max_pool, 1)
 
   @classmethod
