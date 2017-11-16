@@ -12,6 +12,6 @@ cd "$pb_dir" && ./configure && make && make check && sudo make install && sudo l
 ccache -s
 
 # install onnx
-onnx_dir="$work_dir/onnx"
+onnx_dir="$workdir/onnx"
 mkdir -p $onnx_dir
 cd "$onnx_dir" && git clone --recursive git://github.com/onnx/onnx.git && pip install onnx
