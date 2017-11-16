@@ -14,6 +14,11 @@ import sys
 import itertools
 from math import ceil, floor
 
+try:
+    from itertools import izip as zip
+except ImportError: # will be 3.x series
+    pass
+
 import numpy as np
 from onnx import checker
 from onnx.onnx_pb2 import GraphProto, TensorProto, AttributeProto
@@ -219,12 +224,12 @@ class TensorflowBackend(Backend):
 
     current_dim = 0
     is_same_padding = True
-    for input_size, stride_size, kernel_size in itertools.izip(input_shape, strides, kernel_shape):
+    for input_size, stride_size, kernel_size in zip(input_shape, strides, kernel_shape):
       output_size = ceil(float(input_size) / float(stride_size))
       padding_total = int((output_size - 1) * stride_size + kernel_size - input_size)
       padding_left = int(floor(float(padding_total) / 2.0))
       padding_right = padding_total - padding_left
-      is_same_padding = is_same_padding and (pads[current_dim] == padding_left and \
+      is_same_padding = is_same_padding and (pads[current_dim] == padding_left and
         pads[current_dim + num_sp_dim] == padding_right)
       current_dim += 1
 
