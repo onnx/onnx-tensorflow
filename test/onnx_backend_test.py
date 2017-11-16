@@ -11,7 +11,7 @@ import onnx_tf.backend as tf_backend
 # This is a pytest magic variable to load extra plugins
 pytest_plugins = 'onnx.backend.test.report',
 
-backend_test = onnx.backend.test.BackendTest(c2, __name__)
+backend_test = onnx.backend.test.BackendTest(tf_backend, __name__)
 
 # if 'TRAVIS' in os.environ:
     # backend_test.exclude('test_vgg19')
