@@ -11,3 +11,4 @@ pip install -e $onnx_tf_dir
 python --version
 python test/test_node.py
 python test/test_model.py
+python test/onnx_backend_test.py
