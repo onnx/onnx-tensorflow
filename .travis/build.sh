@@ -9,6 +9,6 @@ onnx_tf_dir="$PWD"
 pip install -e $onnx_tf_dir
 
 python --version
-python -rsx test/test_node.py
-python -rsx test/test_model.py
-python -rsx test/onnx_backend_test.py
+python test/test_node.py
+python test/test_model.py
+python test/onnx_backend_test.py
