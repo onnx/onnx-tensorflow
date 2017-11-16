@@ -10,3 +10,8 @@ wget -qO- "https://github.com/google/protobuf/releases/download/v$PB_VERSION/pro
 ccache -z
 cd "$pb_dir" && ./configure && make && make check && sudo make install && sudo ldconfig
 ccache -s
+
+# install onnx
+onnx_dir="$workdir/onnx"
+mkdir -p $onnx_dir
+cd "$onnx_dir" && git clone --recursive git://github.com/onnx/onnx.git && pip install -e onnx
