@@ -890,7 +890,11 @@ class TensorflowBackend(Backend):
     if mode.lower() == "edge":
       return [tf.py_func(_compatibility_edge_pad, [x, padding], x.dtype)]
 
-    return [tf.pad(input_dict[node.inputs[0]], padding, mode, None, value)]
+    return [tf.pad(input_dict[node.inputs[0]],
+                   padding,
+                   mode,
+                   None,
+                   value)]
 
   @classmethod
   def handle_random_normal_like(cls, node, input_dict):
@@ -954,7 +958,8 @@ class TensorflowBackend(Backend):
 
   @classmethod
   def handle_split(cls, node, input_dict):
-    split = tf.constant(node.attrs["split"]) if "split" in node.attrs else input_dict[node.inputs[1]]
+    split = (tf.constant(node.attrs["split"]) if
+      "split" in node.attrs else input_dict[node.inputs[1]])
     axis = node.attrs["axis"]
     return [tf.split(input_dict[node.inputs[0]], split, axis)]
 
@@ -976,7 +981,8 @@ class TensorflowBackend(Backend):
   def supports_device(cls, device):
     if device == "CUDA":
       local_device_protos = device_lib.list_local_devices()
-      return len([x.name for x in local_device_protos if x.device_type == 'GPU']) > 0
+      return len([x.name for x in
+        local_device_protos if x.device_type == 'GPU']) > 0
     elif device == "CPU":
       return True
     return False

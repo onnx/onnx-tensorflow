@@ -481,8 +481,6 @@ class TestNode(unittest.TestCase):
     np.testing.assert_almost_equal(output["Y"], 1.0/x)
 
   def test_pow(self):
-    # TODO: uncomment power schema is wrong in onnx
-    return
     node_def = helper.make_node("Pow", ["X", "Y"], ["Z"])
     x = self._get_rnd(1000)/2.0 + 0.5
     y = self._get_rnd(1000)/2.0 + 0.5
@@ -511,12 +509,11 @@ class TestNode(unittest.TestCase):
     np.testing.assert_almost_equal(output["S"], x[0:2, 0:2, 0:2])
 
   def test_split(self):
-    # TODO: test obsolete
-    return
-    node_def = helper.make_node("Split", ["X", "Y"], ["Z"], axis=0)
-    x = self._get_rnd([100]).reshape([10, 10])
     split = [3, 3, 4]
-    output = run_node(node_def, [x, split])
+    node_def = helper.make_node("Split", ["X"], ["Z"], axis=0, split=split)
+    x = self._get_rnd([100]).reshape([10, 10])
+
+    output = run_node(node_def, [x])
     for a, b in zip(output["Z"], np.split(x,np.cumsum(split))[:-1]):
       np.testing.assert_almost_equal(a, b)
 
