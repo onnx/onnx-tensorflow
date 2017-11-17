@@ -15,9 +15,9 @@ import itertools
 from math import ceil, floor
 
 try:
-    from itertools import izip as zip
+  from itertools import izip as zip
 except ImportError: # will be 3.x series
-    pass
+  pass
 
 import numpy as np
 from onnx import checker
@@ -222,16 +222,26 @@ class TensorflowBackend(Backend):
     if pads == [0] * num_sp_dim * 2 or pads == None:
       return "VALID"
 
-    current_dim = 0
     is_same_padding = True
-    for input_size, stride_size, kernel_size in zip(input_shape, strides, kernel_shape):
+    for (input_size,
+         stride_size,
+         kernel_size,
+         left_pad,
+         right_pad) in zip(input_shape,
+                           strides,
+                           kernel_shape,
+                           pads[:num_sp_dim],
+                           pads[num_sp_dim:]):
+
       output_size = ceil(float(input_size) / float(stride_size))
-      padding_total = int((output_size - 1) * stride_size + kernel_size - input_size)
+      padding_total = int((output_size - 1) * stride_size +
+                          kernel_size - input_size)
       padding_left = int(floor(float(padding_total) / 2.0))
       padding_right = padding_total - padding_left
-      is_same_padding = is_same_padding and (pads[current_dim] == padding_left and
-        pads[current_dim + num_sp_dim] == padding_right)
-      current_dim += 1
+
+      is_same_padding = is_same_padding and (left_pad == padding_left and
+                                             right_pad == padding_right)
+
 
     if is_same_padding:
       return "SAME"
@@ -257,7 +267,7 @@ class TensorflowBackend(Backend):
       return tensor
     warnings.warn("Currently, support for broadcasting is limited "
                   "and may result in unexpected results",
-                    UserWarning)
+                  UserWarning)
     tensor = tf.expand_dims(tensor, 0)
     tensor = tf.expand_dims(tensor, 2)
     tensor = tf.expand_dims(tensor, 3)
@@ -276,7 +286,7 @@ class TensorflowBackend(Backend):
       num_ones_to_append = len(x.get_shape()) - \
                            len(y.get_shape()) - \
                            node.attrs["axis"]
-      if (num_ones_to_append > 0):
+      if num_ones_to_append > 0:
         ones = tf.ones([num_ones_to_append], tf.int32)
         broadcasted_shape = tf.concat([tf.shape(y), ones], axis=0)
         y = tf.reshape(y, broadcasted_shape)
@@ -316,7 +326,7 @@ class TensorflowBackend(Backend):
     # initialized: A list of names of the initialized tensors.
     if graph_def.initializer:
       input_dict_items = cls.onnx_initializer_to_input_dict_items(
-        graph_def.initializer)
+          graph_def.initializer)
       initialized = {init.name for init in graph_def.initializer}
     else:
       input_dict_items = []
@@ -325,18 +335,19 @@ class TensorflowBackend(Backend):
     predict_net.name = graph_def.name
 
     predict_net.external_input.extend(
-      value_info.name for value_info in graph_def.input)
+        value_info.name for value_info in graph_def.input)
     predict_net.external_output.extend(
-      value_info.name for value_info in graph_def.output)
+        value_info.name for value_info in graph_def.output)
 
     # creating placeholders for currently unkown inputs
     for value_info in graph_def.input:
       if value_info.name in initialized:
-          continue
+        continue
 
-      shape = list(d.dim_value for d in \
-        value_info.type.tensor_type.shape.dim)
-      x = tf.placeholder(cls.tensor_type_enum[value_info.type.tensor_type.elem_type],
+      shape = list(d.dim_value for d in
+                   value_info.type.tensor_type.shape.dim)
+      x = tf.placeholder(cls.tensor_type_enum[
+          value_info.type.tensor_type.elem_type],
                          name=value_info.name, shape=shape)
       input_dict_items.append([value_info.name, x])
 
@@ -356,6 +367,7 @@ class TensorflowBackend(Backend):
 
     for node in graph_def.node:
       node = OnnxNode(node)
+
       output_ops = cls._onnx_node_to_tensorflow_op(node, input_dict)
       curr_node_output_map = list(zip(node.outputs, output_ops))
       input_dict = dict(list(input_dict.items()) +
@@ -371,7 +383,8 @@ class TensorflowBackend(Backend):
   def prepare(cls, model, device='CPU', **kwargs):
     super(TensorflowBackend, cls).prepare(model, device, **kwargs)
 
-    original_input_dict, predict_net = cls.onnx_graph_to_tensorflow_net(model.graph)
+    original_input_dict, predict_net = (
+        cls.onnx_graph_to_tensorflow_net(model.graph))
 
     initialized = {init.name for init in model.graph.initializer}
     uninitialized = [x for x in predict_net.external_input
@@ -380,13 +393,16 @@ class TensorflowBackend(Backend):
     return TensorflowRep(predict_net, original_input_dict, uninitialized)
 
   @classmethod
-  def onnx_initializer_to_input_dict_items(cls, initializer, init_net_name='init'):
+  def onnx_initializer_to_input_dict_items(cls,
+                                           initializer,
+                                           init_net_name='init'):
     def tensor2list(onnx_tensor):
       # Use the onnx.numpy_helper because the data may be raw
       return onnx.numpy_helper.to_array(onnx_tensor).flatten().tolist()
     input_dict = [(tp.name, tf.constant(tensor2list(tp),
                                         shape=tp.dims,
-                                        dtype=cls.tensor_type_to_tf_type[tp.data_type]))
+                                        dtype=cls.tensor_type_to_tf_type[
+                                            tp.data_type]))
                   for tp in initializer]
     return input_dict
 
@@ -457,7 +473,11 @@ class TensorflowBackend(Backend):
     return [tf.argmin(data, axis=axis)]
 
   @classmethod
-  def _compatibility_avg_pool(cls, node, input_dict, pool_func, guess_or_manual_pad):
+  def _compatibility_avg_pool(cls,
+                              node,
+                              input_dict,
+                              pool_func,
+                              guess_or_manual_pad):
     from math import ceil
 
     x = input_dict[node.inputs[0]]
@@ -466,8 +486,9 @@ class TensorflowBackend(Backend):
     kernel_shape = node.attrs["kernel_shape"]
     strides = node.attrs["strides"]
 
-    pads = node.attrs.get("pads", [0,0,0,0])
+    pads = node.attrs.get("pads", [0, 0, 0, 0])
 
+    # pylint: disable=line-too-long
     def py_pool(x, kernel_shape, strides, pad):
       out_h = int((x.shape[2] + pads[0] + pads[2] - kernel_shape[0]) // strides[0]) + 1
       out_w = int((x.shape[3] + pads[1] + pads[3] - kernel_shape[1]) // strides[1]) + 1
@@ -487,10 +508,10 @@ class TensorflowBackend(Backend):
                 for kw in range(0, kernel_shape[1]):
                   current_h = h+kh
                   current_w = w+kw
-                  if (current_h >= 0) and (current_w >= 0 ) and \
+                  if (current_h >= 0) and (current_w >= 0) and \
                      (current_h < x.shape[2]) and (current_w < x.shape[3]):
-                     count += 1
-                     val += x[n][c][current_h][current_w]
+                    count += 1
+                    val += x[n][c][current_h][current_w]
               out[n][c][int((h + pad[0])//strides[0])][int((w + pad[1])//strides[1])] = val/count
       return out
 
@@ -500,6 +521,7 @@ class TensorflowBackend(Backend):
     out_h = int((x_shape[2] + pads[0] + pads[2] - kernel_shape[0]) // strides[0]) + 1
     out_w = int((x_shape[3] + pads[1] + pads[3] - kernel_shape[1]) // strides[1]) + 1
     pooled.set_shape([x_shape[0], x_shape[1], out_h, out_w])
+    # pylint: enable=line-too-long
 
     return [pooled]
 
@@ -520,7 +542,10 @@ class TensorflowBackend(Backend):
     pad = "VALID"
 
     if "pads" in node.attrs.keys():
-      pad = cls.get_tf_pad(x.get_shape().as_list(), kernel_shape, strides, node.attrs["pads"])
+      pad = cls.get_tf_pad(x.get_shape().as_list(),
+                           kernel_shape,
+                           strides,
+                           node.attrs["pads"])
       if pad is None and can_pad_zero:
         x = cls.get_padding_as_op(x, node.attrs["pads"])
         pad = "VALID"
@@ -564,7 +589,7 @@ class TensorflowBackend(Backend):
     variance_epsilon = node.attrs.get("epsilon", 0.00001)
     if node.attrs.get("is_test", 0):
       return [tf.nn.batch_normalization(x, mean, variance, bias, scale,
-                                       variance_epsilon)]
+                                        variance_epsilon)]
     if "momentum" in node.attrs.keys():
       warnings.warn("Unsupported momentum attribute by Tensorflow in "
                     "batch_normalization. This attribute will be ignored.",
@@ -638,7 +663,9 @@ class TensorflowBackend(Backend):
 
     if "group" in node.attrs:
 
-      weight_groups = tf.split(weights, num_or_size_splits=node.attrs["group"], axis=3)
+      weight_groups = tf.split(weights,
+                               num_or_size_splits=node.attrs["group"],
+                               axis=3)
 
       if support_cuda:
         xs = tf.split(x, num_or_size_splits=node.attrs["group"], axis=1)
@@ -647,8 +674,9 @@ class TensorflowBackend(Backend):
         xs = tf.split(x, num_or_size_splits=node.attrs["group"], axis=3)
 
       convolved = [tf.nn.convolution(x, weight, "VALID", strides=strides,
-                              dilation_rate=dilations,
-                              data_format=data_format) for (x, weight) in zip(xs, weight_groups)]
+                                     dilation_rate=dilations,
+                                     data_format=data_format) for
+                   (x, weight) in zip(xs, weight_groups)]
 
       if len(node.inputs) == 2:
         if support_cuda:
@@ -673,8 +701,8 @@ class TensorflowBackend(Backend):
       x = tf.transpose(x, perm=[0, 2, 3, 1])
 
     convolved = tf.nn.convolution(x, weights, "VALID", strides=strides,
-                                dilation_rate=dilations,
-                                data_format=data_format)
+                                  dilation_rate=dilations,
+                                  data_format=data_format)
 
     if not support_cuda:
       convolved = tf.transpose(convolved, perm=[0, 3, 1, 2])
@@ -717,7 +745,7 @@ class TensorflowBackend(Backend):
     x = input_dict[node.inputs[0]]
     if "alpha" in node.attrs.keys():
       warnings.warn("Unsupported alpha attribute by Tensorflow in Elu."
-        "This attribute will be ignored.", UserWarning)
+                    "This attribute will be ignored.", UserWarning)
     return [tf.nn.elu(x)]
 
   @classmethod
@@ -773,7 +801,7 @@ class TensorflowBackend(Backend):
     # This could be a problem.
     x_t = tf.transpose(x, perm=[0, 2, 3, 1])
     normed = tf.nn.lrn(x_t, depth_radius=depth_radius,
-      bias=bias, alpha=tf_alpha, beta=beta)
+                       bias=bias, alpha=tf_alpha, beta=beta)
     normed = tf.transpose(normed, perm=[0, 3, 1, 2])
     return [normed]
 
@@ -806,59 +834,6 @@ class TensorflowBackend(Backend):
   @classmethod
   def handle_mul(cls, node, input_dict):
     return [cls._bin_op(node, input_dict, tf.multiply)]
-
-  #TODO: better support optimized rnn
-  @classmethod
-  def handle_optimized_r_n_n(cls, node, input_dict):
-    if "direction" in node.attrs.keys():
-      direction = node.attrs["direction"]
-    else:
-      direction = 1
-    if "num_layers" in node.attrs.keys():
-      num_layers = node.attrs["num_layers"]
-    else:
-      num_layers = 1
-    if "skip_input_transform" in node.attrs.keys():
-      warnings.warn("We currently do not support skipping input transformation.")
-
-    hidden_size = node.attrs["hidden_size"]
-    if node.attrs["cell_type"] == "relu":
-      relu_layer = tf.contrib.rnn.BasicCell(hidden_size, activation=tf.nn.relu)
-      cell = tf.contrib.rnn.MultiRNNCell([relu_layer] * num_layers)
-    elif node.attrs["cell_type"] == "tanh":
-      tanh_layer = tf.contrib.rnn.BasicCell(hidden_size)
-      cell = tf.contrib.rnn.MultiRNNCell([tanh_layer] * num_layers)
-    elif node.attrs["cell_type"] == "gru":
-      gru_layer = tf.contrib.rnn.GRUCell(hidden_size)
-      cell = tf.contrib.rnn.MultiRNNCell([gru_layer] * num_layers)
-    elif node.attrs["cell_type"] == "lstm":
-      lstm_layer = tf.contrib.rnn.LSTMCell(hidden_size)
-      cell = tf.contrib.rnn.MultiRNNCell([lstm_layer] * num_layers)
-    else:
-      raise RuntimeError("unexpected cell type")
-
-    warnings.warn("Initial weight, hidden/cell states will be ignored for now.")
-    # TODO: handle data types
-    if direction == 1:
-      output, state = tf.nn.dynamic_rnn(cell,
-                                        input_dict[node.inputs[1]],
-                                        time_major=True,
-                                        dtype=tf.float32)
-    else:
-      output, state = tf.nn.bidirectional_dynamic_rnn(cell,
-                                                      input_dict[node.inputs[1]],
-                                                      time_major=True,
-                                                      dtype=tf.float32)
-
-    if node.attrs["cell_type"] == "lstm":
-      state = state[0]
-      c, h = state
-      states = [h, c]
-    else:
-      states = [state]
-    outputs = [output]
-    outputs.extend(states)
-    return outputs
 
   @classmethod
   def handle_p_relu(cls, node, input_dict):
@@ -923,7 +898,7 @@ class TensorflowBackend(Backend):
   @classmethod
   def handle_selu(cls, node, input_dict):
     warnings.warn("Definition of Selu is different "
-      "between onnx and tensorflow.", UserWarning)
+                  "between onnx and tensorflow.", UserWarning)
     return [tf.nn.selu(input_dict[node.inputs[0]])]
 
   @classmethod
@@ -959,7 +934,7 @@ class TensorflowBackend(Backend):
   @classmethod
   def handle_split(cls, node, input_dict):
     split = (tf.constant(node.attrs["split"]) if
-      "split" in node.attrs else input_dict[node.inputs[1]])
+             "split" in node.attrs else input_dict[node.inputs[1]])
     axis = node.attrs["axis"]
     return [tf.split(input_dict[node.inputs[0]], split, axis)]
 
@@ -982,7 +957,7 @@ class TensorflowBackend(Backend):
     if device == "CUDA":
       local_device_protos = device_lib.list_local_devices()
       return len([x.name for x in
-        local_device_protos if x.device_type == 'GPU']) > 0
+                  local_device_protos if x.device_type == 'GPU']) > 0
     elif device == "CPU":
       return True
     return False
