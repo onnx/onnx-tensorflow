@@ -893,9 +893,7 @@ class TensorflowBackend(Backend):
   def handle_reshape(cls, node, input_dict):
     tensor = input_dict[node.inputs[0]]
     shape = tf.constant(node.attrs["shape"])
-    output = tf.reshape(tensor, shape)
-    print(output)
-    return [output]
+    return [tf.reshape(tensor, shape)]
 
   @classmethod
   def handle_selu(cls, node, input_dict):
