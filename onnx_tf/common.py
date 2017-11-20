@@ -8,8 +8,22 @@ import re
 from onnx import TensorProto
 import tensorflow as tf
 
-# refer to
-# https://github.com/tensorflow/tensorflow/blob/f284c708a8f3e2672d41dd3e7f6f03b9d26f0c80/tensorflow/core/framework/types.proto
+# Using the following two functions to prevent shooting ourselves
+# in the foot with non-invertible maps.
+
+def invertible(dict):
+    # invertible iff one-to-one and onto
+    # onto is guaranteed, so check one-to-one
+    return not (len(dict.values()) != len(dict.values()))
+
+def invert(dict):
+    if not invertible(dict):
+        raise ValueError("The dictionary is not invertible"
+            " because it is not one-to-one.")
+    else:
+        inverse = {v: k for k, v in dict.items()}
+        return inverse
+
 ONNX_TYPE_TO_TF_TYPE = {
     TensorProto.FLOAT: tf.float32,
     TensorProto.UINT8: tf.uint8,
@@ -28,8 +42,7 @@ ONNX_TYPE_TO_TF_TYPE = {
     # TensorProto.UINT64: tf.uint64,
 }
 
-TF_TYPE_TO_ONNX_TYPE = {v: k for k, v in
-                        ONNX_TYPE_TO_TF_TYPE.items()}
+TF_TYPE_TO_ONNX_TYPE = invert(ONNX_TYPE_TO_TF_TYPE)
 
 def get_tf_shape_as_list(tf_shape_dim):
   return map(lambda x: x.size, list(tf_shape_dim))
