@@ -849,7 +849,7 @@ class TensorflowBackend(Backend):
 
   @classmethod
   def handle_pad(cls, node, input_dict):
-    num_dim = int(len(node.attrs["paddings"])/2)
+    num_dim = int(len(node.attrs["pads"])/2)
     mode = node.attrs["mode"]
 
     def _compatibility_edge_pad(x, pads):
@@ -857,16 +857,16 @@ class TensorflowBackend(Backend):
       return x
 
     value = node.attrs.get("value", 0)
-    padding = tf.constant(np.array(node.attrs["paddings"])
+    pads = tf.constant(np.array(node.attrs["pads"])
                           .reshape([num_dim, 2])
                           .astype(np.int32)) # tf requires int32 paddings
 
     x = input_dict[node.inputs[0]]
     if mode.lower() == "edge":
-      return [tf.py_func(_compatibility_edge_pad, [x, padding], x.dtype)]
+      return [tf.py_func(_compatibility_edge_pad, [x, pads], x.dtype)]
 
     return [tf.pad(input_dict[node.inputs[0]],
-                   padding,
+                   pads,
                    mode,
                    None,
                    value)]

@@ -465,7 +465,7 @@ class TestNode(unittest.TestCase):
   def test_pad(self):
     node_def = helper.make_node("Pad", ["X"], ["Y"],
                                 mode="constant",
-                                paddings=[1, 1, 1, 1],
+                                pads=[1, 1, 1, 1],
                                 value=2.0)
     x = self._get_rnd([100, 100])
     output = run_node(node_def, [x])
