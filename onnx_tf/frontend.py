@@ -7,7 +7,13 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import re
+import tensorflow as tf
 
+from onnx_tf.common import (
+  TF_TYPE_TO_ONNX_TYPE,
+  get_tf_shape_as_list,
+  op_name_to_lower,
+)
 from onnx import onnx_pb2, helper
 from onnx.onnx_pb2 import GraphProto, TensorProto, AttributeProto
 
@@ -15,65 +21,57 @@ class TensorflowFrontend(object):
   """ Tensorflow Frontend for ONNX
   """
 
-  # refer to
-  # https://github.com/tensorflow/tensorflow/blob/f284c708a8f3e2672d41dd3e7f6f03b9d26f0c80/tensorflow/core/framework/types.proto
-
-  onnx_types = [
-  "invalid",
-  TensorProto.FLOAT,
-  TensorProto.DOUBLE,
-  # DT_INT32 = 3;
-  # DT_UINT8 = 4;
-  # DT_INT16 = 5;
-  # DT_INT8 = 6;
-  # DT_STRING = 7;
-  # DT_COMPLEX64 = 8;  // Single-precision complex
-  # DT_INT64 = 9;
-  # DT_BOOL = 10;
-  # DT_QINT8 = 11;     // Quantized int8
-  # DT_QUINT8 = 12;    // Quantized uint8
-  # DT_QINT32 = 13;    // Quantized int32
-  # DT_BFLOAT16 = 14;  // Float32 truncated to 16 bits.  Only for cast ops.
-  # DT_QINT16 = 15;    // Quantized int16
-  # DT_QUINT16 = 16;   // Quantized uint16
-  # DT_UINT16 = 17;
-  # DT_COMPLEX128 = 18;  // Double-precision complex
-  # DT_HALF = 19;
-  # DT_RESOURCE = 20;
-  # DT_VARIANT = 21;  // Arbitrary C++ data types
-  # DT_UINT32 = 22;
-  # DT_UINT64 = 23;
-  ]
-
   @classmethod
-  def op_name_to_lower(cls, name):
-    return re.sub('(?<!^)(?=[A-Z])', '_', name).lower()
+  def tensorflow_graph_to_onnx_graph(cls, graph_def, output, name="graph"):
+    """Function that converts a tensorflow graph to an onnx graph.
 
-  @classmethod
-  def tensorflow_graph_to_onnx_graph(cls, graph_def, output):
+    Args:
+        graph_def: Tensorflow Graph Proto object.
+        output: A Tensorflow NodeDef object specifying which node
+          to be taken as output of the ONNX graph.
+        name: The name of the output ONNX Graph.
+
+    Returns:
+        The equivalent ONNX Graph Proto object.
+
+    """
+
+    # This list holds the protobuf objects of type ValueInfoProto
+    # representing the input to the converted ONNX graph.
     inputs_proto = []
+
+    # This list holds the protobuf objects of type NodeProto
+    # representing the ops in the converted ONNX graph.
     ops_proto = []
 
     for node in graph_def.node:
       if node.op == "Placeholder":
-        shape = map(lambda x: x.size, list(node.attr["shape"].shape.dim))
-        inputs_proto.append(helper.make_tensor_value_info(node.name,
-                                                          cls.onnx_types[node.attr["dtype"].type],
-                                                          shape))
+        # Tensorflow requires dtype to be known.
+        onnx_type = TF_TYPE_TO_ONNX_TYPE[tf.as_dtype(node.attr["dtype"].type)]
+        shape = get_tf_shape_as_list(node.attr["shape"].shape.dim)
+        input_proto = helper.make_tensor_value_info(node.name,
+                                                    onnx_type,
+                                                    shape)
+        inputs_proto.append(input_proto)
       else:
-        handler_name = "handle_" + cls.op_name_to_lower(node.op)
+        handler_name = "handle_" + op_name_to_lower(node.op)
 
         # Check if specialized handler exists.
         if handler_name in dir(cls):
           method_to_call = getattr(cls, handler_name)
           ops_proto.append(method_to_call(node))
 
+    # making output proto
+    output_onnx_type = TF_TYPE_TO_ONNX_TYPE[output.attr["T"].type]
+    output_shape = get_tf_shape_as_list(output.attr["_output_shapes"].list.shape[0].dim)
+    output_proto = helper.make_tensor_value_info(output.name,
+                                                 output_onnx_type,
+                                                 output_shape)
+
     return helper.make_graph(ops_proto,
-                            "onnx_graph",
+                            name,
                             inputs_proto,
-                            [helper.make_tensor_value_info(output.name,
-                                                          cls.onnx_types[output.attr["T"].type],
-                                                          [10])])
+                            [output_proto])
 
   @classmethod
   def handle_relu(cls, node_proto):

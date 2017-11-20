@@ -26,7 +26,7 @@ class TestNode(unittest.TestCase):
     x = tf.placeholder(tf.float32, shape=shape)
     y = tf.nn.relu(x)
 
-    tf_graph = y.graph.as_graph_def()
+    tf_graph = y.graph.as_graph_def(add_shapes=True)
     for node in tf_graph.node:
         if node.name == "Relu":
             output_node = node
@@ -35,8 +35,12 @@ class TestNode(unittest.TestCase):
     tf_rep = prepare(helper.make_model(onnx_graph))
     in_tensor = self._get_rnd(shape)
     output = tf_rep.run({"Placeholder": in_tensor})["Relu"]
+    with tf.Session() as sess:
+        output_tf = sess.run(y, feed_dict={
+            x: in_tensor
+            })
 
-    np.testing.assert_allclose(output, np.clip(in_tensor, 0, 1.0))
+    np.testing.assert_allclose(output, output_tf)
 
 if __name__ == '__main__':
   unittest.main()
