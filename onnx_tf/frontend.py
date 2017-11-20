@@ -10,6 +10,7 @@ import tensorflow as tf
 
 from onnx_tf.common import (
   TF_TYPE_TO_ONNX_TYPE,
+  TF_OP_STR_TO_ONNX_OP,
   get_tf_shape_as_list,
   op_name_to_lower,
 )
@@ -52,6 +53,15 @@ class TensorflowFrontend(object):
                                                     onnx_type,
                                                     shape)
         inputs_proto.append(input_proto)
+      elif node.op in TF_OP_STR_TO_ONNX_OP.keys():
+        inputs = list(node.input)
+        # Tensorflow only has one output per op.
+        node_output = node.name
+        ops_proto.append(helper.make_node(
+          TF_OP_STR_TO_ONNX_OP[node.op],
+          inputs,
+          [node_output],
+          name=node.name))
       else:
         handler_name = "handle_" + op_name_to_lower(node.op)
 
@@ -72,6 +82,7 @@ class TensorflowFrontend(object):
                             inputs_proto,
                             [output_proto])
 
+  # This is kept as an example, it's never used.
   @classmethod
   def handle_relu(cls, node_proto):
     return helper.make_node(

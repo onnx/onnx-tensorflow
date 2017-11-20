@@ -44,6 +44,52 @@ ONNX_TYPE_TO_TF_TYPE = {
 
 TF_TYPE_TO_ONNX_TYPE = invert(ONNX_TYPE_TO_TF_TYPE)
 
+ONNX_ATTR_TO_TF_ATTR = {
+  "scale": "stddev",
+  "high": "maxval",
+  "low": "minval",
+  "axes": "axis",
+  "keepdims": "keep_dims",
+  "axis": "dim",
+  "to": "dtype",
+}
+
+TF_ATTR_TO_ONNX_ATTR = invert(ONNX_ATTR_TO_TF_ATTR)
+
+ONNX_OP_TO_TF_OP = {
+  "abs": tf.abs,
+  "cast": tf.cast,
+  "ceil": tf.ceil,
+  "relu": tf.nn.relu,
+  "dot": tf.contrib.keras.backend.dot,
+  "exp": tf.exp,
+  "floor": tf.floor,
+  "gather": tf.gather,
+  "log": tf.log,
+  "neg": tf.negative,
+  "pow": tf.pow,
+  "random_normal": tf.random_normal,
+  "random_uniform": tf.random_uniform,
+  "reciprocal": tf.reciprocal,
+  "reduce_log_sum_exp": tf.reduce_logsumexp,
+  "reduce_max": tf.reduce_max,
+  "reduce_mean": tf.reduce_mean,
+  "reduce_min": tf.reduce_min,
+  "reduce_prod": tf.reduce_prod,
+  "reduce_sum": tf.reduce_sum,
+  "sigmoid": tf.sigmoid,
+  "sqrt": tf.sqrt,
+  "squeeze": tf.squeeze,
+  "tanh": tf.tanh,
+  "transpose": tf.transpose,
+}
+
+TF_OP_TO_ONNX_OP = invert(ONNX_OP_TO_TF_OP)
+
+TF_OP_STR_TO_ONNX_OP = {
+  "Relu": "Relu",
+}
+
 def get_tf_shape_as_list(tf_shape_dim):
   return map(lambda x: x.size, list(tf_shape_dim))
 
