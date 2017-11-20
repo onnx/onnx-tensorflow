@@ -21,15 +21,19 @@ class TestNode(unittest.TestCase):
                     .reshape(shape) \
                     .astype(np.float32)
 
+  def _get_node_by_name(self, nodes, name):
+    for node in nodes:
+        if node.name == name:
+          return node
+
   def test_relu(self):
     shape = (10, 10)
     x = tf.placeholder(tf.float32, shape=shape)
     y = tf.nn.relu(x)
 
     tf_graph = y.graph.as_graph_def(add_shapes=True)
-    for node in tf_graph.node:
-        if node.name == "Relu":
-            output_node = node
+
+    output_node = self._get_node_by_name(tf_graph.node, "Relu")
 
     onnx_graph = convert_graph(tf_graph, output_node)
     tf_rep = prepare(helper.make_model(onnx_graph))
