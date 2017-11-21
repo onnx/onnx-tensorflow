@@ -4,6 +4,7 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import re
+from collections import namedtuple
 
 from onnx import TensorProto
 import tensorflow as tf
