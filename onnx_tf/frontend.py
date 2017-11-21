@@ -129,8 +129,8 @@ class TensorflowFrontend(object):
 
   # This is kept as an example, it's never used.
   @classmethod
-  def handle_relu(cls, node_proto):
+  def handle_relu(cls, node):
     return helper.make_node(
-            "Relu", [str(node_proto.input[0])], [node_proto.name], name=node_proto.name)
+            "Relu", node.inputs, [node.name], name=node.name)
 
 convert_graph = TensorflowFrontend.tensorflow_graph_to_onnx_graph
