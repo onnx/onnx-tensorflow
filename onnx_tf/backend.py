@@ -178,6 +178,7 @@ class TensorflowBackend(Backend):
       tf.int16,
       tf.int32,
       tf.int64,
+      tf.string,
       tf.bool,
       tf.float16,
       tf.float64,
@@ -834,6 +835,10 @@ class TensorflowBackend(Backend):
   @classmethod
   def handle_mul(cls, node, input_dict):
     return [cls._bin_op(node, input_dict, tf.multiply)]
+
+  @classmethod
+  def handle_or(cls, node, input_dict):
+    return [cls._bin_op(node, input_dict, tf.logical_or)]
 
   @classmethod
   def handle_p_relu(cls, node, input_dict):
