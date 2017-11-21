@@ -52,7 +52,11 @@ class TensorflowNode(object):
         self.attr[new_key] = val
 
   def type_converter(self, x):
+<<<<<<< HEAD
+    return TF_TYPE_TO_ONNX_TYPE[tf.as_dtype(x.type)]
+=======
     return tf.as_dtype(x.type)
+>>>>>>> origin/master
 
 class TensorflowFrontend(object):
   """ Tensorflow Frontend for ONNX
@@ -86,7 +90,7 @@ class TensorflowFrontend(object):
       if node.op == "Placeholder":
         # Tensorflow requires dtype to be known.
         # TODO: currently `dtype` is translated to `to`.
-        onnx_type = TF_TYPE_TO_ONNX_TYPE[node.attr["to"]]
+        onnx_type = node.attr["to"]
         shape = node.attr["shape"]
         input_proto = make_tensor_value_info(node.name,
                                              onnx_type,
@@ -94,11 +98,19 @@ class TensorflowFrontend(object):
         inputs_proto.append(input_proto)
 
       elif node.op in TF_OP_STR_TO_ONNX_OP.keys():
+        # Remove tensorflow-specific attrs that are not
+        # needed in ONNX.
+        attr_to_remove = ["_output_shapes", "T"]
+        node.attr = dict(filter(lambda pair: pair[0]
+                                not in attr_to_remove, node.attr.items()))
+
         node_output = node.name
+        print(node.attr)
         ops_proto.append(make_node(TF_OP_STR_TO_ONNX_OP[node.op],
                                    node.inputs,
                                    [node_output],
-                                   name=node.name))
+                                   name=node.name,
+                                   **node.attr))
       else:
         handler_name = "handle_" + op_name_to_lower(node.op)
 
@@ -110,7 +122,7 @@ class TensorflowFrontend(object):
     output = TensorflowNode(output)
     # making output proto
     # TODO: deal with multi-output case.
-    output_onnx_type = TF_TYPE_TO_ONNX_TYPE[output.attr["T"]]
+    output_onnx_type = output.attr["T"]
     output_proto = make_tensor_value_info(output.name,
                                           output_onnx_type,
                                           output.attr["_output_shapes"][0])
