@@ -52,7 +52,11 @@ class TensorflowNode(object):
         self.attr[new_key] = val
 
   def type_converter(self, x):
+<<<<<<< HEAD
     return TF_TYPE_TO_ONNX_TYPE[tf.as_dtype(x.type)]
+=======
+    return tf.as_dtype(x.type)
+>>>>>>> origin/master
 
 class TensorflowFrontend(object):
   """ Tensorflow Frontend for ONNX
