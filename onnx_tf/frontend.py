@@ -85,7 +85,8 @@ class TensorflowFrontend(object):
       node = TensorflowNode(node)
       if node.op == "Placeholder":
         # Tensorflow requires dtype to be known.
-        onnx_type = TF_TYPE_TO_ONNX_TYPE[node.attr["dtype"]]
+        # TODO: currently `dtype` is translated to `to`.
+        onnx_type = TF_TYPE_TO_ONNX_TYPE[node.attr["to"]]
         shape = node.attr["shape"]
         input_proto = make_tensor_value_info(node.name,
                                              onnx_type,
