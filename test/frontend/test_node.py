@@ -35,6 +35,7 @@ def create_test(test_data):
     tf_op = test_data[1]
     output_name = test_data[2]
     inputs = test_data[3]
+    attrs = test_data[4]
 
     # Now construct input feed dict
     # keyed by input name
@@ -50,7 +51,7 @@ def create_test(test_data):
       tf_feed_dict[placeholder] = input_tensor
       tf_param_list.append(placeholder)
 
-    test_op = tf_op(*tf_param_list)
+    test_op = tf_op(*tf_param_list, **attrs)
     tf_graph = test_op.graph.as_graph_def(add_shapes=True)
 
     # Construct onnx graph, run with backend.
@@ -66,10 +67,9 @@ def create_test(test_data):
   return do_test_expected
 
 # organized as a tuple of the format:
-# (test_name, tensorflow_op, output_node_name, list of inputs)
-
+# (test_name, tensorflow_op, output_node_name, LIST of inputs, MAP of attributes)
 test_cases = [
-("test_relu", tf.nn.relu, "Relu", [get_rnd([10, 10])])
+("test_relu", tf.nn.relu, "Relu", [get_rnd([10, 10])], {})
 ]
 
 for k, val in enumerate(test_cases):
