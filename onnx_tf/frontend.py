@@ -95,13 +95,12 @@ class TensorflowFrontend(object):
 
       elif node.op in TF_OP_STR_TO_ONNX_OP.keys():
         # Remove tensorflow-specific attrs that are not
-        # needed in ONNX.
+        # needed/allowed in ONNX.
         attr_to_remove = ["_output_shapes", "T"]
         node.attr = dict(filter(lambda pair: pair[0]
                                 not in attr_to_remove, node.attr.items()))
 
         node_output = node.name
-        print(node.attr)
         ops_proto.append(make_node(TF_OP_STR_TO_ONNX_OP[node.op],
                                    node.inputs,
                                    [node_output],
