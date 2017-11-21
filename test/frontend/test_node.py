@@ -21,14 +21,17 @@ class TestNode(unittest.TestCase):
   pass
 
 def get_node_by_name(nodes, name):
-    for node in nodes:
-        if node.name == name:
-          return node
+  for node in nodes:
+    if node.name == name:
+      return node
 
-def get_rnd(shape, low=-1.0, high=1.0):
+def get_rnd(shape, low=-1.0, high=1.0, dtype=np.float32):
+  if (dtype==np.float32):
     return (np.random.uniform(low, high, np.prod(shape))
                      .reshape(shape)
                      .astype(np.float32))
+  elif dtype==np.bool_:
+    return np.random.choice(a=[False, True], size=shape)
 
 def create_test(test_data):
   def do_test_expected(self):
@@ -44,16 +47,14 @@ def create_test(test_data):
     tf_feed_dict = {}
     tf_param_list = []
     for idx, input_tensor in enumerate(inputs):
-      placeholder = tf.placeholder(tf.float32,
+      placeholder = tf.placeholder(input_tensor.dtype,
                                    shape=input_tensor.shape,
                                    name="in_" + str(idx))
       onnx_feed_dict["in_" + str(idx)] = input_tensor
       tf_feed_dict[placeholder] = input_tensor
       tf_param_list.append(placeholder)
-
     test_op = tf_op(*tf_param_list, **attrs)
     tf_graph = test_op.graph.as_graph_def(add_shapes=True)
-
     # Construct onnx graph, run with backend.
     output_node = get_node_by_name(tf_graph.node, output_name)
     onnx_graph = convert_graph(tf_graph, output_node)
@@ -62,14 +63,16 @@ def create_test(test_data):
 
     with tf.Session() as sess:
       tf_output = sess.run(test_op, tf_feed_dict)
-
+    tf.reset_default_graph()
     np.testing.assert_allclose(backend_output, tf_output)
+
   return do_test_expected
 
 # organized as a tuple of the format:
 # (test_name, tensorflow_op, output_node_name, LIST of inputs, MAP of attributes)
 test_cases = [
-("test_relu", tf.nn.relu, "Relu", [get_rnd([10, 10])], {})
+("test_relu", tf.nn.relu, "Relu", [get_rnd([10, 10])], {}),
+("test_or", tf.logical_or, "LogicalOr", [get_rnd([10, 10], dtype=np.bool_), get_rnd([10, 10], dtype=np.bool_)], {}),
 ]
 
 for k, val in enumerate(test_cases):
