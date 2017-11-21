@@ -15,7 +15,7 @@ import tensorflow as tf
 def invertible(dict):
     # invertible iff one-to-one and onto
     # onto is guaranteed, so check one-to-one
-    return not (len(dict.values()) != len(set(dict.values())))
+    return len(dict.values()) == len(set(dict.values()))
 
 def invert(dict):
     if not invertible(dict):
