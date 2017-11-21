@@ -6,16 +6,53 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-import tensorflow as tf
+import json
 
+import tensorflow as tf
 from onnx_tf.common import (
   TF_TYPE_TO_ONNX_TYPE,
   TF_OP_STR_TO_ONNX_OP,
+  TF_ATTR_TO_ONNX_ATTR,
   get_tf_shape_as_list,
   op_name_to_lower,
 )
 from onnx import onnx_pb2, helper
+from onnx.helper import (
+  make_tensor_value_info,
+  make_graph,
+  make_node,
+)
 from onnx.onnx_pb2 import GraphProto, TensorProto, AttributeProto
+from google.protobuf.json_format import MessageToJson
+
+class TensorflowNode(object):
+
+  # Keyed by old attribute names.
+  attr_translator = {
+    "_output_shapes": lambda self, x: list(map(lambda shape: get_tf_shape_as_list(shape.dim), x.list.shape)),
+    "shape": lambda self, x: get_tf_shape_as_list(x.shape.dim),
+    "T": lambda self, x: self.type_converter(x),
+    "dtype": lambda self, x: self.type_converter(x),
+  }
+
+  def __init__(self, node_proto):
+    self.name = node_proto.name
+    self.op = node_proto.op
+    self.inputs = list(node_proto.input)
+    self.attr = {}
+    for key, val in node_proto.attr.items():
+      new_key = key
+
+      if key in TF_ATTR_TO_ONNX_ATTR.keys():
+        new_key = TF_ATTR_TO_ONNX_ATTR[key]
+
+      if key in self.attr_translator.keys():
+        self.attr[new_key] = self.attr_translator[key](self, val)
+      else:
+        self.attr[new_key] = val
+
+  def type_converter(self, x):
+    return TF_TYPE_TO_ONNX_TYPE[tf.as_dtype(x.type)]
 
 class TensorflowFrontend(object):
   """ Tensorflow Frontend for ONNX
@@ -45,23 +82,31 @@ class TensorflowFrontend(object):
     ops_proto = []
 
     for node in graph_def.node:
+      node = TensorflowNode(node)
       if node.op == "Placeholder":
         # Tensorflow requires dtype to be known.
-        onnx_type = TF_TYPE_TO_ONNX_TYPE[tf.as_dtype(node.attr["dtype"].type)]
-        shape = get_tf_shape_as_list(node.attr["shape"].shape.dim)
-        input_proto = helper.make_tensor_value_info(node.name,
-                                                    onnx_type,
-                                                    shape)
+        # TODO: currently `dtype` is translated to `to`.
+        onnx_type = node.attr["to"]
+        shape = node.attr["shape"]
+        input_proto = make_tensor_value_info(node.name,
+                                             onnx_type,
+                                             shape)
         inputs_proto.append(input_proto)
+
       elif node.op in TF_OP_STR_TO_ONNX_OP.keys():
-        inputs = list(node.input)
-        # Tensorflow only has one output per op.
+        # Remove tensorflow-specific attrs that are not
+        # needed in ONNX.
+        attr_to_remove = ["_output_shapes", "T"]
+        node.attr = dict(filter(lambda pair: pair[0]
+                                not in attr_to_remove, node.attr.items()))
+
         node_output = node.name
-        ops_proto.append(helper.make_node(
-          TF_OP_STR_TO_ONNX_OP[node.op],
-          inputs,
-          [node_output],
-          name=node.name))
+        print(node.attr)
+        ops_proto.append(make_node(TF_OP_STR_TO_ONNX_OP[node.op],
+                                   node.inputs,
+                                   [node_output],
+                                   name=node.name,
+                                   **node.attr))
       else:
         handler_name = "handle_" + op_name_to_lower(node.op)
 
@@ -70,17 +115,18 @@ class TensorflowFrontend(object):
           method_to_call = getattr(cls, handler_name)
           ops_proto.append(method_to_call(node))
 
+    output = TensorflowNode(output)
     # making output proto
-    output_onnx_type = TF_TYPE_TO_ONNX_TYPE[output.attr["T"].type]
-    output_shape = get_tf_shape_as_list(output.attr["_output_shapes"].list.shape[0].dim)
-    output_proto = helper.make_tensor_value_info(output.name,
-                                                 output_onnx_type,
-                                                 output_shape)
+    # TODO: deal with multi-output case.
+    output_onnx_type = output.attr["T"]
+    output_proto = make_tensor_value_info(output.name,
+                                          output_onnx_type,
+                                          output.attr["_output_shapes"][0])
 
-    return helper.make_graph(ops_proto,
-                            name,
-                            inputs_proto,
-                            [output_proto])
+    return make_graph(ops_proto,
+                      name,
+                      inputs_proto,
+                      [output_proto])
 
   # This is kept as an example, it's never used.
   @classmethod
