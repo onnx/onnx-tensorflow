@@ -12,6 +12,7 @@ import tensorflow as tf
 from onnx_tf.common import (
   TF_TYPE_TO_ONNX_TYPE,
   TF_OP_STR_TO_ONNX_OP,
+  TF_ATTR_TO_ONNX_ATTR,
   get_tf_shape_as_list,
   op_name_to_lower,
 )
