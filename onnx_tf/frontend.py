@@ -26,8 +26,9 @@ from google.protobuf.json_format import MessageToJson
 
 class TensorflowNode(object):
 
+  # Keyed by old attribute names.
   attr_translator = {
-    "_output_shapes": lambda self, x: map(lambda shape: get_tf_shape_as_list(shape.dim), x.list.shape),
+    "_output_shapes": lambda self, x: list(map(lambda shape: get_tf_shape_as_list(shape.dim), x.list.shape)),
     "shape": lambda self, x: get_tf_shape_as_list(x.shape.dim),
     "T": lambda self, x: self.type_converter(x),
     "dtype": lambda self, x: self.type_converter(x),
@@ -39,10 +40,15 @@ class TensorflowNode(object):
     self.inputs = list(node_proto.input)
     self.attr = {}
     for key, val in node_proto.attr.items():
+      new_key = key
+
+      if key in TF_ATTR_TO_ONNX_ATTR.keys():
+        new_key = TF_ATTR_TO_ONNX_ATTR[key]
+
       if key in self.attr_translator.keys():
-        self.attr[key] = self.attr_translator[key](self, val)
+        self.attr[new_key] = self.attr_translator[key](self, val)
       else:
-        self.attr[key] = val
+        self.attr[new_key] = val
 
   def type_converter(self, x):
     return tf.as_dtype(x.type)
