@@ -117,7 +117,9 @@ class TensorflowFrontend(object):
     output = TensorflowNode(output)
     # making output proto
     # TODO: deal with multi-output case.
-    output_onnx_type = output.attr["T"]
+    # TODO: default to BOOL, cf.
+    # https://github.com/tensorflow/tensorflow/issues/14769
+    output_onnx_type = output.attr.get("T", TensorProto.BOOL)
     output_proto = make_tensor_value_info(output.name,
                                           output_onnx_type,
                                           output.attr["_output_shapes"][0])
@@ -126,6 +128,16 @@ class TensorflowFrontend(object):
                       name,
                       inputs_proto,
                       [output_proto])
+
+  @classmethod
+  def _bin_op(cls, node, onnx_op):
+    node.attr["broadcast"] = 1
+    return helper.make_node(
+            onnx_op, node.inputs, [node.name], name=node.name, broadcast=1)
+
+  @classmethod
+  def handle_logical_or(cls, node):
+    return cls._bin_op(node, "Or")
 
   # This is kept as an example, it's never used.
   @classmethod
