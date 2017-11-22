@@ -6,9 +6,8 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-import json
-
 import tensorflow as tf
+import numpy as np
 from onnx_tf.common import (
   TF_TYPE_TO_ONNX_TYPE,
   TF_OP_STR_TO_ONNX_OP,
@@ -23,7 +22,7 @@ from onnx.helper import (
   make_node,
 )
 from onnx.onnx_pb2 import GraphProto, TensorProto, AttributeProto
-from google.protobuf.json_format import MessageToJson
+from tensorflow.python.framework.tensor_util import MakeNdarray
 
 class TensorflowNode(object):
 
@@ -33,6 +32,7 @@ class TensorflowNode(object):
     "shape": lambda self, x: get_tf_shape_as_list(x.shape.dim),
     "T": lambda self, x: self.type_converter(x),
     "dtype": lambda self, x: self.type_converter(x),
+    "value": lambda self, x: MakeNdarray(x.tensor),
   }
 
   def __init__(self, node_proto):
@@ -81,6 +81,10 @@ class TensorflowFrontend(object):
     # representing the ops in the converted ONNX graph.
     ops_proto = []
 
+    # This dictionary contains a map from the name of the constant
+    # op to the array of values it holds.
+    consts = {}
+
     for node in graph_def.node:
       node = TensorflowNode(node)
       if node.op == "Placeholder":
@@ -92,7 +96,8 @@ class TensorflowFrontend(object):
                                              onnx_type,
                                              shape)
         inputs_proto.append(input_proto)
-
+      if node.op == "Const":
+        consts[node.name] = node.attr["value"]
       elif node.op in TF_OP_STR_TO_ONNX_OP.keys():
         # Remove tensorflow-specific attrs that are not
         # needed/allowed in ONNX.
@@ -112,7 +117,7 @@ class TensorflowFrontend(object):
         # Check if specialized handler exists.
         if handler_name in dir(cls):
           method_to_call = getattr(cls, handler_name)
-          ops_proto.append(method_to_call(node))
+          ops_proto.append(method_to_call(node, consts))
 
     output = TensorflowNode(output)
     # making output proto
@@ -136,12 +141,29 @@ class TensorflowFrontend(object):
             onnx_op, node.inputs, [node.name], name=node.name, broadcast=1)
 
   @classmethod
-  def handle_logical_or(cls, node):
+  def handle_logical_or(cls, node, consts):
     return cls._bin_op(node, "Or")
+
+  @classmethod
+  def handle_pad(cls, node, consts):
+    assert node.inputs[1] in consts.keys()
+    supported_modes = ["constant", "reflect"]
+    mode = node.attr.get("mode", "constant")
+    assert mode.lower() in supported_modes
+    pads = np.transpose(consts[node.inputs[1]]).flatten()
+
+    return helper.make_node(
+            "Pad",
+            [node.inputs[0]],
+            [node.name],
+            name=node.name,
+            pads=pads,
+            mode=mode,
+            value=0.0)
 
   # This is kept as an example, it's never used.
   @classmethod
-  def handle_relu(cls, node):
+  def handle_relu(cls, node, consts):
     return helper.make_node(
             "Relu", node.inputs, [node.name], name=node.name)
 

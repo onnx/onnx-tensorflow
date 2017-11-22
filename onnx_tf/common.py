@@ -89,6 +89,7 @@ TF_OP_TO_ONNX_OP = invert(ONNX_OP_TO_TF_OP)
 
 TF_OP_STR_TO_ONNX_OP = {
   "Relu": "Relu",
+  "Pow": "Pow",
 }
 
 def get_tf_shape_as_list(tf_shape_dim):

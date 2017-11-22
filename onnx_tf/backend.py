@@ -862,9 +862,10 @@ class TensorflowBackend(Backend):
       return x
 
     value = node.attrs.get("value", 0)
-    pads = tf.constant(np.array(node.attrs["pads"])
-                          .reshape([num_dim, 2])
-                          .astype(np.int32)) # tf requires int32 paddings
+    # tf requires int32 paddings
+    pads = tf.constant(np.transpose(np.array(node.attrs["pads"])
+                                      .reshape([num_dim, 2])
+                                      .astype(np.int32)))
 
     x = input_dict[node.inputs[0]]
     if mode.lower() == "edge":
