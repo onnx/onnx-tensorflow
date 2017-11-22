@@ -864,7 +864,7 @@ class TensorflowBackend(Backend):
     value = node.attrs.get("value", 0)
     # tf requires int32 paddings
     pads = tf.constant(np.transpose(np.array(node.attrs["pads"])
-                                      .reshape([num_dim, 2])
+                                      .reshape([2, num_dim])
                                       .astype(np.int32)))
 
     x = input_dict[node.inputs[0]]
