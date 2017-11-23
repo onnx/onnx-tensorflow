@@ -13,13 +13,6 @@ from onnx import helper
 # for testing
 from onnx_tf.backend import prepare
 
-class TestNode(unittest.TestCase):
-  """ Tests for nodes.
-  Tests are dynamically added.
-  Therefore edit test_cases to add more tests.
-  """
-  pass
-
 def get_node_by_name(nodes, name):
   for node in nodes:
     if node.name == name:
@@ -32,6 +25,13 @@ def get_rnd(shape, low=-1.0, high=1.0, dtype=np.float32):
                      .astype(np.float32))
   elif dtype==np.bool_:
     return np.random.choice(a=[False, True], size=shape)
+
+class TestNode(unittest.TestCase):
+  """ Tests for nodes.
+  Tests are dynamically added.
+  Therefore edit test_cases to add more tests.
+  """
+  pass
 
 def create_test(test_data):
   def do_test_expected(self):
@@ -47,12 +47,15 @@ def create_test(test_data):
     tf_feed_dict = {}
     tf_param_list = []
     for idx, input_tensor in enumerate(inputs):
-      placeholder = tf.placeholder(input_tensor.dtype,
-                                   shape=input_tensor.shape,
-                                   name="in_" + str(idx))
-      onnx_feed_dict["in_" + str(idx)] = input_tensor
-      tf_feed_dict[placeholder] = input_tensor
-      tf_param_list.append(placeholder)
+      if type(input_tensor) is np.ndarray:
+        placeholder = tf.placeholder(input_tensor.dtype,
+                                     shape=input_tensor.shape,
+                                     name="in_" + str(idx))
+        onnx_feed_dict["in_" + str(idx)] = input_tensor
+        tf_feed_dict[placeholder] = input_tensor
+        tf_param_list.append(placeholder)
+      else:
+        tf_param_list.append(input_tensor)
     test_op = tf_op(*tf_param_list, **attrs)
     tf_graph = test_op.graph.as_graph_def(add_shapes=True)
     # Construct onnx graph, run with backend.
@@ -70,9 +73,14 @@ def create_test(test_data):
 
 # organized as a tuple of the format:
 # (test_name, tensorflow_op, output_node_name, LIST of inputs, MAP of attributes)
+# Note that a python array is used differently than a numpy array
+# in the sense that numpy array are passed in via tf.placeholder
+# whereas python arrays are passed in as constants.
 test_cases = [
 ("test_relu", tf.nn.relu, "Relu", [get_rnd([10, 10])], {}),
 ("test_or", tf.logical_or, "LogicalOr", [get_rnd([10, 10], dtype=np.bool_), get_rnd([10, 10], dtype=np.bool_)], {}),
+("test_pow", tf.pow, "Pow", [get_rnd([10, 10]), get_rnd([10, 10])], {}),
+("test_pad", tf.pad, "Pad", [get_rnd([2, 3]), [[1, 1,], [2, 2]]], {"mode": "constant"})
 ]
 
 for k, val in enumerate(test_cases):
