@@ -113,9 +113,13 @@ class TensorflowFrontend(object):
                                              shape)
         inputs_proto.append(input_proto)
       elif node.op == "Const":
+        print(node.attr)
+        print(node.node_proto)
         const_dim = len(node.attr["value"].shape)
         consts[node.name] = node.attr["value"]
-        raw_values = [node.attr["value"].tolist()] if const_dim == 0 else node.attr["value"].tolist()
+        raw_values = ([node.attr["value"].tolist()]
+                      if const_dim == 0
+                      else node.attr["value"].flatten().tolist())
         consts_proto.append(make_tensor(
                             name=node.name,
                             data_type=node.attr["dtype"],
