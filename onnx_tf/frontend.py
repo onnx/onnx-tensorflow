@@ -112,7 +112,7 @@ class TensorflowFrontend(object):
                                              onnx_type,
                                              shape)
         inputs_proto.append(input_proto)
-      if node.op == "Const":
+      elif node.op == "Const":
         const_dim = len(node.attr["value"].shape)
         consts[node.name] = node.attr["value"]
         raw_values = [node.attr["value"].tolist()] if const_dim == 0 else node.attr["value"].tolist()
