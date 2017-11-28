@@ -52,7 +52,14 @@ ONNX_ATTR_TO_TF_ATTR = {
   "axes": "axis",
   "keepdims": "keep_dims",
   "axis": "dim",
-  "to": "dtype",
+  # TF uses two seeds:
+  # seed1: graph level seed
+  # seed2: op level seed
+  # ONNX only has op level seed, thus the following map
+  "seed": "seed2"
+  # move this to op specific translator
+  # apply only to cast op
+  # "to": "dtype",
 }
 
 TF_ATTR_TO_ONNX_ATTR = invert(ONNX_ATTR_TO_TF_ATTR)
@@ -90,6 +97,9 @@ TF_OP_TO_ONNX_OP = invert(ONNX_OP_TO_TF_OP)
 TF_OP_STR_TO_ONNX_OP = {
   "Relu": "Relu",
   "Pow": "Pow",
+  "Mul": "Mul",
+  "Add": "Add",
+  "Sub": "Sub",
 }
 
 def get_tf_shape_as_list(tf_shape_dim):

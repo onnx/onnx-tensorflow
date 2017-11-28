@@ -34,6 +34,8 @@ class TestNode(unittest.TestCase):
   pass
 
 def create_test(test_data):
+  test_option = test_data[5] if len(test_data) > 5 else {}
+
   def do_test_expected(self):
     tf_op = test_data[1]
     output_name = test_data[2]
@@ -62,11 +64,17 @@ def create_test(test_data):
     output_node = get_node_by_name(tf_graph.node, output_name)
     onnx_graph = convert_graph(tf_graph, output_node)
     backend_rep = prepare(helper.make_model(onnx_graph))
-    backend_output = backend_rep.run(onnx_feed_dict)[output_name]
+    backend_output = backend_rep.run(onnx_feed_dict)
 
     with tf.Session() as sess:
       tf_output = sess.run(test_op, tf_feed_dict)
     tf.reset_default_graph()
+
+    # skip comparison if test_option specifies that
+    # the test is call only.
+    if (test_option.get("call_only", False)):
+      return
+
     np.testing.assert_allclose(backend_output, tf_output)
 
   return do_test_expected
@@ -80,7 +88,9 @@ test_cases = [
 ("test_relu", tf.nn.relu, "Relu", [get_rnd([10, 10])], {}),
 ("test_or", tf.logical_or, "LogicalOr", [get_rnd([10, 10], dtype=np.bool_), get_rnd([10, 10], dtype=np.bool_)], {}),
 ("test_pow", tf.pow, "Pow", [get_rnd([10, 10]), get_rnd([10, 10])], {}),
-("test_pad", tf.pad, "Pad", [get_rnd([2, 3]), [[1, 1,], [2, 2]]], {"mode": "constant"})
+("test_pad", tf.pad, "Pad", [get_rnd([2, 3]), [[1, 1,], [2, 2]]], {"mode": "constant"}),
+("test_random_normal", tf.random_normal, "random_normal/RandomStandardNormal", [], {"shape": [100, 100], "mean": 0.0, "stddev": 1.0, "dtype": tf.float32, "seed": 42}, {"call_only": True}),
+("test_random_uniform", tf.random_uniform, "random_uniform", [], {"shape": [100, 100], "minval": 0.0, "maxval": 1.0, "dtype": tf.float32, "seed": 42}, {"call_only": True}),
 ]
 
 for k, val in enumerate(test_cases):
