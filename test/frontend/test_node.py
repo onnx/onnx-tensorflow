@@ -64,7 +64,7 @@ def create_test(test_data):
     output_node = get_node_by_name(tf_graph.node, output_name)
     onnx_graph = convert_graph(tf_graph, output_node)
     backend_rep = prepare(helper.make_model(onnx_graph))
-    backend_output = backend_rep.run(onnx_feed_dict)
+    backend_output = backend_rep.run(onnx_feed_dict)[output_name]
 
     with tf.Session() as sess:
       tf_output = sess.run(test_op, tf_feed_dict)
