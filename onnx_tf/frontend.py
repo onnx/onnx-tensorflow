@@ -18,6 +18,7 @@ from onnx_tf.common import (
 from onnx import onnx_pb2, helper
 from onnx.helper import (
   make_tensor_value_info,
+  make_tensor,
   make_graph,
   make_node,
 )
@@ -33,9 +34,13 @@ class TensorflowNode(object):
     "T": lambda self, x: self.type_converter(x),
     "dtype": lambda self, x: self.type_converter(x),
     "value": lambda self, x: MakeNdarray(x.tensor),
+    "seed2": lambda self, x: float(x.i),
+    "seed": lambda self, x: float(x.i),
   }
 
   def __init__(self, node_proto):
+    # storing a referece to the original protobuf object
+    self.node_proto = node_proto
     self.name = node_proto.name
     self.op = node_proto.op
     self.inputs = list(node_proto.input)
@@ -82,26 +87,50 @@ class TensorflowFrontend(object):
     ops_proto = []
 
     # This dictionary contains a map from the name of the constant
-    # op to the array of values it holds.
+    # op to the array of values it holds. This is useful because
+    # tensorflow is less eager to know about input values at
+    # graph construction time than ONNX. That is to say, some ONNX
+    # attributes are input tensors in TF. This dictionary extracts
+    # those values of constant tensors that are known at graph
+    # construction time.
     consts = {}
+
+    # Sometimes the constants are used as inputs to ops. This list
+    # holds initializers that creates global constant tensors available
+    # to be accessed by ops as inputs (as oppose to attributes which
+    # is supplied by the `consts` map above).
+    consts_proto = []
 
     for node in graph_def.node:
       node = TensorflowNode(node)
       if node.op == "Placeholder":
         # Tensorflow requires dtype to be known.
         # TODO: currently `dtype` is translated to `to`.
-        onnx_type = node.attr["to"]
+        onnx_type = node.attr["dtype"]
         shape = node.attr["shape"]
         input_proto = make_tensor_value_info(node.name,
                                              onnx_type,
                                              shape)
         inputs_proto.append(input_proto)
-      if node.op == "Const":
+      elif node.op == "Const":
+        const_dim = len(node.attr["value"].shape)
         consts[node.name] = node.attr["value"]
+        raw_values = ([node.attr["value"].tolist()]
+                      if const_dim == 0
+                      else node.attr["value"].flatten().tolist())
+        consts_proto.append(make_tensor(
+                            name=node.name,
+                            data_type=node.attr["dtype"],
+                            dims=np.array(raw_values).shape,
+                            vals=raw_values))
+        input_proto = make_tensor_value_info(node.name,
+                                             node.attr["dtype"],
+                                             np.array(raw_values).shape)
+        inputs_proto.append(input_proto)
       elif node.op in TF_OP_STR_TO_ONNX_OP.keys():
         # Remove tensorflow-specific attrs that are not
         # needed/allowed in ONNX.
-        attr_to_remove = ["_output_shapes", "T"]
+        attr_to_remove = ["_output_shapes", "T", "seed2"]
         node.attr = dict(filter(lambda pair: pair[0]
                                 not in attr_to_remove, node.attr.items()))
 
@@ -118,6 +147,8 @@ class TensorflowFrontend(object):
         if handler_name in dir(cls):
           method_to_call = getattr(cls, handler_name)
           ops_proto.append(method_to_call(node, consts))
+        else:
+          raise ValueError("{} op is not implemented.".format(node.op))
 
     output = TensorflowNode(output)
     # making output proto
@@ -128,11 +159,11 @@ class TensorflowFrontend(object):
     output_proto = make_tensor_value_info(output.name,
                                           output_onnx_type,
                                           output.attr["_output_shapes"][0])
-
     return make_graph(ops_proto,
                       name,
                       inputs_proto,
-                      [output_proto])
+                      [output_proto],
+                      consts_proto)
 
   @classmethod
   def _bin_op(cls, node, onnx_op):
@@ -160,6 +191,38 @@ class TensorflowFrontend(object):
             pads=pads,
             mode=mode,
             value=0.0)
+
+  @classmethod
+  def handle_random_standard_normal(cls, node, consts):
+    """ Tensorflow does not have a generic random_normal op.
+        The generic random_normal op is translated into a scaled
+        and offsetted random standard normal op.
+    """
+    return helper.make_node(
+            "RandomNormal",
+            [],
+            [node.name],
+            dtype=node.attr["dtype"],
+            seed=node.attr["seed"],
+            mean=0.0,
+            scale=1.0,
+            shape=node.attr["_output_shapes"][0])
+
+  @classmethod
+  def handle_random_uniform(cls, node, consts):
+    """ Tensorflow does not have a generic random_uniform op.
+        The generic random_uniform op is translated into a scaled
+        and offsetted random standard uniform op.
+    """
+    return helper.make_node(
+            "RandomUniform",
+            [],
+            [node.name],
+            dtype=node.attr["dtype"],
+            seed=node.attr["seed"],
+            high=1.0,
+            low=0.0,
+            shape=node.attr["_output_shapes"][0])
 
   # This is kept as an example, it's never used.
   @classmethod
