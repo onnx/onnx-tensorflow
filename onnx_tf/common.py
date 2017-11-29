@@ -103,7 +103,7 @@ TF_OP_STR_TO_ONNX_OP = {
 }
 
 def get_tf_shape_as_list(tf_shape_dim):
-  return map(lambda x: x.size, list(tf_shape_dim))
+  return list(map(lambda x: x.size, list(tf_shape_dim)))
 
 # This function inserts an underscore before every upper
 # case letter and lowers that upper case letter except for
