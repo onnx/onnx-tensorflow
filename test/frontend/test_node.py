@@ -91,6 +91,14 @@ test_cases = [
 ("test_pad", tf.pad, "Pad", [get_rnd([2, 3]), [[1, 1,], [2, 2]]], {"mode": "constant"}),
 ("test_random_normal", tf.random_normal, "random_normal/RandomStandardNormal", [], {"shape": [100, 100], "mean": 0.0, "stddev": 1.0, "dtype": tf.float32, "seed": 42}, {"call_only": True}),
 ("test_random_uniform", tf.random_uniform, "random_uniform", [], {"shape": [100, 100], "minval": 0.0, "maxval": 1.0, "dtype": tf.float32, "seed": 42}, {"call_only": True}),
+("test_reciprocal", tf.reciprocal, "Reciprocal", [get_rnd([10, 10])], {}),
+("test_reduce_max", tf.reduce_max, "Max", [get_rnd([10, 10])], {"keep_dims": True}),
+("test_reduce_mean", tf.reduce_mean, "Mean", [get_rnd([10, 10])], {"keep_dims": True}),
+("test_reduce_min", tf.reduce_min, "Min", [get_rnd([10, 10])], {"keep_dims": True}),
+("test_reduce_prod", tf.reduce_prod, "Prod", [get_rnd([10, 10])], {"keep_dims": True}),
+("test_reduce_sum", tf.reduce_sum, "Sum", [get_rnd([10, 10])], {"keep_dims": True}),
+("test_reshape", tf.reshape, "Reshape", [get_rnd([10, 10]), [4, 25]], {}),
+("test_sigmoid", tf.sigmoid, "Sigmoid", [get_rnd([10, 10])], {}),
 ]
 
 for k, val in enumerate(test_cases):
