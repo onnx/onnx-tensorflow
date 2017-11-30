@@ -36,6 +36,7 @@ class TensorflowNode(object):
     "value": lambda self, x: MakeNdarray(x.tensor),
     "seed2": lambda self, x: float(x.i),
     "seed": lambda self, x: float(x.i),
+    "keep_dims": lambda self, x: int(x.b),
   }
 
   def __init__(self, node_proto):
@@ -130,7 +131,7 @@ class TensorflowFrontend(object):
       elif node.op in TF_OP_STR_TO_ONNX_OP.keys():
         # Remove tensorflow-specific attrs that are not
         # needed/allowed in ONNX.
-        attr_to_remove = ["_output_shapes", "T", "seed2"]
+        attr_to_remove = ["_output_shapes", "T", "seed2", "Tidx"]
         node.attr = dict(filter(lambda pair: pair[0]
                                 not in attr_to_remove, node.attr.items()))
 
@@ -224,10 +225,43 @@ class TensorflowFrontend(object):
             low=0.0,
             shape=node.attr["_output_shapes"][0])
 
-  # This is kept as an example, it's never used.
   @classmethod
-  def handle_relu(cls, node, consts):
-    return helper.make_node(
-            "Relu", node.inputs, [node.name], name=node.name)
+  def _reduce_op(cls, op, node, consts):
+    assert node.inputs[1] in consts.keys()
+    axes = consts[node.inputs[1]]
+    return helper.make_node(op,
+                            [node.inputs[0]],
+                            [node.name],
+                            axes=axes,
+                            keepdims=node.attr.get("keep_dims", 1))
+
+  @classmethod
+  def handle_max(cls, node, consts):
+    return cls._reduce_op("ReduceMax", node, consts)
+
+  @classmethod
+  def handle_mean(cls, node, consts):
+    return cls._reduce_op("ReduceMean", node, consts)
+
+  @classmethod
+  def handle_min(cls, node, consts):
+    return cls._reduce_op("ReduceMin", node, consts)
+
+  @classmethod
+  def handle_prod(cls, node, consts):
+    return cls._reduce_op("ReduceProd", node, consts)
+
+  @classmethod
+  def handle_sum(cls, node, consts):
+    return cls._reduce_op("ReduceSum", node, consts)
+
+  @classmethod
+  def handle_reshape(cls, node, consts):
+    assert node.inputs[1] in consts.keys()
+    shape = consts[node.inputs[1]]
+    return helper.make_node("Reshape",
+                            [node.inputs[0]],
+                            [node.name],
+                            shape=shape)
 
 convert_graph = TensorflowFrontend.tensorflow_graph_to_onnx_graph
