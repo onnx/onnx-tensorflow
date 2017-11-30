@@ -264,10 +264,4 @@ class TensorflowFrontend(object):
                             [node.name],
                             shape=shape)
 
-  # This is kept as an example, it's never used.
-  @classmethod
-  def handle_relu(cls, node, consts):
-    return helper.make_node(
-            "Relu", node.inputs, [node.name], name=node.name)
-
 convert_graph = TensorflowFrontend.tensorflow_graph_to_onnx_graph
