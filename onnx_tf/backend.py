@@ -106,6 +106,7 @@ class OnnxNode(object):
     self.consumed_inputs = self.attrs.pop("consumed_inputs", None)
     self.inputs = list(node.input)
     self.outputs = list(node.output)
+    self.node_proto = node
 
 class TensorflowBackend(Backend):
   """ Tensorflow Backend for ONNX
@@ -145,6 +146,7 @@ class TensorflowBackend(Backend):
       "reduce_prod": tf.reduce_prod,
       "reduce_sum": tf.reduce_sum,
       "sigmoid": tf.sigmoid,
+      "softplus": tf.nn.softplus,
       "sqrt": tf.sqrt,
       "squeeze": tf.squeeze,
       "tanh": tf.tanh,
@@ -261,17 +263,15 @@ class TensorflowBackend(Backend):
                           .astype(np.int32)) # tf requires int32 paddings
     return tf.pad(x, padding)
 
-  # TODO: better broadcast
   @classmethod
-  def _explicit_broadcast(cls, tensor, broadcast=1):
-    if broadcast == 0:
-      return tensor
-    warnings.warn("Currently, support for broadcasting is limited "
-                  "and may result in unexpected results",
-                  UserWarning)
-    tensor = tf.expand_dims(tensor, 0)
-    tensor = tf.expand_dims(tensor, 2)
-    tensor = tf.expand_dims(tensor, 3)
+  def _explicit_broadcast(cls, tensor, broadcast_dim=1, total_num_dim=4):
+    if not isinstance(broadcast_dim, list):
+      broadcast_dim = [broadcast_dim]
+
+    for i in range(total_num_dim):
+      if i not in broadcast_dim:
+        tensor = tf.expand_dims(tensor, i)
+
     return tensor
 
   @classmethod
@@ -422,6 +422,8 @@ class TensorflowBackend(Backend):
     if handler_name in dir(cls):
       method_to_call = getattr(cls, handler_name)
       return method_to_call(node, input_dict)
+    else:
+      raise NotImplementedError("{} op is not implemented.".format(node.op_type))
 
   @classmethod
   def handle_trivial(cls, node, input_dict):
@@ -534,7 +536,7 @@ class TensorflowBackend(Backend):
     x_rank = len(x.get_shape())
 
     support_cuda = cls.supports_device("CUDA")
-    data_format = cls.get_data_format(x_rank, support_cuda)
+    storage_format, compute_format = cls.get_data_format(x_rank, support_cuda)
 
     kernel_shape = node.attrs["kernel_shape"]
     strides = node.attrs["strides"]
@@ -556,11 +558,11 @@ class TensorflowBackend(Backend):
 
     if support_cuda:
       pooled = pool_func(x, [1, 1] + kernel_shape, [1, 1] + strides, pad,
-                         data_format=data_format)
+                         data_format=compute_format)
     else:
       x = tf.transpose(x, perm=[0, 2, 3, 1])
       pooled = pool_func(x, [1] + kernel_shape + [1], [1] + strides + [1], pad,
-                         data_format=data_format)
+                         data_format=compute_format)
       pooled = tf.transpose(pooled, perm=[0, 3, 1, 2])
 
     return [pooled]
@@ -582,10 +584,11 @@ class TensorflowBackend(Backend):
   @classmethod
   def handle_batch_normalization(cls, node, input_dict):
     x = input_dict[node.inputs[0]]
-    scale = cls._explicit_broadcast(input_dict[node.inputs[1]])
-    bias = cls._explicit_broadcast(input_dict[node.inputs[2]])
-    mean = cls._explicit_broadcast(input_dict[node.inputs[3]])
-    variance = cls._explicit_broadcast(input_dict[node.inputs[4]])
+    total_num_dim = len(x.get_shape())
+    scale = cls._explicit_broadcast(input_dict[node.inputs[1]], 1, total_num_dim)
+    bias = cls._explicit_broadcast(input_dict[node.inputs[2]], 1, total_num_dim)
+    mean = cls._explicit_broadcast(input_dict[node.inputs[3]], 1, total_num_dim)
+    variance = cls._explicit_broadcast(input_dict[node.inputs[4]], 1, total_num_dim)
 
     variance_epsilon = node.attrs.get("epsilon", 0.00001)
     if node.attrs.get("is_test", 0):
@@ -602,6 +605,15 @@ class TensorflowBackend(Backend):
     # TODO: need to conform to the documentation here
     return [tf.nn.batch_normalization(x, mean, variance, bias, scale,
                                       variance_epsilon)]
+  @classmethod
+  def handle_clip(cls, node, input_dict):
+    assert "max" in node.attrs.keys()
+    assert "min" in node.attrs.keys()
+
+    max_val = node.attrs["max"]
+    min_val = node.attrs["min"]
+
+    return [tf.clip_by_value(input_dict[node.inputs[0]], min_val, max_val)]
 
   @classmethod
   def handle_concat(cls, node, input_dict):
@@ -619,19 +631,24 @@ class TensorflowBackend(Backend):
 
   @classmethod
   def get_data_format(cls, x_rank, support_cuda):
+    sp_dim_names = ["D", "H", "W"]
+    sp_dim_lst = []
+    for i in range(x_rank-2):
+      sp_dim_lst.append(sp_dim_names[-i-1])
+
+    sp_dim_string = "".join(reversed(sp_dim_lst))
+    storage_format = "NC" + sp_dim_string
+
     if support_cuda:
-      data_format = "NCDHW"
-      if x_rank == 3:
-        data_format = "NCW"
-      elif x_rank == 4:
-        data_format = "NCHW"
+      compute_format = "NC" + sp_dim_string
     else:
-      data_format = "NDHWC"
-      if x_rank == 3:
-        data_format = "NWC"
-      elif x_rank == 4:
-        data_format = "NHWC"
-    return data_format
+      compute_format = "N" + sp_dim_string + "C"
+    return storage_format, compute_format
+
+
+  @classmethod
+  def get_perm_from_formats(cls, _from, _to):
+    return list(map(lambda x: _from.find(x), _to))
 
   @classmethod
   def _conv(cls, node, input_dict, transpose=False):
@@ -639,7 +656,7 @@ class TensorflowBackend(Backend):
     x_rank = len(x.get_shape())
 
     support_cuda = cls.supports_device("CUDA")
-    data_format = cls.get_data_format(x_rank, support_cuda)
+    storage_format, compute_format = cls.get_data_format(x_rank, support_cuda)
 
     in_weights = input_dict[node.inputs[1]]
     weights_rank = len(in_weights.get_shape())
@@ -666,57 +683,57 @@ class TensorflowBackend(Backend):
 
       weight_groups = tf.split(weights,
                                num_or_size_splits=node.attrs["group"],
-                               axis=3)
+                               axis=-1)
 
       if support_cuda:
         xs = tf.split(x, num_or_size_splits=node.attrs["group"], axis=1)
       else:
-        x = tf.transpose(x, perm=[0, 2, 3, 1])
-        xs = tf.split(x, num_or_size_splits=node.attrs["group"], axis=3)
+        x = tf.transpose(x, perm=cls.get_perm_from_formats(storage_format, compute_format))
+        xs = tf.split(x, num_or_size_splits=node.attrs["group"], axis=-1)
 
       convolved = [tf.nn.convolution(x, weight, "VALID", strides=strides,
                                      dilation_rate=dilations,
-                                     data_format=data_format) for
+                                     data_format=compute_format) for
                    (x, weight) in zip(xs, weight_groups)]
 
       if len(node.inputs) == 2:
         if support_cuda:
           output = tf.concat(convolved, axis=1)
         else:
-          output = tf.concat(convolved, axis=3)
-          output = tf.transpose(output, perm=[0, 3, 1, 2])
+          output = tf.concat(convolved, axis=-1)
+          output = tf.transpose(output, perm=cls.get_perm_from_formats(compute_format, storage_format))
       else:
         bias = input_dict[node.inputs[2]]
 
         if support_cuda:
           output = tf.concat(convolved, axis=1)
-          output = tf.nn.bias_add(output, bias, data_format=data_format)
+          output = tf.nn.bias_add(output, bias, data_format=compute_format)
         else:
-          output = tf.concat(convolved, axis=3)
-          output = tf.nn.bias_add(output, bias, data_format=data_format)
-          output = tf.transpose(output, perm=[0, 3, 1, 2])
+          output = tf.concat(convolved, axis=-1)
+          output = tf.nn.bias_add(output, bias, data_format=compute_format)
+          output = tf.transpose(output, perm=cls.get_perm_from_formats(compute_format, storage_format))
 
       return [output]
 
     if not support_cuda:
-      x = tf.transpose(x, perm=[0, 2, 3, 1])
+      x = tf.transpose(x, perm=cls.get_perm_from_formats(storage_format, compute_format))
 
     convolved = tf.nn.convolution(x, weights, "VALID", strides=strides,
                                   dilation_rate=dilations,
-                                  data_format=data_format)
+                                  data_format=compute_format)
 
     if not support_cuda:
-      convolved = tf.transpose(convolved, perm=[0, 3, 1, 2])
+      convolved = tf.transpose(convolved, perm=cls.get_perm_from_formats(compute_format, storage_format))
 
     if len(node.inputs) == 2:
       return [convolved]
     else:
       bias = input_dict[node.inputs[2]]
       if not support_cuda:
-        convolved = tf.transpose(convolved, perm=[0, 2, 3, 1])
-      output = tf.nn.bias_add(convolved, bias, data_format=data_format)
+        convolved = tf.transpose(convolved, perm=cls.get_perm_from_formats(storage_format, compute_format))
+      output = tf.nn.bias_add(convolved, bias, data_format=compute_format)
       if not support_cuda:
-        output = tf.transpose(output, perm=[0, 3, 1, 2])
+        output = tf.transpose(output, perm=cls.get_perm_from_formats(compute_format, storage_format))
       return [output]
 
   @classmethod
@@ -744,10 +761,12 @@ class TensorflowBackend(Backend):
   @classmethod
   def handle_elu(cls, node, input_dict):
     x = input_dict[node.inputs[0]]
+
+    alpha = node.attrs.get("alpha", 1.0)
     if "alpha" in node.attrs.keys():
-      warnings.warn("Unsupported alpha attribute by Tensorflow in Elu."
-                    "This attribute will be ignored.", UserWarning)
-    return [tf.nn.elu(x)]
+      return [tf.cast(x < 0.0, tf.float32) * alpha * (tf.exp(x) - 1.0) + tf.cast(x >= 0.0, tf.float32) * x]
+    else:
+      return [tf.nn.elu(x)]
 
   @classmethod
   def handle_flatten(cls, node, input_dict):
@@ -848,6 +867,7 @@ class TensorflowBackend(Backend):
     """
     x = input_dict[node.inputs[0]]
     slope = input_dict[node.inputs[1]]
+    slope = cls._explicit_broadcast(slope, 1, len(x.get_shape()))
     pos = tf.nn.relu(x)
     neg = slope * (x - abs(x)) * 0.5
     return [pos + neg]
@@ -933,8 +953,11 @@ class TensorflowBackend(Backend):
   def handle_softmax(cls, node, input_dict):
     if "axis" in node.attrs:
       axis = node.attrs["axis"]
+      axis = (axis if axis > 0
+              else len(input_dict[node.inputs[0]].get_shape()) + axis)
     else:
       axis = 1
+
     return [tf.nn.softmax(input_dict[node.inputs[0]], dim=axis)]
 
   @classmethod
