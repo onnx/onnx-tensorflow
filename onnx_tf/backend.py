@@ -652,7 +652,6 @@ class TensorflowBackend(Backend):
 
   @classmethod
   def _conv(cls, node, input_dict, transpose=False):
-    print(node.node_proto)
     x = input_dict[node.inputs[0]]
     x_rank = len(x.get_shape())
 

@@ -19,6 +19,11 @@ backend_test.exclude(r'[a-z,_]*GLU[a-z,_]*')
 
 # https://github.com/onnx/onnx/issues/341
 backend_test.exclude(r'[a-z,_]*MaxPool[a-z,_]*')
+backend_test.exclude(r'[a-z,_]*AvgPool[a-z,_]*')
+
+# TF does not support dialation and strides at the same time:
+# Will produce strides > 1 not supported in conjunction with dilation_rate > 1
+backend_test.exclude(r'[a-z,_]*dilated_strided[a-z,_]*')
 
 if 'TRAVIS' in os.environ:
     backend_test.exclude('test_vgg19')
