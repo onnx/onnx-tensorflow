@@ -583,10 +583,11 @@ class TensorflowBackend(Backend):
   @classmethod
   def handle_batch_normalization(cls, node, input_dict):
     x = input_dict[node.inputs[0]]
-    scale = cls._explicit_broadcast(input_dict[node.inputs[1]])
-    bias = cls._explicit_broadcast(input_dict[node.inputs[2]])
-    mean = cls._explicit_broadcast(input_dict[node.inputs[3]])
-    variance = cls._explicit_broadcast(input_dict[node.inputs[4]])
+    total_num_dim = len(x.get_shape())
+    scale = cls._explicit_broadcast(input_dict[node.inputs[1]], 1, total_num_dim)
+    bias = cls._explicit_broadcast(input_dict[node.inputs[2]], 1, total_num_dim)
+    mean = cls._explicit_broadcast(input_dict[node.inputs[3]], 1, total_num_dim)
+    variance = cls._explicit_broadcast(input_dict[node.inputs[4]], 1, total_num_dim)
 
     variance_epsilon = node.attrs.get("epsilon", 0.00001)
     if node.attrs.get("is_test", 0):
