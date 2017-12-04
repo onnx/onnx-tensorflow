@@ -262,17 +262,15 @@ class TensorflowBackend(Backend):
                           .astype(np.int32)) # tf requires int32 paddings
     return tf.pad(x, padding)
 
-  # TODO: better broadcast
   @classmethod
-  def _explicit_broadcast(cls, tensor, broadcast=1):
-    if broadcast == 0:
-      return tensor
-    warnings.warn("Currently, support for broadcasting is limited "
-                  "and may result in unexpected results",
-                  UserWarning)
-    tensor = tf.expand_dims(tensor, 0)
-    tensor = tf.expand_dims(tensor, 2)
-    tensor = tf.expand_dims(tensor, 3)
+  def _explicit_broadcast(cls, tensor, broadcast_dim=1, total_num_dim=4):
+    if not isinstance(broadcast_dim, list):
+      broadcast_dim = [broadcast_dim]
+
+    for i in range(total_num_dim):
+      if i not in broadcast_dim:
+        tensor = tf.expand_dims(tensor, i)
+
     return tensor
 
   @classmethod
@@ -862,6 +860,7 @@ class TensorflowBackend(Backend):
     """
     x = input_dict[node.inputs[0]]
     slope = input_dict[node.inputs[1]]
+    slope = cls._explicit_broadcast(slope, 1, len(x.get_shape()))
     pos = tf.nn.relu(x)
     neg = slope * (x - abs(x)) * 0.5
     return [pos + neg]
