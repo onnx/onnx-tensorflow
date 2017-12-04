@@ -145,6 +145,7 @@ class TensorflowBackend(Backend):
       "reduce_prod": tf.reduce_prod,
       "reduce_sum": tf.reduce_sum,
       "sigmoid": tf.sigmoid,
+      "softplus": tf.nn.softplus,
       "sqrt": tf.sqrt,
       "squeeze": tf.squeeze,
       "tanh": tf.tanh,
@@ -422,6 +423,8 @@ class TensorflowBackend(Backend):
     if handler_name in dir(cls):
       method_to_call = getattr(cls, handler_name)
       return method_to_call(node, input_dict)
+    else:
+      raise NotImplementedError("{} op is not implemented.".format(node.op_type))
 
   @classmethod
   def handle_trivial(cls, node, input_dict):
@@ -602,6 +605,15 @@ class TensorflowBackend(Backend):
     # TODO: need to conform to the documentation here
     return [tf.nn.batch_normalization(x, mean, variance, bias, scale,
                                       variance_epsilon)]
+  @classmethod
+  def handle_clip(cls, node, input_dict):
+    assert "max" in node.attrs.keys()
+    assert "min" in node.attrs.keys()
+
+    max_val = node.attrs["max"]
+    min_val = node.attrs["min"]
+
+    return [tf.clip_by_value(input_dict[node.inputs[0]], min_val, max_val)]
 
   @classmethod
   def handle_concat(cls, node, input_dict):
@@ -744,10 +756,12 @@ class TensorflowBackend(Backend):
   @classmethod
   def handle_elu(cls, node, input_dict):
     x = input_dict[node.inputs[0]]
+
+    alpha = node.attrs.get("alpha", 1.0)
     if "alpha" in node.attrs.keys():
-      warnings.warn("Unsupported alpha attribute by Tensorflow in Elu."
-                    "This attribute will be ignored.", UserWarning)
-    return [tf.nn.elu(x)]
+      return [tf.cast(x < 0.0, tf.float32) * alpha * (tf.exp(x) - 1.0) + tf.cast(x >= 0.0, tf.float32) * x]
+    else:
+      return [tf.nn.elu(x)]
 
   @classmethod
   def handle_flatten(cls, node, input_dict):

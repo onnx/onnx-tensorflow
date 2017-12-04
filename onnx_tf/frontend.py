@@ -149,7 +149,7 @@ class TensorflowFrontend(object):
           method_to_call = getattr(cls, handler_name)
           ops_proto.append(method_to_call(node, consts))
         else:
-          raise ValueError("{} op is not implemented.".format(node.op))
+          raise NotImplementedError("{} op is not implemented.".format(node.op))
 
     output = TensorflowNode(output)
     # making output proto
