@@ -106,6 +106,7 @@ class OnnxNode(object):
     self.consumed_inputs = self.attrs.pop("consumed_inputs", None)
     self.inputs = list(node.input)
     self.outputs = list(node.output)
+    self.node_proto = node
 
 class TensorflowBackend(Backend):
   """ Tensorflow Backend for ONNX
@@ -535,7 +536,7 @@ class TensorflowBackend(Backend):
     x_rank = len(x.get_shape())
 
     support_cuda = cls.supports_device("CUDA")
-    data_format = cls.get_data_format(x_rank, support_cuda)
+    storage_format, compute_format = cls.get_data_format(x_rank, support_cuda)
 
     kernel_shape = node.attrs["kernel_shape"]
     strides = node.attrs["strides"]
@@ -557,11 +558,11 @@ class TensorflowBackend(Backend):
 
     if support_cuda:
       pooled = pool_func(x, [1, 1] + kernel_shape, [1, 1] + strides, pad,
-                         data_format=data_format)
+                         data_format=compute_format)
     else:
       x = tf.transpose(x, perm=[0, 2, 3, 1])
       pooled = pool_func(x, [1] + kernel_shape + [1], [1] + strides + [1], pad,
-                         data_format=data_format)
+                         data_format=compute_format)
       pooled = tf.transpose(pooled, perm=[0, 3, 1, 2])
 
     return [pooled]
@@ -630,27 +631,33 @@ class TensorflowBackend(Backend):
 
   @classmethod
   def get_data_format(cls, x_rank, support_cuda):
+    sp_dim_names = ["D", "H", "W"]
+    sp_dim_lst = []
+    for i in range(x_rank-2):
+      sp_dim_lst.append(sp_dim_names[-i-1])
+
+    sp_dim_string = "".join(reversed(sp_dim_lst))
+    storage_format = "NC" + sp_dim_string
+
     if support_cuda:
-      data_format = "NCDHW"
-      if x_rank == 3:
-        data_format = "NCW"
-      elif x_rank == 4:
-        data_format = "NCHW"
+      compute_format = "NC" + sp_dim_string
     else:
-      data_format = "NDHWC"
-      if x_rank == 3:
-        data_format = "NWC"
-      elif x_rank == 4:
-        data_format = "NHWC"
-    return data_format
+      compute_format = "N" + sp_dim_string + "C"
+    return storage_format, compute_format
+
+
+  @classmethod
+  def get_perm_from_formats(cls, _from, _to):
+    return list(map(lambda x: _from.find(x), _to))
 
   @classmethod
   def _conv(cls, node, input_dict, transpose=False):
+    print(node.node_proto)
     x = input_dict[node.inputs[0]]
     x_rank = len(x.get_shape())
 
     support_cuda = cls.supports_device("CUDA")
-    data_format = cls.get_data_format(x_rank, support_cuda)
+    storage_format, compute_format = cls.get_data_format(x_rank, support_cuda)
 
     in_weights = input_dict[node.inputs[1]]
     weights_rank = len(in_weights.get_shape())
@@ -677,57 +684,57 @@ class TensorflowBackend(Backend):
 
       weight_groups = tf.split(weights,
                                num_or_size_splits=node.attrs["group"],
-                               axis=3)
+                               axis=-1)
 
       if support_cuda:
         xs = tf.split(x, num_or_size_splits=node.attrs["group"], axis=1)
       else:
-        x = tf.transpose(x, perm=[0, 2, 3, 1])
-        xs = tf.split(x, num_or_size_splits=node.attrs["group"], axis=3)
+        x = tf.transpose(x, perm=cls.get_perm_from_formats(storage_format, compute_format))
+        xs = tf.split(x, num_or_size_splits=node.attrs["group"], axis=-1)
 
       convolved = [tf.nn.convolution(x, weight, "VALID", strides=strides,
                                      dilation_rate=dilations,
-                                     data_format=data_format) for
+                                     data_format=compute_format) for
                    (x, weight) in zip(xs, weight_groups)]
 
       if len(node.inputs) == 2:
         if support_cuda:
           output = tf.concat(convolved, axis=1)
         else:
-          output = tf.concat(convolved, axis=3)
-          output = tf.transpose(output, perm=[0, 3, 1, 2])
+          output = tf.concat(convolved, axis=-1)
+          output = tf.transpose(output, perm=cls.get_perm_from_formats(compute_format, storage_format))
       else:
         bias = input_dict[node.inputs[2]]
 
         if support_cuda:
           output = tf.concat(convolved, axis=1)
-          output = tf.nn.bias_add(output, bias, data_format=data_format)
+          output = tf.nn.bias_add(output, bias, data_format=compute_format)
         else:
-          output = tf.concat(convolved, axis=3)
-          output = tf.nn.bias_add(output, bias, data_format=data_format)
-          output = tf.transpose(output, perm=[0, 3, 1, 2])
+          output = tf.concat(convolved, axis=-1)
+          output = tf.nn.bias_add(output, bias, data_format=compute_format)
+          output = tf.transpose(output, perm=cls.get_perm_from_formats(compute_format, storage_format))
 
       return [output]
 
     if not support_cuda:
-      x = tf.transpose(x, perm=[0, 2, 3, 1])
+      x = tf.transpose(x, perm=cls.get_perm_from_formats(storage_format, compute_format))
 
     convolved = tf.nn.convolution(x, weights, "VALID", strides=strides,
                                   dilation_rate=dilations,
-                                  data_format=data_format)
+                                  data_format=compute_format)
 
     if not support_cuda:
-      convolved = tf.transpose(convolved, perm=[0, 3, 1, 2])
+      convolved = tf.transpose(convolved, perm=cls.get_perm_from_formats(compute_format, storage_format))
 
     if len(node.inputs) == 2:
       return [convolved]
     else:
       bias = input_dict[node.inputs[2]]
       if not support_cuda:
-        convolved = tf.transpose(convolved, perm=[0, 2, 3, 1])
-      output = tf.nn.bias_add(convolved, bias, data_format=data_format)
+        convolved = tf.transpose(convolved, perm=cls.get_perm_from_formats(storage_format, compute_format))
+      output = tf.nn.bias_add(convolved, bias, data_format=compute_format)
       if not support_cuda:
-        output = tf.transpose(output, perm=[0, 3, 1, 2])
+        output = tf.transpose(output, perm=cls.get_perm_from_formats(compute_format, storage_format))
       return [output]
 
   @classmethod
