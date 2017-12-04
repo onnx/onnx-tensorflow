@@ -947,8 +947,11 @@ class TensorflowBackend(Backend):
   def handle_softmax(cls, node, input_dict):
     if "axis" in node.attrs:
       axis = node.attrs["axis"]
+      axis = (axis if axis > 0
+              else len(input_dict[node.inputs[0]].get_shape()) + axis)
     else:
       axis = 1
+
     return [tf.nn.softmax(input_dict[node.inputs[0]], dim=axis)]
 
   @classmethod
