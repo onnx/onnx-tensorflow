@@ -1,4 +1,4 @@
-# Experimental Tensorflow Backend for ONNX
+# Tensorflow Backend for ONNX
 [![Build Status](https://travis-ci.org/onnx/onnx-tensorflow.svg?branch=master)](https://travis-ci.org/onnx/onnx-tensorflow)
 
 ## To install:
