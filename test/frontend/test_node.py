@@ -59,7 +59,7 @@ def create_test(test_data):
       else:
         tf_param_list.append(input_tensor)
     test_op = tf_op(*tf_param_list, **attrs)
-    tf_graph = test_op.graph.as_graph_def(add_shapes=True)
+    tf_graph = tf.get_default_graph().as_graph_def(add_shapes=True)
     # Construct onnx graph, run with backend.
     output_node = get_node_by_name(tf_graph.node, output_name)
     onnx_graph = convert_graph(tf_graph, output_node)
@@ -99,6 +99,14 @@ test_cases = [
 ("test_reduce_sum", tf.reduce_sum, "Sum", [get_rnd([10, 10])], {"keep_dims": True}),
 ("test_reshape", tf.reshape, "Reshape", [get_rnd([10, 10]), [4, 25]], {}),
 ("test_sigmoid", tf.sigmoid, "Sigmoid", [get_rnd([10, 10])], {}),
+("test_split", tf.split, "split", [get_rnd([10, 10]), [5, 5]], {}),
+("test_sqrt", tf.sqrt, "Sqrt", [get_rnd([10, 10])], {}),
+("test_sqrt", tf.sqrt, "Sqrt", [get_rnd([10, 10])], {}),
+("test_squeeze", tf.squeeze, "Squeeze", [get_rnd([1, 1, 10, 10])], {"axis":[0, 1]}),
+("test_subtract", tf.subtract, "Sub", [get_rnd([10, 10]), get_rnd([10, 10])], {}),
+("test_tanh", tf.tanh, "Tanh", [get_rnd([10, 10])], {}),
+("test_xor", tf.logical_xor, "LogicalXor", [get_rnd([10, 10], dtype=np.bool_), get_rnd([10, 10], dtype=np.bool_)], {}),
+("test_transpose", tf.transpose, "transpose", [get_rnd([2, 10])], {"perm":[1, 0]}),
 ]
 
 for k, val in enumerate(test_cases):

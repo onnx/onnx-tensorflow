@@ -95,6 +95,7 @@ ONNX_OP_TO_TF_OP = {
 TF_OP_TO_ONNX_OP = invert(ONNX_OP_TO_TF_OP)
 
 TF_OP_STR_TO_ONNX_OP = {
+  "LogicalNot": "Not",
   "Relu": "Relu",
   "Pow": "Pow",
   # TODO:
@@ -103,10 +104,11 @@ TF_OP_STR_TO_ONNX_OP = {
   # test other ops
   "Mul": "Mul",
   "Add": "Add",
-  "Sub": "Sub",
 
   "Reciprocal": "Reciprocal",
   "Sigmoid": "Sigmoid",
+  "Sqrt": "Sqrt",
+  "Tanh": "Tanh",
 }
 
 def get_tf_shape_as_list(tf_shape_dim):

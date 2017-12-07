@@ -37,6 +37,7 @@ class TensorflowNode(object):
     "seed2": lambda self, x: float(x.i),
     "seed": lambda self, x: float(x.i),
     "keep_dims": lambda self, x: int(x.b),
+    "squeeze_dims": lambda self, x: list(x.list.i),
   }
 
   def __init__(self, node_proto):
@@ -173,6 +174,10 @@ class TensorflowFrontend(object):
             onnx_op, node.inputs, [node.name], name=node.name, broadcast=1)
 
   @classmethod
+  def handle_logical_and(cls, node, consts):
+    return cls._bin_op(node, "And")
+
+  @classmethod
   def handle_logical_or(cls, node, consts):
     return cls._bin_op(node, "Or")
 
@@ -263,5 +268,42 @@ class TensorflowFrontend(object):
                             [node.inputs[0]],
                             [node.name],
                             shape=shape)
+
+  @classmethod
+  def handle_split_v(cls, node, consts):
+    split = consts[node.inputs[1]]
+    axis = int(consts[node.inputs[2]])
+    output_names = [node.name + ":{}".format(i) if i>0 else node.name for i in range(len(split))]
+    return helper.make_node("Split",
+                            [node.inputs[0]],
+                            output_names,
+                            split=split,
+                            axis=axis)
+
+  @classmethod
+  def handle_squeeze(cls, node, consts):
+    assert "squeeze_dims" in node.attr.keys(), ("Squeeze dims have to be"
+      "specified")
+    axes = node.attr["squeeze_dims"]
+    return helper.make_node("Squeeze",
+                            [node.inputs[0]],
+                            [node.name],
+                            axes=axes)
+
+  @classmethod
+  def handle_sub(cls, node, consts):
+    return cls._bin_op(node, "Sub")
+
+  @classmethod
+  def handle_transpose(cls, node, consts):
+    perm = consts[node.inputs[1]]
+    return helper.make_node("Transpose",
+                            [node.inputs[0]],
+                            [node.name],
+                            perm=perm)
+
+  @classmethod
+  def handle_logical_xor(cls, node, consts):
+    return cls._bin_op(node, "Xor")
 
 convert_graph = TensorflowFrontend.tensorflow_graph_to_onnx_graph
