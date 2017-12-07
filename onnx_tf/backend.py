@@ -135,6 +135,7 @@ class TensorflowBackend(Backend):
       "gather": tf.gather,
       "log": tf.log,
       "neg": tf.negative,
+      "not": tf.logical_not,
       "pow": tf.pow,
       "random_normal": tf.random_normal,
       "random_uniform": tf.random_uniform,
@@ -452,6 +453,10 @@ class TensorflowBackend(Backend):
   @classmethod
   def handle_add(cls, node, input_dict):
     return [cls._bin_op(node, input_dict, tf.add)]
+
+  @classmethod
+  def handle_and(cls, node, input_dict):
+    return [cls._bin_op(node, input_dict, tf.logical_and)]
 
   @classmethod
   def handle_arg_max(cls, node, input_dict):
