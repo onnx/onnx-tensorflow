@@ -120,14 +120,19 @@ class TensorflowFrontend(object):
         raw_values = ([node.attr["value"].tolist()]
                       if const_dim == 0
                       else node.attr["value"].flatten().tolist())
+        if const_dim == 0:
+            values = [node.attr["value"]]
+        else:
+            values = node.attr["value"]
+        shape = np.array(values).shape
         consts_proto.append(make_tensor(
                             name=node.name,
                             data_type=node.attr["dtype"],
-                            dims=np.array(raw_values).shape,
+                            dims=shape,
                             vals=raw_values))
         input_proto = make_tensor_value_info(node.name,
                                              node.attr["dtype"],
-                                             np.array(raw_values).shape)
+                                             shape)
         inputs_proto.append(input_proto)
       elif node.op in TF_OP_STR_TO_ONNX_OP.keys():
         # Remove tensorflow-specific attrs that are not
