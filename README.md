@@ -7,7 +7,7 @@ Firstly install [ONNX](https://github.com/onnx/onnx) which cannot be installed b
 Then, run `pip install onnx-tf`
 
 ## To test:
-run `python -m unittest discover test`
+For backend, run `python -m unittest discover test/backend`.
 
 ## Example:
 In this example, we will define and run a Relu node and print the result.
@@ -24,9 +24,9 @@ The result is `[ 0.   0.1]`
 
 ## Development Install:
 - Install ONNX
-- Git clone
-- Run `pip install -e .` on the root directory.
-- Backend dev follows conventions [here](https://github.com/onnx/onnx-caffe2/blob/master/onnx_caffe2/backend.py).
+- Run `git clone git@github.com:onnx/onnx-tensorflow.git && cd onnx-tensorflow`
+- Run `pip install -e .`
+- Development follows conventions [here](https://github.com/onnx/onnx-caffe2/blob/master/onnx_caffe2/backend.py)
 
 ## Folder Structure:
 - __onnx_tf__ main source code file.
@@ -50,8 +50,8 @@ http://sphinxcontrib-napoleon.readthedocs.io/en/latest/example_google.html
 https://docs.python.org/2/library/unittest.html
 
 ## Authors:
-Arpith Jacob
+Arpith Jacob (IBM Research)
 
-Tian Jin
+Tian Jin (IBM Research)
 
-Gheorghe-Teodor Bercea
+Gheorghe-Teodor Bercea (IBM Research)
