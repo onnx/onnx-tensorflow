@@ -311,4 +311,13 @@ class TensorflowFrontend(object):
   def handle_logical_xor(cls, node, consts):
     return cls._bin_op(node, "Xor")
 
+  @classmethod
+  def handle_concat_v2(cls, node, consts):
+    assert node.inputs[-1] in consts.keys()
+    axis = int(consts[node.inputs[-1]])
+    return helper.make_node("Concat",
+                            inputs=node.inputs[0:-1],
+                            outputs=[node.name],
+                            axis=axis)
+
 convert_graph = TensorflowFrontend.tensorflow_graph_to_onnx_graph
