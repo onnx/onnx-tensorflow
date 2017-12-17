@@ -5,10 +5,9 @@ from __future__ import unicode_literals
 
 import unittest
 import numpy as np
-import tensorflow as tf
 import onnx
-from onnx_tf.backend import prepare
-from onnx_caffe2.backend import prepare as prepare2
+import onnx_tf.backend as tf
+import onnx_caffe2.backend as c2
 from onnx import helper
 from onnx.onnx_pb2 import TensorProto
 
@@ -21,7 +20,7 @@ def find_between(s, first, last):
         return ""
 
 class TestLargeModel(unittest.TestCase):
-  MODEL_PATH = "../../onnx_models/"
+  MODEL_PATH = "../../../onnx_models/"
 
   def test(self):
     _model = onnx.load(self.MODEL_PATH + "shufflenet/model.pb")
@@ -33,8 +32,8 @@ class TestLargeModel(unittest.TestCase):
       output_to_check.append(node.output[0])
     _model.graph.output.extend(more_outputs)
 
-    tf_rep = prepare(_model)
-    cf_rep = prepare2(_model)
+    tf_rep = tf.prepare(_model)
+    cf_rep = c2.prepare(_model)
 
     sample = np.load(self.MODEL_PATH + "shufflenet/test_data_{}.npz".format(str(1)), encoding='bytes')
     inputs = list(sample['inputs'])
