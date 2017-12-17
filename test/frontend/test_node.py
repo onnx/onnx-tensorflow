@@ -23,6 +23,10 @@ def get_rnd(shape, low=-1.0, high=1.0, dtype=np.float32):
     return (np.random.uniform(low, high, np.prod(shape))
                      .reshape(shape)
                      .astype(np.float32))
+  elif (dtype==np.int32):
+    return (np.random.uniform(low, high, np.prod(shape))
+                     .reshape(shape)
+                     .astype(np.int32))
   elif dtype==np.bool_:
     return np.random.choice(a=[False, True], size=shape)
 
@@ -63,7 +67,8 @@ def create_test(test_data):
     # Construct onnx graph, run with backend.
     output_node = get_node_by_name(tf_graph.node, output_name)
     onnx_graph = convert_graph(tf_graph, output_node)
-    backend_rep = prepare(helper.make_model(onnx_graph))
+    onnx_model = helper.make_model(onnx_graph)
+    backend_rep = prepare(onnx_model)
     backend_output = backend_rep.run(onnx_feed_dict)[output_name]
 
     with tf.Session() as sess:
