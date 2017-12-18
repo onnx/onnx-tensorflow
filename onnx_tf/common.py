@@ -90,6 +90,7 @@ ONNX_OP_TO_TF_OP = {
   "squeeze": tf.squeeze,
   "tanh": tf.tanh,
   "transpose": tf.transpose,
+  "concat": tf.concat,
 }
 
 TF_OP_TO_ONNX_OP = invert(ONNX_OP_TO_TF_OP)

@@ -23,6 +23,10 @@ def get_rnd(shape, low=-1.0, high=1.0, dtype=np.float32):
     return (np.random.uniform(low, high, np.prod(shape))
                      .reshape(shape)
                      .astype(np.float32))
+  elif (dtype==np.int32):
+    return (np.random.uniform(low, high, np.prod(shape))
+                     .reshape(shape)
+                     .astype(np.int32))
   elif dtype==np.bool_:
     return np.random.choice(a=[False, True], size=shape)
 
@@ -63,7 +67,8 @@ def create_test(test_data):
     # Construct onnx graph, run with backend.
     output_node = get_node_by_name(tf_graph.node, output_name)
     onnx_graph = convert_graph(tf_graph, output_node)
-    backend_rep = prepare(helper.make_model(onnx_graph))
+    onnx_model = helper.make_model(onnx_graph)
+    backend_rep = prepare(onnx_model)
     backend_output = backend_rep.run(onnx_feed_dict)[output_name]
 
     with tf.Session() as sess:
@@ -101,12 +106,12 @@ test_cases = [
 ("test_sigmoid", tf.sigmoid, "Sigmoid", [get_rnd([10, 10])], {}),
 ("test_split", tf.split, "split", [get_rnd([10, 10]), [5, 5]], {}),
 ("test_sqrt", tf.sqrt, "Sqrt", [get_rnd([10, 10])], {}),
-("test_sqrt", tf.sqrt, "Sqrt", [get_rnd([10, 10])], {}),
 ("test_squeeze", tf.squeeze, "Squeeze", [get_rnd([1, 1, 10, 10])], {"axis":[0, 1]}),
 ("test_subtract", tf.subtract, "Sub", [get_rnd([10, 10]), get_rnd([10, 10])], {}),
 ("test_tanh", tf.tanh, "Tanh", [get_rnd([10, 10])], {}),
 ("test_xor", tf.logical_xor, "LogicalXor", [get_rnd([10, 10], dtype=np.bool_), get_rnd([10, 10], dtype=np.bool_)], {}),
 ("test_transpose", tf.transpose, "transpose", [get_rnd([2, 10])], {"perm":[1, 0]}),
+("test_concat", tf.concat, "concat", [[get_rnd([1, 10]),get_rnd([10, 10]),get_rnd([20, 10])], 0], {})
 ]
 
 for k, val in enumerate(test_cases):

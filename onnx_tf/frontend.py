@@ -120,14 +120,19 @@ class TensorflowFrontend(object):
         raw_values = ([node.attr["value"].tolist()]
                       if const_dim == 0
                       else node.attr["value"].flatten().tolist())
+        if const_dim == 0:
+            values = [node.attr["value"]]
+        else:
+            values = node.attr["value"]
+        shape = np.array(values).shape
         consts_proto.append(make_tensor(
                             name=node.name,
                             data_type=node.attr["dtype"],
-                            dims=np.array(raw_values).shape,
+                            dims=shape,
                             vals=raw_values))
         input_proto = make_tensor_value_info(node.name,
                                              node.attr["dtype"],
-                                             np.array(raw_values).shape)
+                                             shape)
         inputs_proto.append(input_proto)
       elif node.op in TF_OP_STR_TO_ONNX_OP.keys():
         # Remove tensorflow-specific attrs that are not
@@ -305,5 +310,14 @@ class TensorflowFrontend(object):
   @classmethod
   def handle_logical_xor(cls, node, consts):
     return cls._bin_op(node, "Xor")
+
+  @classmethod
+  def handle_concat_v2(cls, node, consts):
+    assert node.inputs[-1] in consts.keys()
+    axis = int(consts[node.inputs[-1]])
+    return helper.make_node("Concat",
+                            inputs=node.inputs[0:-1],
+                            outputs=[node.name],
+                            axis=axis)
 
 convert_graph = TensorflowFrontend.tensorflow_graph_to_onnx_graph
