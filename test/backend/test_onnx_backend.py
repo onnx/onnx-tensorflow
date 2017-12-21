@@ -33,9 +33,9 @@ if 'TRAVIS' in os.environ:
     backend_test.exclude('test_vgg19')
 
 # import all test cases at global scope to make them visible to python.unittest
+
 globals().update(backend_test
                  .enable_report()
                  .test_cases)
-
 if __name__ == '__main__':
     unittest.main()
