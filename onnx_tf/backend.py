@@ -220,26 +220,27 @@ class TensorflowBackend(Backend):
     for (input_size,
          stride_size,
          kernel_size,
-         left_pad,
-         right_pad) in zip(input_shape,
+         before_pad,
+         after_pad) in zip(input_shape,
                            strides,
                            kernel_shape,
                            pads[:num_sp_dim],
                            pads[num_sp_dim:]):
 
-      output_size = ceil(float(input_size) / float(stride_size))
-      padding_total = int((output_size - 1) * stride_size +
-                          kernel_size - input_size)
-      padding_left = int(floor(float(padding_total) / 2.0))
-      padding_right = padding_total - padding_left
+      # See https://www.tensorflow.org/api_guides/python/nn#Convolution
+      if (input_size % stride_size == 0):
+          padding = max(kernel_size - stride_size, 0)
+      else:
+          padding = max(kernel_size - (input_size % stride_size), 0)
 
-      is_same_padding = is_same_padding and (left_pad == padding_left and
-                                             right_pad == padding_right)
+      padding_before = padding // 2
+      padding_after = padding - padding_before
 
-
+      is_same_padding = is_same_padding and ((before_pad == padding_before) and
+                                             (after_pad == padding_after))
     if is_same_padding:
       return "SAME"
-
+    # padding don't correspond to tensorflow SAME padding
     return None
 
   @classmethod
