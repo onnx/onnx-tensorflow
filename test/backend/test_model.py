@@ -27,6 +27,7 @@ class TestModel(unittest.TestCase):
       inputs=[helper.make_tensor_value_info("X", TensorProto.FLOAT, [3, 2])],
       outputs=[helper.make_tensor_value_info("X1", TensorProto.FLOAT, [3, 2])])
     tf_rep = prepare(helper.make_model(graph_def))
+
     output = tf_rep.run({"X": X})
     np.testing.assert_almost_equal(output.X1, Y_ref)
 
