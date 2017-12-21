@@ -25,6 +25,13 @@ from onnx.helper import (
 from onnx.onnx_pb2 import GraphProto, TensorProto, AttributeProto
 from tensorflow.python.framework.tensor_util import MakeNdarray
 
+def get_nodes_by_name(nodes, names):
+  ret = []
+  for node in nodes:
+    if node.name in names:
+      ret.append(TensorflowNode(node))
+  return ret
+
 class TensorflowNode(object):
 
   # Keyed by old attribute names.
@@ -152,10 +159,11 @@ class TensorflowFrontend(object):
 
         # Check if specialized handler exists.
         if handler_name in dir(cls):
+          input_node = get_nodes_by_name(graph_def.node, node.inputs)
           method_to_call = getattr(cls, handler_name)
-          ops_proto.append(method_to_call(node, consts))
+          ops_proto.append(method_to_call(node, consts, input_node))
         else:
-          raise NotImplementedError("{} op is not implemented.".format(node.op))
+          raise NotImplementedError("{} op is not implemented, handler {} do not exists.".format(node.op, handler_name))
 
     output = TensorflowNode(output)
     # making output proto
@@ -179,15 +187,15 @@ class TensorflowFrontend(object):
             onnx_op, node.inputs, [node.name], name=node.name, broadcast=1)
 
   @classmethod
-  def handle_logical_and(cls, node, consts):
+  def handle_logical_and(cls, node, consts, input_node):
     return cls._bin_op(node, "And")
 
   @classmethod
-  def handle_logical_or(cls, node, consts):
+  def handle_logical_or(cls, node, consts, input_node):
     return cls._bin_op(node, "Or")
 
   @classmethod
-  def handle_pad(cls, node, consts):
+  def handle_pad(cls, node, consts, input_node):
     assert node.inputs[1] in consts.keys()
     supported_modes = ["constant", "reflect"]
     mode = node.attr.get("mode", "constant")
@@ -204,7 +212,7 @@ class TensorflowFrontend(object):
             value=0.0)
 
   @classmethod
-  def handle_random_standard_normal(cls, node, consts):
+  def handle_random_standard_normal(cls, node, consts, input_node):
     """ Tensorflow does not have a generic random_normal op.
         The generic random_normal op is translated into a scaled
         and offsetted random standard normal op.
@@ -220,7 +228,7 @@ class TensorflowFrontend(object):
             shape=node.attr["_output_shapes"][0])
 
   @classmethod
-  def handle_random_uniform(cls, node, consts):
+  def handle_random_uniform(cls, node, consts, input_node):
     """ Tensorflow does not have a generic random_uniform op.
         The generic random_uniform op is translated into a scaled
         and offsetted random standard uniform op.
@@ -236,7 +244,7 @@ class TensorflowFrontend(object):
             shape=node.attr["_output_shapes"][0])
 
   @classmethod
-  def _reduce_op(cls, op, node, consts):
+  def _reduce_op(cls, op, node, consts, input_node):
     assert node.inputs[1] in consts.keys()
     axes = consts[node.inputs[1]]
     return helper.make_node(op,
@@ -286,7 +294,7 @@ class TensorflowFrontend(object):
                             axis=axis)
 
   @classmethod
-  def handle_squeeze(cls, node, consts):
+  def handle_squeeze(cls, node, consts, input_node):
     assert "squeeze_dims" in node.attr.keys(), ("Squeeze dims have to be"
       "specified")
     axes = node.attr["squeeze_dims"]
@@ -296,11 +304,11 @@ class TensorflowFrontend(object):
                             axes=axes)
 
   @classmethod
-  def handle_sub(cls, node, consts):
+  def handle_sub(cls, node, consts, input_node):
     return cls._bin_op(node, "Sub")
 
   @classmethod
-  def handle_transpose(cls, node, consts):
+  def handle_transpose(cls, node, consts, input_node):
     perm = consts[node.inputs[1]]
     return helper.make_node("Transpose",
                             [node.inputs[0]],
@@ -308,11 +316,11 @@ class TensorflowFrontend(object):
                             perm=perm)
 
   @classmethod
-  def handle_logical_xor(cls, node, consts):
+  def handle_logical_xor(cls, node, consts, input_node):
     return cls._bin_op(node, "Xor")
 
   @classmethod
-  def handle_concat_v2(cls, node, consts):
+  def handle_concat_v2(cls, node, consts, input_node):
     assert node.inputs[-1] in consts.keys()
     axis = int(consts[node.inputs[-1]])
     return helper.make_node("Concat",
