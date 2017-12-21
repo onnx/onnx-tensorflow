@@ -91,6 +91,8 @@ ONNX_OP_TO_TF_OP = {
   "tanh": tf.tanh,
   "transpose": tf.transpose,
   "concat": tf.concat,
+  "max_pool": tf.nn.max_pool,
+  "avg_pool": tf.nn.avg_pool,
 }
 
 TF_OP_TO_ONNX_OP = invert(ONNX_OP_TO_TF_OP)

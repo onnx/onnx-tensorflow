@@ -135,6 +135,14 @@ test_cases = [
 ("test_concat", tf.concat, "concat", [[get_rnd([2, 1, 2]), get_rnd([2, 2, 2]), get_rnd([2, 1, 2])], 1], {}, 'CPU', True),
 ("test_concat", tf.concat, "concat", [[get_rnd([1, 10, 10, 1]), get_rnd([1, 10, 10, 1]), get_rnd([1, 10, 10, 1])], 3], {}, 'CPU', True),
 ("test_concat", tf.concat, "concat", [[get_rnd([1, 10, 10, 1]), get_rnd([1, 10, 10, 1]), get_rnd([1, 10, 10, 1])], 0], {}, 'CPU', True),
+("test_max_pool", tf.nn.max_pool, "MaxPool", [get_rnd([1,16,16,3])], {"ksize":[1,4,4,1], "strides": [1,1,1,1], "padding":'VALID' ,"data_format":'NHWC'}, 'CPU', True),
+("test_max_pool", tf.nn.max_pool, "MaxPool", [get_rnd([1,16,16,3])], {"ksize":[1,4,4,1], "strides": [1,1,1,1], "padding":'SAME' ,"data_format":'NHWC'}, 'CPU', True),
+("test_max_pool", tf.nn.max_pool, "MaxPool", [get_rnd([1,15,15,3])], {"ksize":[1,6,6,1], "strides": [1,1,1,1], "padding":'VALID' ,"data_format":'NHWC'}, 'CPU', True),
+("test_max_pool", tf.nn.max_pool, "MaxPool", [get_rnd([1,15,15,3])], {"ksize":[1,6,6,1], "strides": [1,1,1,1], "padding":'SAME' ,"data_format":'NHWC'}, 'CPU', True),
+("test_avg_pool", tf.nn.avg_pool, "AvgPool", [get_rnd([1,16,16,3])], {"ksize":[1,4,4,1], "strides": [1,1,1,1], "padding":'VALID' ,"data_format":'NHWC'}, 'CPU', True),
+("test_avg_pool", tf.nn.avg_pool, "AvgPool", [get_rnd([1,16,16,3])], {"ksize":[1,4,4,1], "strides": [1,1,1,1], "padding":'SAME' ,"data_format":'NHWC'}, 'CPU', True),
+("test_avg_pool", tf.nn.avg_pool, "AvgPool", [get_rnd([1,15,15,3])], {"ksize":[1,6,6,1], "strides": [1,1,1,1], "padding":'VALID' ,"data_format":'NHWC'}, 'CPU', True),
+("test_avg_pool", tf.nn.avg_pool, "AvgPool", [get_rnd([1,15,15,3])], {"ksize":[1,6,6,1], "strides": [1,1,1,1], "padding":'SAME' ,"data_format":'NHWC'}, 'CPU', True),
 ]
 
 for k, val in enumerate(test_cases):

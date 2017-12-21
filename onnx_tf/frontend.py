@@ -45,6 +45,10 @@ class TensorflowNode(object):
     "seed": lambda self, x: float(x.i),
     "keep_dims": lambda self, x: int(x.b),
     "squeeze_dims": lambda self, x: list(x.list.i),
+    "padding": lambda self, x: str(x.s),
+    "strides": lambda self, x: list(x.list.i),
+    "ksize": lambda self, x: list(x.list.i),
+    "data_format": lambda self, x: str(x.s),
   }
 
   def __init__(self, node_proto):
@@ -435,5 +439,55 @@ class TensorflowFrontend(object):
                             inputs=node.inputs[0:-1],
                             outputs=[node.name],
                             axis=axis)
+
+  @classmethod
+  def _pool(cls, op, node, consts, input_node):
+    input = node.inputs[0]
+    strides = node.attr["strides"]
+    kernel = node.attr["ksize"]
+    assert len(strides) == 4
+    assert len(kernel) == 4
+    assert node.attr["padding"] in ["SAME","VALID"]
+    if node.attr["data_format"] in ['NHWC']:
+      # ONNX should have NCHW: 'NHWC' -> 'NCHW' = 0 2 3 1
+      # ONNX should have only strides and kernel for spacial dimension
+      strides = strides[1:-1]
+      kernel = kernel[1:-1]
+    else:
+      # ONNX should have only strides and kernel for spacial dimension
+      strides = strides[2:]
+      kernel = kernel[2:]
+    # Compute padding
+    if node.attr["padding"] in ['SAME']:
+      h, w = 0, 1
+      out_h = node.attr["_output_shapes"][0][h]
+      out_w = node.attr["_output_shapes"][0][w]
+      in_h = input_node[0].attr["_output_shapes"][0][h]
+      in_w = input_node[0].attr["_output_shapes"][0][w]
+      pad_along_h = max((out_h - 1) * strides[h] + kernel[h] - in_h, 0)
+      pad_along_w = max((out_w - 1) * strides[w] + kernel[w] - in_w, 0)
+      paddings = [pad_along_h // 2, # begin paddings in order H
+                  pad_along_w // 2, # begin paddings in order W
+                  pad_along_h - pad_along_h // 2, # end paddings in order H
+                  pad_along_w - pad_along_w // 2] # end paddings in order W
+    elif node.attr["padding"] in ['VALID']:
+      paddings = [0,0, # begin paddings
+                  0,0] # end paddings
+
+    return helper.make_node(op,
+            [input], #input
+            [node.name], #output
+            name=node.name,
+            kernel_shape=kernel,
+            pads=paddings,
+            strides=strides)
+
+  @classmethod
+  def handle_max_pool(cls, node, consts, input_node):
+    return cls._pool("MaxPool", node, consts, input_node)
+
+  @classmethod
+  def handle_avg_pool(cls, node, consts, input_node):
+    return cls._pool("AveragePool", node, consts, input_node)
 
 convert_graph = TensorflowFrontend.tensorflow_graph_to_onnx_graph
