@@ -568,12 +568,12 @@ class TensorflowBackend(Backend):
       compute_format = 'NHWC'
       kernel_shape = [1] + kernel_shape + [1]
       strides = [1] + strides + [1]
-    elif cls._channel_last and cls._device in ["GPU"]:
+    elif cls._channel_last and cls._device in ["CUDA"]:
       x = tf.transpose(x, perm=[0, 3, 1, 2])
       compute_format = 'NCHW'
       kernel_shape = [1] + [1] + kernel_shape
       strides = [1] + [1] + strides
-    elif not cls._channel_last and cls._device in ["GPU"]:
+    elif not cls._channel_last and cls._device in ["CUDA"]:
       compute_format = 'NCHW'
       kernel_shape = [1] + [1] + kernel_shape
       strides = [1] + [1] + strides
@@ -587,11 +587,11 @@ class TensorflowBackend(Backend):
 
     if not cls._channel_last and cls._device in ["CPU"]:
       pooled = tf.transpose(pooled, perm=[0, 3, 1, 2])
-    elif cls._channel_last and cls._device in ["GPU"]:
+    elif cls._channel_last and cls._device in ["CUDA"]:
       pooled = tf.transpose(pooled, perm=[0, 2, 3, 1])
     elif cls._channel_last and cls._device in ["CPU"]:
       pass
-    elif not cls._channel_last and cls._device in ["GPU"]:
+    elif not cls._channel_last and cls._device in ["CUDA"]:
       pass
     return [pooled]
 
