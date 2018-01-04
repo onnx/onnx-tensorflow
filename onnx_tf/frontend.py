@@ -168,9 +168,10 @@ class TensorflowFrontend(object):
 
         # Check if specialized handler exists.
         if handler_name in dir(cls):
-          input_node = get_nodes_by_name(graph_def.node, node.inputs)
+          input_nodes = get_nodes_by_name(graph_def.node, node.inputs)
+          node.attr["_input_shapes"] = [i.attr["_output_shapes"][0] for i in input_nodes]
           method_to_call = getattr(cls, handler_name)
-          ops_proto.append(method_to_call(node, consts, input_node))
+          ops_proto.append(method_to_call(node, consts))
         else:
           raise NotImplementedError("{} op is not implemented, handler {} do not exists.".format(node.op, handler_name))
 
@@ -200,15 +201,15 @@ class TensorflowFrontend(object):
             onnx_op, node.inputs, [node.name], name=node.name, broadcast=1)
 
   @classmethod
-  def handle_logical_and(cls, node, consts, input_node):
+  def handle_logical_and(cls, node, consts):
     return cls._bin_op(node, "And")
 
   @classmethod
-  def handle_logical_or(cls, node, consts, input_node):
+  def handle_logical_or(cls, node, consts):
     return cls._bin_op(node, "Or")
 
   @classmethod
-  def handle_pad(cls, node, consts, input_node):
+  def handle_pad(cls, node, consts):
     assert node.inputs[1] in consts.keys()
     supported_modes = ["constant", "reflect"]
     mode = node.attr.get("mode", "constant")
@@ -227,7 +228,7 @@ class TensorflowFrontend(object):
         for i, l in enumerate(old_pads[0]):
           for j, p in enumerate(l):
             if mode in ["reflect"]:
-              assert p < input_node[0].attr["_output_shapes"][0][j]
+              assert p < node.attr["_input_shapes"][0][j]
             new_j = j % (rank-1) + 1 if j != 0 else 0
             pads[i][new_j] = p
 
@@ -242,7 +243,7 @@ class TensorflowFrontend(object):
             value=value)
 
   @classmethod
-  def handle_random_standard_normal(cls, node, consts, input_node):
+  def handle_random_standard_normal(cls, node, consts):
     """ Tensorflow does not have a generic random_normal op.
         The generic random_normal op is translated into a scaled
         and offsetted random standard normal op.
@@ -267,7 +268,7 @@ class TensorflowFrontend(object):
             shape=shape)
 
   @classmethod
-  def handle_random_uniform(cls, node, consts, input_node):
+  def handle_random_uniform(cls, node, consts):
     """ Tensorflow does not have a generic random_uniform op.
         The generic random_uniform op is translated into a scaled
         and offsetted random standard uniform op.
@@ -292,12 +293,12 @@ class TensorflowFrontend(object):
             shape=shape)
 
   @classmethod
-  def _reduce_op(cls, op, node, consts, input_node):
+  def _reduce_op(cls, op, node, consts):
     assert node.inputs[1] in consts.keys()
     axes = consts[node.inputs[1]]
     # Arrange axes to the according data format 
     if cls._channel_last:
-      rank = len(input_node[0].attr["_output_shapes"][0])
+      rank = len(node.attr["_input_shapes"][0])
       if rank >= 3:
         old_axes = axes[:]
         for i, a in enumerate(old_axes):
@@ -310,32 +311,32 @@ class TensorflowFrontend(object):
                             keepdims=node.attr.get("keep_dims", 1))
 
   @classmethod
-  def handle_max(cls, node, consts, input_node):
-    return cls._reduce_op("ReduceMax", node, consts, input_node)
+  def handle_max(cls, node, consts):
+    return cls._reduce_op("ReduceMax", node, consts)
 
   @classmethod
-  def handle_mean(cls, node, consts, input_node):
-    return cls._reduce_op("ReduceMean", node, consts, input_node)
+  def handle_mean(cls, node, consts):
+    return cls._reduce_op("ReduceMean", node, consts)
 
   @classmethod
-  def handle_min(cls, node, consts, input_node):
-    return cls._reduce_op("ReduceMin", node, consts, input_node)
+  def handle_min(cls, node, consts):
+    return cls._reduce_op("ReduceMin", node, consts)
 
   @classmethod
-  def handle_prod(cls, node, consts, input_node):
-    return cls._reduce_op("ReduceProd", node, consts, input_node)
+  def handle_prod(cls, node, consts):
+    return cls._reduce_op("ReduceProd", node, consts)
 
   @classmethod
-  def handle_sum(cls, node, consts, input_node):
-    return cls._reduce_op("ReduceSum", node, consts, input_node)
+  def handle_sum(cls, node, consts):
+    return cls._reduce_op("ReduceSum", node, consts)
 
   @classmethod
-  def handle_reshape(cls, node, consts, input_node):
+  def handle_reshape(cls, node, consts):
     assert node.inputs[1] in consts.keys()
     shape = consts[node.inputs[1]]
     # Arrange shape to the according data format 
     if cls._channel_last:
-      input_shape = input_node[0].attr["_output_shapes"][0]
+      input_shape = node.attr["_input_shapes"][0]
       rank = len(input_shape)
       if rank >= 3:
         if (input_shape[0] == shape[0]) and (input_shape[-1] == shape[-1]):
@@ -352,7 +353,7 @@ class TensorflowFrontend(object):
                             shape=shape)
 
   @classmethod
-  def handle_split_v(cls, node, consts, input_node):
+  def handle_split_v(cls, node, consts):
     assert node.inputs[1] in consts.keys()
     split = consts[node.inputs[1]]
     # Arrange split to the according data format 
@@ -367,7 +368,7 @@ class TensorflowFrontend(object):
     axis = int(consts[node.inputs[2]])
     # Arrange axis to the according data format 
     if cls._channel_last:
-      rank = len(input_node[0].attr["_output_shapes"][0])
+      rank = len(node.attr["_input_shapes"][0])
       assert axis >= -rank and axis < rank
       if rank >= 3:
         axis = axis % (rank-1) + 1 if axis != 0 else 0
@@ -379,13 +380,13 @@ class TensorflowFrontend(object):
                             axis=axis)
 
   @classmethod
-  def handle_squeeze(cls, node, consts, input_node):
+  def handle_squeeze(cls, node, consts):
     assert "squeeze_dims" in node.attr.keys(), ("Squeeze dims have to be"
       "specified")
     axes = node.attr["squeeze_dims"]
     # Arrange data to the according data format 
     if cls._channel_last:
-      rank = len(input_node[0].attr["_output_shapes"][0])
+      rank = len(node.attr["_input_shapes"][0])
       if rank >= 3:
         old_axes = axes[:]
         for i, a in enumerate(old_axes):
@@ -396,11 +397,11 @@ class TensorflowFrontend(object):
                             [node.name],
                             axes=axes)
   @classmethod
-  def handle_sub(cls, node, consts, input_node):
+  def handle_sub(cls, node, consts):
     return cls._bin_op(node, "Sub")
 
   @classmethod
-  def handle_transpose(cls, node, consts, input_node):
+  def handle_transpose(cls, node, consts):
     perm = consts[node.inputs[1]]
     # Arrange perm to the according data format 
     if cls._channel_last:
@@ -418,16 +419,16 @@ class TensorflowFrontend(object):
                             perm=perm)
 
   @classmethod
-  def handle_logical_xor(cls, node, consts, input_node):
+  def handle_logical_xor(cls, node, consts):
     return cls._bin_op(node, "Xor")
 
   @classmethod
-  def handle_concat_v2(cls, node, consts, input_node):
+  def handle_concat_v2(cls, node, consts):
     assert node.inputs[-1] in consts.keys()
     axis = int(consts[node.inputs[-1]])
     # Arrange axis to the according data format 
     if cls._channel_last:
-      rank = len(input_node[0].attr["_output_shapes"][0])
+      rank = len(node.attr["_input_shapes"][0])
       assert axis >= -rank and axis < rank
       if rank >= 3:
         axis = axis % (rank-1) + 1 if axis != 0 else 0
