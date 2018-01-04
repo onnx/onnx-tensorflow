@@ -27,6 +27,13 @@ from onnx_tf.backend_rep import TensorflowRep
 import onnx.numpy_helper
 import onnx.defs
 
+from onnx_tf.common import (
+    shape_from_nchw_to_nhwc,
+    axes_from_nchw_to_nhwc,
+    perm_from_nchw_to_nhwc,
+    pads_from_nchw_to_nhwc,
+    axis_from_nchw_to_nhwc,
+)
 from onnx.backend.base import (
     Backend,
     BackendRep,
@@ -925,10 +932,16 @@ class TensorflowBackend(Backend):
       return x
 
     value = node.attrs.get("value", 0)
+
     # tf requires int32 paddings
-    pads = tf.constant(np.transpose(np.array(node.attrs["pads"])
-                                      .reshape([2, num_dim])
-                                      .astype(np.int32)))
+    pads = np.array(node.attrs["pads"]).reshape([2, num_dim]).astype(np.int32)
+    # Arrange pad to the right data format
+    if cls._channel_last:
+      rank = num_dim
+      pads = pads_from_nchw_to_nhwc(pads, rank)
+
+    # tf requires paddings of shape (n, 2)
+    pads = tf.constant(np.transpose(pads))
 
     x = input_dict[node.inputs[0]]
     if mode.lower() == "edge":
@@ -1025,38 +1038,22 @@ class TensorflowBackend(Backend):
                       input_dict[node.inputs[1]])]
   @classmethod
   def handle_squeeze(cls, node, input_dict):
-    axis = node.attrs["axes"]
+    axes = node.attrs["axes"]
     # Arrange axis to the right data format
     if cls._channel_last:
       rank = len(input_dict[node.inputs[0]].shape)
-      if rank >= 3:
-        old_axis = axis[:]
-        for i, a in enumerate(old_axis):
-          if a == 1:
-            axis[i] = -1
-          elif a == 0:
-            axis[i] = 0
-          else:
-            axis[i] = a - 1
-    return [tf.squeeze(input_dict[node.inputs[0]], axis)]
+      axes = axes_from_nchw_to_nhwc(axes, rank)
+    return [tf.squeeze(input_dict[node.inputs[0]], axis=axes)]
 
   @classmethod
   def _reduce_op(cls, op, node, input_dict):
     keep = bool(node.attrs["keepdims"])
-    axis = node.attrs["axes"]
+    axes = node.attrs["axes"]
     # Arrange axis to the right data format
     if cls._channel_last:
       rank = len(input_dict[node.inputs[0]].shape)
-      if rank >= 3:
-        old_axis = axis[:]
-        for i, a in enumerate(old_axis):
-          if a == 1:
-            axis[i] = -1
-          elif a == 0:
-            axis[i] = 0
-          else:
-            axis[i] = a - 1
-    return [op(input_dict[node.inputs[0]], axis=axis, keep_dims=keep)]
+      axes = axes_from_nchw_to_nhwc(axes, rank)
+    return [op(input_dict[node.inputs[0]], axis=axes, keep_dims=keep)]
 
   @classmethod
   def handle_reduce_max(cls, node, input_dict):
@@ -1084,19 +1081,7 @@ class TensorflowBackend(Backend):
     # Arrange perm to the right data format
     if cls._channel_last:
       rank = len(input_dict[node.inputs[0]].shape)
-      if rank >= 3:
-        old_perm = perm[:]
-        for i, p in enumerate(old_perm):
-          if p == 1:
-            new_i = 1
-            new_p = 1
-          elif p == 0:
-            new_i = 0
-            new_p = 0
-          else:
-            new_i = i - 1
-            new_p = p - 1
-          perm[new_i] = new_p
+      perm = perm_from_nchw_to_nhwc(perm, rank)
     return [tf.transpose(input_dict[node.inputs[0]], perm=perm)]
 
   @classmethod
@@ -1110,15 +1095,8 @@ class TensorflowBackend(Backend):
     # Arrange shape to the right data format
     new_shape = shape[:]
     if cls._channel_last:
-      if len(shape) >= 3:
-        for i, s in enumerate(shape):
-          if i == 1:
-            new_i = 1
-          elif i == 0:
-            new_i = 0
-          else:
-            new_i = i - 1
-          new_shape[new_i] = s
+      rank = len(shape)
+      shape = shape_from_nchw_to_nhwc(shape, rank)
     return [tf.random_normal(shape, mean, stddev, dtype, seed)]
 
   @classmethod
@@ -1130,16 +1108,8 @@ class TensorflowBackend(Backend):
     shape = np.asarray(node.attrs["shape"])
     # Arrange shape to the right data format
     if cls._channel_last:
-      if len(shape) >= 3:
-        old_shape = shape[:]
-        for i, s in enumerate(old_shape):
-          if i == 1:
-            new_i = 1
-          elif i == 0:
-            new_i = 0
-          else:
-            new_i = i - 1
-          shape[new_i] = s
+      rank = len(shape)
+      shape = shape_from_nchw_to_nhwc(shape, rank)
     return [tf.random_uniform(shape, minval, maxval, dtype, seed)]
 
   @classmethod
@@ -1151,13 +1121,7 @@ class TensorflowBackend(Backend):
     # Arrange axis to the right data format
     if cls._channel_last:
       rank = len(input_dict[node.inputs[0]].shape)
-      if rank >= 3:
-        if a == 1:
-          axis = -1
-        elif a == 0:
-          axis = 0
-        else:
-          axis = a - 1
+      axis = axis_from_nchw_to_nhwc(axis, rank)
     return [tf.gather(params, indices=indices, axis=axis)]
 
   @classmethod

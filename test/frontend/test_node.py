@@ -98,6 +98,7 @@ test_cases = [
 ("test_or", tf.logical_or, "LogicalOr", [get_rnd([10, 10], dtype=np.bool_), get_rnd([10, 10], dtype=np.bool_)], {}, 'CPU', True),
 ("test_pow", tf.pow, "Pow", [get_rnd([10, 10]), get_rnd([10, 10])], {}, 'CPU', True),
 ("test_pad", tf.pad, "Pad", [get_rnd([2, 3]), [[1, 1,], [2, 2]]], {"mode": "constant"}, 'CPU', True),
+("test_pad", tf.pad, "Pad", [get_rnd([10, 2, 2, 3]), [[0,0], [2, 2], [2, 2], [0,0]]], {"mode": "constant"}, 'CPU', True),
 ("test_random_normal", tf.random_normal, "random_normal/RandomStandardNormal", [], {"shape": [1, 100, 100, 1], "mean": 0.0, "stddev": 1.0, "dtype": tf.float32, "seed": 42}, 'CPU', True, {"call_only": True}),
 ("test_random_normal", tf.random_normal, "random_normal/RandomStandardNormal", [], {"shape": [100, 100], "mean": 0.0, "stddev": 1.0, "dtype": tf.float32, "seed": 42}, 'CPU', True, {"call_only": True}),
 ("test_random_uniform", tf.random_uniform, "random_uniform", [], {"shape": [100, 100], "minval": 0.0, "maxval": 1.0, "dtype": tf.float32, "seed": 42}, 'CPU', True, {"call_only": True}),

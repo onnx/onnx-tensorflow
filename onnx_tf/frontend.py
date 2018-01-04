@@ -14,6 +14,11 @@ from onnx_tf.common import (
   TF_ATTR_TO_ONNX_ATTR,
   get_tf_shape_as_list,
   op_name_to_lower,
+  shape_from_nhwc_to_nchw,
+  axes_from_nhwc_to_nchw,
+  perm_from_nhwc_to_nchw,
+  pads_from_nhwc_to_nchw,
+  axis_from_nhwc_to_nchw
 )
 from onnx import onnx_pb2, helper
 from onnx.helper import (
@@ -222,16 +227,8 @@ class TensorflowFrontend(object):
     pads = np.transpose(consts[node.inputs[1]])
     # Arrange pads to the according data format 
     if cls._channel_last:
-      rank = pads.shape[1] # n
-      if rank >= 3:
-        old_pads = pads[:][:]
-        for i, l in enumerate(old_pads[0]):
-          for j, p in enumerate(l):
-            if mode in ["reflect"]:
-              assert p < node.attr["_input_shapes"][0][j]
-            new_j = j % (rank-1) + 1 if j != 0 else 0
-            pads[i][new_j] = p
-
+      rank = pads.shape[1] # to get n
+      pads = pads_from_nhwc_to_nchw(pads, rank)
     pads = pads.flatten()
     return helper.make_node(
             "Pad",
@@ -252,11 +249,7 @@ class TensorflowFrontend(object):
     # Arrange shape to the according data format 
     if cls._channel_last:
       rank = len(shape)
-      if rank >= 3:
-        old_shape = shape[:]
-        for i, s in enumerate(old_shape):
-          j = i % (rank-1) + 1 if i != 0 else 0
-          shape[j] = s
+      shape = shape_from_nhwc_to_nchw(shape, rank)
     return helper.make_node(
             "RandomNormal",
             [],
@@ -277,11 +270,7 @@ class TensorflowFrontend(object):
     # Arrange shape to the according data format 
     if cls._channel_last:
       rank = len(shape)
-      if rank >= 3:
-        old_shape = shape[:]
-        for i, s in enumerate(shape):
-          j = i % (rank-1) + 1 if i != 0 else 0
-          shape[j] = s
+      shape = shape_from_nhwc_to_nchw(shape, rank)
     return helper.make_node(
             "RandomUniform",
             [],
@@ -299,11 +288,7 @@ class TensorflowFrontend(object):
     # Arrange axes to the according data format 
     if cls._channel_last:
       rank = len(node.attr["_input_shapes"][0])
-      if rank >= 3:
-        old_axes = axes[:]
-        for i, a in enumerate(old_axes):
-          assert a >= -rank and a < rank
-          axes[i] = a % (rank-1) + 1 if a != 0 else 0
+      axes = axes_from_nhwc_to_nchw(axes, rank)
     return helper.make_node(op,
                             [node.inputs[0]],
                             [node.name],
@@ -333,24 +318,21 @@ class TensorflowFrontend(object):
   @classmethod
   def handle_reshape(cls, node, consts):
     assert node.inputs[1] in consts.keys()
-    shape = consts[node.inputs[1]]
-    # Arrange shape to the according data format 
+    reshape = consts[node.inputs[1]]
+    # Arrange the new shape to the according data format 
     if cls._channel_last:
       input_shape = node.attr["_input_shapes"][0]
       rank = len(input_shape)
       if rank >= 3:
-        if (input_shape[0] == shape[0]) and (input_shape[-1] == shape[-1]):
+        if (input_shape[0] == reshape[0]) and (input_shape[-1] == reshape[-1]):
           # In this case, the N and C of the data format is keeped
-          old_shape = shape[:]
-          for i, s in enumerate(old_shape):
-            j = i % (rank-1) + 1 if i != 0 else 0
-            shape[j] = s
+          reshape = shape_from_nhwc_to_nchw(reshape, rank)
         else:
           raise NotImplementedError("Reshaping other dimension than spacial dimensions is not implemented.")
     return helper.make_node("Reshape",
                             [node.inputs[0]],
                             [node.name],
-                            shape=shape)
+                            shape=reshape)
 
   @classmethod
   def handle_split_v(cls, node, consts):
@@ -359,19 +341,15 @@ class TensorflowFrontend(object):
     # Arrange split to the according data format 
     if cls._channel_last:
       rank = len(split)
-      if rank >= 3:
-        old_split = split[:]
-        for i, p in enumerate(old_split):
-          assert i >= -rank and i < rank
-          j = i % (rank-1) + 1 if i != 0 else 0
-          split[j] = p
+      # converting split is the same as converting shape
+      split = shape_from_nhwc_to_nchw(split, rank)
+
     axis = int(consts[node.inputs[2]])
     # Arrange axis to the according data format 
     if cls._channel_last:
       rank = len(node.attr["_input_shapes"][0])
-      assert axis >= -rank and axis < rank
-      if rank >= 3:
-        axis = axis % (rank-1) + 1 if axis != 0 else 0
+      axis = axis_from_nhwc_to_nchw(axis, rank)
+
     output_names = [node.name + ":{}".format(i) if i>0 else node.name for i in range(len(split))]
     return helper.make_node("Split",
                             [node.inputs[0]],
@@ -387,11 +365,7 @@ class TensorflowFrontend(object):
     # Arrange data to the according data format 
     if cls._channel_last:
       rank = len(node.attr["_input_shapes"][0])
-      if rank >= 3:
-        old_axes = axes[:]
-        for i, a in enumerate(old_axes):
-          assert a >= -rank and a < rank
-          axes[i] = a % (rank-1) + 1 if a != 0 else 0
+      axes = axes_from_nhwc_to_nchw(axes, rank)
     return helper.make_node("Squeeze",
                             [node.inputs[0]],
                             [node.name],
@@ -406,13 +380,7 @@ class TensorflowFrontend(object):
     # Arrange perm to the according data format 
     if cls._channel_last:
       rank = len(perm)
-      if rank >= 3:
-        old_perm = perm[:]
-        for i, p in enumerate(old_perm):
-          assert p >= -rank and p < rank
-          new_i = i % (rank-1) + 1 if i != 0 else 0
-          new_p = p % (rank-1) + 1 if p != 0 else 0
-          perm[new_i] = new_p
+      perm = perm_from_nhwc_to_nchw(perm, rank)
     return helper.make_node("Transpose",
                             [node.inputs[0]],
                             [node.name],
@@ -429,9 +397,7 @@ class TensorflowFrontend(object):
     # Arrange axis to the according data format 
     if cls._channel_last:
       rank = len(node.attr["_input_shapes"][0])
-      assert axis >= -rank and axis < rank
-      if rank >= 3:
-        axis = axis % (rank-1) + 1 if axis != 0 else 0
+      axis = axis_from_nhwc_to_nchw(axis, rank)
     return helper.make_node("Concat",
                             inputs=node.inputs[0:-1],
                             outputs=[node.name],
