@@ -127,41 +127,41 @@ def op_name_to_lower(name):
 # Values of the list will be unchanged, but position of values changes.
 def shape_from_nhwc_to_nchw(old_shape, rank):
   if rank >= 3:
-    new_shape = old_shape[:]
+    new_shape = np.array(old_shape)
     for i, s in enumerate(old_shape):
       j = i % (rank-1) + 1 if i != 0 else 0
       new_shape[j] = s
+    return new_shape.tolist()
   else:
-    new_shape = old_shape
-  return new_shape
+    return old_shape
 
 # This function is used to convert axes (a list of int) 
 # from the data format 'NHWC' to 'NCHW'.
 # Values of the list will be changed, but position of values will be unchanged.
 def axes_from_nhwc_to_nchw(old_axes, rank):
   if rank >= 3:
-    new_axes = old_axes[:]
+    new_axes = np.array(old_axes)
     for i, a in enumerate(old_axes):
       assert a >= -rank and a < rank
       new_axes[i] = a % (rank-1) + 1 if a != 0 else 0
+    return new_axes.tolist()
   else:
-    new_axes = old_axes
-  return new_axes
+    return old_axes
 
 # This function is used to convert permutation list 
 # from the data format 'NHWC' to 'NCHW'.
 # Values of the list will be changed, and position of values will be changed too.
 def perm_from_nhwc_to_nchw(old_perm, rank):
   if rank >= 3:
-    new_perm = old_perm[:]
+    new_perm = np.array(old_perm)
     for i, p in enumerate(old_perm):
-      assert p >= -rank and p < rank
+      assert p >= 0 and p < rank
       new_i = i % (rank-1) + 1 if i != 0 else 0
       new_p = p % (rank-1) + 1 if p != 0 else 0
       new_perm[new_i] = new_p
+    return new_perm.tolist()
   else:
-    new_perm = old_perm
-  return new_perm
+    return old_perm
 
 # This function is used to convert list of padding values for each dim
 # from the data format 'NHWC' to 'NCHW'.
@@ -173,9 +173,10 @@ def pads_from_nhwc_to_nchw(old_pads, rank):
       for j, p in enumerate(l):
         new_j = j % (rank-1) + 1 if j != 0 else 0
         new_pads[i][new_j] = p
+    return new_pads.tolist()
   else:
-    new_pads = old_pads
-  return new_pads
+    return old_pads
+
 # This function is used to convert axis (an int) 
 # from the data format 'NHWC' to 'NCHW'.
 # Value will be changed to match the right axis.
@@ -183,9 +184,9 @@ def axis_from_nhwc_to_nchw(old_axis, rank):
   assert old_axis >= -rank and old_axis < rank
   if rank >= 3:
     new_axis = old_axis % (rank-1) + 1 if old_axis != 0 else 0
+    return new_axis
   else:
-    new_axis = old_axis
-  return new_axis
+    return old_axis
 
 # This function is used to convert shape (a list of int)
 # from the data format 'NCHW' to 'NHWC'.
@@ -201,16 +202,16 @@ def shape_from_nchw_to_nhwc(old_shape, rank):
       else:
         new_i = i - 1
       new_shape[new_i] = s
+    return new_shape.tolist()
   else:
-    new_shape = old_shape
-  return new_shape
+    return old_shape
 
 # This function is used to convert axes (a list of int) 
 # from the data format 'NCHW' to 'NHWC'.
 # Values of the list will be changed, but position of values will be unchanged.
 def axes_from_nchw_to_nhwc(old_axes, rank):
   if rank >= 3:
-    new_axes = old_axes[:]
+    new_axes = np.array(old_axes)
     for i, a in enumerate(old_axes):
       if a == 1:
         new_axes[i] = -1
@@ -218,30 +219,36 @@ def axes_from_nchw_to_nhwc(old_axes, rank):
         new_axes[i] = 0
       else:
         new_axes[i] = a - 1
+    return new_axes.tolist()
   else:
-    new_axes = old_axes
-  return new_axes
+    return old_axes
 
 # This function is used to convert permutation list 
 # from the data format 'NCHW' to 'NHWC'.
 # Values of the list will be changed, and position of values will be changed too.
 def perm_from_nchw_to_nhwc(old_perm, rank):
   if rank >= 3:
-    new_perm = old_perm[:]
+    new_perm = np.array(old_perm)
     for i, p in enumerate(old_perm):
-      if p == 1:
-        new_i = -1
-        new_p = -1
-      elif p == 0:
+      assert p >= 0 and p < rank
+      # The new index
+      if i == 1:
+        new_i = len(old_perm)-1
+      elif i == 0:
         new_i = 0
-        new_p = 0
       else:
         new_i = i - 1
+      # The new perm
+      if p == 1:
+        new_p = len(old_perm)-1
+      elif p == 0:
+        new_p = 0
+      else:
         new_p = p - 1
       new_perm[new_i] = new_p
+    return new_perm.tolist()
   else:
-    new_perm = old_perm
-  return new_perm
+    return old_perm
 
 # This function is used to convert list of padding values for each dim
 # from the data format 'NCHW' to 'NHWC'.
@@ -258,9 +265,9 @@ def pads_from_nchw_to_nhwc(old_pads, rank):
         else:
           new_j = j - 1
         new_pads[i][new_j] = p
+    return new_pads.tolist()
   else:
-    new_pads = old_pads
-  return new_pads
+    return old_pads
 
 # This function is used to convert axis (an int) 
 # from the data format 'NCHW' to 'NHWC'.
@@ -274,6 +281,6 @@ def axis_from_nchw_to_nhwc(old_axis, rank):
       new_axis = 0
     else:
       new_axis = old_axis - 1
+    return new_axis
   else:
-    new_axis = old_axis
-  return new_axis
+    return old_axis

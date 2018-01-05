@@ -941,7 +941,7 @@ class TensorflowBackend(Backend):
       pads = pads_from_nchw_to_nhwc(pads, rank)
 
     # tf requires paddings of shape (n, 2)
-    pads = tf.constant(np.transpose(pads))
+    pads = tf.constant(np.transpose(pads).astype(dtype=np.int32)) # tf needs pad as int32
 
     x = input_dict[node.inputs[0]]
     if mode.lower() == "edge":
@@ -974,7 +974,11 @@ class TensorflowBackend(Backend):
   @classmethod
   def handle_reshape(cls, node, input_dict):
     tensor = input_dict[node.inputs[0]]
-    shape = tf.constant(node.attrs["shape"])
+    shape = np.asarray(node.attrs["shape"])
+    if cls._channel_last:
+      rank = len(shape)
+      shape = shape_from_nchw_to_nhwc(shape, rank)
+    shape = tf.constant(shape)
     return [tf.reshape(tensor, shape)]
 
   @classmethod
@@ -1021,6 +1025,9 @@ class TensorflowBackend(Backend):
     split = (tf.constant(node.attrs["split"]) if
              "split" in node.attrs else input_dict[node.inputs[1]])
     axis = node.attrs["axis"]
+    if cls._channel_last:
+      rank = len(input_dict[node.inputs[0]].shape)
+      axis = axis_from_nchw_to_nhwc(axis, rank)
     return [tf.split(input_dict[node.inputs[0]], split, axis)]
 
   @classmethod
@@ -1093,7 +1100,6 @@ class TensorflowBackend(Backend):
     #shape = tf.shape(input_dict[node.inputs[0]])
     shape = np.asarray(node.attrs["shape"])
     # Arrange shape to the right data format
-    new_shape = shape[:]
     if cls._channel_last:
       rank = len(shape)
       shape = shape_from_nchw_to_nhwc(shape, rank)

@@ -229,6 +229,7 @@ class TensorflowFrontend(object):
     if cls._channel_last:
       rank = pads.shape[1] # to get n
       pads = pads_from_nhwc_to_nchw(pads, rank)
+      pads = np.asarray(pads)
     pads = pads.flatten()
     return helper.make_node(
             "Pad",
@@ -322,7 +323,7 @@ class TensorflowFrontend(object):
     # Arrange the new shape to the according data format 
     if cls._channel_last:
       input_shape = node.attr["_input_shapes"][0]
-      rank = len(input_shape)
+      rank = len(reshape)
       if rank >= 3:
         if (input_shape[0] == reshape[0]) and (input_shape[-1] == reshape[-1]):
           # In this case, the N and C of the data format is keeped
@@ -362,6 +363,9 @@ class TensorflowFrontend(object):
     assert "squeeze_dims" in node.attr.keys(), ("Squeeze dims have to be"
       "specified")
     axes = node.attr["squeeze_dims"]
+    if not axes:
+      input_shapes = node.attr["_input_shapes"][0]
+      axes = [i for i, s in enumerate(input_shapes) if s == 1]
     # Arrange data to the according data format 
     if cls._channel_last:
       rank = len(node.attr["_input_shapes"][0])
