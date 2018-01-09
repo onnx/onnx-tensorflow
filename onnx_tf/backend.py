@@ -27,13 +27,6 @@ from onnx_tf.backend_rep import TensorflowRep
 import onnx.numpy_helper
 import onnx.defs
 
-from onnx_tf.common import (
-    shape_from_nchw_to_nhwc,
-    axes_from_nchw_to_nhwc,
-    perm_from_nchw_to_nhwc,
-    pads_from_nchw_to_nhwc,
-    axis_from_nchw_to_nhwc,
-)
 from onnx.backend.base import (
     Backend,
     BackendRep,
@@ -139,16 +132,26 @@ class TensorflowBackend(Backend):
       "dot": tf.contrib.keras.backend.dot,
       "exp": tf.exp,
       "floor": tf.floor,
+      "gather": tf.gather,
       "log": tf.log,
       "neg": tf.negative,
       "not": tf.logical_not,
       "pow": tf.pow,
+      "random_normal": tf.random_normal,
+      "random_uniform": tf.random_uniform,
       "reciprocal": tf.reciprocal,
       "reduce_log_sum_exp": tf.reduce_logsumexp,
+      "reduce_max": tf.reduce_max,
+      "reduce_mean": tf.reduce_mean,
+      "reduce_min": tf.reduce_min,
+      "reduce_prod": tf.reduce_prod,
+      "reduce_sum": tf.reduce_sum,
       "sigmoid": tf.sigmoid,
       "softplus": tf.nn.softplus,
       "sqrt": tf.sqrt,
+      "squeeze": tf.squeeze,
       "tanh": tf.tanh,
+      "transpose": tf.transpose,
   }
 
   tensor_type_to_tf_type = {
@@ -293,10 +296,8 @@ class TensorflowBackend(Backend):
     return op_func(x, y)
 
   @classmethod
-  def run_node(cls, node, inputs, device='CPU', channel_last=False):
+  def run_node(cls, node, inputs, device='CPU'):
     super(TensorflowBackend, cls).run_node(node, inputs, device)
-    cls._channel_last = channel_last
-    cls._device = device
     node = OnnxNode(node)
     device_option = get_device_option(Device(device))
     input_tensors = []
@@ -347,14 +348,9 @@ class TensorflowBackend(Backend):
 
       shape = list(d.dim_value for d in
                    value_info.type.tensor_type.shape.dim)
-      # If user specified channel last,
-      # shape must be set to format 'NHWC' whereas in ONNX is 'NCHW'
-      if cls._channel_last:
-        if len(shape) >= 3:
-          shape.insert(len(shape), shape.pop(1))
       x = tf.placeholder(cls.tensor_type_enum[
-                        value_info.type.tensor_type.elem_type],
-                        name=value_info.name, shape=shape)
+          value_info.type.tensor_type.elem_type],
+                         name=value_info.name, shape=shape)
       input_dict_items.append([value_info.name, x])
 
     # input dict: this dictionary is a map from variable names
@@ -386,11 +382,9 @@ class TensorflowBackend(Backend):
     return original_input_dict, predict_net
 
   @classmethod
-  def prepare(cls, model, device='CPU', channel_last=False, **kwargs):
+  def prepare(cls, model, device='CPU', **kwargs):
     super(TensorflowBackend, cls).prepare(model, device, **kwargs)
 
-    cls._channel_last = channel_last
-    cls._device = device
     original_input_dict, predict_net = (
         cls.onnx_graph_to_tensorflow_net(model.graph))
 
@@ -407,17 +401,11 @@ class TensorflowBackend(Backend):
     def tensor2list(onnx_tensor):
       # Use the onnx.numpy_helper because the data may be raw
       return onnx.numpy_helper.to_array(onnx_tensor).flatten().tolist()
-
-    input_dict = []
-    for i in initializer:
-      shape = i.dims[:]
-      if cls._channel_last:
-        if len(shape) >= 3:
-          shape.insert(len(shape), shape.pop(1))
-      input_dict.append((i.name,
-                         tf.constant(tensor2list(i),
-                                 dtype=cls.tensor_type_to_tf_type[i.data_type],
-                                 shape=shape)))
+    input_dict = [(tp.name, tf.constant(tensor2list(tp),
+                                        shape=tp.dims,
+                                        dtype=cls.tensor_type_to_tf_type[
+                                            tp.data_type]))
+                  for tp in initializer]
     return input_dict
 
   @classmethod
@@ -547,8 +535,13 @@ class TensorflowBackend(Backend):
 
   @classmethod
   def _pool(cls, node, input_dict, pool_func, can_pad_zero):
+    from math import ceil
 
     x = input_dict[node.inputs[0]]
+    x_rank = len(x.get_shape())
+
+    support_cuda = cls.supports_device("CUDA")
+    storage_format, compute_format = cls.get_data_format(x_rank, support_cuda)
 
     kernel_shape = node.attrs["kernel_shape"]
     strides = node.attrs["strides"]
@@ -568,38 +561,15 @@ class TensorflowBackend(Backend):
         # Currently it's always average pooling
         return cls._compatibility_avg_pool(node, input_dict, tf.nn.avg_pool, 0)
 
-    # See https://github.com/onnx/onnx-tensorflow/issues/31#issuecomment-352019711
-    # for more details
-    if not cls._channel_last and cls._device in ["CPU"]:
-      x = tf.transpose(x, perm=[0, 2, 3, 1])
-      compute_format = 'NHWC'
-      kernel_shape = [1] + kernel_shape + [1]
-      strides = [1] + strides + [1]
-    elif cls._channel_last and cls._device in ["CUDA"]:
-      x = tf.transpose(x, perm=[0, 3, 1, 2])
-      compute_format = 'NCHW'
-      kernel_shape = [1] + [1] + kernel_shape
-      strides = [1] + [1] + strides
-    elif not cls._channel_last and cls._device in ["CUDA"]:
-      compute_format = 'NCHW'
-      kernel_shape = [1] + [1] + kernel_shape
-      strides = [1] + [1] + strides
-    if cls._channel_last and cls._device in ["CPU"]:
-      compute_format = 'NHWC'
-      kernel_shape = [1] + kernel_shape + [1]
-      strides = [1] + strides + [1]
-
-    pooled = pool_func(x, kernel_shape, strides, pad,
+    if support_cuda:
+      pooled = pool_func(x, [1, 1] + kernel_shape, [1, 1] + strides, pad,
                          data_format=compute_format)
-
-    if not cls._channel_last and cls._device in ["CPU"]:
+    else:
+      x = tf.transpose(x, perm=[0, 2, 3, 1])
+      pooled = pool_func(x, [1] + kernel_shape + [1], [1] + strides + [1], pad,
+                         data_format=compute_format)
       pooled = tf.transpose(pooled, perm=[0, 3, 1, 2])
-    elif cls._channel_last and cls._device in ["CUDA"]:
-      pooled = tf.transpose(pooled, perm=[0, 2, 3, 1])
-    elif cls._channel_last and cls._device in ["CPU"]:
-      pass
-    elif not cls._channel_last and cls._device in ["CUDA"]:
-      pass
+
     return [pooled]
 
   @classmethod
@@ -620,14 +590,10 @@ class TensorflowBackend(Backend):
   def handle_batch_normalization(cls, node, input_dict):
     x = input_dict[node.inputs[0]]
     total_num_dim = len(x.get_shape())
-    b_dim = 1
-    if cls._channel_last:
-      if total_num_dim >= 3:
-        b_dim = total_num_dim - 1
-    scale = cls._explicit_broadcast(input_dict[node.inputs[1]], b_dim, total_num_dim)
-    bias = cls._explicit_broadcast(input_dict[node.inputs[2]], b_dim, total_num_dim)
-    mean = cls._explicit_broadcast(input_dict[node.inputs[3]], b_dim, total_num_dim)
-    variance = cls._explicit_broadcast(input_dict[node.inputs[4]], b_dim, total_num_dim)
+    scale = cls._explicit_broadcast(input_dict[node.inputs[1]], 1, total_num_dim)
+    bias = cls._explicit_broadcast(input_dict[node.inputs[2]], 1, total_num_dim)
+    mean = cls._explicit_broadcast(input_dict[node.inputs[3]], 1, total_num_dim)
+    variance = cls._explicit_broadcast(input_dict[node.inputs[4]], 1, total_num_dim)
 
     variance_epsilon = node.attrs.get("epsilon", 0.00001)
     if node.attrs.get("is_test", 0):
@@ -659,17 +625,6 @@ class TensorflowBackend(Backend):
     values = [input_dict[a] for a in node.inputs]
     # apparently this is what's needed for squeezenet to work
     axis = node.attrs.get("axis", 1)
-    # ONNX has data format to 'NC', so if the op need axis arg, 
-    # need to convert it to 'N...C' format
-    if cls._channel_last:
-      if len(values[0].shape) >= 3:
-        #if (axis == -1) or (axis==len(values[0].shape)-1):
-        if axis == 1:
-          axis = -1
-        elif axis == 0:
-          axis = 0
-        else:
-          axis = axis - 1
     return [tf.concat(values, axis=axis)]
 
   @classmethod
@@ -932,16 +887,10 @@ class TensorflowBackend(Backend):
       return x
 
     value = node.attrs.get("value", 0)
-
     # tf requires int32 paddings
-    pads = np.array(node.attrs["pads"]).reshape([2, num_dim]).astype(np.int32)
-    # Arrange pad to the right data format
-    if cls._channel_last:
-      rank = num_dim
-      pads = pads_from_nchw_to_nhwc(pads, rank)
-
-    # tf requires paddings of shape (n, 2)
-    pads = tf.constant(np.transpose(pads).astype(dtype=np.int32)) # tf needs pad as int32
+    pads = tf.constant(np.transpose(np.array(node.attrs["pads"])
+                                      .reshape([2, num_dim])
+                                      .astype(np.int32)))
 
     x = input_dict[node.inputs[0]]
     if mode.lower() == "edge":
@@ -974,11 +923,7 @@ class TensorflowBackend(Backend):
   @classmethod
   def handle_reshape(cls, node, input_dict):
     tensor = input_dict[node.inputs[0]]
-    shape = np.asarray(node.attrs["shape"])
-    if cls._channel_last:
-      rank = len(shape)
-      shape = shape_from_nchw_to_nhwc(shape, rank)
-    shape = tf.constant(shape)
+    shape = tf.constant(node.attrs["shape"])
     return [tf.reshape(tensor, shape)]
 
   @classmethod
@@ -1025,9 +970,6 @@ class TensorflowBackend(Backend):
     split = (tf.constant(node.attrs["split"]) if
              "split" in node.attrs else input_dict[node.inputs[1]])
     axis = node.attrs["axis"]
-    if cls._channel_last:
-      rank = len(input_dict[node.inputs[0]].shape)
-      axis = axis_from_nchw_to_nhwc(axis, rank)
     return [tf.split(input_dict[node.inputs[0]], split, axis)]
 
   @classmethod
@@ -1043,92 +985,6 @@ class TensorflowBackend(Backend):
   def handle_mat_mul(cls, node, input_dict):
     return [tf.matmul(input_dict[node.inputs[0]],
                       input_dict[node.inputs[1]])]
-  @classmethod
-  def handle_squeeze(cls, node, input_dict):
-    axes = node.attrs["axes"]
-    # Arrange axis to the right data format
-    if cls._channel_last:
-      rank = len(input_dict[node.inputs[0]].shape)
-      axes = axes_from_nchw_to_nhwc(axes, rank)
-    return [tf.squeeze(input_dict[node.inputs[0]], axis=axes)]
-
-  @classmethod
-  def _reduce_op(cls, op, node, input_dict):
-    keep = bool(node.attrs["keepdims"])
-    axes = node.attrs["axes"]
-    # Arrange axis to the right data format
-    if cls._channel_last:
-      rank = len(input_dict[node.inputs[0]].shape)
-      axes = axes_from_nchw_to_nhwc(axes, rank)
-    return [op(input_dict[node.inputs[0]], axis=axes, keep_dims=keep)]
-
-  @classmethod
-  def handle_reduce_max(cls, node, input_dict):
-    return cls._reduce_op(tf.reduce_max, node, input_dict)
-
-  @classmethod
-  def handle_reduce_mean(cls, node, input_dict):
-    return cls._reduce_op(tf.reduce_mean, node, input_dict)
-
-  @classmethod
-  def handle_reduce_min(cls, node, input_dict):
-    return cls._reduce_op(tf.reduce_min, node, input_dict)
-
-  @classmethod
-  def handle_reduce_prod(cls, node, input_dict):
-    return cls._reduce_op(tf.reduce_prod, node, input_dict)
-
-  @classmethod
-  def handle_reduce_sum(cls, node, input_dict):
-    return cls._reduce_op(tf.reduce_sum, node, input_dict)
-
-  @classmethod
-  def handle_transpose(cls, node, input_dict):
-    perm = node.attrs["perm"]
-    # Arrange perm to the right data format
-    if cls._channel_last:
-      rank = len(input_dict[node.inputs[0]].shape)
-      perm = perm_from_nchw_to_nhwc(perm, rank)
-    return [tf.transpose(input_dict[node.inputs[0]], perm=perm)]
-
-  @classmethod
-  def handle_random_normal(cls, node, input_dict):
-    mean = node.attrs["mean"]
-    stddev = node.attrs["scale"]
-    dtype = cls.tensor_type_to_tf_type[node.attrs["dtype"]]
-    seed = node.attrs["seed"] if "seed" in node.attrs.keys() else None
-    #shape = tf.shape(input_dict[node.inputs[0]])
-    shape = np.asarray(node.attrs["shape"])
-    # Arrange shape to the right data format
-    if cls._channel_last:
-      rank = len(shape)
-      shape = shape_from_nchw_to_nhwc(shape, rank)
-    return [tf.random_normal(shape, mean, stddev, dtype, seed)]
-
-  @classmethod
-  def handle_random_uniform(cls, node, input_dict):
-    minval = node.attrs["low"]
-    maxval = node.attrs["high"]
-    dtype = cls.tensor_type_to_tf_type[node.attrs["dtype"]]
-    seed = node.attrs["seed"] if "seed" in node.attrs.keys() else None
-    shape = np.asarray(node.attrs["shape"])
-    # Arrange shape to the right data format
-    if cls._channel_last:
-      rank = len(shape)
-      shape = shape_from_nchw_to_nhwc(shape, rank)
-    return [tf.random_uniform(shape, minval, maxval, dtype, seed)]
-
-  @classmethod
-  def handle_gather(cls, node, input_dict):
-    params = input_dict[node.inputs[0]]
-    indices = input_dict[node.inputs[1]]
-    axis = node.attrs.get("axis", 0)
-    # TODO : Arrange indices to the right data format
-    # Arrange axis to the right data format
-    if cls._channel_last:
-      rank = len(input_dict[node.inputs[0]].shape)
-      axis = axis_from_nchw_to_nhwc(axis, rank)
-    return [tf.gather(params, indices=indices, axis=axis)]
 
   @classmethod
   def supports_device(cls, device):
