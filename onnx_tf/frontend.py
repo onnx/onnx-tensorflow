@@ -14,6 +14,11 @@ from onnx_tf.common import (
   TF_ATTR_TO_ONNX_ATTR,
   get_tf_shape_as_list,
   op_name_to_lower,
+  shape_from_nhwc_to_nchw,
+  axes_from_nhwc_to_nchw,
+  perm_from_nhwc_to_nchw,
+  pads_from_nhwc_to_nchw,
+  axis_from_nhwc_to_nchw
 )
 from onnx import onnx_pb2, helper
 from onnx.helper import (
@@ -24,6 +29,13 @@ from onnx.helper import (
 )
 from onnx.onnx_pb2 import GraphProto, TensorProto, AttributeProto
 from tensorflow.python.framework.tensor_util import MakeNdarray
+
+def get_nodes_by_name(nodes, names):
+  ret = []
+  for node in nodes:
+    if node.name in names:
+      ret.append(TensorflowNode(node))
+  return ret
 
 class TensorflowNode(object):
 
@@ -66,7 +78,7 @@ class TensorflowFrontend(object):
   """
 
   @classmethod
-  def tensorflow_graph_to_onnx_graph(cls, graph_def, output, name="graph"):
+  def tensorflow_graph_to_onnx_graph(cls, graph_def, output, device='CPU', channel_last=True, name="graph"):
     """Function that converts a tensorflow graph to an onnx graph.
 
     Args:
@@ -79,6 +91,8 @@ class TensorflowFrontend(object):
         The equivalent ONNX Graph Proto object.
 
     """
+    cls._channel_last = channel_last
+    cls._device = device
 
     # This list holds the protobuf objects of type ValueInfoProto
     # representing the input to the converted ONNX graph.
@@ -110,6 +124,10 @@ class TensorflowFrontend(object):
         # TODO: currently `dtype` is translated to `to`.
         onnx_type = node.attr["dtype"]
         shape = node.attr["shape"]
+        # TODO: For now, this only permit to support NHWC data format of TF
+        if cls._channel_last:
+          if len(shape) >= 3:
+            shape.insert(1, shape.pop())
         input_proto = make_tensor_value_info(node.name,
                                              onnx_type,
                                              shape)
@@ -124,7 +142,10 @@ class TensorflowFrontend(object):
             values = [node.attr["value"]]
         else:
             values = node.attr["value"]
-        shape = np.array(values).shape
+        shape = list(np.array(values).shape)
+        if cls._channel_last:
+          if len(shape) >= 3:
+            shape.insert(1, shape.pop())
         consts_proto.append(make_tensor(
                             name=node.name,
                             data_type=node.attr["dtype"],
@@ -152,10 +173,12 @@ class TensorflowFrontend(object):
 
         # Check if specialized handler exists.
         if handler_name in dir(cls):
+          input_nodes = get_nodes_by_name(graph_def.node, node.inputs)
+          node.attr["_input_shapes"] = [i.attr["_output_shapes"][0] for i in input_nodes]
           method_to_call = getattr(cls, handler_name)
           ops_proto.append(method_to_call(node, consts))
         else:
-          raise NotImplementedError("{} op is not implemented.".format(node.op))
+          raise NotImplementedError("{} op is not implemented, handler {} do not exists.".format(node.op, handler_name))
 
     output = TensorflowNode(output)
     # making output proto
@@ -163,9 +186,13 @@ class TensorflowFrontend(object):
     # TODO: default to BOOL, cf.
     # https://github.com/tensorflow/tensorflow/issues/14769
     output_onnx_type = output.attr.get("T", TensorProto.BOOL)
+    out_shape = output.attr["_output_shapes"][0]
+    if cls._channel_last:
+      if len(out_shape) >= 3:
+        out_shape.insert(1, out_shape.pop())
     output_proto = make_tensor_value_info(output.name,
                                           output_onnx_type,
-                                          output.attr["_output_shapes"][0])
+                                          out_shape)
     return make_graph(ops_proto,
                       name,
                       inputs_proto,
@@ -192,8 +219,18 @@ class TensorflowFrontend(object):
     supported_modes = ["constant", "reflect"]
     mode = node.attr.get("mode", "constant")
     assert mode.lower() in supported_modes
-    pads = np.transpose(consts[node.inputs[1]]).flatten()
-
+    if mode in ["constant"]:
+      value = node.attr.get("constant_values", 0.0)
+    else:
+      value = 0.0
+    # Pads from (n, 2) (tf) to (2, n) (onnx)
+    pads = np.transpose(consts[node.inputs[1]])
+    # Arrange pads to the according data format 
+    if cls._channel_last:
+      rank = pads.shape[1] # to get n
+      pads = pads_from_nhwc_to_nchw(pads, rank)
+      pads = np.asarray(pads)
+    pads = pads.flatten()
     return helper.make_node(
             "Pad",
             [node.inputs[0]],
@@ -201,7 +238,7 @@ class TensorflowFrontend(object):
             name=node.name,
             pads=pads,
             mode=mode,
-            value=0.0)
+            value=value)
 
   @classmethod
   def handle_random_standard_normal(cls, node, consts):
@@ -209,6 +246,11 @@ class TensorflowFrontend(object):
         The generic random_normal op is translated into a scaled
         and offsetted random standard normal op.
     """
+    shape = node.attr["_output_shapes"][0]
+    # Arrange shape to the according data format 
+    if cls._channel_last:
+      rank = len(shape)
+      shape = shape_from_nhwc_to_nchw(shape, rank)
     return helper.make_node(
             "RandomNormal",
             [],
@@ -217,7 +259,7 @@ class TensorflowFrontend(object):
             seed=node.attr["seed"],
             mean=0.0,
             scale=1.0,
-            shape=node.attr["_output_shapes"][0])
+            shape=shape)
 
   @classmethod
   def handle_random_uniform(cls, node, consts):
@@ -225,6 +267,11 @@ class TensorflowFrontend(object):
         The generic random_uniform op is translated into a scaled
         and offsetted random standard uniform op.
     """
+    shape = node.attr["_output_shapes"][0]
+    # Arrange shape to the according data format 
+    if cls._channel_last:
+      rank = len(shape)
+      shape = shape_from_nhwc_to_nchw(shape, rank)
     return helper.make_node(
             "RandomUniform",
             [],
@@ -233,12 +280,16 @@ class TensorflowFrontend(object):
             seed=node.attr["seed"],
             high=1.0,
             low=0.0,
-            shape=node.attr["_output_shapes"][0])
+            shape=shape)
 
   @classmethod
   def _reduce_op(cls, op, node, consts):
     assert node.inputs[1] in consts.keys()
     axes = consts[node.inputs[1]]
+    # Arrange axes to the according data format 
+    if cls._channel_last:
+      rank = len(node.attr["_input_shapes"][0])
+      axes = axes_from_nhwc_to_nchw(axes, rank)
     return helper.make_node(op,
                             [node.inputs[0]],
                             [node.name],
@@ -268,16 +319,38 @@ class TensorflowFrontend(object):
   @classmethod
   def handle_reshape(cls, node, consts):
     assert node.inputs[1] in consts.keys()
-    shape = consts[node.inputs[1]]
+    reshape = consts[node.inputs[1]]
+    # Arrange the new shape to the according data format 
+    if cls._channel_last:
+      input_shape = node.attr["_input_shapes"][0]
+      rank = len(reshape)
+      if rank >= 3:
+        if (input_shape[0] == reshape[0]) and (input_shape[-1] == reshape[-1]):
+          # In this case, the N and C of the data format is keeped
+          reshape = shape_from_nhwc_to_nchw(reshape, rank)
+        else:
+          raise NotImplementedError("Reshaping other dimension than spacial dimensions is not implemented.")
     return helper.make_node("Reshape",
                             [node.inputs[0]],
                             [node.name],
-                            shape=shape)
+                            shape=reshape)
 
   @classmethod
   def handle_split_v(cls, node, consts):
+    assert node.inputs[1] in consts.keys()
     split = consts[node.inputs[1]]
+    # Arrange split to the according data format 
+    if cls._channel_last:
+      rank = len(split)
+      # converting split is the same as converting shape
+      split = shape_from_nhwc_to_nchw(split, rank)
+
     axis = int(consts[node.inputs[2]])
+    # Arrange axis to the according data format 
+    if cls._channel_last:
+      rank = len(node.attr["_input_shapes"][0])
+      axis = axis_from_nhwc_to_nchw(axis, rank)
+
     output_names = [node.name + ":{}".format(i) if i>0 else node.name for i in range(len(split))]
     return helper.make_node("Split",
                             [node.inputs[0]],
@@ -290,11 +363,17 @@ class TensorflowFrontend(object):
     assert "squeeze_dims" in node.attr.keys(), ("Squeeze dims have to be"
       "specified")
     axes = node.attr["squeeze_dims"]
+    if not axes:
+      input_shapes = node.attr["_input_shapes"][0]
+      axes = [i for i, s in enumerate(input_shapes) if s == 1]
+    # Arrange data to the according data format 
+    if cls._channel_last:
+      rank = len(node.attr["_input_shapes"][0])
+      axes = axes_from_nhwc_to_nchw(axes, rank)
     return helper.make_node("Squeeze",
                             [node.inputs[0]],
                             [node.name],
                             axes=axes)
-
   @classmethod
   def handle_sub(cls, node, consts):
     return cls._bin_op(node, "Sub")
@@ -302,6 +381,10 @@ class TensorflowFrontend(object):
   @classmethod
   def handle_transpose(cls, node, consts):
     perm = consts[node.inputs[1]]
+    # Arrange perm to the according data format 
+    if cls._channel_last:
+      rank = len(perm)
+      perm = perm_from_nhwc_to_nchw(perm, rank)
     return helper.make_node("Transpose",
                             [node.inputs[0]],
                             [node.name],
@@ -315,6 +398,10 @@ class TensorflowFrontend(object):
   def handle_concat_v2(cls, node, consts):
     assert node.inputs[-1] in consts.keys()
     axis = int(consts[node.inputs[-1]])
+    # Arrange axis to the according data format 
+    if cls._channel_last:
+      rank = len(node.attr["_input_shapes"][0])
+      axis = axis_from_nhwc_to_nchw(axis, rank)
     return helper.make_node("Concat",
                             inputs=node.inputs[0:-1],
                             outputs=[node.name],
