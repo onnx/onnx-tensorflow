@@ -991,6 +991,18 @@ class TensorflowBackend(Backend):
     return [cls._bin_op(node, input_dict, tf.logical_xor)]
 
   @classmethod
+  def handle_equal(cls, node, input_dict):
+    return [cls._bin_op(node, input_dict, tf.equal)]
+
+  @classmethod
+  def handle_less(cls, node, input_dict):
+    return [cls._bin_op(node, input_dict, tf.less)]
+
+  @classmethod
+  def handle_greater(cls, node, input_dict):
+    return [cls._bin_op(node, input_dict, tf.greater)]
+
+  @classmethod
   def supports_device(cls, device):
     if device == "CUDA":
       local_device_protos = device_lib.list_local_devices()
