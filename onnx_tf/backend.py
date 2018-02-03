@@ -128,7 +128,6 @@ class TensorflowBackend(Backend):
       "abs": tf.abs,
       "cast": tf.cast,
       "ceil": tf.ceil,
-      "relu": tf.nn.relu,
       "dot": tf.contrib.keras.backend.dot,
       "exp": tf.exp,
       "floor": tf.floor,
@@ -146,6 +145,7 @@ class TensorflowBackend(Backend):
       "reduce_min": tf.reduce_min,
       "reduce_prod": tf.reduce_prod,
       "reduce_sum": tf.reduce_sum,
+      "relu": tf.nn.relu,
       "sigmoid": tf.sigmoid,
       "softplus": tf.nn.softplus,
       "sqrt": tf.sqrt,
@@ -985,6 +985,10 @@ class TensorflowBackend(Backend):
   def handle_mat_mul(cls, node, input_dict):
     return [tf.matmul(input_dict[node.inputs[0]],
                       input_dict[node.inputs[1]])]
+
+  @classmethod
+  def handle_xor(cls, node, input_dict):
+    return [cls._bin_op(node, input_dict, tf.logical_xor)]
 
   @classmethod
   def supports_device(cls, device):
