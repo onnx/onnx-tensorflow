@@ -36,6 +36,13 @@ from onnx.backend.base import (
 )
 
 from onnx import onnx_pb2, helper
+from onnx_tf.common import (
+  ONNX_ATTR_TO_TF_ATTR,
+  ONNX_OP_TO_TF_OP,
+  ONNX_TYPE_TO_TF_TYPE,
+  TYPE_STRING_TO_TF_TYPE,
+  TENSOR_TYPE_ENUM,
+)
 import tensorflow as tf
 from tensorflow.python.client import device_lib
 
@@ -112,108 +119,10 @@ class TensorflowBackend(Backend):
   """ Tensorflow Backend for ONNX
   """
 
-  onnx_tf_attribute_map = {
-      "scale": "stddev",
-      "high": "maxval",
-      "low": "minval",
-      "axes": "axis",
-      "keepdims": "keep_dims",
-      "axis": "dim",
-      "to": "dtype",
-  }
-
-  onnx_tf_per_op_attr_map = {}
-
-  onnx_tf_op_map = {
-      "abs": tf.abs,
-      "cast": tf.cast,
-      "ceil": tf.ceil,
-      "relu": tf.nn.relu,
-      "dot": tf.contrib.keras.backend.dot,
-      "exp": tf.exp,
-      "floor": tf.floor,
-      "gather": tf.gather,
-      "log": tf.log,
-      "neg": tf.negative,
-      "not": tf.logical_not,
-      "pow": tf.pow,
-      "random_normal": tf.random_normal,
-      "random_uniform": tf.random_uniform,
-      "reciprocal": tf.reciprocal,
-      "reduce_log_sum_exp": tf.reduce_logsumexp,
-      "reduce_max": tf.reduce_max,
-      "reduce_mean": tf.reduce_mean,
-      "reduce_min": tf.reduce_min,
-      "reduce_prod": tf.reduce_prod,
-      "reduce_sum": tf.reduce_sum,
-      "sigmoid": tf.sigmoid,
-      "softplus": tf.nn.softplus,
-      "sqrt": tf.sqrt,
-      "squeeze": tf.squeeze,
-      "tanh": tf.tanh,
-      "transpose": tf.transpose,
-  }
-
-  tensor_type_to_tf_type = {
-      TensorProto.FLOAT: tf.float32,
-      TensorProto.UINT8: tf.uint8,
-      TensorProto.INT8: tf.int8,
-      TensorProto.UINT16: tf.uint16,
-      TensorProto.INT16: tf.int16,
-      TensorProto.INT32: tf.int32,
-      TensorProto.INT64: tf.int64,
-      TensorProto.BOOL: tf.bool,
-      TensorProto.FLOAT16: tf.float16,
-      TensorProto.DOUBLE: tf.float64,
-      TensorProto.COMPLEX64: tf.complex64,
-      TensorProto.COMPLEX128: tf.complex128,
-      # TODO: uncomment this in the future
-      # TensorProto.UINT32: tf.uint32,
-      # TensorProto.UINT64: tf.uint64,
-  }
-
-  tensor_type_enum = [
-      "undefined",
-      tf.float32,
-      tf.uint8,
-      tf.int8,
-      tf.uint16,
-      tf.int16,
-      tf.int32,
-      tf.int64,
-      tf.string,
-      tf.bool,
-      tf.float16,
-      tf.float64,
-      tf.complex64,
-      tf.complex128,
-      # TODO: uncomment this in the future
-      # tf.uint32,
-      # tf.uint64,
-  ]
-
-  type_string_to_tf_type = {
-      "float": tf.float32,
-      "uint8": tf.uint8,
-      "int8": tf.int8,
-      "uint16": tf.uint16,
-      "int16": tf.int16,
-      "int32": tf.int32,
-      "int64": tf.int64,
-      "bool": tf.bool,
-      "float16": tf.float16,
-      "double": tf.float64,
-      "complex64": tf.complex64,
-      "complex128": tf.complex128,
-      # TODO: uncomment this in the future
-      # "uint32": tf.uint32,
-      # "uint64": tf.uint64,
-  }
-
   attr_translator = {
-      "dtype": lambda cls, x: cls.tensor_type_to_tf_type[x],
+      "dtype": lambda cls, x: ONNX_TYPE_TO_TF_TYPE[x],
       "keepdims": lambda cls, x: bool(x),
-      "to": lambda cls, x: cls.type_string_to_tf_type[x],
+      "to": lambda cls, x: TYPE_STRING_TO_TF_TYPE[x],
   }
 
   # input_shape, kernel_shape, strides are specified for
@@ -348,7 +257,7 @@ class TensorflowBackend(Backend):
 
       shape = list(d.dim_value for d in
                    value_info.type.tensor_type.shape.dim)
-      x = tf.placeholder(cls.tensor_type_enum[
+      x = tf.placeholder(TENSOR_TYPE_ENUM[
           value_info.type.tensor_type.elem_type],
                          name=value_info.name, shape=shape)
       input_dict_items.append([value_info.name, x])
@@ -403,7 +312,7 @@ class TensorflowBackend(Backend):
       return onnx.numpy_helper.to_array(onnx_tensor).flatten().tolist()
     input_dict = [(tp.name, tf.constant(tensor2list(tp),
                                         shape=tp.dims,
-                                        dtype=cls.tensor_type_to_tf_type[
+                                        dtype=ONNX_TYPE_TO_TF_TYPE[
                                             tp.data_type]))
                   for tp in initializer]
     return input_dict
@@ -415,7 +324,7 @@ class TensorflowBackend(Backend):
   @classmethod
   def _onnx_node_to_tensorflow_op(cls, node, input_dict):
     op_name_lowered = cls.op_name_to_lower(node.op_type)
-    if op_name_lowered in cls.onnx_tf_op_map.keys():
+    if op_name_lowered in ONNX_OP_TO_TF_OP.keys():
       return cls.handle_trivial(node, input_dict)
 
     handler_name = "handle_" + op_name_lowered
@@ -437,9 +346,9 @@ class TensorflowBackend(Backend):
     # attribute names.
     attr_map = dict([(x, x) for x in node.attrs.keys()])
 
-    # Modify the map accoridng to onnx_tf_attribute_map.
-    attr_map = dict([(x, cls.onnx_tf_attribute_map[x] \
-      if x in cls.onnx_tf_attribute_map.keys() else x) \
+    # Modify the map accoridng to ONNX_ATTR_TO_TF_ATTR.
+    attr_map = dict([(x, ONNX_ATTR_TO_TF_ATTR[x] \
+      if x in ONNX_ATTR_TO_TF_ATTR.keys() else x) \
       for x in attr_map.keys()])
 
     # TODO: Per op attribute name mapping has the final say.
@@ -447,7 +356,7 @@ class TensorflowBackend(Backend):
     # Substitute attribute names in attrs.
     attrs = dict([(attr_map[x], y) for (x, y) in attrs.items()])
     inputs = [input_dict[name] for name in node.inputs]
-    return [cls.onnx_tf_op_map[cls.op_name_to_lower(node.op_type)] \
+    return [ONNX_OP_TO_TF_OP[cls.op_name_to_lower(node.op_type)] \
       (*inputs, **attrs)]
 
   @classmethod
@@ -631,7 +540,7 @@ class TensorflowBackend(Backend):
   def handle_constant(cls, node, input_dict):
     value = node.attrs["value"]
     elements = onnx.numpy_helper.to_array(value).flatten().tolist()
-    dtype = cls.tensor_type_to_tf_type[value.data_type]
+    dtype = ONNX_TYPE_TO_TF_TYPE[value.data_type]
     return [tf.constant(elements, dtype=dtype, shape=value.dims)]
 
   @classmethod
@@ -907,7 +816,7 @@ class TensorflowBackend(Backend):
     shape = tf.shape(input_dict[node.inputs[0]])
     mean = node.attrs["mean"]
     stddev = node.attrs["scale"]
-    dtype = cls.tensor_type_to_tf_type[node.attrs["dtype"]]
+    dtype = ONNX_TYPE_TO_TF_TYPE[node.attrs["dtype"]]
     seed = node.attrs["seed"] if "seed" in node.attrs.keys() else None
     return [tf.random_normal(shape, mean, stddev, dtype, seed)]
 
@@ -916,7 +825,7 @@ class TensorflowBackend(Backend):
     shape = tf.shape(input_dict[node.inputs[0]])
     minval = node.attrs["low"]
     maxval = node.attrs["high"]
-    dtype = cls.tensor_type_to_tf_type[node.attrs["dtype"]]
+    dtype = ONNX_TYPE_TO_TF_TYPE[node.attrs["dtype"]]
     seed = node.attrs["seed"] if "seed" in node.attrs.keys() else None
     return [tf.random_uniform(shape, minval, maxval, dtype, seed)]
 

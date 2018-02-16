@@ -45,6 +45,44 @@ ONNX_TYPE_TO_TF_TYPE = {
 
 TF_TYPE_TO_ONNX_TYPE = invert(ONNX_TYPE_TO_TF_TYPE)
 
+TYPE_STRING_TO_TF_TYPE = {
+  "float": tf.float32,
+  "uint8": tf.uint8,
+  "int8": tf.int8,
+  "uint16": tf.uint16,
+  "int16": tf.int16,
+  "int32": tf.int32,
+  "int64": tf.int64,
+  "bool": tf.bool,
+  "float16": tf.float16,
+  "double": tf.float64,
+  "complex64": tf.complex64,
+  "complex128": tf.complex128,
+  # TODO: uncomment this in the future
+  # "uint32": tf.uint32,
+  # "uint64": tf.uint64,
+}
+
+TENSOR_TYPE_ENUM = [
+  "undefined",
+  tf.float32,
+  tf.uint8,
+  tf.int8,
+  tf.uint16,
+  tf.int16,
+  tf.int32,
+  tf.int64,
+  tf.string,
+  tf.bool,
+  tf.float16,
+  tf.float64,
+  tf.complex64,
+  tf.complex128,
+  # TODO: uncomment this in the future
+  # tf.uint32,
+  # tf.uint64,
+]
+
 ONNX_ATTR_TO_TF_ATTR = {
   "scale": "stddev",
   "high": "maxval",
@@ -56,13 +94,22 @@ ONNX_ATTR_TO_TF_ATTR = {
   # seed1: graph level seed
   # seed2: op level seed
   # ONNX only has op level seed, thus the following map
-  "seed": "seed2"
+  "seed": "seed2",
   # move this to op specific translator
   # apply only to cast op
-  # "to": "dtype",
+  "to": "dtype",
 }
 
 TF_ATTR_TO_ONNX_ATTR = invert(ONNX_ATTR_TO_TF_ATTR)
+
+TF_ATTR_TO_REMOVE = [
+  "_output_shapes",
+  "T",
+  "seed2",
+  "Tidx",
+]
+
+ONNX_TF_PER_OP_ATTR_MAP = {}
 
 ONNX_OP_TO_TF_OP = {
   "abs": tf.abs,
@@ -75,6 +122,7 @@ ONNX_OP_TO_TF_OP = {
   "gather": tf.gather,
   "log": tf.log,
   "neg": tf.negative,
+  "not": tf.logical_not,
   "pow": tf.pow,
   "random_normal": tf.random_normal,
   "random_uniform": tf.random_uniform,
@@ -86,6 +134,7 @@ ONNX_OP_TO_TF_OP = {
   "reduce_prod": tf.reduce_prod,
   "reduce_sum": tf.reduce_sum,
   "sigmoid": tf.sigmoid,
+  "softplus": tf.nn.softplus,
   "sqrt": tf.sqrt,
   "squeeze": tf.squeeze,
   "tanh": tf.tanh,
