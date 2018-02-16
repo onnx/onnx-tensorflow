@@ -415,14 +415,14 @@ class TensorflowBackend(Backend):
   @classmethod
   def _onnx_node_to_tensorflow_op(cls, node, input_dict):
     op_name_lowered = cls.op_name_to_lower(node.op_type)
-    if op_name_lowered in cls.onnx_tf_op_map.keys():
-      return cls.handle_trivial(node, input_dict)
-
     handler_name = "handle_" + op_name_lowered
+
     # Check if specialized handler exists.
     if handler_name in dir(cls):
       method_to_call = getattr(cls, handler_name)
       return method_to_call(node, input_dict)
+    elif op_name_lowered in cls.onnx_tf_op_map.keys():
+      return cls.handle_trivial(node, input_dict)
     else:
       raise NotImplementedError("{} op is not implemented.".format(node.op_type))
 

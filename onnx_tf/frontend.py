@@ -134,19 +134,6 @@ class TensorflowFrontend(object):
                                              node.attr["dtype"],
                                              shape)
         inputs_proto.append(input_proto)
-      elif node.op in TF_OP_STR_TO_ONNX_OP.keys():
-        # Remove tensorflow-specific attrs that are not
-        # needed/allowed in ONNX.
-        attr_to_remove = ["_output_shapes", "T", "seed2", "Tidx"]
-        node.attr = dict(filter(lambda pair: pair[0]
-                                not in attr_to_remove, node.attr.items()))
-
-        node_output = node.name
-        ops_proto.append(make_node(TF_OP_STR_TO_ONNX_OP[node.op],
-                                   node.inputs,
-                                   [node_output],
-                                   name=node.name,
-                                   **node.attr))
       else:
         handler_name = "handle_" + op_name_to_lower(node.op)
 
@@ -154,6 +141,19 @@ class TensorflowFrontend(object):
         if handler_name in dir(cls):
           method_to_call = getattr(cls, handler_name)
           ops_proto.append(method_to_call(node, consts))
+        elif node.op in TF_OP_STR_TO_ONNX_OP.keys():
+          # Remove tensorflow-specific attrs that are not
+          # needed/allowed in ONNX.
+          attr_to_remove = ["_output_shapes", "T", "seed2", "Tidx"]
+          node.attr = dict(filter(lambda pair: pair[0]
+                                               not in attr_to_remove, node.attr.items()))
+
+          node_output = node.name
+          ops_proto.append(make_node(TF_OP_STR_TO_ONNX_OP[node.op],
+                                     node.inputs,
+                                     [node_output],
+                                     name=node.name,
+                                     **node.attr))
         else:
           raise NotImplementedError("{} op is not implemented.".format(node.op))
 
