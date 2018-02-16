@@ -12,6 +12,7 @@ from onnx_tf.common import (
   TF_TYPE_TO_ONNX_TYPE,
   TF_OP_STR_TO_ONNX_OP,
   TF_ATTR_TO_ONNX_ATTR,
+  TF_ATTR_TO_REMOVE,
   get_tf_shape_as_list,
   op_name_to_lower,
 )
@@ -137,7 +138,7 @@ class TensorflowFrontend(object):
       elif node.op in TF_OP_STR_TO_ONNX_OP.keys():
         # Remove tensorflow-specific attrs that are not
         # needed/allowed in ONNX.
-        attr_to_remove = ["_output_shapes", "T", "seed2", "Tidx"]
+        attr_to_remove = TF_ATTR_TO_REMOVE
         node.attr = dict(filter(lambda pair: pair[0]
                                 not in attr_to_remove, node.attr.items()))
 
