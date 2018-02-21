@@ -41,6 +41,7 @@ def create_test(test_data):
   test_option = test_data[5] if len(test_data) > 5 else {}
 
   def do_test_expected(self):
+    tf.reset_default_graph()
     tf_op = test_data[1]
     output_name = test_data[2]
     inputs = test_data[3]
@@ -73,7 +74,6 @@ def create_test(test_data):
 
     with tf.Session() as sess:
       tf_output = sess.run(test_op, tf_feed_dict)
-    tf.reset_default_graph()
 
     # skip comparison if test_option specifies that
     # the test is call only.
