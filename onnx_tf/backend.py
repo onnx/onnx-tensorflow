@@ -118,11 +118,18 @@ class TensorflowBackend(Backend):
       "low": "minval",
       "axes": "axis",
       "keepdims": "keep_dims",
-      "axis": "dim",
+      # "axis": "dim",
       "to": "dtype",
   }
 
-  onnx_tf_per_op_attr_map = {}
+  onnx_tf_per_op_attr_map = {
+      "gather": {
+          "dim": "axis"
+      }
+  }
+
+  onnx_tf_per_op_attr_remove = {
+  }
 
   onnx_tf_op_map = {
       "abs": tf.abs,
@@ -132,7 +139,10 @@ class TensorflowBackend(Backend):
       "exp": tf.exp,
       "floor": tf.floor,
       "gather": tf.gather,
+      "hard_sigmoid": tf.keras.backend.hard_sigmoid,
+      "hardmax": tf.contrib.seq2seq.hardmax,
       "log": tf.log,
+      "log_softmax": tf.nn.log_softmax,
       "neg": tf.negative,
       "not": tf.logical_not,
       "pow": tf.pow,
@@ -148,10 +158,14 @@ class TensorflowBackend(Backend):
       "relu": tf.nn.relu,
       "sigmoid": tf.sigmoid,
       "softplus": tf.nn.softplus,
+      "softsign": tf.nn.softsign,
       "sqrt": tf.sqrt,
       "squeeze": tf.squeeze,
       "tanh": tf.tanh,
+      "top_k": tf.nn.top_k,
+      "thresholded_relu": tf.keras.layers.ThresholdedReLU,
       "transpose": tf.transpose,
+      "unsqueeze": tf.expand_dims,
   }
 
   tensor_type_to_tf_type = {
@@ -214,6 +228,10 @@ class TensorflowBackend(Backend):
       "dtype": lambda cls, x: cls.tensor_type_to_tf_type[x],
       "keepdims": lambda cls, x: bool(x),
       "to": lambda cls, x: cls.type_string_to_tf_type[x],
+  }
+
+  output_processor = {
+    "TopK": lambda x: [*x[0]],
   }
 
   # input_shape, kernel_shape, strides are specified for
@@ -288,7 +306,7 @@ class TensorflowBackend(Backend):
       num_ones_to_append = len(x.get_shape()) - \
                            len(y.get_shape()) - \
                            node.attrs["axis"]
-      if num_ones_to_append > 0:
+      if num_ones_to_append >= 0:
         ones = tf.ones([num_ones_to_append], tf.int32)
         broadcasted_shape = tf.concat([tf.shape(y), ones], axis=0)
         y = tf.reshape(y, broadcasted_shape)
@@ -313,12 +331,16 @@ class TensorflowBackend(Backend):
     input_dict = dict([(x[0], tf.constant(x[1])) for x in \
                        feed_dict_raw.items()])
     ops = cls._onnx_node_to_tensorflow_op(node, input_dict)
-    output_vals = []
+    output_vals_raw = []
     with tf.Session() as sess:
       with tf.device(device_option):
         sess.run(tf.global_variables_initializer())
-        output_vals = sess.run(ops)
+        output_vals_raw = sess.run(ops)
 
+    if node.op_type in cls.output_processor:
+      output_vals = cls.output_processor[node.op_type](output_vals_raw)
+    else:
+      output_vals = output_vals_raw
     return namedtupledict('Outputs', node.outputs)(*output_vals)
 
   @classmethod
@@ -444,8 +466,20 @@ class TensorflowBackend(Backend):
 
     # TODO: Per op attribute name mapping has the final say.
 
+    op_name_lowered = cls.op_name_to_lower(node.op_type)
+
+    # Modify the map according to onnx_tf_per_op_attr_map
+    attr_map = dict([(x, cls.onnx_tf_per_op_attr_map[op_name_lowered][
+        x] if op_name_lowered in cls.onnx_tf_per_op_attr_map and x in cls.onnx_tf_per_op_attr_map[
+        op_name_lowered].keys() else attr_map[x]) for x
+                     in attr_map.keys()])
+
     # Substitute attribute names in attrs.
     attrs = dict([(attr_map[x], y) for (x, y) in attrs.items()])
+    # Remove the key according to onnx_tf_per_op_attr_remove
+    attrs = {x: attrs[x] for x in attrs if
+             not (op_name_lowered in cls.onnx_tf_per_op_attr_remove and x in cls.onnx_tf_per_op_attr_remove[
+                 op_name_lowered])}
     inputs = [input_dict[name] for name in node.inputs]
     return [cls.onnx_tf_op_map[cls.op_name_to_lower(node.op_type)] \
       (*inputs, **attrs)]
@@ -612,11 +646,8 @@ class TensorflowBackend(Backend):
                                       variance_epsilon)]
   @classmethod
   def handle_clip(cls, node, input_dict):
-    assert "max" in node.attrs.keys()
-    assert "min" in node.attrs.keys()
-
-    max_val = node.attrs["max"]
-    min_val = node.attrs["min"]
+    max_val = node.attrs["max"] if "max" in node.attrs.keys() else tf.reduce_max(input_dict[node.inputs[0]])
+    min_val = node.attrs["min"] if "min" in node.attrs.keys() else tf.reduce_min(input_dict[node.inputs[0]])
 
     return [tf.clip_by_value(input_dict[node.inputs[0]], min_val, max_val)]
 
@@ -813,6 +844,30 @@ class TensorflowBackend(Backend):
     return [tf.reduce_max(x, axis=dim_window, keep_dims=True)]
 
   @classmethod
+  def handle_hard_sigmoid(cls, node, input_dict):
+    alpha = node.attrs["alpha"] if "alpha" in node.attrs.keys() else 0.2
+    beta = node.attrs["beta"] if "beta" in node.attrs.keys() else 0.5
+
+    x = input_dict[node.inputs[0]]
+    return [tf.clip_by_value(x * alpha + beta, 0, 1)]
+
+  @classmethod
+  def handle_hardmax(cls, node, input_dict):
+    if "axis" in node.attrs:
+      axis = node.attrs["axis"]
+      axis = (axis if axis >= 0
+      else len(input_dict[node.inputs[0]].get_shape()) + axis)
+    else:
+      axis = 1
+
+    x = input_dict[node.inputs[0]]
+    shape = tf.shape(x)
+    cal_shape = (tf.reduce_prod(shape[0:axis]), tf.reduce_prod(shape[axis:tf.size(shape)]))
+    x = tf.reshape(x, cal_shape)
+
+    return [tf.reshape(tf.contrib.seq2seq.hardmax(x), shape)]
+
+  @classmethod
   def handle_l_r_n(cls, node, input_dict):
     x = input_dict[node.inputs[0]]
     alpha = node.attrs["alpha"]
@@ -835,11 +890,27 @@ class TensorflowBackend(Backend):
     x = input_dict[node.inputs[0]]
     if not "alpha" in node.attrs.keys():
       warnings.warn("Provide an alpha value.", UserWarning)
-      alpha = 1.0
+      alpha = 0.01
     else:
       alpha = node.attrs["alpha"]
     tf_op = tf.nn.relu(x) - alpha * tf.nn.relu(-x)
     return [tf_op]
+
+  @classmethod
+  def handle_log_softmax(cls, node, input_dict):
+    if "axis" in node.attrs:
+      axis = node.attrs["axis"]
+      axis = (axis if axis >= 0
+      else len(input_dict[node.inputs[0]].get_shape()) + axis)
+    else:
+      axis = 1
+
+    x = input_dict[node.inputs[0]]
+    shape = tf.shape(x)
+    cal_shape = (tf.reduce_prod(shape[0:axis]), tf.reduce_prod(shape[axis:tf.size(shape)]))
+    x = tf.reshape(x, cal_shape)
+
+    return [tf.reshape(tf.nn.log_softmax(x - tf.reduce_max(x)), shape)]
 
   @classmethod
   def handle_max(cls, node, input_dict):
@@ -850,6 +921,11 @@ class TensorflowBackend(Backend):
   def handle_max_pool(cls, node, input_dict):
     # 1 = can pad zero
     return cls._pool(node, input_dict, tf.nn.max_pool, 1)
+
+  @classmethod
+  def handle_mean(cls, node, input_dict):
+      values = [input_dict[a] for a in node.inputs]
+      return [tf.reduce_mean(tf.stack(values), axis=0)]
 
   @classmethod
   def handle_min(cls, node, input_dict):
@@ -903,6 +979,10 @@ class TensorflowBackend(Backend):
                    value)]
 
   @classmethod
+  def handle_pow(cls, node, input_dict):
+    return [cls._bin_op(node, input_dict, tf.pow)]
+
+  @classmethod
   def handle_random_normal_like(cls, node, input_dict):
     shape = tf.shape(input_dict[node.inputs[0]])
     mean = node.attrs["mean"]
@@ -947,8 +1027,9 @@ class TensorflowBackend(Backend):
     for i in range(slice_len):
       ends[i] = full_sizes[axes[i]] + ends[i] \
                 if ends[i] < 0 else ends[i]
-      full_sizes[axes[i]] = ends[i] - starts[i]
-      full_begin[axes[i]] = starts[i]
+      full_sizes[axes[i]] = ends[i] - starts[i] if ends[i] - starts[i] <= full_sizes[axes[i]] else full_sizes[
+                                                                                                      axes[i]] - 1
+      full_begin[axes[i]] = starts[i] if starts[i] <= full_sizes[axes[i]] else full_sizes[axes[i]]
 
     return [tf.slice(input_dict[node.inputs[0]],
                      tf.constant(full_begin),
@@ -958,12 +1039,17 @@ class TensorflowBackend(Backend):
   def handle_softmax(cls, node, input_dict):
     if "axis" in node.attrs:
       axis = node.attrs["axis"]
-      axis = (axis if axis > 0
+      axis = (axis if axis >= 0
               else len(input_dict[node.inputs[0]].get_shape()) + axis)
     else:
       axis = 1
 
-    return [tf.nn.softmax(input_dict[node.inputs[0]], dim=axis)]
+    x = input_dict[node.inputs[0]]
+    shape = tf.shape(x)
+    cal_shape = (tf.reduce_prod(shape[0:axis]), tf.reduce_prod(shape[axis:tf.size(shape)]))
+    x = tf.reshape(x, cal_shape)
+
+    return [tf.reshape(tf.nn.softmax(x - tf.reduce_max(x)), shape)]
 
   @classmethod
   def handle_split(cls, node, input_dict):
@@ -980,6 +1066,25 @@ class TensorflowBackend(Backend):
   def handle_sum(cls, node, input_dict):
     values = [input_dict[a] for a in node.inputs]
     return [tf.reduce_sum(tf.stack(values), axis=0)]
+
+  @classmethod
+  def handle_thresholded_relu(cls, node, input_dict):
+    x = input_dict[node.inputs[0]]
+    if not "alpha" in node.attrs.keys():
+      warnings.warn("Provide an alpha value.", UserWarning)
+      alpha = 1
+    else:
+      alpha = node.attrs["alpha"]
+    epsilon = 1e-5
+    return [tf.nn.relu(x) - tf.nn.relu(tf.sign(alpha - x + epsilon) * x)]
+
+  @classmethod
+  def handle_unsqueeze(cls, node, input_dict):
+    x = input_dict[node.inputs[0]]
+    axis_list = sorted(node.attrs["axes"])
+    for axis in axis_list:
+      x = tf.expand_dims(x, axis=axis)
+    return [x]
 
   @classmethod
   def handle_mat_mul(cls, node, input_dict):
