@@ -156,7 +156,10 @@ class TensorflowBackend(Backend):
       "reduce_prod": tf.reduce_prod,
       "reduce_sum": tf.reduce_sum,
       "relu": tf.nn.relu,
+      "selu": tf.nn.selu,
+      "shape": tf.shape,
       "sigmoid": tf.sigmoid,
+      "size": tf.size,
       "softplus": tf.nn.softplus,
       "softsign": tf.nn.softsign,
       "sqrt": tf.sqrt,
@@ -231,7 +234,7 @@ class TensorflowBackend(Backend):
   }
 
   output_processor = {
-    "TopK": lambda x: [*x[0]],
+    "TopK": lambda x: [el for el in x[0]],
   }
 
   # input_shape, kernel_shape, strides are specified for
@@ -845,14 +848,20 @@ class TensorflowBackend(Backend):
 
   @classmethod
   def handle_hard_sigmoid(cls, node, input_dict):
-    alpha = node.attrs["alpha"] if "alpha" in node.attrs.keys() else 0.2
-    beta = node.attrs["beta"] if "beta" in node.attrs.keys() else 0.5
-
     x = input_dict[node.inputs[0]]
+    if "alpha" not in node.attrs and "beta" not in node.attrs:
+        return [tf.keras.backend.hard_sigmoid(x)]
+
+    alpha = node.attrs["alpha"] if "alpha" in node.attrs else 0.2
+    beta = node.attrs["beta"] if "beta" in node.attrs else 0.5
     return [tf.clip_by_value(x * alpha + beta, 0, 1)]
 
   @classmethod
   def handle_hardmax(cls, node, input_dict):
+    x = input_dict[node.inputs[0]]
+    if "axis" in node.attrs and node.attrs["axis"] == len(np.shape(x)) - 1:
+        return [tf.contrib.seq2seq.hardmax(x)]
+
     if "axis" in node.attrs:
       axis = node.attrs["axis"]
       axis = (axis if axis >= 0
@@ -860,7 +869,6 @@ class TensorflowBackend(Backend):
     else:
       axis = 1
 
-    x = input_dict[node.inputs[0]]
     shape = tf.shape(x)
     cal_shape = (tf.reduce_prod(shape[0:axis]), tf.reduce_prod(shape[axis:tf.size(shape)]))
     x = tf.reshape(x, cal_shape)
@@ -898,6 +906,10 @@ class TensorflowBackend(Backend):
 
   @classmethod
   def handle_log_softmax(cls, node, input_dict):
+    x = input_dict[node.inputs[0]]
+    if "axis" in node.attrs and node.attrs["axis"] == len(np.shape(x)) - 1:
+        return [tf.nn.log_softmax(x)]
+
     if "axis" in node.attrs:
       axis = node.attrs["axis"]
       axis = (axis if axis >= 0
@@ -905,7 +917,6 @@ class TensorflowBackend(Backend):
     else:
       axis = 1
 
-    x = input_dict[node.inputs[0]]
     shape = tf.shape(x)
     cal_shape = (tf.reduce_prod(shape[0:axis]), tf.reduce_prod(shape[axis:tf.size(shape)]))
     x = tf.reshape(x, cal_shape)
@@ -1010,7 +1021,16 @@ class TensorflowBackend(Backend):
   def handle_selu(cls, node, input_dict):
     warnings.warn("Definition of Selu is different "
                   "between onnx and tensorflow.", UserWarning)
-    return [tf.nn.selu(input_dict[node.inputs[0]])]
+    if "alpha" not in node.attrs and "gamma" not in node.attrs:
+        return [tf.nn.selu(input_dict[node.inputs[0]])]
+
+    x = input_dict[node.inputs[0]]
+    alpha = node.attrs["alpha"] if "alpha" in node.attrs else 1.6732
+    gamma = node.attrs["gamma"] if "gamma" in node.attrs else 1.0507
+
+    return [tf.clip_by_value(x, 0, tf.reduce_max(x)) * gamma + (
+            tf.exp(tf.clip_by_value(x, tf.reduce_min(x), 0)) - 1) * alpha * gamma]
+
 
   @classmethod
   def handle_slice(cls, node, input_dict):
@@ -1025,11 +1045,11 @@ class TensorflowBackend(Backend):
     axes = node.attrs.get("axes", list(range(slice_len)))
 
     for i in range(slice_len):
-      ends[i] = full_sizes[axes[i]] + ends[i] \
-                if ends[i] < 0 else ends[i]
-      full_sizes[axes[i]] = ends[i] - starts[i] if ends[i] - starts[i] <= full_sizes[axes[i]] else full_sizes[
-                                                                                                      axes[i]] - 1
-      full_begin[axes[i]] = starts[i] if starts[i] <= full_sizes[axes[i]] else full_sizes[axes[i]]
+      ends[i] = full_sizes[axes[i]] + ends[i] if ends[i] < 0 else ends[i]
+      ends[i] = np.min([full_sizes[axes[i]], ends[i]])
+      starts[i] = np.min([full_sizes[axes[i]], starts[i]])
+      full_begin[axes[i]] = starts[i]
+      full_sizes[axes[i]] = ends[i] - starts[i]
 
     return [tf.slice(input_dict[node.inputs[0]],
                      tf.constant(full_begin),
@@ -1037,6 +1057,10 @@ class TensorflowBackend(Backend):
 
   @classmethod
   def handle_softmax(cls, node, input_dict):
+    x = input_dict[node.inputs[0]]
+    if "axis" in node.attrs and node.attrs["axis"] == len(np.shape(x)) - 1:
+      return [tf.nn.softmax(x)]
+
     if "axis" in node.attrs:
       axis = node.attrs["axis"]
       axis = (axis if axis >= 0
@@ -1044,7 +1068,6 @@ class TensorflowBackend(Backend):
     else:
       axis = 1
 
-    x = input_dict[node.inputs[0]]
     shape = tf.shape(x)
     cal_shape = (tf.reduce_prod(shape[0:axis]), tf.reduce_prod(shape[axis:tf.size(shape)]))
     x = tf.reshape(x, cal_shape)
@@ -1075,6 +1098,7 @@ class TensorflowBackend(Backend):
       alpha = 1
     else:
       alpha = node.attrs["alpha"]
+
     epsilon = 1e-5
     return [tf.nn.relu(x) - tf.nn.relu(tf.sign(alpha - x + epsilon) * x)]
 
