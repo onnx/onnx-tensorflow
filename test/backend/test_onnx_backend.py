@@ -29,9 +29,6 @@ backend_test.exclude(r'[a-z,_]*Conv2d_dilated[a-z,_]*')
 # Experimental op we do not currently support:
 backend_test.exclude(r'[a-z,_]*Upsample[a-z,_]*')
 
-# https://github.com/onnx/onnx/issues/546:
-backend_test.exclude(r'[a-z,_]*pow_bcast[a-z,_]*')
-
 if 'TRAVIS' in os.environ:
     backend_test.exclude('test_vgg19')
 
