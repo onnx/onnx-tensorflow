@@ -23,8 +23,3 @@ cache:
 env:
   global:
     - PB_VERSION=2.6.1
-
-branches:
-  only:
-  - master
-  - fix-build

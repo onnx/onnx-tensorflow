@@ -118,7 +118,7 @@ class TensorflowBackend(Backend):
       "low": "minval",
       "axes": "axis",
       "keepdims": "keep_dims",
-      # "axis": "dim",
+      "axis": "dim",
       "to": "dtype",
   }
 
