@@ -514,7 +514,7 @@ class TestNode(unittest.TestCase):
     x = self._get_rnd([100]).reshape([10, 10])
 
     output = run_node(node_def, [x])
-    for a, b in zip([el for el in output], np.split(x,np.cumsum(split))[:-1]):
+    for a, b in zip(list(output), np.split(x, np.cumsum(split))[:-1]):
       np.testing.assert_almost_equal(a, b)
 
   def test_sqrt(self):

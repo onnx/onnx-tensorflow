@@ -71,8 +71,9 @@ def create_test(test_data):
     onnx_model = helper.make_model(onnx_graph)
     backend_rep = prepare(onnx_model)
     backend_output = []
+    backend_rep_outputs = backend_rep.run(onnx_feed_dict)
     for ext_output in backend_rep.predict_net.external_output:
-      backend_output.append(backend_rep.run(onnx_feed_dict)[ext_output])
+      backend_output.append(backend_rep_outputs[ext_output])
     backend_output = np.asarray(backend_output)
     backend_output = np.squeeze(backend_output, 0) if backend_output.shape[0] == 1 else backend_output
 

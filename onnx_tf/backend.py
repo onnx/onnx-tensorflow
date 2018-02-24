@@ -1085,7 +1085,7 @@ class TensorflowBackend(Backend):
     split = (tf.constant(node.attrs["split"]) if
              "split" in node.attrs else input_dict[node.inputs[1]])
     axis = node.attrs["axis"]
-    return [el for el in tf.split(input_dict[node.inputs[0]], split, axis)]
+    return [list(tf.split(input_dict[node.inputs[0]], split, axis))]
 
   @classmethod
   def handle_sub(cls, node, input_dict):
@@ -1112,7 +1112,7 @@ class TensorflowBackend(Backend):
   def handle_top_k(cls, node, input_dict):
     x = input_dict[node.inputs[0]]
     k = node.attrs["k"] if "k" in node.attrs else 1
-    return [el for el in tf.nn.top_k(x, k=k)]
+    return [list(tf.nn.top_k(x, k=k))]
 
   @classmethod
   def handle_unsqueeze(cls, node, input_dict):
