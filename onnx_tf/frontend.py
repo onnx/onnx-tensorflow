@@ -163,13 +163,16 @@ class TensorflowFrontend(object):
     # TODO: default to BOOL, cf.
     # https://github.com/tensorflow/tensorflow/issues/14769
     output_onnx_type = output.attr.get("T", TensorProto.BOOL)
-    output_proto = make_tensor_value_info(output.name,
-                                          output_onnx_type,
-                                          output.attr["_output_shapes"][0])
+    output_proto = []
+    for i in range(len(output.attr["_output_shapes"])):
+      output_name = output.name + ":{}".format(i) if i > 0 else output.name
+      output_proto.append(make_tensor_value_info(output_name,
+                                                 output_onnx_type,
+                                                 output.attr["_output_shapes"][i]))
     return make_graph(ops_proto,
                       name,
                       inputs_proto,
-                      [output_proto],
+                      output_proto,
                       consts_proto)
 
   @classmethod

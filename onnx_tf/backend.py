@@ -118,7 +118,6 @@ class TensorflowBackend(Backend):
       "low": "minval",
       "axes": "axis",
       "keepdims": "keep_dims",
-      "axis": "dim",
       "to": "dtype",
   }
 
@@ -233,9 +232,6 @@ class TensorflowBackend(Backend):
       "to": lambda cls, x: cls.type_string_to_tf_type[x],
   }
 
-  output_processor = {
-    "TopK": lambda x: [el for el in x[0]],
-  }
 
   # input_shape, kernel_shape, strides are specified for
   # spatial dims only.
@@ -334,16 +330,12 @@ class TensorflowBackend(Backend):
     input_dict = dict([(x[0], tf.constant(x[1])) for x in \
                        feed_dict_raw.items()])
     ops = cls._onnx_node_to_tensorflow_op(node, input_dict)
-    output_vals_raw = []
+    output_vals = []
     with tf.Session() as sess:
       with tf.device(device_option):
         sess.run(tf.global_variables_initializer())
-        output_vals_raw = sess.run(ops)
+        output_vals = sess.run(ops)
 
-    if node.op_type in cls.output_processor:
-      output_vals = cls.output_processor[node.op_type](output_vals_raw)
-    else:
-      output_vals = output_vals_raw
     return namedtupledict('Outputs', node.outputs)(*output_vals)
 
   @classmethod
@@ -390,7 +382,7 @@ class TensorflowBackend(Backend):
     # defined tensors so we can have access to the placeholders
     # to feed in input tensors when we run the graph.
     original_input_dict = dict(input_dict_items)
-    output_dict = dict()
+    output_dict = input_dict
 
     for node in graph_def.node:
       node = OnnxNode(node)
@@ -585,12 +577,22 @@ class TensorflowBackend(Backend):
 
     # By default, do not pad
     pad = "VALID"
+    pads = node.attrs["pads"] if "pads" in node.attrs else None
 
-    if "pads" in node.attrs.keys():
+    # Pooling1D
+    if x_rank == 3:
+      kernel_shape = [1] + kernel_shape
+      strides = [1] + strides
+      pads = [0, 0] + pads
+      expand_axis = storage_format.index('W')
+      x = tf.expand_dims(x, expand_axis)
+      compute_format = compute_format[:expand_axis - 1] + 'H' + compute_format[expand_axis - 1:]
+
+    if pads:
       pad = cls.get_tf_pad(x.get_shape().as_list(),
                            kernel_shape,
                            strides,
-                           node.attrs["pads"])
+                           pads)
       if pad is None and can_pad_zero:
         x = cls.get_padding_as_op(x, node.attrs["pads"])
         pad = "VALID"
@@ -606,6 +608,10 @@ class TensorflowBackend(Backend):
       pooled = pool_func(x, [1] + kernel_shape + [1], [1] + strides + [1], pad,
                          data_format=compute_format)
       pooled = tf.transpose(pooled, perm=[0, 3, 1, 2])
+
+    # Pooling1D
+    if x_rank == 3:
+      pooled = tf.squeeze(pooled, expand_axis)
 
     return [pooled]
 
@@ -1079,7 +1085,7 @@ class TensorflowBackend(Backend):
     split = (tf.constant(node.attrs["split"]) if
              "split" in node.attrs else input_dict[node.inputs[1]])
     axis = node.attrs["axis"]
-    return [tf.split(input_dict[node.inputs[0]], split, axis)]
+    return [el for el in tf.split(input_dict[node.inputs[0]], split, axis)]
 
   @classmethod
   def handle_sub(cls, node, input_dict):
@@ -1101,6 +1107,12 @@ class TensorflowBackend(Backend):
 
     epsilon = 1e-5
     return [tf.nn.relu(x) - tf.nn.relu(tf.sign(alpha - x + epsilon) * x)]
+
+  @classmethod
+  def handle_top_k(cls, node, input_dict):
+    x = input_dict[node.inputs[0]]
+    k = node.attrs["k"] if "k" in node.attrs else 1
+    return [el for el in tf.nn.top_k(x, k=k)]
 
   @classmethod
   def handle_unsqueeze(cls, node, input_dict):
