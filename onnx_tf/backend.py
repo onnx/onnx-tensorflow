@@ -613,7 +613,7 @@ class TensorflowBackend(Backend):
       return cls.handle_global_average_pool(node, input_dict)
 
     # 0 = cannot pad zero
-    return cls._pool(node, input_dict, partial(tf.nn.avg_pool, pooling_type='AVG'), 0)
+    return cls._pool(node, input_dict, partial(tf.nn.pool, pooling_type='AVG'), 0)
 
   @classmethod
   def handle_batch_normalization(cls, node, input_dict):
