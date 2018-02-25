@@ -8,6 +8,7 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import collections
+from functools import partial
 import re
 import warnings
 import sys
@@ -579,15 +580,6 @@ class TensorflowBackend(Backend):
     pad = "VALID"
     pads = node.attrs["pads"] if "pads" in node.attrs else None
 
-    # Pooling1D
-    if x_rank == 3:
-      kernel_shape = [1] + kernel_shape
-      strides = [1] + strides
-      pads = [0, 0] + pads
-      expand_axis = storage_format.index('W')
-      x = tf.expand_dims(x, expand_axis)
-      compute_format = compute_format[:expand_axis - 1] + 'H' + compute_format[expand_axis - 1:]
-
     if pads:
       pad = cls.get_tf_pad(x.get_shape().as_list(),
                            kernel_shape,
@@ -601,17 +593,11 @@ class TensorflowBackend(Backend):
         return cls._compatibility_avg_pool(node, input_dict, tf.nn.avg_pool, 0)
 
     if support_cuda:
-      pooled = pool_func(x, [1, 1] + kernel_shape, [1, 1] + strides, pad,
-                         data_format=compute_format)
+      pooled = pool_func(x, kernel_shape, padding=pad, strides=strides, data_format=compute_format)
     else:
-      x = tf.transpose(x, perm=[0, 2, 3, 1])
-      pooled = pool_func(x, [1] + kernel_shape + [1], [1] + strides + [1], pad,
-                         data_format=compute_format)
-      pooled = tf.transpose(pooled, perm=[0, 3, 1, 2])
-
-    # Pooling1D
-    if x_rank == 3:
-      pooled = tf.squeeze(pooled, expand_axis)
+      x = tf.transpose(x, perm=cls.get_perm_from_formats(storage_format, compute_format))
+      pooled = pool_func(x, kernel_shape, padding=pad, strides=strides, data_format=compute_format)
+      pooled = tf.transpose(pooled, perm=cls.get_perm_from_formats(compute_format, storage_format))
 
     return [pooled]
 
@@ -627,7 +613,7 @@ class TensorflowBackend(Backend):
       return cls.handle_global_average_pool(node, input_dict)
 
     # 0 = cannot pad zero
-    return cls._pool(node, input_dict, tf.nn.avg_pool, 0)
+    return cls._pool(node, input_dict, partial(tf.nn.avg_pool, pooling_type='AVG'), 0)
 
   @classmethod
   def handle_batch_normalization(cls, node, input_dict):
@@ -937,7 +923,7 @@ class TensorflowBackend(Backend):
   @classmethod
   def handle_max_pool(cls, node, input_dict):
     # 1 = can pad zero
-    return cls._pool(node, input_dict, tf.nn.max_pool, 1)
+    return cls._pool(node, input_dict, partial(tf.nn.pool, pooling_type='MAX'), 1)
 
   @classmethod
   def handle_mean(cls, node, input_dict):
