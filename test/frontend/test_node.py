@@ -70,7 +70,12 @@ def create_test(test_data):
     onnx_graph = convert_graph(tf_graph, output_node)
     onnx_model = helper.make_model(onnx_graph)
     backend_rep = prepare(onnx_model)
-    backend_output = backend_rep.run(onnx_feed_dict)[output_name]
+    backend_output = []
+    backend_rep_outputs = backend_rep.run(onnx_feed_dict)
+    for ext_output in backend_rep.predict_net.external_output:
+      backend_output.append(backend_rep_outputs[ext_output])
+    backend_output = np.asarray(backend_output)
+    backend_output = np.squeeze(backend_output, 0) if backend_output.shape[0] == 1 else backend_output
 
     with tf.Session() as sess:
       tf_output = sess.run(test_op, tf_feed_dict)
@@ -79,8 +84,8 @@ def create_test(test_data):
     # the test is call only.
     if (test_option.get("call_only", False)):
       return
-
-    np.testing.assert_allclose(backend_output, tf_output)
+    for backend_o, tf_o in zip(backend_output, tf_output):
+      np.testing.assert_allclose(backend_o, tf_o)
 
   return do_test_expected
 
@@ -104,7 +109,7 @@ test_cases = [
 ("test_reduce_sum", tf.reduce_sum, "Sum", [get_rnd([10, 10])], {"keep_dims": True}),
 ("test_reshape", tf.reshape, "Reshape", [get_rnd([10, 10]), [4, 25]], {}),
 ("test_sigmoid", tf.sigmoid, "Sigmoid", [get_rnd([10, 10])], {}),
-("test_split", tf.split, "split", [get_rnd([10, 10]), [5, 5]], {}),
+("test_split", tf.split, "split", [get_rnd([10, 10]), [2, 3, 5]], {}),
 ("test_sqrt", tf.sqrt, "Sqrt", [get_rnd([10, 10])], {}),
 ("test_squeeze", tf.squeeze, "Squeeze", [get_rnd([1, 1, 10, 10])], {"axis":[0, 1]}),
 ("test_subtract", tf.subtract, "Sub", [get_rnd([10, 10]), get_rnd([10, 10])], {}),

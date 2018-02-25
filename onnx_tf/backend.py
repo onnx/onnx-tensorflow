@@ -8,6 +8,7 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import collections
+from functools import partial
 import re
 import warnings
 import sys
@@ -118,7 +119,6 @@ class TensorflowBackend(Backend):
       "low": "minval",
       "axes": "axis",
       "keepdims": "keep_dims",
-      "axis": "dim",
       "to": "dtype",
   }
 
@@ -233,9 +233,6 @@ class TensorflowBackend(Backend):
       "to": lambda cls, x: cls.type_string_to_tf_type[x],
   }
 
-  output_processor = {
-    "TopK": lambda x: [el for el in x[0]],
-  }
 
   # input_shape, kernel_shape, strides are specified for
   # spatial dims only.
@@ -334,16 +331,12 @@ class TensorflowBackend(Backend):
     input_dict = dict([(x[0], tf.constant(x[1])) for x in \
                        feed_dict_raw.items()])
     ops = cls._onnx_node_to_tensorflow_op(node, input_dict)
-    output_vals_raw = []
+    output_vals = []
     with tf.Session() as sess:
       with tf.device(device_option):
         sess.run(tf.global_variables_initializer())
-        output_vals_raw = sess.run(ops)
+        output_vals = sess.run(ops)
 
-    if node.op_type in cls.output_processor:
-      output_vals = cls.output_processor[node.op_type](output_vals_raw)
-    else:
-      output_vals = output_vals_raw
     return namedtupledict('Outputs', node.outputs)(*output_vals)
 
   @classmethod
@@ -390,7 +383,7 @@ class TensorflowBackend(Backend):
     # defined tensors so we can have access to the placeholders
     # to feed in input tensors when we run the graph.
     original_input_dict = dict(input_dict_items)
-    output_dict = dict()
+    output_dict = input_dict
 
     for node in graph_def.node:
       node = OnnxNode(node)
@@ -585,12 +578,13 @@ class TensorflowBackend(Backend):
 
     # By default, do not pad
     pad = "VALID"
+    pads = node.attrs["pads"] if "pads" in node.attrs else None
 
-    if "pads" in node.attrs.keys():
+    if pads:
       pad = cls.get_tf_pad(x.get_shape().as_list(),
                            kernel_shape,
                            strides,
-                           node.attrs["pads"])
+                           pads)
       if pad is None and can_pad_zero:
         x = cls.get_padding_as_op(x, node.attrs["pads"])
         pad = "VALID"
@@ -599,13 +593,11 @@ class TensorflowBackend(Backend):
         return cls._compatibility_avg_pool(node, input_dict, tf.nn.avg_pool, 0)
 
     if support_cuda:
-      pooled = pool_func(x, [1, 1] + kernel_shape, [1, 1] + strides, pad,
-                         data_format=compute_format)
+      pooled = pool_func(x, kernel_shape, padding=pad, strides=strides, data_format=compute_format)
     else:
-      x = tf.transpose(x, perm=[0, 2, 3, 1])
-      pooled = pool_func(x, [1] + kernel_shape + [1], [1] + strides + [1], pad,
-                         data_format=compute_format)
-      pooled = tf.transpose(pooled, perm=[0, 3, 1, 2])
+      x = tf.transpose(x, perm=cls.get_perm_from_formats(storage_format, compute_format))
+      pooled = pool_func(x, kernel_shape, padding=pad, strides=strides, data_format=compute_format)
+      pooled = tf.transpose(pooled, perm=cls.get_perm_from_formats(compute_format, storage_format))
 
     return [pooled]
 
@@ -621,7 +613,7 @@ class TensorflowBackend(Backend):
       return cls.handle_global_average_pool(node, input_dict)
 
     # 0 = cannot pad zero
-    return cls._pool(node, input_dict, tf.nn.avg_pool, 0)
+    return cls._pool(node, input_dict, partial(tf.nn.pool, pooling_type='AVG'), 0)
 
   @classmethod
   def handle_batch_normalization(cls, node, input_dict):
@@ -931,7 +923,7 @@ class TensorflowBackend(Backend):
   @classmethod
   def handle_max_pool(cls, node, input_dict):
     # 1 = can pad zero
-    return cls._pool(node, input_dict, tf.nn.max_pool, 1)
+    return cls._pool(node, input_dict, partial(tf.nn.pool, pooling_type='MAX'), 1)
 
   @classmethod
   def handle_mean(cls, node, input_dict):
@@ -1079,7 +1071,7 @@ class TensorflowBackend(Backend):
     split = (tf.constant(node.attrs["split"]) if
              "split" in node.attrs else input_dict[node.inputs[1]])
     axis = node.attrs["axis"]
-    return [tf.split(input_dict[node.inputs[0]], split, axis)]
+    return list(tf.split(input_dict[node.inputs[0]], split, axis))
 
   @classmethod
   def handle_sub(cls, node, input_dict):
@@ -1101,6 +1093,12 @@ class TensorflowBackend(Backend):
 
     epsilon = 1e-5
     return [tf.nn.relu(x) - tf.nn.relu(tf.sign(alpha - x + epsilon) * x)]
+
+  @classmethod
+  def handle_top_k(cls, node, input_dict):
+    x = input_dict[node.inputs[0]]
+    k = node.attrs["k"] if "k" in node.attrs else 1
+    return list(tf.nn.top_k(x, k=k))
 
   @classmethod
   def handle_unsqueeze(cls, node, input_dict):

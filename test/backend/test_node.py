@@ -510,11 +510,11 @@ class TestNode(unittest.TestCase):
 
   def test_split(self):
     split = [3, 3, 4]
-    node_def = helper.make_node("Split", ["X"], ["Z"], axis=0, split=split)
+    node_def = helper.make_node("Split", ["X"], ["Z%i" % i for i in range(len(split))], axis=0, split=split)
     x = self._get_rnd([100]).reshape([10, 10])
 
     output = run_node(node_def, [x])
-    for a, b in zip(output["Z"], np.split(x,np.cumsum(split))[:-1]):
+    for a, b in zip(list(output), np.split(x, np.cumsum(split))[:-1]):
       np.testing.assert_almost_equal(a, b)
 
   def test_sqrt(self):
