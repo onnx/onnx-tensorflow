@@ -89,22 +89,17 @@ ONNX_ATTR_TO_TF_ATTR = {
   "low": "minval",
   "axes": "axis",
   "keepdims": "keep_dims",
-  # TF uses two seeds:
-  # seed1: graph level seed
-  # seed2: op level seed
-  # ONNX only has op level seed, thus the following map
-  "seed": "seed2",
-  # move this to op specific translator
-  # apply only to cast op
-  "to": "dtype",
 }
 
 TF_ATTR_TO_ONNX_ATTR = invert(ONNX_ATTR_TO_TF_ATTR)
 
 ONNX_ATTR_TO_TF_ATTR_PER_OP = {
+  "cast": {
+    "to": "dtype"
+  },
   "gather": {
     "dim": "axis"
-  }
+  },
 }
 
 TF_ATTR_TO_ONNX_ATTR_PER_OP = {k: invert(v) for k, v in ONNX_ATTR_TO_TF_ATTR_PER_OP.items()}
