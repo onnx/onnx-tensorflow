@@ -230,7 +230,7 @@ class TensorflowBackend(Backend):
   attr_translator = {
       "dtype": lambda cls, x: cls.tensor_type_to_tf_type[x],
       "keepdims": lambda cls, x: bool(x),
-      "to": lambda cls, x: cls.type_string_to_tf_type[x],
+      "to": lambda cls, x: cls.type_string_to_tf_type[x.lower()],
   }
 
 
