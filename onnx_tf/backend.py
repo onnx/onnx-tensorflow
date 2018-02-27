@@ -25,6 +25,9 @@ from onnx import checker
 from onnx.onnx_pb2 import GraphProto, TensorProto, AttributeProto
 from onnx_tf.tf_net import TensorflowNet
 from onnx_tf.backend_rep import TensorflowRep
+from onnx_tf.common import (
+  ONNX_OP_TO_TF_OP
+)
 import onnx.numpy_helper
 import onnx.defs
 
@@ -884,6 +887,62 @@ class TensorflowBackend(Backend):
                        bias=bias, alpha=tf_alpha, beta=beta)
     normed = tf.transpose(normed, perm=[0, 3, 1, 2])
     return [normed]
+
+  @classmethod
+  def handle_l_s_t_m(cls, node, input_dict):
+    hidden_size = node.attrs["hidden_size"]
+    cell_kwargs = {}
+    if "direction" in node.attrs:
+      direction = node.attrs["direction"]
+    else:
+      direction = "forward"
+
+    if "clip" in node.attrs:
+      cell_kwargs["cell_clip"] = node.attrs["clip"]
+
+    tf_activations = [tf.nn.tanh]
+    if "activations" in node.attrs:
+      activations = list(map(lambda x: x.lower(), node.attrs["activations"]))
+      if activations[0] != "sigmoid" or activations[1] != "tanh":
+        warnings.warn("Tensorflow uses sigmiod and tanh as first two activation functions."
+                      "So activations attr will be set to sigmiod, tanh and {}.".format(activations[2]))
+      tf_activations = [ONNX_OP_TO_TF_OP[activations[2]]]
+      if direction == "bidirectional":
+        if activations[3] != "sigmoid" or activations[4] != "tanh":
+          warnings.warn("Tensorflow uses sigmiod and tanh as first two activation functions."
+                        "So activations attr will be set to sigmiod, tanh and {}.".format(activations[4]))
+        tf_activations.append(ONNX_OP_TO_TF_OP[activations[5]])
+
+    cell_kwargs["activation"] = tf_activations[0]
+    lstm_cell = tf.contrib.rnn.LSTMCell(hidden_size, **cell_kwargs)
+    cell_fw = tf.contrib.rnn.MultiRNNCell([lstm_cell])
+    if direction == "bidirectional":
+      cell_kwargs["activation"] = tf_activations[1]
+      lstm_cell_b = [tf.contrib.rnn.LSTMCell(hidden_size, **cell_kwargs)]
+      cell_bw = tf.contrib.rnn.MultiRNNCell([lstm_cell_b])
+
+    # TODO: handle data types
+    if direction == "forward":
+      output, state = tf.nn.dynamic_rnn(cell_fw,
+                                        input_dict[node.inputs[0]],
+                                        time_major=True,
+                                        dtype=tf.float32)
+    elif direction == "bidirectional":
+      output, state = tf.nn.bidirectional_dynamic_rnn(cell_fw,
+                                                      cell_bw,
+                                                      input_dict[node.inputs[0]],
+                                                      time_major=True,
+                                                      dtype=tf.float32)
+    else:
+      raise NotImplementedError("reverse direction is not implemented.")
+
+    state = state[0]
+    c, h = state
+    states = [h, c]
+    outputs = [output]
+    outputs.extend(states)
+    return outputs
+
 
   @classmethod
   def handle_leaky_relu(cls, node, input_dict):
