@@ -164,7 +164,7 @@ class TensorflowBackend(Backend):
     if is_same_padding:
       return "SAME"
 
-    return None
+    return "SAME"
 
   @classmethod
   def get_padding_as_op(cls, x, pads):
@@ -412,7 +412,7 @@ class TensorflowBackend(Backend):
     x_rank = len(x.get_shape())
 
     kernel_shape = node.attrs["kernel_shape"]
-    strides = node.attrs["strides"]
+    strides = node.attrs.get("strides", [1, 1])
 
     pads = node.attrs.get("pads", [0, 0, 0, 0])
 
@@ -464,11 +464,19 @@ class TensorflowBackend(Backend):
     storage_format, compute_format = cls.get_data_format(x_rank, support_cuda)
 
     kernel_shape = node.attrs["kernel_shape"]
-    strides = node.attrs["strides"]
+    strides = node.attrs["strides"] if "strides" in node.attrs else [1, 1]
 
     # By default, do not pad
     pad = "VALID"
     pads = node.attrs["pads"] if "pads" in node.attrs else None
+
+    if "auto_pad" in node.attrs:
+      if node.attrs["auto_pad"] == "SAME_UPPER":
+        pad = "SAME"
+      elif node.attrs["auto_pad"] == "VALID":
+        pad = "VALID"
+      elif node.attrs["auto_pad"] == "SAME_LOWER":
+          raise NotImplementedError("SAME_LOWER is not supported in Tensorflow.")
 
     if pads:
       pad = cls.get_tf_pad(x.get_shape().as_list(),
@@ -478,9 +486,9 @@ class TensorflowBackend(Backend):
       if pad is None and can_pad_zero:
         x = cls.get_padding_as_op(x, node.attrs["pads"])
         pad = "VALID"
-      if pad is None and not can_pad_zero:
+      # if pad is None and not can_pad_zero:
         # Currently it's always average pooling
-        return cls._compatibility_avg_pool(node, input_dict, tf.nn.avg_pool, 0)
+        # return cls._compatibility_avg_pool(node, input_dict, tf.nn.avg_pool, 0)
 
     if support_cuda:
       pooled = pool_func(x, kernel_shape, padding=pad, strides=strides, data_format=compute_format)
