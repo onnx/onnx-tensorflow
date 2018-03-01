@@ -454,6 +454,7 @@ class TensorflowBackend(Backend):
           pad = None
 
     if pad is None and can_pad_zero:
+      pad = "VALID"
       x = cls.get_padding_as_op(x, pads)
     if pad is None and not can_pad_zero:
       # Currently it's always average pooling
