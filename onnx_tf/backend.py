@@ -405,7 +405,7 @@ class TensorflowBackend(Backend):
       pad_attr = [(0, 0), (0, 0)] + [(pads[i], pads[i + spatial_size]) for i in range(spatial_size)]
       padded = np.pad(x, pad_attr, mode="constant", constant_values=np.nan)
 
-      y = np.zeros((x_shape[0], x_shape[1], *out_shape))
+      y = np.zeros([x_shape[0], x_shape[1]] + out_shape)
 
       for shape in itertools.product(range(x_shape[0]),
                                      range(x_shape[1]),
