@@ -412,11 +412,21 @@ class TensorflowBackend(Backend):
                                      *[range(
                                        int((x_shape[i + 2] + pad_shape[i] - kernel_shape[i]) / strides_shape[i] + 1))
                                        for i in range(spatial_size)]):
-        window = padded[shape[0], shape[1],
-                 strides_shape[0] * shape[2]:strides_shape[0] * shape[2] + kernel_shape[0],
-                 strides_shape[1] * shape[3]:strides_shape[1] * shape[3] + kernel_shape[1]]
+        window = padded[shape[0], shape[1]]
+        if spatial_size == 2:
+          window = window[
+                   strides_shape[0] * shape[2]:strides_shape[0] * shape[2] + kernel_shape[0],
+                   strides_shape[1] * shape[3]:strides_shape[1] * shape[3] + kernel_shape[1]]
+        elif spatial_size == 3:
+          window = window[
+                   strides_shape[0] * shape[2]:strides_shape[0] * shape[2] + kernel_shape[0],
+                   strides_shape[1] * shape[3]:strides_shape[1] * shape[3] + kernel_shape[1],
+                   strides_shape[2] * shape[4]:strides_shape[2] * shape[4] + kernel_shape[2]]
         average = np.average(window[np.where(~np.isnan(window))])
-        y[shape[0], shape[1], shape[2], shape[3]] = average
+        if spatial_size == 2:
+          y[shape[0], shape[1], shape[2], shape[3]] = average
+        elif spatial_size == 3:
+          y[shape[0], shape[1], shape[2], shape[3], shape[4]] = average
       return y.astype(np.float32)
 
     x = input_dict[node.inputs[0]]
@@ -439,11 +449,11 @@ class TensorflowBackend(Backend):
     storage_format, compute_format = cls.get_data_format(x_rank, support_cuda)
 
     kernel_shape = node.attrs["kernel_shape"]
-    strides = node.attrs.get("strides", [1, 1])
+    strides = node.attrs.get("strides", [1] * (x_rank - 2))
 
     # By default, do not pad
     pad = None
-    pads = node.attrs.get("pads", [0, 0, 0, 0])
+    pads = node.attrs.get("pads", [0] * (x_rank - 2) * 2)
 
     if "auto_pad" in node.attrs:
       if node.attrs["auto_pad"] == "SAME_UPPER":
