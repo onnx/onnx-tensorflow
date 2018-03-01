@@ -139,18 +139,18 @@ class TestNode(unittest.TestCase):
     np.testing.assert_almost_equal(output["Y"], golden, decimal=5)
 
   def test_cast(self):
-    for ty, tf_type in [("float", tf.float32),
-                        ("uint8", tf.uint8),
-                        ("int8", tf.int8),
-                        ("uint16", tf.uint16),
-                        ("int16", tf.int16),
-                        ("int32", tf.int32),
-                        ("int64", tf.int64),
-                        ("bool", tf.bool),
-                        ("float16", tf.float16),
-                        ("double", tf.float64),
-                        ("complex64", tf.complex64),
-                        ("complex128", tf.complex128)]:
+    for ty, tf_type in [("FLOAT", tf.float32),
+                        ("UINT8", tf.uint8),
+                        ("INT8", tf.int8),
+                        ("UINT16", tf.uint16),
+                        ("INT16", tf.int16),
+                        ("INT32", tf.int32),
+                        ("INT64", tf.int64),
+                        ("BOOL", tf.bool),
+                        ("FLOAT16", tf.float16),
+                        ("DOUBLE", tf.float64),
+                        ("COMPLEX64", tf.complex64),
+                        ("COMPLEX128", tf.complex128)]:
       node_def = helper.make_node("Cast", ["input"], ["output"],
                                   to=ty)
       vector = [2, 3]
