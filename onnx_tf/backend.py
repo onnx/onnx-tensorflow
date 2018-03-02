@@ -26,7 +26,13 @@ from onnx.onnx_pb2 import GraphProto, TensorProto, AttributeProto
 from onnx_tf.tf_net import TensorflowNet
 from onnx_tf.backend_rep import TensorflowRep
 from onnx_tf.common import (
-  ONNX_OP_TO_TF_OP
+  ONNX_OP_TO_TF_OP,
+  ONNX_ATTR_TO_TF_ATTR, 
+  ONNX_ATTR_TO_TF_ATTR_PER_OP, 
+  ONNX_ATTR_TO_REMOVE_PER_OP,
+  ONNX_TYPE_TO_TF_TYPE,
+  STR_TO_TF_TYPE,
+  TF_TYPE_ENUM,
 )
 import onnx.numpy_helper
 import onnx.defs
@@ -116,124 +122,10 @@ class TensorflowBackend(Backend):
   """ Tensorflow Backend for ONNX
   """
 
-  onnx_tf_attribute_map = {
-      "scale": "stddev",
-      "high": "maxval",
-      "low": "minval",
-      "axes": "axis",
-      "keepdims": "keep_dims",
-      "to": "dtype",
-  }
-
-  onnx_tf_per_op_attr_map = {
-      "gather": {
-          "dim": "axis"
-      }
-  }
-
-  onnx_tf_per_op_attr_remove = {
-  }
-
-  onnx_tf_op_map = {
-      "abs": tf.abs,
-      "cast": tf.cast,
-      "ceil": tf.ceil,
-      "dot": tf.contrib.keras.backend.dot,
-      "exp": tf.exp,
-      "floor": tf.floor,
-      "gather": tf.gather,
-      "hard_sigmoid": tf.keras.backend.hard_sigmoid,
-      "hardmax": tf.contrib.seq2seq.hardmax,
-      "log": tf.log,
-      "log_softmax": tf.nn.log_softmax,
-      "neg": tf.negative,
-      "not": tf.logical_not,
-      "pow": tf.pow,
-      "random_normal": tf.random_normal,
-      "random_uniform": tf.random_uniform,
-      "reciprocal": tf.reciprocal,
-      "reduce_log_sum_exp": tf.reduce_logsumexp,
-      "reduce_max": tf.reduce_max,
-      "reduce_mean": tf.reduce_mean,
-      "reduce_min": tf.reduce_min,
-      "reduce_prod": tf.reduce_prod,
-      "reduce_sum": tf.reduce_sum,
-      "relu": tf.nn.relu,
-      "selu": tf.nn.selu,
-      "shape": tf.shape,
-      "sigmoid": tf.sigmoid,
-      "size": tf.size,
-      "softplus": tf.nn.softplus,
-      "softsign": tf.nn.softsign,
-      "sqrt": tf.sqrt,
-      "squeeze": tf.squeeze,
-      "tanh": tf.tanh,
-      "top_k": tf.nn.top_k,
-      "thresholded_relu": tf.keras.layers.ThresholdedReLU,
-      "transpose": tf.transpose,
-      "unsqueeze": tf.expand_dims,
-  }
-
-  tensor_type_to_tf_type = {
-      TensorProto.FLOAT: tf.float32,
-      TensorProto.UINT8: tf.uint8,
-      TensorProto.INT8: tf.int8,
-      TensorProto.UINT16: tf.uint16,
-      TensorProto.INT16: tf.int16,
-      TensorProto.INT32: tf.int32,
-      TensorProto.INT64: tf.int64,
-      TensorProto.BOOL: tf.bool,
-      TensorProto.FLOAT16: tf.float16,
-      TensorProto.DOUBLE: tf.float64,
-      TensorProto.COMPLEX64: tf.complex64,
-      TensorProto.COMPLEX128: tf.complex128,
-      # TODO: uncomment this in the future
-      # TensorProto.UINT32: tf.uint32,
-      # TensorProto.UINT64: tf.uint64,
-  }
-
-  tensor_type_enum = [
-      "undefined",
-      tf.float32,
-      tf.uint8,
-      tf.int8,
-      tf.uint16,
-      tf.int16,
-      tf.int32,
-      tf.int64,
-      tf.string,
-      tf.bool,
-      tf.float16,
-      tf.float64,
-      tf.complex64,
-      tf.complex128,
-      # TODO: uncomment this in the future
-      # tf.uint32,
-      # tf.uint64,
-  ]
-
-  type_string_to_tf_type = {
-      "float": tf.float32,
-      "uint8": tf.uint8,
-      "int8": tf.int8,
-      "uint16": tf.uint16,
-      "int16": tf.int16,
-      "int32": tf.int32,
-      "int64": tf.int64,
-      "bool": tf.bool,
-      "float16": tf.float16,
-      "double": tf.float64,
-      "complex64": tf.complex64,
-      "complex128": tf.complex128,
-      # TODO: uncomment this in the future
-      # "uint32": tf.uint32,
-      # "uint64": tf.uint64,
-  }
-
   attr_translator = {
-      "dtype": lambda cls, x: cls.tensor_type_to_tf_type[x],
+      "dtype": lambda cls, x: ONNX_TYPE_TO_TF_TYPE[x],
       "keepdims": lambda cls, x: bool(x),
-      "to": lambda cls, x: cls.type_string_to_tf_type[x.lower()],
+      "to": lambda cls, x: STR_TO_TF_TYPE[x.lower()],
   }
 
 
@@ -369,7 +261,7 @@ class TensorflowBackend(Backend):
 
       shape = list(d.dim_value for d in
                    value_info.type.tensor_type.shape.dim)
-      x = tf.placeholder(cls.tensor_type_enum[
+      x = tf.placeholder(TF_TYPE_ENUM[
           value_info.type.tensor_type.elem_type],
                          name=value_info.name, shape=shape)
       input_dict_items.append([value_info.name, x])
@@ -424,7 +316,7 @@ class TensorflowBackend(Backend):
       return onnx.numpy_helper.to_array(onnx_tensor).flatten().tolist()
     input_dict = [(tp.name, tf.constant(tensor2list(tp),
                                         shape=tp.dims,
-                                        dtype=cls.tensor_type_to_tf_type[
+                                        dtype=ONNX_TYPE_TO_TF_TYPE[
                                             tp.data_type]))
                   for tp in initializer]
     return input_dict
@@ -442,7 +334,7 @@ class TensorflowBackend(Backend):
     if handler_name in dir(cls):
       method_to_call = getattr(cls, handler_name)
       return method_to_call(node, input_dict)
-    elif op_name_lowered in cls.onnx_tf_op_map.keys():
+    elif op_name_lowered in ONNX_OP_TO_TF_OP.keys():
       return cls.handle_trivial(node, input_dict)
     else:
       raise NotImplementedError("{} op is not implemented.".format(node.op_type))
@@ -459,8 +351,8 @@ class TensorflowBackend(Backend):
     attr_map = dict([(x, x) for x in node.attrs.keys()])
 
     # Modify the map accoridng to onnx_tf_attribute_map.
-    attr_map = dict([(x, cls.onnx_tf_attribute_map[x] \
-      if x in cls.onnx_tf_attribute_map.keys() else x) \
+    attr_map = dict([(x, ONNX_ATTR_TO_TF_ATTR[x] \
+      if x in ONNX_ATTR_TO_TF_ATTR.keys() else x) \
       for x in attr_map.keys()])
 
     # TODO: Per op attribute name mapping has the final say.
@@ -468,8 +360,8 @@ class TensorflowBackend(Backend):
     op_name_lowered = cls.op_name_to_lower(node.op_type)
 
     # Modify the map according to onnx_tf_per_op_attr_map
-    attr_map = dict([(x, cls.onnx_tf_per_op_attr_map[op_name_lowered][
-        x] if op_name_lowered in cls.onnx_tf_per_op_attr_map and x in cls.onnx_tf_per_op_attr_map[
+    attr_map = dict([(x, ONNX_ATTR_TO_TF_ATTR_PER_OP[op_name_lowered][
+        x] if op_name_lowered in ONNX_ATTR_TO_TF_ATTR_PER_OP and x in ONNX_ATTR_TO_TF_ATTR_PER_OP[
         op_name_lowered].keys() else attr_map[x]) for x
                      in attr_map.keys()])
 
@@ -477,10 +369,10 @@ class TensorflowBackend(Backend):
     attrs = dict([(attr_map[x], y) for (x, y) in attrs.items()])
     # Remove the key according to onnx_tf_per_op_attr_remove
     attrs = {x: attrs[x] for x in attrs if
-             not (op_name_lowered in cls.onnx_tf_per_op_attr_remove and x in cls.onnx_tf_per_op_attr_remove[
+             not (op_name_lowered in ONNX_ATTR_TO_REMOVE_PER_OP and x in ONNX_ATTR_TO_REMOVE_PER_OP[
                  op_name_lowered])}
     inputs = [input_dict[name] for name in node.inputs]
-    return [cls.onnx_tf_op_map[cls.op_name_to_lower(node.op_type)] \
+    return [ONNX_OP_TO_TF_OP[cls.op_name_to_lower(node.op_type)] \
       (*inputs, **attrs)]
 
   @classmethod
@@ -660,7 +552,7 @@ class TensorflowBackend(Backend):
   def handle_constant(cls, node, input_dict):
     value = node.attrs["value"]
     elements = onnx.numpy_helper.to_array(value).flatten().tolist()
-    dtype = cls.tensor_type_to_tf_type[value.data_type]
+    dtype = ONNX_TYPE_TO_TF_TYPE[value.data_type]
     return [tf.constant(elements, dtype=dtype, shape=value.dims)]
 
   @classmethod
@@ -1049,7 +941,7 @@ class TensorflowBackend(Backend):
     shape = tf.shape(input_dict[node.inputs[0]])
     mean = node.attrs["mean"]
     stddev = node.attrs["scale"]
-    dtype = cls.tensor_type_to_tf_type[node.attrs["dtype"]]
+    dtype = ONNX_TYPE_TO_TF_TYPE[node.attrs["dtype"]]
     seed = node.attrs["seed"] if "seed" in node.attrs.keys() else None
     return [tf.random_normal(shape, mean, stddev, dtype, seed)]
 
@@ -1058,7 +950,7 @@ class TensorflowBackend(Backend):
     shape = tf.shape(input_dict[node.inputs[0]])
     minval = node.attrs["low"]
     maxval = node.attrs["high"]
-    dtype = cls.tensor_type_to_tf_type[node.attrs["dtype"]]
+    dtype = ONNX_TYPE_TO_TF_TYPE[node.attrs["dtype"]]
     seed = node.attrs["seed"] if "seed" in node.attrs.keys() else None
     return [tf.random_uniform(shape, minval, maxval, dtype, seed)]
 
