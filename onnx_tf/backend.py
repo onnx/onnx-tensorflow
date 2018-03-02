@@ -784,10 +784,8 @@ class TensorflowBackend(Backend):
   def handle_l_s_t_m(cls, node, input_dict):
     hidden_size = node.attrs["hidden_size"]
     cell_kwargs = {}
-    if "direction" in node.attrs:
-      direction = node.attrs["direction"]
-    else:
-      direction = "forward"
+
+    direction = node.attrs.get("direction", "forward")
 
     if "clip" in node.attrs:
       cell_kwargs["cell_clip"] = node.attrs["clip"]
@@ -806,12 +804,12 @@ class TensorflowBackend(Backend):
         tf_activations.append(ONNX_OP_TO_TF_OP[activations[5]])
 
     cell_kwargs["activation"] = tf_activations[0]
-    lstm_cell = tf.contrib.rnn.LSTMCell(hidden_size, **cell_kwargs)
-    cell_fw = tf.contrib.rnn.MultiRNNCell([lstm_cell])
+    lstm_cell_fw = tf.contrib.rnn.LSTMCell(hidden_size, **cell_kwargs)
+    cell_fw = tf.contrib.rnn.MultiRNNCell([lstm_cell_fw])
     if direction == "bidirectional":
       cell_kwargs["activation"] = tf_activations[1]
-      lstm_cell_b = [tf.contrib.rnn.LSTMCell(hidden_size, **cell_kwargs)]
-      cell_bw = tf.contrib.rnn.MultiRNNCell([lstm_cell_b])
+      lstm_cell_bw = [tf.contrib.rnn.LSTMCell(hidden_size, **cell_kwargs)]
+      cell_bw = tf.contrib.rnn.MultiRNNCell([lstm_cell_bw])
 
     # TODO: handle data types
     if direction == "forward":
