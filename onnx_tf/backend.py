@@ -48,6 +48,7 @@ from onnx.backend.base import (
 from onnx import onnx_pb2, helper
 import tensorflow as tf
 from tensorflow.python.client import device_lib
+from tensorflow.python.ops import array_ops
 
 # TODO: allow more flexible placement
 def get_device_option(device):
@@ -779,6 +780,67 @@ class TensorflowBackend(Backend):
                        bias=bias, alpha=tf_alpha, beta=beta)
     normed = tf.transpose(normed, perm=[0, 3, 1, 2])
     return [normed]
+
+  @classmethod
+  def handle_l_s_t_m(cls, node, input_dict):
+    hidden_size = node.attrs["hidden_size"]
+    cell_kwargs = {}
+
+    direction = node.attrs.get("direction", "forward")
+
+    if "clip" in node.attrs:
+      cell_kwargs["cell_clip"] = node.attrs["clip"]
+
+    tf_activations = [tf.nn.tanh]
+    if "activations" in node.attrs:
+      activations = list(map(lambda x: x.lower(), node.attrs["activations"]))
+      if activations[0] != "sigmoid" or activations[1] != "tanh":
+        warnings.warn("Tensorflow uses sigmiod and tanh as first two activation functions."
+                      "So activations attr will be set to sigmiod, tanh and {}.".format(activations[2]))
+      tf_activations = [ONNX_OP_TO_TF_OP[activations[2]]]
+      if direction == "bidirectional":
+        if activations[3] != "sigmoid" or activations[4] != "tanh":
+          warnings.warn("Tensorflow uses sigmiod and tanh as first two activation functions."
+                        "So activations attr will be set to sigmiod, tanh and {}.".format(activations[4]))
+        tf_activations.append(ONNX_OP_TO_TF_OP[activations[5]])
+
+    cell_kwargs["activation"] = tf_activations[0]
+    lstm_cell = tf.contrib.rnn.LSTMCell(hidden_size, **cell_kwargs)
+    cell = tf.contrib.rnn.MultiRNNCell([lstm_cell])
+    if direction == "bidirectional":
+      cell_kwargs["activation"] = tf_activations[1]
+      lstm_cell_bw = [tf.contrib.rnn.LSTMCell(hidden_size, **cell_kwargs)]
+      cell_bw = tf.contrib.rnn.MultiRNNCell([lstm_cell_bw])
+
+    # TODO: handle data types
+    if direction == "forward":
+      output, state = tf.nn.dynamic_rnn(cell,
+                                        input_dict[node.inputs[0]],
+                                        time_major=True,
+                                        dtype=tf.float32)
+    elif direction == "bidirectional":
+      output, state = tf.nn.bidirectional_dynamic_rnn(cell,
+                                                      cell_bw,
+                                                      input_dict[node.inputs[0]],
+                                                      time_major=True,
+                                                      dtype=tf.float32)
+    elif direction == "reverse":
+      def _reverse(input_, seq_dim):
+        return array_ops.reverse(input_, axis=[seq_dim])
+      time_dim = 0
+      inputs_reverse = _reverse(input_dict[node.inputs[0]], time_dim)
+      output, state = tf.nn.dynamic_rnn(cell,
+                                        inputs_reverse,
+                                        time_major=True,
+                                        dtype=tf.float32)
+
+    state = state[0]
+    c, h = state
+    states = [h, c]
+    outputs = [output]
+    outputs.extend(states)
+    return outputs
+
 
   @classmethod
   def handle_leaky_relu(cls, node, input_dict):
