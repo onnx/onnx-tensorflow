@@ -48,6 +48,7 @@ from onnx.backend.base import (
 from onnx import onnx_pb2, helper
 import tensorflow as tf
 from tensorflow.python.client import device_lib
+from tensorflow.python.ops import array_ops
 
 # TODO: allow more flexible placement
 def get_device_option(device):
@@ -804,8 +805,8 @@ class TensorflowBackend(Backend):
         tf_activations.append(ONNX_OP_TO_TF_OP[activations[5]])
 
     cell_kwargs["activation"] = tf_activations[0]
-    lstm_cell_fw = tf.contrib.rnn.LSTMCell(hidden_size, **cell_kwargs)
-    cell_fw = tf.contrib.rnn.MultiRNNCell([lstm_cell_fw])
+    lstm_cell = tf.contrib.rnn.LSTMCell(hidden_size, **cell_kwargs)
+    cell = tf.contrib.rnn.MultiRNNCell([lstm_cell])
     if direction == "bidirectional":
       cell_kwargs["activation"] = tf_activations[1]
       lstm_cell_bw = [tf.contrib.rnn.LSTMCell(hidden_size, **cell_kwargs)]
@@ -813,18 +814,25 @@ class TensorflowBackend(Backend):
 
     # TODO: handle data types
     if direction == "forward":
-      output, state = tf.nn.dynamic_rnn(cell_fw,
+      output, state = tf.nn.dynamic_rnn(cell,
                                         input_dict[node.inputs[0]],
                                         time_major=True,
                                         dtype=tf.float32)
     elif direction == "bidirectional":
-      output, state = tf.nn.bidirectional_dynamic_rnn(cell_fw,
+      output, state = tf.nn.bidirectional_dynamic_rnn(cell,
                                                       cell_bw,
                                                       input_dict[node.inputs[0]],
                                                       time_major=True,
                                                       dtype=tf.float32)
-    else:
-      raise NotImplementedError("reverse direction is not implemented.")
+    elif direction == "reverse":
+      def _reverse(input_, seq_dim):
+        return array_ops.reverse(input_, axis=[seq_dim])
+      time_dim = 0
+      inputs_reverse = _reverse(input_dict[node.inputs[0]], time_dim)
+      output, state = tf.nn.dynamic_rnn(cell,
+                                        inputs_reverse,
+                                        time_major=True,
+                                        dtype=tf.float32)
 
     state = state[0]
     c, h = state
