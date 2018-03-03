@@ -511,23 +511,21 @@ class TensorflowBackend(Backend):
     total_num_dim = len(x.get_shape())
     scale = cls._explicit_broadcast(input_dict[node.inputs[1]], 1, total_num_dim)
     bias = cls._explicit_broadcast(input_dict[node.inputs[2]], 1, total_num_dim)
-    mean = cls._explicit_broadcast(input_dict[node.inputs[3]], 1, total_num_dim)
-    variance = cls._explicit_broadcast(input_dict[node.inputs[4]], 1, total_num_dim)
+    running_mean = cls._explicit_broadcast(input_dict[node.inputs[3]], 1, total_num_dim)
+    running_variance = cls._explicit_broadcast(input_dict[node.inputs[4]], 1, total_num_dim)
 
     variance_epsilon = node.attrs.get("epsilon", 0.00001)
     if node.attrs.get("is_test", 0):
-      return [tf.nn.batch_normalization(x, mean, variance, bias, scale,
+      return [tf.nn.batch_normalization(x, running_mean, running_variance, bias, scale,
                                         variance_epsilon)]
-    if "momentum" in node.attrs.keys():
-      warnings.warn("Unsupported momentum attribute by Tensorflow in "
-                    "batch_normalization. This attribute will be ignored.",
-                    UserWarning)
-    if "spatial" in node.attrs.keys():
-      warnings.warn("Unsupported spatial attribute by Tensorflow in "
-                    "batch_normalization. This attribute will be ignored.",
-                    UserWarning)
+    rank = tf.rank(x)
+    spatial = node.attrs.get("spatial", 1) == 1
+    momentum = node.attrs.get("momentum", 0.9)
+    mean, variance = tf.nn.moments(x, [0] if not spatial else list(range(rank - 1)))
+    running_mean = running_mean * momentum + mean * (1 - momentum)
+    running_variance = running_variance * momentum + variance * (1 - momentum)
     # TODO: need to conform to the documentation here
-    return [tf.nn.batch_normalization(x, mean, variance, bias, scale,
+    return [tf.nn.batch_normalization(x, running_mean, running_variance, bias, scale,
                                       variance_epsilon)]
   @classmethod
   def handle_clip(cls, node, input_dict):
