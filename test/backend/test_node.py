@@ -237,6 +237,17 @@ class TestNode(unittest.TestCase):
           test_output[b][m][h] = v
     np.testing.assert_almost_equal(output["Y"], test_output, decimal=5)
 
+  def test_depth_to_space(self):
+    node_def = helper.make_node("DepthToSpace", ["X"], ["Y"], blocksize=2)
+    x_shape = [1, 12, 1, 1]
+    x = self._get_rnd(x_shape)
+    output = run_node(node_def, [x])
+    x = np.transpose(x, (0, 2, 3, 1))
+    y = np.reshape(np.swapaxes(x.reshape(1, 1, 1, 2, 2, 3), 2, 3), (1, 2, 2, 3))
+    y = np.transpose(y, (0, 3, 1, 2))
+    np.testing.assert_almost_equal(output["Y"], y, decimal=5)
+
+
   def test_div(self):
     node_def = helper.make_node("Div", ["X", "Y"], ["Z"], broadcast=1)
     x = self._get_rnd([10, 10])
@@ -260,6 +271,13 @@ class TestNode(unittest.TestCase):
     output = run_node(node_def, [x])
     test_output = [self._elu(a) for a in x];
     np.testing.assert_almost_equal(output["Y"], test_output)
+
+  def test_equal(self):
+    node_def = helper.make_node("Equal", ["X", "Y"], ["Z"], broadcast=1, axis=1)
+    x = self._get_rnd([5, 3, 3, 2])
+    y = self._get_rnd([3, 3])
+    output = run_node(node_def, [x, y])
+    np.testing.assert_equal(output["Z"], np.equal(x, np.reshape(y, [1, 3, 3, 1])))
 
   def test_exp(self):
     node_def = helper.make_node("Exp", ["X"], ["Y"])
@@ -330,6 +348,28 @@ class TestNode(unittest.TestCase):
         test_output[i1][i2][0][0] = sum / 6.
     np.testing.assert_almost_equal(output["Y"], test_output)
 
+  def test_global_lp_pool(self):
+    #   Image case:  (N x C x H x W), where N is the batch size,
+    # C is the number of channels, and H and W are the height
+    # and the width of the data
+    #
+    #   Non-image case: (N x C x D1 x D2 ... Dn)
+    #
+    #   Output data tensor from pooling across the input tensor.
+    # Dimensions will be N x C x 1 x 1
+    node_def = helper.make_node("GlobalLpPool", ["X"], ["Y"])
+    x = self._get_rnd([10, 10, 2, 3])
+    output = run_node(node_def, [x])
+    test_output = np.zeros([10, 10, 1, 1])
+    for i1 in range(0, 10):
+      for i2 in range(0, 10):
+        tmp = np.zeros([2, 3])
+        for j1 in range(0, 2):
+          for j2 in range(0, 3):
+            tmp[j1][j2] = x[i1][i2][j1][j2]
+        test_output[i1][i2][0][0] = np.linalg.norm(tmp)
+    np.testing.assert_almost_equal(output["Y"], test_output, decimal=5)
+
   def test_global_max_pool(self):
     #   Image case:  (N x C x H x W), where N is the batch size,
     # C is the number of channels, and H and W are the height
@@ -352,6 +392,19 @@ class TestNode(unittest.TestCase):
               max = x[i1][i2][j1][j2]
         test_output[i1][i2][0][0] = max
     np.testing.assert_almost_equal(output["Y"], test_output)
+
+  def test_less(self):
+    node_def = helper.make_node("Less", ["X", "Y"], ["Z"], broadcast=1, axis=1)
+    x = self._get_rnd([5, 3, 3, 2])
+    y = self._get_rnd([3, 3])
+    output = run_node(node_def, [x, y])
+    np.testing.assert_equal(output["Z"], np.less(x, np.reshape(y, [1, 3, 3, 1])))
+
+  def test_lp_normalization(self):
+    node_def = helper.make_node("LpNormalization", ["X"], ["Y"])
+    x = self._get_rnd([5, 3, 3, 2])
+    output = run_node(node_def, [x])
+    np.testing.assert_almost_equal(output["Y"], np.expand_dims(np.linalg.norm(x, axis=-1), -1))
 
   def test_l_r_n(self):
     # Each input value is divided by:

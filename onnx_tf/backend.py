@@ -180,11 +180,11 @@ class TensorflowBackend(Backend):
 
   @classmethod
   def _explicit_broadcast(cls, tensor, broadcast_dim=1, total_num_dim=4):
-    if not isinstance(broadcast_dim, list):
-      broadcast_dim = [broadcast_dim]
-
+    if broadcast_dim < 0:
+      broadcast_dim += total_num_dim
+    dims = [broadcast_dim + i for i in range(len(tensor.shape))]
     for i in range(total_num_dim):
-      if i not in broadcast_dim:
+      if i not in dims:
         tensor = tf.expand_dims(tensor, i)
 
     return tensor
@@ -199,13 +199,7 @@ class TensorflowBackend(Backend):
                     "yet supported.".format(node.type), UserWarning)
 
     if "axis" in node.attrs.keys():
-      num_ones_to_append = len(x.get_shape()) - \
-                           len(y.get_shape()) - \
-                           node.attrs["axis"]
-      if num_ones_to_append >= 0:
-        ones = tf.ones([num_ones_to_append], tf.int32)
-        broadcasted_shape = tf.concat([tf.shape(y), ones], axis=0)
-        y = tf.reshape(y, broadcasted_shape)
+      y = cls._explicit_broadcast(y, node.attrs["axis"])
 
     return op_func(x, y)
 
@@ -672,6 +666,17 @@ class TensorflowBackend(Backend):
     return cls._conv(node, input_dict, transpose=True)
 
   @classmethod
+  def handle_depth_to_space(cls, node, input_dict):
+    x = input_dict[node.inputs[0]]
+    x_rank = len(x.get_shape())
+    support_cuda = cls.supports_device("CUDA")
+    storage_format, compute_format = cls.get_data_format(x_rank, support_cuda)
+    x = tf.transpose(x, perm=cls.get_perm_from_formats(storage_format, compute_format))
+    y = tf.depth_to_space(x, block_size=node.attrs["blocksize"])
+    y = tf.transpose(y, perm=cls.get_perm_from_formats(compute_format, storage_format))
+    return [y]
+
+  @classmethod
   def handle_div(cls, node, input_dict):
     return [cls._bin_op(node, input_dict, tf.divide)]
 
@@ -694,6 +699,10 @@ class TensorflowBackend(Backend):
       return [tf.cast(x < 0.0, tf.float32) * alpha * (tf.exp(x) - 1.0) + tf.cast(x >= 0.0, tf.float32) * x]
     else:
       return [tf.nn.elu(x)]
+
+  @classmethod
+  def handle_equal(cls, node, input_dict):
+    return [cls._bin_op(node, input_dict, tf.equal)]
 
   @classmethod
   def handle_flatten(cls, node, input_dict):
@@ -726,6 +735,16 @@ class TensorflowBackend(Backend):
     dims = tf.range(tf.rank(x))
     _, dim_window = tf.split(dims, [2, tf.size(dims) - 2])
     return [tf.reduce_mean(x, axis=dim_window, keep_dims=True)]
+
+  @classmethod
+  def handle_global_lp_pool(cls, node, input_dict):
+    x = input_dict[node.inputs[0]]
+    p = node.attrs.get("p", 2)
+    dims = list(range(len(x.shape)))
+    dim_window = dims[2:]
+    if len(dim_window) > 1 and p == 2:
+      p = "euclidean"
+    return [tf.norm(x, ord=p, axis=dim_window, keepdims=True)]
 
   @classmethod
   def handle_global_max_pool(cls, node, input_dict):
@@ -762,6 +781,17 @@ class TensorflowBackend(Backend):
     x = tf.reshape(x, cal_shape)
 
     return [tf.reshape(tf.contrib.seq2seq.hardmax(x), shape)]
+
+  @classmethod
+  def handle_less(cls, node, input_dict):
+    return [cls._bin_op(node, input_dict, tf.less)]
+
+  @classmethod
+  def handle_lp_normalization(cls, node, input_dict):
+    x = input_dict[node.inputs[0]]
+    axis = node.attrs.get("axis", -1)
+    p = node.attrs.get("p", 2)
+    return [tf.norm(x, ord=p, axis=axis, keepdims=True)]
 
   @classmethod
   def handle_l_r_n(cls, node, input_dict):
