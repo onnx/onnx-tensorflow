@@ -404,7 +404,7 @@ class TestNode(unittest.TestCase):
     node_def = helper.make_node("LpNormalization", ["X"], ["Y"])
     x = self._get_rnd([5, 3, 3, 2])
     output = run_node(node_def, [x])
-    np.testing.assert_almost_equal(output["Y"], np.expand_dims(np.linalg.norm(x, axis=-1), -1))
+    np.testing.assert_allclose(output["Y"], np.expand_dims(np.linalg.norm(x, axis=-1), -1), rtol=1e-3)
 
   def test_l_r_n(self):
     # Each input value is divided by:
