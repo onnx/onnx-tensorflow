@@ -518,10 +518,13 @@ class TensorflowBackend(Backend):
     if node.attrs.get("is_test", 0):
       return [tf.nn.batch_normalization(x, running_mean, running_variance, bias, scale,
                                         variance_epsilon)]
-    rank = tf.rank(x)
     spatial = node.attrs.get("spatial", 1) == 1
     momentum = node.attrs.get("momentum", 0.9)
-    mean, variance = tf.nn.moments(x, [0] if not spatial else list(range(rank - 1)))
+    axis = [0] if spatial else [0] + list(range(2, total_num_dim))
+    mean, variance = tf.nn.moments(x, axis)
+    for i in axis:
+      mean = tf.expand_dims(mean, i)
+      variance = tf.expand_dims(variance, i)
     running_mean = running_mean * momentum + mean * (1 - momentum)
     running_variance = running_variance * momentum + variance * (1 - momentum)
     # TODO: need to conform to the documentation here

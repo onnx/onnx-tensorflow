@@ -123,13 +123,16 @@ class TestNode(unittest.TestCase):
                                 consumed_inputs=[0, 0, 0, 1, 1],
                                 epsilon=0.001)
     x_shape = [3, 5, 4, 2]
+    momentum = 0.9
     param_shape = [5]
     _param_shape = [1, 5, 1, 1]
     x = self._get_rnd(x_shape, 0, 1)
     m = self._get_rnd(param_shape, 0, 1)
     _m = m.reshape(_param_shape)
+    _m = _m * momentum + np.mean(x, axis=0) * (1 - momentum)
     v = self._get_rnd(param_shape, 0, 1)
     _v = v.reshape(_param_shape)
+    _v = _v * momentum + np.var(x, axis=0) * (1 - momentum)
     scale = self._get_rnd(param_shape, 0, 1)
     _scale = scale.reshape(_param_shape)
     bias = self._get_rnd(param_shape, 0, 1)
