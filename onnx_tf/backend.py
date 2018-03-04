@@ -199,7 +199,7 @@ class TensorflowBackend(Backend):
                     "yet supported.".format(node.type), UserWarning)
 
     if "axis" in node.attrs.keys():
-      y = cls._explicit_broadcast(y, node.attrs["axis"])
+      y = cls._explicit_broadcast(y, node.attrs["axis"], len(x.shape))
 
     return op_func(x, y)
 
