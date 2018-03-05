@@ -522,9 +522,8 @@ class TensorflowBackend(Backend):
     momentum = node.attrs.get("momentum", 0.9)
     axis = [0] if spatial else [0] + list(range(2, total_num_dim))
     mean, variance = tf.nn.moments(x, axis)
-    for i in axis:
-      mean = tf.expand_dims(mean, i)
-      variance = tf.expand_dims(variance, i)
+    mean = cls._explicit_broadcast(mean, 1, total_num_dim)
+    variance = cls._explicit_broadcast(variance, 1, total_num_dim)
     running_mean = running_mean * momentum + mean * (1 - momentum)
     running_variance = running_variance * momentum + variance * (1 - momentum)
     # TODO: need to conform to the documentation here
