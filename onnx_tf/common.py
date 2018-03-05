@@ -97,8 +97,14 @@ ONNX_ATTR_TO_TF_ATTR_PER_OP = {
   "cast": {
     "to": "dtype"
   },
+  "depth_to_space": {
+    "blocksize": "block_size"
+  },
   "gather": {
     "dim": "axis"
+  },
+  "lp_normalization": {
+    "p": "ord"
   },
 }
 
@@ -113,6 +119,7 @@ ONNX_OP_TO_TF_OP = {
   "cast": tf.cast,
   "ceil": tf.ceil,
   "concat": tf.concat,
+  "depth_to_space": tf.depth_to_space,
   "dot": tf.contrib.keras.backend.dot,
   "exp": tf.exp,
   "floor": tf.floor,
@@ -121,6 +128,7 @@ ONNX_OP_TO_TF_OP = {
   "hardmax": tf.contrib.seq2seq.hardmax,
   "log": tf.log,
   "log_softmax": tf.nn.log_softmax,
+  "lp_normalization": tf.norm,
   "neg": tf.negative,
   "not": tf.logical_not,
   "pow": tf.pow,
