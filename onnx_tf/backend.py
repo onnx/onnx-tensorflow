@@ -671,9 +671,12 @@ class TensorflowBackend(Backend):
     x_rank = len(x.get_shape())
     support_cuda = cls.supports_device("CUDA")
     storage_format, compute_format = cls.get_data_format(x_rank, support_cuda)
-    x = tf.transpose(x, perm=cls.get_perm_from_formats(storage_format, compute_format))
-    y = tf.depth_to_space(x, block_size=node.attrs["blocksize"])
-    y = tf.transpose(y, perm=cls.get_perm_from_formats(compute_format, storage_format))
+    if support_cuda:
+      y = tf.depth_to_space(x, block_size=node.attrs["blocksize"], data_format=compute_format)
+    else:
+      x = tf.transpose(x, perm=cls.get_perm_from_formats(storage_format, compute_format))
+      y = tf.depth_to_space(x, block_size=node.attrs["blocksize"], data_format=compute_format)
+      y = tf.transpose(y, perm=cls.get_perm_from_formats(compute_format, storage_format))
     return [y]
 
   @classmethod
