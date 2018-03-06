@@ -976,22 +976,101 @@ class TensorflowBackend(Backend):
     return [cls._bin_op(node, input_dict, tf.pow)]
 
   @classmethod
-  def handle_random_normal_like(cls, node, input_dict):
-    shape = tf.shape(input_dict[node.inputs[0]])
-    mean = node.attrs["mean"]
-    stddev = node.attrs["scale"]
+  def handle_random_normal(cls, node, input_dict):
+    shape = node.attrs["shape"]
+    mean = node.attrs.get("mean", 0)
+    stddev = node.attrs.get("scale", 1)
     dtype = ONNX_TYPE_TO_TF_TYPE[node.attrs["dtype"]]
     seed = node.attrs["seed"] if "seed" in node.attrs.keys() else None
     return [tf.random_normal(shape, mean, stddev, dtype, seed)]
 
   @classmethod
-  def handle_random_uniform_like(cls, node, input_dict):
+  def handle_random_normal_like(cls, node, input_dict):
     shape = tf.shape(input_dict[node.inputs[0]])
-    minval = node.attrs["low"]
-    maxval = node.attrs["high"]
+    mean = node.attrs.get("mean", 0)
+    stddev = node.attrs.get("scale", 1)
+    dtype = ONNX_TYPE_TO_TF_TYPE[node.attrs["dtype"]]
+    seed = node.attrs["seed"] if "seed" in node.attrs.keys() else None
+    return [tf.random_normal(shape, mean, stddev, dtype, seed)]
+
+  @classmethod
+  def handle_random_uniform(cls, node, input_dict):
+    shape = node.attrs["shape"]
+    minval = node.attrs.get("low", 0)
+    maxval = node.attrs.get("high", 1)
     dtype = ONNX_TYPE_TO_TF_TYPE[node.attrs["dtype"]]
     seed = node.attrs["seed"] if "seed" in node.attrs.keys() else None
     return [tf.random_uniform(shape, minval, maxval, dtype, seed)]
+
+  @classmethod
+  def handle_random_uniform_like(cls, node, input_dict):
+    shape = tf.shape(input_dict[node.inputs[0]])
+    minval = node.attrs.get("low", 0)
+    maxval = node.attrs.get("high", 1)
+    dtype = ONNX_TYPE_TO_TF_TYPE[node.attrs["dtype"]]
+    seed = node.attrs["seed"] if "seed" in node.attrs.keys() else None
+    return [tf.random_uniform(shape, minval, maxval, dtype, seed)]
+
+  @classmethod
+  def handle_reciprocal(cls, node, input_dict):
+    x = input_dict[node.inputs[0]]
+    return [tf.reciprocal(x)]
+
+  @classmethod
+  def handle_reduce_l1(cls, node, input_dict):
+    x = input_dict[node.inputs[0]]
+    axis = node.attrs["axes"]
+    keepdims = node.attrs.get("keepdims", 1) == 1
+    return [tf.norm(x, ord=1, axis=axis, keepdims=keepdims)]
+
+  @classmethod
+  def handle_reduce_log_sum_exp(cls, node, input_dict):
+    x = input_dict[node.inputs[0]]
+    axis = node.attrs["axes"]
+    keepdims = node.attrs.get("keepdims", 1) == 1
+    return [tf.reduce_logsumexp(x, axis=axis, keepdims=keepdims)]
+
+  @classmethod
+  def handle_reduce_max(cls, node, input_dict):
+    x = input_dict[node.inputs[0]]
+    axis = node.attrs["axes"]
+    keepdims = node.attrs.get("keepdims", 1) == 1
+    return [tf.reduce_max(x, axis=axis, keepdims=keepdims)]
+
+  @classmethod
+  def handle_reduce_mean(cls, node, input_dict):
+    x = input_dict[node.inputs[0]]
+    axis = node.attrs["axes"]
+    keepdims = node.attrs.get("keepdims", 1) == 1
+    return [tf.reduce_mean(x, axis=axis, keepdims=keepdims)]
+
+  @classmethod
+  def handle_reduce_min(cls, node, input_dict):
+    x = input_dict[node.inputs[0]]
+    axis = node.attrs["axes"]
+    keepdims = node.attrs.get("keepdims", 1) == 1
+    return [tf.reduce_min(x, axis=axis, keepdims=keepdims)]
+
+  @classmethod
+  def handle_reduce_prod(cls, node, input_dict):
+    x = input_dict[node.inputs[0]]
+    axis = node.attrs["axes"]
+    keepdims = node.attrs.get("keepdims", 1) == 1
+    return [tf.reduce_prod(x, axis=axis, keepdims=keepdims)]
+
+  @classmethod
+  def handle_reduce_sum(cls, node, input_dict):
+    x = input_dict[node.inputs[0]]
+    axis = node.attrs["axes"]
+    keepdims = node.attrs.get("keepdims", 1) == 1
+    return [tf.reduce_sum(x, axis=axis, keepdims=keepdims)]
+
+  @classmethod
+  def handle_reduce_sum_square(cls, node, input_dict):
+    x = input_dict[node.inputs[0]]
+    axis = node.attrs["axes"]
+    keepdims = node.attrs.get("keepdims", 1) == 1
+    return [tf.reduce_sum(tf.square(x), axis=axis, keepdims=keepdims)]
 
   @classmethod
   def handle_reshape(cls, node, input_dict):
