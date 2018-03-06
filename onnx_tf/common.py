@@ -106,6 +106,13 @@ ONNX_ATTR_TO_TF_ATTR_PER_OP = {
   "lp_normalization": {
     "p": "ord"
   },
+  "random_normal": {
+    "scale": "stddev"
+  },
+  "random_uniform": {
+    "low": "minval",
+    "high": "maxval"
+  },
 }
 
 DEFAULT_ONNX_ATTR_PER_OP = {
@@ -114,8 +121,8 @@ DEFAULT_ONNX_ATTR_PER_OP = {
     "scale": 1,
   },
   "random_uniform": {
-    "mean": 0,
-    "scale": 1,
+    "low": 0,
+    "high": 1,
   },
   "reduce_log_sum_exp": {
     "keepdims": 1
