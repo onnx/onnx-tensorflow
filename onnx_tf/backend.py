@@ -794,6 +794,9 @@ class TensorflowBackend(Backend):
     x = input_dict[node.inputs[0]]
     axis = node.attrs.get("axis", -1)
     p = node.attrs.get("p", 2)
+    # https://github.com/onnx/onnx/issues/585
+    if isinstance(axis, list):
+      axis = [int(v) for v in axis]
     return [tf.norm(x, ord=p, axis=axis, keepdims=True)]
 
   @classmethod
@@ -1020,6 +1023,9 @@ class TensorflowBackend(Backend):
   def handle_reduce_l1(cls, node, input_dict):
     x = input_dict[node.inputs[0]]
     axis = node.attrs["axes"]
+    # https://github.com/onnx/onnx/issues/585
+    if isinstance(axis, list):
+      axis = [int(v) for v in axis]
     keepdims = node.attrs.get("keepdims", 1) == 1
     return [tf.norm(x, ord=1, axis=axis, keepdims=keepdims)]
 
