@@ -26,6 +26,7 @@ from onnx.onnx_pb2 import GraphProto, TensorProto, AttributeProto
 from onnx_tf.tf_net import TensorflowNet
 from onnx_tf.backend_rep import TensorflowRep
 from onnx_tf.common import (
+  DEFAULT_ONNX_ATTR_PER_OP,
   ONNX_OP_TO_TF_OP,
   ONNX_ATTR_TO_TF_ATTR, 
   ONNX_ATTR_TO_TF_ATTR_PER_OP, 
@@ -336,14 +337,23 @@ class TensorflowBackend(Backend):
 
   @classmethod
   def handle_trivial(cls, node, input_dict):
+    op_name_lowered = cls.op_name_to_lower(node.op_type)
+
+    attrs = dict([(x, node.attrs[x]) for x in node.attrs.keys()])
+
+    if op_name_lowered in DEFAULT_ONNX_ATTR_PER_OP:
+      default_attrs = DEFAULT_ONNX_ATTR_PER_OP[op_name_lowered]
+      default_attrs.update(attrs)
+      attrs = default_attrs
+
     # Perform automatic attribute value translation.
-    attrs = dict([(x, cls.attr_translator[x](cls, node.attrs[x]) \
-      if x in cls.attr_translator else node.attrs[x]) \
-      for x in node.attrs.keys()])
+    attrs = dict([(x, cls.attr_translator[x](cls, attrs[x]) \
+      if x in cls.attr_translator else attrs[x]) \
+      for x in attrs.keys()])
 
     # Create an identity map from onnx attribute names to tf
     # attribute names.
-    attr_map = dict([(x, x) for x in node.attrs.keys()])
+    attr_map = dict([(x, x) for x in attrs.keys()])
 
     # Modify the map accoridng to onnx_tf_attribute_map.
     attr_map = dict([(x, ONNX_ATTR_TO_TF_ATTR[x] \
@@ -352,7 +362,6 @@ class TensorflowBackend(Backend):
 
     # TODO: Per op attribute name mapping has the final say.
 
-    op_name_lowered = cls.op_name_to_lower(node.op_type)
 
     # Modify the map according to onnx_tf_per_op_attr_map
     attr_map = dict([(x, ONNX_ATTR_TO_TF_ATTR_PER_OP[op_name_lowered][
@@ -979,15 +988,6 @@ class TensorflowBackend(Backend):
     return [cls._bin_op(node, input_dict, tf.pow)]
 
   @classmethod
-  def handle_random_normal(cls, node, input_dict):
-    shape = node.attrs["shape"]
-    mean = node.attrs.get("mean", 0)
-    stddev = node.attrs.get("scale", 1)
-    dtype = ONNX_TYPE_TO_TF_TYPE[node.attrs["dtype"]]
-    seed = node.attrs["seed"] if "seed" in node.attrs.keys() else None
-    return [tf.random_normal(shape, mean, stddev, dtype, seed)]
-
-  @classmethod
   def handle_random_normal_like(cls, node, input_dict):
     shape = tf.shape(input_dict[node.inputs[0]])
     mean = node.attrs.get("mean", 0)
@@ -995,15 +995,6 @@ class TensorflowBackend(Backend):
     dtype = ONNX_TYPE_TO_TF_TYPE[node.attrs["dtype"]]
     seed = node.attrs["seed"] if "seed" in node.attrs.keys() else None
     return [tf.random_normal(shape, mean, stddev, dtype, seed)]
-
-  @classmethod
-  def handle_random_uniform(cls, node, input_dict):
-    shape = node.attrs["shape"]
-    minval = node.attrs.get("low", 0)
-    maxval = node.attrs.get("high", 1)
-    dtype = ONNX_TYPE_TO_TF_TYPE[node.attrs["dtype"]]
-    seed = node.attrs["seed"] if "seed" in node.attrs.keys() else None
-    return [tf.random_uniform(shape, minval, maxval, dtype, seed)]
 
   @classmethod
   def handle_random_uniform_like(cls, node, input_dict):
@@ -1015,11 +1006,6 @@ class TensorflowBackend(Backend):
     return [tf.random_uniform(shape, minval, maxval, dtype, seed)]
 
   @classmethod
-  def handle_reciprocal(cls, node, input_dict):
-    x = input_dict[node.inputs[0]]
-    return [tf.reciprocal(x)]
-
-  @classmethod
   def handle_reduce_l1(cls, node, input_dict):
     x = input_dict[node.inputs[0]]
     axis = node.attrs["axes"]
@@ -1028,48 +1014,6 @@ class TensorflowBackend(Backend):
       axis = [int(v) for v in axis]
     keepdims = node.attrs.get("keepdims", 1) == 1
     return [tf.norm(x, ord=1, axis=axis, keepdims=keepdims)]
-
-  @classmethod
-  def handle_reduce_log_sum_exp(cls, node, input_dict):
-    x = input_dict[node.inputs[0]]
-    axis = node.attrs["axes"]
-    keepdims = node.attrs.get("keepdims", 1) == 1
-    return [tf.reduce_logsumexp(x, axis=axis, keepdims=keepdims)]
-
-  @classmethod
-  def handle_reduce_max(cls, node, input_dict):
-    x = input_dict[node.inputs[0]]
-    axis = node.attrs["axes"]
-    keepdims = node.attrs.get("keepdims", 1) == 1
-    return [tf.reduce_max(x, axis=axis, keepdims=keepdims)]
-
-  @classmethod
-  def handle_reduce_mean(cls, node, input_dict):
-    x = input_dict[node.inputs[0]]
-    axis = node.attrs["axes"]
-    keepdims = node.attrs.get("keepdims", 1) == 1
-    return [tf.reduce_mean(x, axis=axis, keepdims=keepdims)]
-
-  @classmethod
-  def handle_reduce_min(cls, node, input_dict):
-    x = input_dict[node.inputs[0]]
-    axis = node.attrs["axes"]
-    keepdims = node.attrs.get("keepdims", 1) == 1
-    return [tf.reduce_min(x, axis=axis, keepdims=keepdims)]
-
-  @classmethod
-  def handle_reduce_prod(cls, node, input_dict):
-    x = input_dict[node.inputs[0]]
-    axis = node.attrs["axes"]
-    keepdims = node.attrs.get("keepdims", 1) == 1
-    return [tf.reduce_prod(x, axis=axis, keepdims=keepdims)]
-
-  @classmethod
-  def handle_reduce_sum(cls, node, input_dict):
-    x = input_dict[node.inputs[0]]
-    axis = node.attrs["axes"]
-    keepdims = node.attrs.get("keepdims", 1) == 1
-    return [tf.reduce_sum(x, axis=axis, keepdims=keepdims)]
 
   @classmethod
   def handle_reduce_sum_square(cls, node, input_dict):
