@@ -574,7 +574,7 @@ class TestNode(unittest.TestCase):
   def test_reduce_prod(self):
     node_def = helper.make_node("ReduceProd", ["X"], ["Y"],
                                 axes=[1, 2])
-    x = self._get_rnd([5, 10, 10, 3])
+    x = self._get_rnd([1, 5, 5, 3])
     output = run_node(node_def, [x])
     np.testing.assert_allclose(output["Y"], np.prod(x, (1, 2), keepdims=True), rtol=1e-3)
 

@@ -26,7 +26,6 @@ from onnx.onnx_pb2 import GraphProto, TensorProto, AttributeProto
 from onnx_tf.tf_net import TensorflowNet
 from onnx_tf.backend_rep import TensorflowRep
 from onnx_tf.common import (
-  DEFAULT_ONNX_ATTR_PER_OP,
   ONNX_OP_TO_TF_OP,
   ONNX_ATTR_TO_TF_ATTR, 
   ONNX_ATTR_TO_TF_ATTR_PER_OP, 
@@ -130,6 +129,34 @@ class TensorflowBackend(Backend):
       "to": lambda cls, x: STR_TO_TF_TYPE[x.lower()],
   }
 
+  DEFAULT_ONNX_ATTR_PER_OP = {
+    "random_normal": {
+      "mean": 0,
+      "scale": 1,
+    },
+    "random_uniform": {
+      "low": 0,
+      "high": 1,
+    },
+    "reduce_log_sum_exp": {
+      "keepdims": 1
+    },
+    "reduce_max": {
+      "keepdims": 1
+    },
+    "reduce_mean": {
+      "keepdims": 1
+    },
+    "reduce_min": {
+      "keepdims": 1
+    },
+    "reduce_prod": {
+      "keepdims": 1
+    },
+    "reduce_sum": {
+      "keepdims": 1
+    },
+  }
 
   # input_shape, kernel_shape, strides are specified for
   # spatial dims only.
@@ -341,8 +368,8 @@ class TensorflowBackend(Backend):
 
     attrs = dict([(x, node.attrs[x]) for x in node.attrs.keys()])
 
-    if op_name_lowered in DEFAULT_ONNX_ATTR_PER_OP:
-      default_attrs = DEFAULT_ONNX_ATTR_PER_OP[op_name_lowered]
+    if op_name_lowered in cls.DEFAULT_ONNX_ATTR_PER_OP:
+      default_attrs = cls.DEFAULT_ONNX_ATTR_PER_OP[op_name_lowered]
       default_attrs.update(attrs)
       attrs = default_attrs
 

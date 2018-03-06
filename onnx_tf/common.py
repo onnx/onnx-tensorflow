@@ -115,35 +115,6 @@ ONNX_ATTR_TO_TF_ATTR_PER_OP = {
   },
 }
 
-DEFAULT_ONNX_ATTR_PER_OP = {
-  "random_normal": {
-    "mean": 0,
-    "scale": 1,
-  },
-  "random_uniform": {
-    "low": 0,
-    "high": 1,
-  },
-  "reduce_log_sum_exp": {
-    "keepdims": 1
-  },
-  "reduce_max": {
-    "keepdims": 1
-  },
-  "reduce_mean": {
-    "keepdims": 1
-  },
-  "reduce_min": {
-    "keepdims": 1
-  },
-  "reduce_prod": {
-    "keepdims": 1
-  },
-  "reduce_sum": {
-    "keepdims": 1
-  },
-}
-
 TF_ATTR_TO_ONNX_ATTR_PER_OP = {k: invert(v) for k, v in ONNX_ATTR_TO_TF_ATTR_PER_OP.items()}
 
 ONNX_ATTR_TO_REMOVE_PER_OP = {}
