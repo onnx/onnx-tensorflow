@@ -536,6 +536,62 @@ class TestNode(unittest.TestCase):
     output = run_node(node_def, [x])
     np.testing.assert_almost_equal(output["Y"], 1.0/x)
 
+  def test_reduce_l1(self):
+    node_def = helper.make_node("ReduceL1", ["X"], ["Y"],
+                                axes=[1, 2])
+    x = self._get_rnd([5, 10, 10, 3])
+    output = run_node(node_def, [x])
+    np.testing.assert_almost_equal(output["Y"], np.linalg.norm(x, 1, (1, 2), True))
+
+  def test_reduce_log_sum_exp(self):
+    node_def = helper.make_node("ReduceLogSumExp", ["X"], ["Y"],
+                                axes=[1, 2])
+    x = self._get_rnd([5, 10, 10, 3])
+    output = run_node(node_def, [x])
+    np.testing.assert_allclose(output["Y"], np.log(np.sum(np.exp(x), axis=(1, 2), keepdims=True)), rtol=1e-3)
+
+  def test_reduce_max(self):
+    node_def = helper.make_node("ReduceMax", ["X"], ["Y"],
+                                axes=[1, 2])
+    x = self._get_rnd([5, 10, 10, 3])
+    output = run_node(node_def, [x])
+    np.testing.assert_allclose(output["Y"], np.max(x, (1, 2), keepdims=True), rtol=1e-3)
+
+  def test_reduce_mean(self):
+    node_def = helper.make_node("ReduceMean", ["X"], ["Y"],
+                                axes=[1, 2])
+    x = self._get_rnd([5, 10, 10, 3])
+    output = run_node(node_def, [x])
+    np.testing.assert_allclose(output["Y"], np.mean(x, (1, 2), keepdims=True), rtol=1e-3)
+
+  def test_reduce_min(self):
+    node_def = helper.make_node("ReduceMin", ["X"], ["Y"],
+                                axes=[1, 2])
+    x = self._get_rnd([5, 10, 10, 3])
+    output = run_node(node_def, [x])
+    np.testing.assert_allclose(output["Y"], np.min(x, (1, 2), keepdims=True), rtol=1e-3)
+
+  def test_reduce_prod(self):
+    node_def = helper.make_node("ReduceProd", ["X"], ["Y"],
+                                axes=[1, 2])
+    x = self._get_rnd([1, 5, 5, 3])
+    output = run_node(node_def, [x])
+    np.testing.assert_allclose(output["Y"], np.prod(x, (1, 2), keepdims=True), rtol=1e-3)
+
+  def test_reduce_sum(self):
+    node_def = helper.make_node("ReduceSum", ["X"], ["Y"],
+                                axes=[1, 2])
+    x = self._get_rnd([5, 10, 10, 3])
+    output = run_node(node_def, [x])
+    np.testing.assert_allclose(output["Y"], np.sum(x, (1, 2), keepdims=True), rtol=1e-3)
+
+  def test_reduce_sum_square(self):
+    node_def = helper.make_node("ReduceSumSquare", ["X"], ["Y"],
+                                axes=[1, 2])
+    x = self._get_rnd([5, 10, 10, 3])
+    output = run_node(node_def, [x])
+    np.testing.assert_allclose(output["Y"], np.sum(np.square(x), (1, 2), keepdims=True), rtol=1e-3)
+
   def test_pow(self):
     node_def = helper.make_node("Pow", ["X", "Y"], ["Z"])
     x = self._get_rnd(1000)/2.0 + 0.5

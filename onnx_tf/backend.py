@@ -129,6 +129,35 @@ class TensorflowBackend(Backend):
       "to": lambda cls, x: STR_TO_TF_TYPE[x.lower()],
   }
 
+  DEFAULT_ONNX_ATTR_PER_OP = {
+    "random_normal": {
+      "mean": 0,
+      "scale": 1,
+    },
+    "random_uniform": {
+      "low": 0,
+      "high": 1,
+    },
+    "reduce_log_sum_exp": {
+      "keepdims": 1
+    },
+    "reduce_max": {
+      "keepdims": 1
+    },
+    "reduce_mean": {
+      "keepdims": 1
+    },
+    "reduce_min": {
+      "keepdims": 1
+    },
+    "reduce_prod": {
+      "keepdims": 1
+    },
+    "reduce_sum": {
+      "keepdims": 1
+    },
+  }
+
   @classmethod
   def get_padding_as_op(cls, x, pads):
     num_dim = int(len(pads)/2)
@@ -299,14 +328,23 @@ class TensorflowBackend(Backend):
 
   @classmethod
   def handle_trivial(cls, node, input_dict):
+    op_name_lowered = cls.op_name_to_lower(node.op_type)
+
+    attrs = dict([(x, node.attrs[x]) for x in node.attrs.keys()])
+
+    if op_name_lowered in cls.DEFAULT_ONNX_ATTR_PER_OP:
+      default_attrs = cls.DEFAULT_ONNX_ATTR_PER_OP[op_name_lowered]
+      default_attrs.update(attrs)
+      attrs = default_attrs
+
     # Perform automatic attribute value translation.
-    attrs = dict([(x, cls.attr_translator[x](cls, node.attrs[x]) \
-      if x in cls.attr_translator else node.attrs[x]) \
-      for x in node.attrs.keys()])
+    attrs = dict([(x, cls.attr_translator[x](cls, attrs[x]) \
+      if x in cls.attr_translator else attrs[x]) \
+      for x in attrs.keys()])
 
     # Create an identity map from onnx attribute names to tf
     # attribute names.
-    attr_map = dict([(x, x) for x in node.attrs.keys()])
+    attr_map = dict([(x, x) for x in attrs.keys()])
 
     # Modify the map accoridng to onnx_tf_attribute_map.
     attr_map = dict([(x, ONNX_ATTR_TO_TF_ATTR[x] \
@@ -315,7 +353,6 @@ class TensorflowBackend(Backend):
 
     # TODO: Per op attribute name mapping has the final say.
 
-    op_name_lowered = cls.op_name_to_lower(node.op_type)
 
     # Modify the map according to onnx_tf_per_op_attr_map
     attr_map = dict([(x, ONNX_ATTR_TO_TF_ATTR_PER_OP[op_name_lowered][
@@ -785,6 +822,9 @@ class TensorflowBackend(Backend):
     x = input_dict[node.inputs[0]]
     axis = node.attrs.get("axis", -1)
     p = node.attrs.get("p", 2)
+    # https://github.com/onnx/onnx/issues/585
+    if isinstance(axis, list):
+      axis = [int(v) for v in axis]
     return [tf.norm(x, ord=p, axis=axis, keepdims=True)]
 
   @classmethod
@@ -969,8 +1009,8 @@ class TensorflowBackend(Backend):
   @classmethod
   def handle_random_normal_like(cls, node, input_dict):
     shape = tf.shape(input_dict[node.inputs[0]])
-    mean = node.attrs["mean"]
-    stddev = node.attrs["scale"]
+    mean = node.attrs.get("mean", 0)
+    stddev = node.attrs.get("scale", 1)
     dtype = ONNX_TYPE_TO_TF_TYPE[node.attrs["dtype"]]
     seed = node.attrs["seed"] if "seed" in node.attrs.keys() else None
     return [tf.random_normal(shape, mean, stddev, dtype, seed)]
@@ -978,11 +1018,28 @@ class TensorflowBackend(Backend):
   @classmethod
   def handle_random_uniform_like(cls, node, input_dict):
     shape = tf.shape(input_dict[node.inputs[0]])
-    minval = node.attrs["low"]
-    maxval = node.attrs["high"]
+    minval = node.attrs.get("low", 0)
+    maxval = node.attrs.get("high", 1)
     dtype = ONNX_TYPE_TO_TF_TYPE[node.attrs["dtype"]]
     seed = node.attrs["seed"] if "seed" in node.attrs.keys() else None
     return [tf.random_uniform(shape, minval, maxval, dtype, seed)]
+
+  @classmethod
+  def handle_reduce_l1(cls, node, input_dict):
+    x = input_dict[node.inputs[0]]
+    axis = node.attrs["axes"]
+    # https://github.com/onnx/onnx/issues/585
+    if isinstance(axis, list):
+      axis = [int(v) for v in axis]
+    keepdims = node.attrs.get("keepdims", 1) == 1
+    return [tf.norm(x, ord=1, axis=axis, keepdims=keepdims)]
+
+  @classmethod
+  def handle_reduce_sum_square(cls, node, input_dict):
+    x = input_dict[node.inputs[0]]
+    axis = node.attrs["axes"]
+    keepdims = node.attrs.get("keepdims", 1) == 1
+    return [tf.reduce_sum(tf.square(x), axis=axis, keepdims=keepdims)]
 
   @classmethod
   def handle_reshape(cls, node, input_dict):
