@@ -106,6 +106,13 @@ ONNX_ATTR_TO_TF_ATTR_PER_OP = {
   "lp_normalization": {
     "p": "ord"
   },
+  "random_normal": {
+    "scale": "stddev"
+  },
+  "random_uniform": {
+    "low": "minval",
+    "high": "maxval"
+  },
 }
 
 TF_ATTR_TO_ONNX_ATTR_PER_OP = {k: invert(v) for k, v in ONNX_ATTR_TO_TF_ATTR_PER_OP.items()}
