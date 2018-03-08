@@ -250,7 +250,6 @@ class TestNode(unittest.TestCase):
     y = np.transpose(y, (0, 3, 1, 2))
     np.testing.assert_almost_equal(output["Y"], y, decimal=5)
 
-
   def test_div(self):
     node_def = helper.make_node("Div", ["X", "Y"], ["Z"], broadcast=1)
     x = self._get_rnd([10, 10])
@@ -606,11 +605,33 @@ class TestNode(unittest.TestCase):
     output = run_node(node_def, [x])
     np.testing.assert_almost_equal(output["Y"], x.reshape([10, 10]))
 
+  def test_selu(self):
+    node_def = helper.make_node("Selu", ["X"], ["Y"])
+    x = self._get_rnd([1000])
+    output = run_node(node_def, [x])
+    alpha = 1.6732
+    gamma = 1.0507
+    x[x <= 0] = gamma * (alpha * np.exp(x[x <= 0]) - alpha)
+    x[x > 0] = gamma * x[x > 0]
+    np.testing.assert_allclose(output["Y"], x, rtol=1e-3)
+
+  def test_shape(self):
+    node_def = helper.make_node("Shape", ["X"], ["Y"])
+    x = self._get_rnd([5, 10, 10, 3])
+    output = run_node(node_def, [x])
+    np.testing.assert_allclose(output["Y"], np.shape(x))
+
   def test_sigmoid(self):
     node_def = helper.make_node("Sigmoid", ["X"], ["Y"])
     x = self._get_rnd([1000])
     output = run_node(node_def, [x])
     np.testing.assert_almost_equal(output["Y"], 1/(1 + np.exp(-x)))
+
+  def test_size(self):
+    node_def = helper.make_node("Size", ["X"], ["Y"])
+    x = self._get_rnd([5, 10, 10, 3])
+    output = run_node(node_def, [x])
+    np.testing.assert_almost_equal(output["Y"], np.size(x))
 
   def test_slice(self):
     # TODO: API update or fix onnx version
@@ -619,6 +640,28 @@ class TestNode(unittest.TestCase):
     x = self._get_rnd([1000]).reshape([10, 10, 10])
     output = run_node(node_def, [x, [0, 1, 2], [0, 0, 0], [2, 2, 2]])
     np.testing.assert_almost_equal(output["S"], x[0:2, 0:2, 0:2])
+
+  def test_softplus(self):
+    node_def = helper.make_node("Softplus", ["X"], ["Y"])
+    x = self._get_rnd([3, 4, 5])
+    output = run_node(node_def, [x])
+    np.testing.assert_almost_equal(output["Y"], np.log(np.exp(x) + 1))
+
+  def test_softsign(self):
+    node_def = helper.make_node("Softsign", ["X"], ["Y"])
+    x = self._get_rnd([3, 4, 5])
+    output = run_node(node_def, [x])
+    np.testing.assert_almost_equal(output["Y"], x / (1 + np.abs(x)))
+
+  def test_space_to_depth(self):
+    node_def = helper.make_node("SpaceToDepth", ["X"], ["Y"], blocksize=2)
+    x_shape = [1, 3, 2, 2]
+    x = self._get_rnd(x_shape)
+    output = run_node(node_def, [x])
+    x = np.transpose(x, (0, 2, 3, 1))
+    y = np.reshape(np.swapaxes(x.reshape(1, 1, 1, 1, 1, 12), 2, 3), (1, 1, 1, 12))
+    y = np.transpose(y, (0, 3, 1, 2))
+    np.testing.assert_allclose(output["Y"], y, rtol=1e-3)
 
   def test_split(self):
     split = [3, 3, 4]
@@ -664,6 +707,14 @@ class TestNode(unittest.TestCase):
     x = self._get_rnd([1000]) + 1.0
     output = run_node(node_def, [x])
     np.testing.assert_almost_equal(output["Y"], np.tanh(x), decimal=5)
+
+  def test_tile(self):
+    node_def = helper.make_node("Tile", ["X1", "X2", "X3"], ["Z"])
+    x = self._get_rnd([3, 5, 5, 3])
+    axis = 2
+    tiles = 2
+    output = run_node(node_def, [x, axis, tiles])
+    np.testing.assert_allclose(output["Z"], np.tile(x, (1, 1, 2, 1)), rtol=1e-3)
 
   def test_transpose(self):
     node_def = helper.make_node("Transpose", ["X"], ["Y"], perm=[0, 2, 1])
