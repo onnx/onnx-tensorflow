@@ -1105,6 +1105,20 @@ class TensorflowBackend(Backend):
     return [tf.reshape(tf.nn.softmax(x - tf.reduce_max(x)), shape)]
 
   @classmethod
+  def handle_space_to_depth(cls, node, input_dict):
+    x = input_dict[node.inputs[0]]
+    x_rank = len(x.get_shape())
+    support_cuda = cls.supports_device("CUDA")
+    storage_format, compute_format = cls.get_data_format(x_rank, support_cuda)
+    if support_cuda:
+      y = tf.space_to_depth(x, block_size=node.attrs["blocksize"], data_format=compute_format)
+    else:
+      x = tf.transpose(x, perm=cls.get_perm_from_formats(storage_format, compute_format))
+      y = tf.space_to_depth(x, block_size=node.attrs["blocksize"], data_format=compute_format)
+      y = tf.transpose(y, perm=cls.get_perm_from_formats(compute_format, storage_format))
+    return [y]
+
+  @classmethod
   def handle_split(cls, node, input_dict):
     split = (tf.constant(node.attrs["split"]) if
              "split" in node.attrs else input_dict[node.inputs[1]])
@@ -1119,6 +1133,15 @@ class TensorflowBackend(Backend):
   def handle_sum(cls, node, input_dict):
     values = [input_dict[a] for a in node.inputs]
     return [tf.reduce_sum(tf.stack(values), axis=0)]
+
+  @classmethod
+  def handle_tile(cls, node, input_dict):
+    x = input_dict[node.inputs[0]]
+    axis = input_dict[node.inputs[1]]
+    tiles = input_dict[node.inputs[2]]
+    multiples = tf.Variable([1] * len(x.shape))
+    multiples = multiples[axis].assign(tiles)
+    return [tf.tile(x, multiples=multiples)]
 
   @classmethod
   def handle_thresholded_relu(cls, node, input_dict):
@@ -1154,14 +1177,6 @@ class TensorflowBackend(Backend):
   @classmethod
   def handle_xor(cls, node, input_dict):
     return [cls._bin_op(node, input_dict, tf.logical_xor)]
-
-  @classmethod
-  def handle_equal(cls, node, input_dict):
-    return [cls._bin_op(node, input_dict, tf.equal)]
-
-  @classmethod
-  def handle_less(cls, node, input_dict):
-    return [cls._bin_op(node, input_dict, tf.less)]
 
   @classmethod
   def handle_greater(cls, node, input_dict):
