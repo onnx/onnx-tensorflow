@@ -119,7 +119,7 @@ TF_ATTR_TO_ONNX_ATTR_PER_OP = {k: invert(v) for k, v in ONNX_ATTR_TO_TF_ATTR_PER
 
 ONNX_ATTR_TO_REMOVE_PER_OP = {}
 
-TF_ATTR_TO_REMOVE = ["_output_shapes", "T", "seed2", "Tidx"]
+TF_ATTR_TO_REMOVE = ["_output_shapes", "T", "seed2", "Tidx", "_class", "Tshape"]
 
 ONNX_OP_TO_TF_OP = {
   "abs": tf.abs,
@@ -167,8 +167,11 @@ ONNX_OP_TO_TF_OP = {
 TF_OP_TO_ONNX_OP = invert(ONNX_OP_TO_TF_OP)
 
 TF_OP_STR_TO_ONNX_OP = {
+  "BiasAdd": "Add",
+  "Identity": "Identity",
   "LogicalNot": "Not",
   "Relu": "Relu",
+  "Softmax": "Softmax",
   "Pow": "Pow",
   # TODO:
   # handle Mul, Add, Sub,
@@ -191,3 +194,49 @@ def get_tf_shape_as_list(tf_shape_dim):
 # the first letter.
 def op_name_to_lower(name):
   return re.sub('(?<!^)(?=[A-Z])', '_', name).lower()
+
+def get_attribute_value(attr):
+  if _has_field(attr, 'list'):
+    attr = attr.list
+  if _has_field(attr, 'f'):
+    return attr.f
+  elif _has_field(attr, 'i'):
+    return attr.i
+  elif _has_field(attr, 's'):
+    return attr.s
+  elif _has_field(attr, 't'):
+    return attr.t
+  elif _has_field(attr, 'g'):
+    return attr.g
+  elif _has_field(attr, 'b'):
+    return attr.b
+  elif _has_field(attr, 'floats') and len(attr.floats):
+    return list(attr.floats)
+  elif _has_field(attr, 'ints') and len(attr.ints):
+    return list(attr.ints)
+  elif _has_field(attr, 'strings') and len(attr.strings):
+    return list(attr.strings)
+  elif _has_field(attr, 'tensors') and len(attr.tensors):
+    return list(attr.tensors)
+  elif _has_field(attr, 'graphs') and len(attr.graphs):
+    return list(attr.graphs)
+  else:
+    raise ValueError("Unsupported ONNX attribute: {}".format(attr))
+
+def _has_field(message_pb, property_name):
+  """Determine if a field is set on a protobuf.
+  :type message_pb: :class:`google.protobuf.message.Message`
+  :param message_pb: The message to check for ``property_name``.
+  :type property_name: str
+  :param property_name: The property value to check against.
+  :rtype: bool
+  :returns: Flag indicating if ``property_name`` is set on ``message_pb``.
+  """
+  # NOTE: As of proto3, HasField() only works for message fields, not for
+  #       singular (non-message) fields. First try to use HasField and
+  #       if it fails (with a ValueError) we manually consult the fields.
+  try:
+    return message_pb.HasField(property_name)
+  except ValueError:
+    all_fields = set([field.name for field in message_pb._fields])
+    return property_name in all_fields

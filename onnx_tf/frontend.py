@@ -13,6 +13,7 @@ from onnx_tf.common import (
   TF_OP_STR_TO_ONNX_OP,
   TF_ATTR_TO_ONNX_ATTR,
   TF_ATTR_TO_REMOVE,
+  get_attribute_value,
   get_tf_shape_as_list,
   op_name_to_lower,
 )
@@ -138,16 +139,16 @@ class TensorflowFrontend(object):
       else:
         handler_name = "handle_" + op_name_to_lower(node.op)
 
+        # Remove tensorflow-specific attrs that are not
+        # needed/allowed in ONNX.
+        node.attr = dict(filter(lambda pair: pair[0] not in TF_ATTR_TO_REMOVE, node.attr.items()))
+        node.attr = dict(map(lambda item: (item[0], get_attribute_value(item[1])), node.attr.items()))
+
         # Check if specialized handler exists.
         if handler_name in dir(cls):
           method_to_call = getattr(cls, handler_name)
           ops_proto.append(method_to_call(node, consts))
         elif node.op in TF_OP_STR_TO_ONNX_OP.keys():
-          # Remove tensorflow-specific attrs that are not
-          # needed/allowed in ONNX.
-          node.attr = dict(filter(lambda pair: pair[0]
-                                               not in TF_ATTR_TO_REMOVE, node.attr.items()))
-
           node_output = node.name
           ops_proto.append(make_node(TF_OP_STR_TO_ONNX_OP[node.op],
                                      node.inputs,
@@ -182,12 +183,56 @@ class TensorflowFrontend(object):
             onnx_op, node.inputs, [node.name], name=node.name, broadcast=1)
 
   @classmethod
+  def _pool_op(cls, node, onnx_op):
+    auto_pad = node.attr["padding"].decode("UTF-8")
+    auto_pad = "SAME_UPPER" if auto_pad == "SAME" else auto_pad
+    data_format = node.attr["data_format"].decode("UTF-8")
+    nc_index = list(map(lambda i: data_format.find(i), "NC"))
+    spatial_index = list(filter(lambda i: i not in nc_index, list(range(len(data_format)))))
+    strides = list(map(lambda i: node.attr["strides"][i], spatial_index))
+    kernel_shape = list(map(lambda i: node.attr["ksize"][i], spatial_index))
+    return helper.make_node(
+      onnx_op,
+      [node.inputs[0]],
+      [node.name],
+      auto_pad=auto_pad,
+      kernel_shape=kernel_shape,
+      strides=strides
+    )
+
+  @classmethod
+  def handle_avg_pool(cls, node, consts):
+    return cls._pool_op(node, "AveragePool")
+
+  @classmethod
+  def handle_conv2_d(cls, node, consts):
+    auto_pad = node.attr["padding"].decode("UTF-8")
+    auto_pad = "SAME_UPPER" if auto_pad == "SAME" else auto_pad
+    data_format = node.attr["data_format"].decode("UTF-8")
+    nc_index = list(map(lambda i: data_format.find(i), "NC"))
+    spatial_index = list(filter(lambda i: i not in nc_index, list(range(len(data_format)))))
+    strides = list(map(lambda i: node.attr["strides"][i], spatial_index))
+    dilations = list(map(lambda i: node.attr.get("dilations", [1, 1, 1, 1])[i], spatial_index))
+    return helper.make_node(
+      "Conv",
+      [node.inputs[0], node.inputs[1]],
+      [node.name],
+      auto_pad=auto_pad,
+      strides=strides,
+      dilations=dilations
+    )
+
+  @classmethod
   def handle_logical_and(cls, node, consts):
     return cls._bin_op(node, "And")
 
   @classmethod
   def handle_logical_or(cls, node, consts):
     return cls._bin_op(node, "Or")
+
+  @classmethod
+  def handle_max_pool(cls, node, consts):
+    return cls._pool_op(node, "MaxPool")
 
   @classmethod
   def handle_pad(cls, node, consts):
@@ -276,6 +321,12 @@ class TensorflowFrontend(object):
                             [node.inputs[0]],
                             [node.name],
                             shape=shape)
+
+  @classmethod
+  def handle_rsqrt(cls, node, consts):
+    return helper.make_node("Rsqrt",
+                            [node.inputs[0]],
+                            [node.name])
 
   @classmethod
   def handle_split_v(cls, node, consts):
