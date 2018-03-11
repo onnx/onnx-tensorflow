@@ -197,39 +197,19 @@ def op_name_to_lower(name):
   return re.sub('(?<!^)(?=[A-Z])', '_', name).lower()
 
 def get_attribute_value(attr):
-  if _has_field(attr, 'list'):
+  if attr.HasField('list'):
     attr = attr.list
-  if _has_field(attr, 'i'):
+  if attr.HasField('i'):
     return attr.i
-  elif _has_field(attr, 's'):
+  elif attr.HasField('s'):
     return attr.s
-  elif _has_field(attr, 'b'):
+  elif attr.HasField('b'):
     return attr.b
-  elif _has_field(attr, 'f'):
+  elif attr.HasField('f'):
     return attr.f
-  elif _has_field(attr, 'tensor'):
+  elif attr.HasField('tensor'):
     return attr.tensor
-  elif _has_field(attr, 'graph'):
-    return attr.graph
-  elif _has_field(attr, 'type'):
+  elif attr.HasField('type'):
     return attr.type
   else:
     raise ValueError("Unsupported ONNX attribute: {}".format(attr))
-
-def _has_field(message_pb, property_name):
-  """Determine if a field is set on a protobuf.
-  :type message_pb: :class:`google.protobuf.message.Message`
-  :param message_pb: The message to check for ``property_name``.
-  :type property_name: str
-  :param property_name: The property value to check against.
-  :rtype: bool
-  :returns: Flag indicating if ``property_name`` is set on ``message_pb``.
-  """
-  # NOTE: As of proto3, HasField() only works for message fields, not for
-  #       singular (non-message) fields. First try to use HasField and
-  #       if it fails (with a ValueError) we manually consult the fields.
-  try:
-    return message_pb.HasField(property_name)
-  except ValueError:
-    all_fields = set([field.name for field in message_pb._fields])
-    return property_name in all_fields
