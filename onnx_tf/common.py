@@ -170,6 +170,7 @@ TF_OP_STR_TO_ONNX_OP = {
   "BiasAdd": "Add",
   "Identity": "Identity",
   "LogicalNot": "Not",
+  "MatMul": "MatMul",
   "Relu": "Relu",
   "Softmax": "Softmax",
   "Pow": "Pow",
@@ -198,28 +199,18 @@ def op_name_to_lower(name):
 def get_attribute_value(attr):
   if _has_field(attr, 'list'):
     attr = attr.list
-  if _has_field(attr, 'f'):
-    return attr.f
-  elif _has_field(attr, 'i'):
+  if _has_field(attr, 'i'):
     return attr.i
   elif _has_field(attr, 's'):
     return attr.s
-  elif _has_field(attr, 't'):
-    return attr.t
-  elif _has_field(attr, 'g'):
-    return attr.g
   elif _has_field(attr, 'b'):
     return attr.b
-  elif _has_field(attr, 'floats') and len(attr.floats):
-    return list(attr.floats)
-  elif _has_field(attr, 'ints') and len(attr.ints):
-    return list(attr.ints)
-  elif _has_field(attr, 'strings') and len(attr.strings):
-    return list(attr.strings)
-  elif _has_field(attr, 'tensors') and len(attr.tensors):
-    return list(attr.tensors)
-  elif _has_field(attr, 'graphs') and len(attr.graphs):
-    return list(attr.graphs)
+  elif _has_field(attr, 'f'):
+    return attr.f
+  elif _has_field(attr, 'tensor'):
+    return attr.tensor
+  elif _has_field(attr, 'graph'):
+    return attr.graph
   elif _has_field(attr, 'type'):
     return attr.type
   else:
