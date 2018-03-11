@@ -119,7 +119,7 @@ TF_ATTR_TO_ONNX_ATTR_PER_OP = {k: invert(v) for k, v in ONNX_ATTR_TO_TF_ATTR_PER
 
 ONNX_ATTR_TO_REMOVE_PER_OP = {}
 
-TF_ATTR_TO_REMOVE = ["_output_shapes", "T", "seed2", "Tidx", "_class", "Tshape"]
+TF_ATTR_TO_REMOVE = ["_output_shapes", "T", "seed2", "Tidx", "_class", "Tshape", "Tpaddings"]
 
 ONNX_OP_TO_TF_OP = {
   "abs": tf.abs,
@@ -220,6 +220,8 @@ def get_attribute_value(attr):
     return list(attr.tensors)
   elif _has_field(attr, 'graphs') and len(attr.graphs):
     return list(attr.graphs)
+  elif _has_field(attr, 'type'):
+    return attr.type
   else:
     raise ValueError("Unsupported ONNX attribute: {}".format(attr))
 

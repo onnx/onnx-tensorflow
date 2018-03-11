@@ -26,6 +26,7 @@ from onnx.helper import (
 )
 from onnx.onnx_pb2 import GraphProto, TensorProto, AttributeProto
 from tensorflow.python.framework.tensor_util import MakeNdarray
+from tensorflow.core.framework.attr_value_pb2 import AttrValue
 
 class TensorflowNode(object):
 
@@ -139,16 +140,18 @@ class TensorflowFrontend(object):
       else:
         handler_name = "handle_" + op_name_to_lower(node.op)
 
-        # Remove tensorflow-specific attrs that are not
-        # needed/allowed in ONNX.
-        node.attr = dict(filter(lambda pair: pair[0] not in TF_ATTR_TO_REMOVE, node.attr.items()))
-        node.attr = dict(map(lambda item: (item[0], get_attribute_value(item[1])), node.attr.items()))
+        node.attr = dict(
+          map(lambda item: (item[0], get_attribute_value(item[1]) if isinstance(item[1], AttrValue) else item[1]),
+              node.attr.items()))
 
         # Check if specialized handler exists.
         if handler_name in dir(cls):
           method_to_call = getattr(cls, handler_name)
           ops_proto.append(method_to_call(node, consts))
         elif node.op in TF_OP_STR_TO_ONNX_OP.keys():
+          # Remove tensorflow-specific attrs that are not
+          # needed/allowed in ONNX.
+          node.attr = dict(filter(lambda pair: pair[0] not in TF_ATTR_TO_REMOVE, node.attr.items()))
           node_output = node.name
           ops_proto.append(make_node(TF_OP_STR_TO_ONNX_OP[node.op],
                                      node.inputs,
