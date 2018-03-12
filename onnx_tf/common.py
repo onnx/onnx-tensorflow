@@ -197,20 +197,42 @@ def op_name_to_lower(name):
   return re.sub('(?<!^)(?=[A-Z])', '_', name).lower()
 
 def get_attribute_value(attr):
-  if _has_field(attr, 'list'):
-    attr = attr.list
-  if _has_field(attr, 'i'):
-    return attr.i
-  elif _has_field(attr, 's'):
+  if attr.HasField('list'):
+    return get_list_value(attr.list)
+  if attr.HasField('s'):
     return attr.s
-  elif _has_field(attr, 'b'):
-    return attr.b
-  elif _has_field(attr, 'f'):
+  elif attr.HasField('i'):
+    return attr.i
+  elif attr.HasField('f'):
     return attr.f
-  elif _has_field(attr, 'tensor'):
-    return attr.tensor
-  elif _has_field(attr, 'type'):
+  elif attr.HasField('b'):
+    return attr.b
+  elif attr.HasField('type'):
     return attr.type
+  elif attr.HasField('shape'):
+    return attr.type
+  elif attr.HasField('tensor'):
+    return attr.tensor
+  else:
+    raise ValueError("Unsupported ONNX attribute: {}".format(attr))
+
+def get_list_value(attr):
+  if _has_field(attr, 's') and len(attr.s):
+    return attr.s
+  elif _has_field(attr, 'i') and len(attr.i):
+    return attr.i
+  elif _has_field(attr, 'f') and len(attr.f):
+    return attr.f
+  elif _has_field(attr, 'b') and len(attr.b):
+    return attr.b
+  elif _has_field(attr, 'tensor') and len(attr.tensor):
+    return attr.tensor
+  elif _has_field(attr, 'type') and len(attr.type):
+    return attr.type
+  elif _has_field(attr, 'shape') and len(attr.shape):
+    return attr.shape
+  elif _has_field(attr, 'func') and len(attr.func):
+    return attr.func
   else:
     raise ValueError("Unsupported ONNX attribute: {}".format(attr))
 
