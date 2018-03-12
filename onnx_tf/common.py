@@ -217,31 +217,21 @@ def get_attribute_value(attr):
     raise ValueError("Unsupported ONNX attribute: {}".format(attr))
 
 def get_list_value(attr):
-  if _has_field(attr, 's') and len(attr.s):
+  if len(attr.s):
     return attr.s
-  elif _has_field(attr, 'i') and len(attr.i):
+  elif len(attr.i):
     return attr.i
-  elif _has_field(attr, 'f') and len(attr.f):
+  elif len(attr.f):
     return attr.f
-  elif _has_field(attr, 'b') and len(attr.b):
+  elif len(attr.b):
     return attr.b
-  elif _has_field(attr, 'tensor') and len(attr.tensor):
+  elif len(attr.tensor):
     return attr.tensor
-  elif _has_field(attr, 'type') and len(attr.type):
+  elif len(attr.type):
     return attr.type
-  elif _has_field(attr, 'shape') and len(attr.shape):
+  elif len(attr.shape):
     return attr.shape
-  elif _has_field(attr, 'func') and len(attr.func):
+  elif len(attr.func):
     return attr.func
   else:
     raise ValueError("Unsupported ONNX attribute: {}".format(attr))
-
-def _has_field(message_pb, property_name):
-  # NOTE: As of proto3, HasField() only works for message fields, not for
-  #       singular (non-message) fields. First try to use HasField and
-  #       if it fails (with a ValueError) we manually consult the fields.
-  try:
-    return message_pb.HasField(property_name)
-  except ValueError:
-    all_fields = set([field.name for field in message_pb._fields])
-    return property_name in all_fields
