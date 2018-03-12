@@ -197,19 +197,29 @@ def op_name_to_lower(name):
   return re.sub('(?<!^)(?=[A-Z])', '_', name).lower()
 
 def get_attribute_value(attr):
-  if attr.HasField('list'):
+  if _has_field(attr, 'list'):
     attr = attr.list
-  if attr.HasField('i'):
+  if _has_field(attr, 'i'):
     return attr.i
-  elif attr.HasField('s'):
+  elif _has_field(attr, 's'):
     return attr.s
-  elif attr.HasField('b'):
+  elif _has_field(attr, 'b'):
     return attr.b
-  elif attr.HasField('f'):
+  elif _has_field(attr, 'f'):
     return attr.f
-  elif attr.HasField('tensor'):
+  elif _has_field(attr, 'tensor'):
     return attr.tensor
-  elif attr.HasField('type'):
+  elif _has_field(attr, 'type'):
     return attr.type
   else:
     raise ValueError("Unsupported ONNX attribute: {}".format(attr))
+
+def _has_field(message_pb, property_name):
+  # NOTE: As of proto3, HasField() only works for message fields, not for
+  #       singular (non-message) fields. First try to use HasField and
+  #       if it fails (with a ValueError) we manually consult the fields.
+  try:
+    return message_pb.HasField(property_name)
+  except ValueError:
+    all_fields = set([field.name for field in message_pb._fields])
+    return property_name in all_fields
