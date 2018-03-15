@@ -169,11 +169,22 @@ class TensorflowFrontend(object):
       output_proto.append(make_tensor_value_info(output_name,
                                                  output_onnx_type,
                                                  output.attr["_output_shapes"][i]))
+
+    # Remove proto in inputs_proto and consts_proto if proto is used as attr in ONNX
+    del_consts = {}
+    new_consts_proto = []
+    for proto in consts_proto:
+      if proto.name not in consts:
+        del_consts[proto.name] = proto
+      else:
+        new_consts_proto.append(proto)
+    inputs_proto = list(filter(lambda x: x.name not in del_consts, inputs_proto))
+
     return make_graph(ops_proto,
                       name,
                       inputs_proto,
                       output_proto,
-                      consts_proto)
+                      new_consts_proto)
 
   @classmethod
   def _bin_op(cls, node, onnx_op):
@@ -195,7 +206,7 @@ class TensorflowFrontend(object):
     supported_modes = ["constant", "reflect"]
     mode = node.attr.get("mode", "constant")
     assert mode.lower() in supported_modes
-    pads = np.transpose(consts[node.inputs[1]]).flatten()
+    pads = np.transpose(consts.pop(node.inputs[1])).flatten()
 
     return helper.make_node(
             "Pad",
@@ -241,7 +252,7 @@ class TensorflowFrontend(object):
   @classmethod
   def _reduce_op(cls, op, node, consts):
     assert node.inputs[1] in consts.keys()
-    axes = consts[node.inputs[1]]
+    axes = consts.pop(node.inputs[1])
     return helper.make_node(op,
                             [node.inputs[0]],
                             [node.name],
@@ -271,7 +282,7 @@ class TensorflowFrontend(object):
   @classmethod
   def handle_reshape(cls, node, consts):
     assert node.inputs[1] in consts.keys()
-    shape = consts[node.inputs[1]]
+    shape = consts.pop(node.inputs[1])
     return helper.make_node("Reshape",
                             [node.inputs[0]],
                             [node.name],
@@ -279,8 +290,8 @@ class TensorflowFrontend(object):
 
   @classmethod
   def handle_split_v(cls, node, consts):
-    split = consts[node.inputs[1]]
-    axis = int(consts[node.inputs[2]])
+    split = consts.pop(node.inputs[1])
+    axis = int(consts.pop(node.inputs[2]))
     output_names = [node.name + ":{}".format(i) if i>0 else node.name for i in range(len(split))]
     return helper.make_node("Split",
                             [node.inputs[0]],
@@ -304,7 +315,7 @@ class TensorflowFrontend(object):
 
   @classmethod
   def handle_transpose(cls, node, consts):
-    perm = consts[node.inputs[1]]
+    perm = consts.pop(node.inputs[1])
     return helper.make_node("Transpose",
                             [node.inputs[0]],
                             [node.name],
@@ -317,7 +328,7 @@ class TensorflowFrontend(object):
   @classmethod
   def handle_concat_v2(cls, node, consts):
     assert node.inputs[-1] in consts.keys()
-    axis = int(consts[node.inputs[-1]])
+    axis = int(consts.pop(node.inputs[-1]))
     return helper.make_node("Concat",
                             inputs=node.inputs[0:-1],
                             outputs=[node.name],
