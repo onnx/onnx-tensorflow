@@ -68,6 +68,20 @@ class TensorflowFrontend(object):
   """ Tensorflow Frontend for ONNX
   """
 
+  DEFAULT_TF_ATTR_PER_OP = {
+    "Add": {"broadcast": 1},
+    "And": {"broadcast": 1},
+    "Div": {"broadcast": 1},
+    "Equal": {"broadcast": 1},
+    "Greater": {"broadcast": 1},
+    "Less": {"broadcast": 1},
+    "Mul": {"broadcast": 1},
+    "Or": {"broadcast": 1},
+    "Pow": {"broadcast": 1},
+    "Sub": {"broadcast": 1},
+    "Xor": {"broadcast": 1},
+  }
+
   @classmethod
   def tensorflow_graph_to_onnx_graph(cls, graph_def, output, name="graph"):
     """Function that converts a tensorflow graph to an onnx graph.
@@ -147,11 +161,17 @@ class TensorflowFrontend(object):
         # Check if specialized handler exists.
         if handler_name in dir(cls):
           method_to_call = getattr(cls, handler_name)
-          ops_proto.append(method_to_call(node, consts))
+          node = method_to_call(node, consts)
+          if isinstance(node, list):
+            ops_proto.extend(node)
+          else:
+            ops_proto.append(node)
         elif node.op in TF_OP_STR_TO_ONNX_OP.keys():
           # Remove tensorflow-specific attrs that are not
           # needed/allowed in ONNX.
-          node.attr = dict(filter(lambda pair: pair[0] not in TF_ATTR_TO_REMOVE, node.attr.items()))
+          attr = cls.DEFAULT_TF_ATTR_PER_OP.get(node.op, {})
+          attr.update(dict(filter(lambda pair: pair[0] not in TF_ATTR_TO_REMOVE, node.attr.items())))
+          node.attr = attr
           node_output = node.name
           ops_proto.append(make_node(TF_OP_STR_TO_ONNX_OP[node.op],
                                      node.inputs,
@@ -327,9 +347,16 @@ class TensorflowFrontend(object):
 
   @classmethod
   def handle_rsqrt(cls, node, consts):
-    return helper.make_node("Rsqrt",
-                            [node.inputs[0]],
-                            [node.name])
+    sqrt_node = helper.make_node("Sqrt",
+                                 [node.inputs[0]],
+                                 [node.name.replace("Rsqrt", "Sqrt")])
+    reciprocal_node = helper.make_node("Reciprocal",
+                                       [sqrt_node.output[0]],
+                                       [node.name.replace("Rsqrt", "Reciprocal")])
+    identity_node = helper.make_node("Identity",
+                                     [reciprocal_node.output[0]],
+                                     [node.name])
+    return [sqrt_node, reciprocal_node, identity_node]
 
   @classmethod
   def handle_split_v(cls, node, consts):

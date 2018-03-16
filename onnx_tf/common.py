@@ -119,7 +119,7 @@ TF_ATTR_TO_ONNX_ATTR_PER_OP = {k: invert(v) for k, v in ONNX_ATTR_TO_TF_ATTR_PER
 
 ONNX_ATTR_TO_REMOVE_PER_OP = {}
 
-TF_ATTR_TO_REMOVE = ["_output_shapes", "T", "seed2", "Tidx", "_class", "Tshape", "Tpaddings"]
+TF_ATTR_TO_REMOVE = ["_output_shapes", "T", "seed2", "Tidx", "_class", "Tshape", "Tpaddings", "data_format"]
 
 ONNX_OP_TO_TF_OP = {
   "abs": tf.abs,
@@ -133,6 +133,7 @@ ONNX_OP_TO_TF_OP = {
   "gather": tf.gather,
   "hard_sigmoid": tf.keras.backend.hard_sigmoid,
   "hardmax": tf.contrib.seq2seq.hardmax,
+  "identity": tf.identity,
   "log": tf.log,
   "log_softmax": tf.nn.log_softmax,
   "lp_normalization": tf.norm,
