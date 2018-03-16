@@ -6,6 +6,8 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
+from itertools import chain
+
 import tensorflow as tf
 import numpy as np
 from onnx_tf.common import (
@@ -98,8 +100,6 @@ class TensorflowFrontend(object):
     # construction time.
     consts = {}
 
-    used_consts = set()
-
     # Sometimes the constants are used as inputs to ops. This list
     # holds initializers that creates global constant tensors available
     # to be accessed by ops as inputs (as oppose to attributes which
@@ -139,11 +139,10 @@ class TensorflowFrontend(object):
         inputs_proto.append(input_proto)
       else:
         handler_name = "handle_" + op_name_to_lower(node.op)
-        kwargs = {"consts": consts, "used_consts": used_consts}
         # Check if specialized handler exists.
         if handler_name in dir(cls):
           method_to_call = getattr(cls, handler_name)
-          ops_proto.append(method_to_call(node, **kwargs))
+          ops_proto.append(method_to_call(node, consts=consts))
         elif node.op in TF_OP_STR_TO_ONNX_OP.keys():
           # Remove tensorflow-specific attrs that are not
           # needed/allowed in ONNX.
@@ -172,9 +171,11 @@ class TensorflowFrontend(object):
                                                  output_onnx_type,
                                                  output.attr["_output_shapes"][i]))
 
-    # Remove proto in inputs_proto and consts_proto if proto is used as attr in ONNX
-    inputs_proto = list(filter(lambda x: x.name not in used_consts, inputs_proto))
-    consts_proto = list(filter(lambda x: x.name not in used_consts, consts_proto))
+    inputs = list(chain.from_iterable(map(lambda p: list(p.input), ops_proto)))
+
+    # Remove proto in inputs_proto and consts_proto if proto is not used as input in ONNX
+    inputs_proto = list(filter(lambda x: x.name in inputs, inputs_proto))
+    consts_proto = list(filter(lambda x: x.name in inputs, consts_proto))
 
     return make_graph(ops_proto,
                       name,
@@ -204,7 +205,6 @@ class TensorflowFrontend(object):
     mode = node.attr.get("mode", "constant")
     assert mode.lower() in supported_modes
     pads = np.transpose(consts[node.inputs[1]]).flatten()
-    kwargs["used_consts"].add(node.inputs[1])
 
     return helper.make_node(
             "Pad",
@@ -252,7 +252,6 @@ class TensorflowFrontend(object):
     consts = kwargs["consts"]
     assert node.inputs[1] in consts.keys()
     axes = consts[node.inputs[1]]
-    kwargs["used_consts"].add(node.inputs[1])
     return helper.make_node(op,
                             [node.inputs[0]],
                             [node.name],
@@ -284,7 +283,6 @@ class TensorflowFrontend(object):
     consts = kwargs["consts"]
     assert node.inputs[1] in consts.keys()
     shape = consts[node.inputs[1]]
-    kwargs["used_consts"].add(node.inputs[1])
     return helper.make_node("Reshape",
                             [node.inputs[0]],
                             [node.name],
@@ -295,8 +293,6 @@ class TensorflowFrontend(object):
     consts = kwargs["consts"]
     split = consts[node.inputs[1]]
     axis = int(consts[node.inputs[2]])
-    kwargs["used_consts"].add(node.inputs[1])
-    kwargs["used_consts"].add(node.inputs[2])
     output_names = [node.name + ":{}".format(i) if i>0 else node.name for i in range(len(split))]
     return helper.make_node("Split",
                             [node.inputs[0]],
@@ -322,7 +318,6 @@ class TensorflowFrontend(object):
   def handle_transpose(cls, node, **kwargs):
     consts = kwargs["consts"]
     perm = consts[node.inputs[1]]
-    kwargs["used_consts"].add(node.inputs[1])
     return helper.make_node("Transpose",
                             [node.inputs[0]],
                             [node.name],
@@ -337,7 +332,6 @@ class TensorflowFrontend(object):
     consts = kwargs["consts"]
     assert node.inputs[-1] in consts.keys()
     axis = int(consts[node.inputs[-1]])
-    kwargs["used_consts"].add(node.inputs[-1])
     return helper.make_node("Concat",
                             inputs=node.inputs[0:-1],
                             outputs=[node.name],
