@@ -6,6 +6,8 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
+from itertools import chain
+
 import tensorflow as tf
 import numpy as np
 from onnx_tf.common import (
@@ -153,7 +155,6 @@ class TensorflowFrontend(object):
         inputs_proto.append(input_proto)
       else:
         handler_name = "handle_" + op_name_to_lower(node.op)
-
         node.attr = dict(
           map(lambda item: (item[0], get_attribute_value(item[1]) if isinstance(item[1], AttrValue) else item[1]),
               node.attr.items()))
@@ -161,7 +162,7 @@ class TensorflowFrontend(object):
         # Check if specialized handler exists.
         if handler_name in dir(cls):
           method_to_call = getattr(cls, handler_name)
-          node = method_to_call(node, consts)
+          node = method_to_call(node, consts=consts)
           if isinstance(node, list):
             ops_proto.extend(node)
           else:
@@ -193,6 +194,13 @@ class TensorflowFrontend(object):
       output_proto.append(make_tensor_value_info(output_name,
                                                  output_onnx_type,
                                                  output.attr["_output_shapes"][i]))
+
+    inputs = list(chain.from_iterable(map(lambda p: list(p.input), ops_proto)))
+
+    # Remove proto in inputs_proto and consts_proto if proto is not used as input in ONNX
+    inputs_proto = list(filter(lambda x: x.name in inputs, inputs_proto))
+    consts_proto = list(filter(lambda x: x.name in inputs, consts_proto))
+
     return make_graph(ops_proto,
                       name,
                       inputs_proto,
@@ -246,19 +254,20 @@ class TensorflowFrontend(object):
     )
 
   @classmethod
-  def handle_logical_and(cls, node, consts):
+  def handle_logical_and(cls, node, **kwargs):
     return cls._bin_op(node, "And")
 
   @classmethod
-  def handle_logical_or(cls, node, consts):
+  def handle_logical_or(cls, node, **kwargs):
     return cls._bin_op(node, "Or")
 
   @classmethod
-  def handle_max_pool(cls, node, consts):
+  def handle_max_pool(cls, node, **kwargs):
     return cls._pool_op(node, "MaxPool")
 
   @classmethod
-  def handle_pad(cls, node, consts):
+  def handle_pad(cls, node, **kwargs):
+    consts = kwargs["consts"]
     assert node.inputs[1] in consts.keys()
     supported_modes = ["constant", "reflect"]
     mode = node.attr.get("mode", "constant")
@@ -275,7 +284,7 @@ class TensorflowFrontend(object):
             value=0.0)
 
   @classmethod
-  def handle_random_standard_normal(cls, node, consts):
+  def handle_random_standard_normal(cls, node, **kwargs):
     """ Tensorflow does not have a generic random_normal op.
         The generic random_normal op is translated into a scaled
         and offsetted random standard normal op.
@@ -291,7 +300,7 @@ class TensorflowFrontend(object):
             shape=node.attr["_output_shapes"][0])
 
   @classmethod
-  def handle_random_uniform(cls, node, consts):
+  def handle_random_uniform(cls, node, **kwargs):
     """ Tensorflow does not have a generic random_uniform op.
         The generic random_uniform op is translated into a scaled
         and offsetted random standard uniform op.
@@ -307,7 +316,8 @@ class TensorflowFrontend(object):
             shape=node.attr["_output_shapes"][0])
 
   @classmethod
-  def _reduce_op(cls, op, node, consts):
+  def _reduce_op(cls, op, node, **kwargs):
+    consts = kwargs["consts"]
     assert node.inputs[1] in consts.keys()
     axes = consts[node.inputs[1]]
     return helper.make_node(op,
@@ -317,27 +327,28 @@ class TensorflowFrontend(object):
                             keepdims=node.attr.get("keep_dims", 1))
 
   @classmethod
-  def handle_max(cls, node, consts):
-    return cls._reduce_op("ReduceMax", node, consts)
+  def handle_max(cls, node, **kwargs):
+    return cls._reduce_op("ReduceMax", node, **kwargs)
 
   @classmethod
-  def handle_mean(cls, node, consts):
-    return cls._reduce_op("ReduceMean", node, consts)
+  def handle_mean(cls, node, **kwargs):
+    return cls._reduce_op("ReduceMean", node, **kwargs)
 
   @classmethod
-  def handle_min(cls, node, consts):
-    return cls._reduce_op("ReduceMin", node, consts)
+  def handle_min(cls, node, **kwargs):
+    return cls._reduce_op("ReduceMin", node, **kwargs)
 
   @classmethod
-  def handle_prod(cls, node, consts):
-    return cls._reduce_op("ReduceProd", node, consts)
+  def handle_prod(cls, node, **kwargs):
+    return cls._reduce_op("ReduceProd", node, **kwargs)
 
   @classmethod
-  def handle_sum(cls, node, consts):
-    return cls._reduce_op("ReduceSum", node, consts)
+  def handle_sum(cls, node, **kwargs):
+    return cls._reduce_op("ReduceSum", node, **kwargs)
 
   @classmethod
-  def handle_reshape(cls, node, consts):
+  def handle_reshape(cls, node, **kwargs):
+    consts = kwargs["consts"]
     assert node.inputs[1] in consts.keys()
     shape = consts[node.inputs[1]]
     return helper.make_node("Reshape",
@@ -346,7 +357,7 @@ class TensorflowFrontend(object):
                             shape=shape)
 
   @classmethod
-  def handle_rsqrt(cls, node, consts):
+  def handle_rsqrt(cls, node, **kwargs):
     sqrt_node = helper.make_node("Sqrt",
                                  [node.inputs[0]],
                                  [node.name.replace("Rsqrt", "Sqrt")])
@@ -359,7 +370,8 @@ class TensorflowFrontend(object):
     return [sqrt_node, reciprocal_node, identity_node]
 
   @classmethod
-  def handle_split_v(cls, node, consts):
+  def handle_split_v(cls, node, **kwargs):
+    consts = kwargs["consts"]
     split = consts[node.inputs[1]]
     axis = int(consts[node.inputs[2]])
     output_names = [node.name + ":{}".format(i) if i>0 else node.name for i in range(len(split))]
@@ -370,7 +382,7 @@ class TensorflowFrontend(object):
                             axis=axis)
 
   @classmethod
-  def handle_squeeze(cls, node, consts):
+  def handle_squeeze(cls, node, **kwargs):
     assert "squeeze_dims" in node.attr.keys(), ("Squeeze dims have to be"
       "specified")
     axes = node.attr["squeeze_dims"]
@@ -380,11 +392,12 @@ class TensorflowFrontend(object):
                             axes=axes)
 
   @classmethod
-  def handle_sub(cls, node, consts):
+  def handle_sub(cls, node, **kwargs):
     return cls._bin_op(node, "Sub")
 
   @classmethod
-  def handle_transpose(cls, node, consts):
+  def handle_transpose(cls, node, **kwargs):
+    consts = kwargs["consts"]
     perm = consts[node.inputs[1]]
     return helper.make_node("Transpose",
                             [node.inputs[0]],
@@ -392,11 +405,12 @@ class TensorflowFrontend(object):
                             perm=perm)
 
   @classmethod
-  def handle_logical_xor(cls, node, consts):
+  def handle_logical_xor(cls, node, **kwargs):
     return cls._bin_op(node, "Xor")
 
   @classmethod
-  def handle_concat_v2(cls, node, consts):
+  def handle_concat_v2(cls, node, **kwargs):
+    consts = kwargs["consts"]
     assert node.inputs[-1] in consts.keys()
     axis = int(consts[node.inputs[-1]])
     return helper.make_node("Concat",
