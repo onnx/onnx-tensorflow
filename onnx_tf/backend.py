@@ -626,7 +626,7 @@ class TensorflowBackend(Backend):
 
     if "kernel_shape" in node.attrs.keys():
       kernel_shape = node.attrs["kernel_shape"]
-      assert in_weights.get_shape().as_list() == kernel_shape, ("kernel_shape "
+      assert in_weights.get_shape().as_list()[2:] == kernel_shape, ("kernel_shape "
         "attr of convolution does not match the actual weight "
         "passed to this operation, attr {}, actual {}").format(kernel_shape,
         in_weights.get_shape().as_list())

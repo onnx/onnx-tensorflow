@@ -189,7 +189,6 @@ class TestNode(unittest.TestCase):
     np.testing.assert_almost_equal(output["Y"].flatten(), values)
 
   def test_conv(self):
-    # Fix test in the future.
     device = "CUDA"
     if not supports_device(device):
                 raise unittest.SkipTest(
@@ -202,7 +201,7 @@ class TestNode(unittest.TestCase):
     node_def = helper.make_node("Conv", ["X", "weights"],
                                 ["Y"],
                                 pads=[1,1,1,1],
-                                kernel_shape=[K, C, kH, kW, 1])
+                                kernel_shape=[kH, kW])
 
     x = self._get_rnd(x_shape)
     weights = self._get_rnd(weight_shape)
