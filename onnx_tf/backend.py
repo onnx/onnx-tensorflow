@@ -1052,7 +1052,7 @@ class TensorflowBackend(Backend):
   @classmethod
   def handle_reshape(cls, node, input_dict):
     tensor = input_dict[node.inputs[0]]
-    shape = tf.constant(node.attrs["shape"])
+    shape = input_dict[node.inputs[1]]
     return [tf.reshape(tensor, shape)]
 
   @classmethod
