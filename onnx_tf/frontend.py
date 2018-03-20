@@ -70,6 +70,8 @@ class TensorflowFrontendBase(object):
   """ Tensorflow Frontend for ONNX
   """
 
+  frontend_version_cache = {}
+
   @classmethod
   def tensorflow_graph_to_onnx_graph(cls, graph_def, output, opset=0, name="graph"):
     """Function that converts a tensorflow graph to an onnx graph.
@@ -152,10 +154,15 @@ class TensorflowFrontendBase(object):
           versions = sorted(versions + [opset])
           version = versions[max([i for i, v in enumerate(versions) if v == opset]) - 1]
 
-        frontend = importlib.import_module('onnx_tf.frontends.frontend_v{}'.format(version)).TensorflowFrontend
+        frontend_ver = 'frontend_v{}'.format(version)
+        if frontend_ver not in cls.frontend_version_cache:
+            frontend = importlib.import_module('onnx_tf.frontends.' + frontend_ver).TensorflowFrontend
+            cls.frontend_version_cache[frontend_ver] = frontend
+        else:
+            frontend = cls.frontend_version_cache[frontend_ver]
 
         # Check if specialized handler exists.
-        if handler_name in dir(frontend):
+        if hasattr(frontend, handler_name):
           method_to_call = getattr(frontend, handler_name)
           ops_proto.append(method_to_call(node, consts=consts))
         elif node.op in TF_OP_STR_TO_ONNX_OP.keys():
