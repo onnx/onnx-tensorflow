@@ -1,16 +1,18 @@
 ONNX-Tensorflow API
 ------
 
-#### `onnx_tf.frontend.TensorflowFrontendBase.tensorflow_graph_to_onnx_graph`
+#### `onnx_tf.frontend.TensorflowFrontendBase.tensorflow_graph_to_onnx_model`
 
 <details>
-  <summary>Converts a Tensorflow Graph Proto to an ONNX graph
+  <summary>Converts a Tensorflow Graph Proto to an ONNX model
 
   </summary>
 This function converts a Tensorflow Graph proto to an equivalent
-representation of ONNX graph.
+representation of ONNX model.
 
 </details>
+
+
 
 _params_:
 
@@ -25,12 +27,15 @@ to be taken as output of the ONNX graph.
 Default 0 means using latest version.
 
 
-`name` : The name of the output ONNX Graph.
+`producer_name` : The name of the producer.
+
+
+`graph_name` : The name of the output ONNX Graph.
 
 
 _returns_:
 
-The equivalent ONNX Graph Proto object.
+The equivalent ONNX Model Proto object.
 
 #### `onnx_tf.backend.TensorflowBackendBase.prepare`
 
@@ -43,6 +48,8 @@ of the computational graph called TensorflowRep and returns
 the converted representation.
 
 </details>
+
+
 
 _params_:
 

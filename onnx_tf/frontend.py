@@ -203,6 +203,38 @@ class TensorflowFrontendBase(object):
                       consts_proto)
 
   @classmethod
+  def tensorflow_graph_to_onnx_model(cls,
+                                     graph_def,
+                                     output,
+                                     opset=0,
+                                     producer_name="onnx-tensorflow",
+                                     graph_name="graph"):
+    """Converts a Tensorflow Graph Proto to an ONNX model
+
+    This function converts a Tensorflow Graph proto to an equivalent
+    representation of ONNX model.
+
+    :param graph_def: Tensorflow Graph Proto object.
+    :param output: A Tensorflow NodeDef object specifying which node
+      to be taken as output of the ONNX graph.
+    :param opset: Opset version of the operator set.
+      Default 0 means using latest version.
+    :param producer_name: The name of the producer.
+    :param graph_name: The name of the output ONNX Graph.
+
+    :returns: The equivalent ONNX Model Proto object.
+    """
+    onnx_graph = tensorflow_graph_to_onnx_graph(graph_def,
+                                                output,
+                                                opset,
+                                                graph_name)
+    onnx_model = make_model(onnx_graph,
+                            producer_name=producer_name,
+                            opset_imports=[opset])
+
+    return onnx_model
+
+  @classmethod
   def _bin_op(cls, node, onnx_op):
     node.attr["broadcast"] = 1
     return helper.make_node(
