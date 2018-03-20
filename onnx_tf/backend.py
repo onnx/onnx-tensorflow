@@ -245,7 +245,7 @@ class TensorflowBackendBase(Backend):
     return namedtupledict('Outputs', node.outputs)(*output_vals)
 
   @classmethod
-  def onnx_graph_to_tensorflow_net(cls, graph_def, opset=1):
+  def onnx_graph_to_tensorflow_net(cls, graph_def, opset):
     # initializer: TensorProtos representing the values to initialize
     # a given tensor.
     # initialized: A list of names of the initialized tensors.
@@ -334,6 +334,17 @@ class TensorflowBackendBase(Backend):
 
   @classmethod
   def _onnx_node_to_tensorflow_op(cls, node, input_dict, opset=0):
+    """
+    Convert onnx node to tensorflow op.
+
+    Args:
+      node: Onnx node object.
+      input_dict: Inputs dict of graph.
+      opset: Opset version of the operator set. Default 0 means using latest version.
+
+    Returns:
+      Tensorflow op
+    """
     op_name_lowered = op_name_to_lower(node.op_type)
     handler_name = "handle_" + op_name_lowered
 
@@ -341,7 +352,6 @@ class TensorflowBackendBase(Backend):
     versions = backend_opset_version[op_name_lowered]
 
     if opset == 0:
-      # If opset does not set, use lasest version.
       version = max(versions)
     else:
       versions = sorted(versions + [opset])
