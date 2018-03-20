@@ -18,7 +18,7 @@ from onnx_tf.common import (
 def main():
     opset_dict = {}
 
-    for schema in defs.get_all_schemas_with_history():
+    for schema in defs.get_all_schemas():
         op_name = op_name_to_lower(schema.name)
         opset_dict[op_name] = []
 
@@ -46,4 +46,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-
