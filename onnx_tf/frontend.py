@@ -214,14 +214,13 @@ class TensorflowFrontend(object):
             onnx_op, node.inputs, [node.name], name=node.name, broadcast=1)
 
   @classmethod
-  def _pool_op(cls, node, onnx_op):
+  def _pool_op(cls, node, onnx_op, **kwargs):
     auto_pad = node.attr["padding"].decode("UTF-8")
     auto_pad = "SAME_UPPER" if auto_pad == "SAME" else auto_pad
     data_format = node.attr["data_format"].decode("UTF-8")
-    nc_index = list(map(lambda i: data_format.find(i), "NC"))
-    spatial_index = list(filter(lambda i: i not in nc_index, list(range(len(data_format)))))
-    strides = list(map(lambda i: node.attr["strides"][i], spatial_index))
-    kernel_shape = list(map(lambda i: node.attr["ksize"][i], spatial_index))
+    spatial_indices = [i for i in range(len(data_format)) if data_format[i] not in ["N", "C"]]
+    strides = list(map(lambda i: node.attr["strides"][i], spatial_indices))
+    kernel_shape = list(map(lambda i: node.attr["ksize"][i], spatial_indices))
     return helper.make_node(
       onnx_op,
       [node.inputs[0]],
@@ -232,18 +231,17 @@ class TensorflowFrontend(object):
     )
 
   @classmethod
-  def handle_avg_pool(cls, node, consts):
-    return cls._pool_op(node, "AveragePool")
+  def handle_avg_pool(cls, node, **kwargs):
+    return cls._pool_op(node, "AveragePool", **kwargs)
 
   @classmethod
-  def handle_conv2_d(cls, node, consts):
+  def handle_conv2_d(cls, node, **kwargs):
     auto_pad = node.attr["padding"].decode("UTF-8")
     auto_pad = "SAME_UPPER" if auto_pad == "SAME" else auto_pad
     data_format = node.attr["data_format"].decode("UTF-8")
-    nc_index = list(map(lambda i: data_format.find(i), "NC"))
-    spatial_index = list(filter(lambda i: i not in nc_index, list(range(len(data_format)))))
-    strides = list(map(lambda i: node.attr["strides"][i], spatial_index))
-    dilations = list(map(lambda i: node.attr.get("dilations", [1, 1, 1, 1])[i], spatial_index))
+    spatial_indices = [i for i in range(len(data_format)) if data_format[i] not in ["N", "C"]]
+    strides = list(map(lambda i: node.attr["strides"][i], spatial_indices))
+    dilations = list(map(lambda i: node.attr.get("dilations", [1, 1, 1, 1])[i], spatial_indices))
     return helper.make_node(
       "Conv",
       [node.inputs[0], node.inputs[1]],
@@ -263,7 +261,7 @@ class TensorflowFrontend(object):
 
   @classmethod
   def handle_max_pool(cls, node, **kwargs):
-    return cls._pool_op(node, "MaxPool")
+    return cls._pool_op(node, "MaxPool", **kwargs)
 
   @classmethod
   def handle_pad(cls, node, **kwargs):
