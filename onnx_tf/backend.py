@@ -27,8 +27,8 @@ from onnx_tf.tf_net import TensorflowNet
 from onnx_tf.backend_rep import TensorflowRep
 from onnx_tf.common import (
   ONNX_OP_TO_TF_OP,
-  ONNX_ATTR_TO_TF_ATTR, 
-  ONNX_ATTR_TO_TF_ATTR_PER_OP, 
+  ONNX_ATTR_TO_TF_ATTR,
+  ONNX_ATTR_TO_TF_ATTR_PER_OP,
   ONNX_ATTR_TO_REMOVE_PER_OP,
   ONNX_TYPE_TO_TF_TYPE,
   STR_TO_TF_TYPE,
@@ -624,14 +624,16 @@ class TensorflowBackend(Backend):
       # Translate weights from (M x C x KH x KW) to (KH x KW X C X M)
       perm = list(range(2, weights_rank)) + [1, 0]
 
+    if "kernel_shape" in node.attrs.keys():
+      kernel_shape = node.attrs["kernel_shape"]
+      assert in_weights.get_shape().as_list()[2:] == kernel_shape, ("kernel_shape "
+        "attr of convolution does not match the actual weight "
+        "passed to this operation, attr {}, actual {}").format(kernel_shape,
+        in_weights.get_shape().as_list())
+
     weights = tf.transpose(in_weights, perm)
     dilations = node.attrs.get("dilations", None)
     strides = node.attrs.get("strides", None)
-
-    if "kernel_shape" in node.attrs.keys():
-      warnings.warn("Unsupported kernel_shape attribute by Tensorflow in "
-                    "Conv operator. The attribute will be ignored.",
-                    UserWarning)
 
     if "pads" in node.attrs.keys():
       x = cls.get_padding_as_op(x, node.attrs["pads"])
