@@ -8,6 +8,7 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 from functools import partial
+import itertools
 import warnings
 
 try:
