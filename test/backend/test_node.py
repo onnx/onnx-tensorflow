@@ -189,29 +189,39 @@ class TestNode(unittest.TestCase):
     np.testing.assert_almost_equal(output["Y"].flatten(), values)
 
   def test_conv(self):
-    # Fix test in the future.
-    return
     device = "CUDA"
     if not supports_device(device):
                 raise unittest.SkipTest(
                     "Backend doesn't support device {}".format(device))
+
+    N, C, H, W = 4, 3, 5, 5
+    x_shape = [N, C, H, W]
+    K, kH, kW = 6, 3, 3
+    weight_shape = [K, C, kH, kW]
     node_def = helper.make_node("Conv", ["X", "weights"],
-                                ["Y"], pads=[1,1])
-    x_shape = [1, 5, 4]
+                                ["Y"],
+                                pads=[1,1,1,1],
+                                kernel_shape=[kH, kW])
+
     x = self._get_rnd(x_shape)
-    weight_shape = [3, 5, 2]
     weights = self._get_rnd(weight_shape)
     output = run_node(node_def, [x, weights], device=device)
-    out_shape = [x_shape[0], weight_shape[0], x_shape[2]]
+
+    out_shape = [N, K, H, W]
     test_output = np.zeros(out_shape)
-    for b in range(0, x_shape[0]):
-      for m in range(0, weight_shape[0]):
-        for h in range(0, x_shape[2]):
-          v = 0
-          for c in range(0, x_shape[1]):
-            for k in range(h, min(h+weight_shape[2], x_shape[2])):
-              v += x[b][c][k] * weights[m][c][k-h]
-          test_output[b][m][h] = v
+    for n in range(N):
+      for c in range(C):
+          for h in range(H):
+            for w in range(W):
+              for k in range(K):
+                for kh in range(kH):
+                  for kw in range(kW):
+                    h_in_range = (h-kH//2+kh) < H and (h-kH//2+kh) >= 0
+                    w_in_range = (w-kW//2+kw) < W and (w-kW//2+kw) >= 0
+                    if h_in_range and w_in_range:
+                      test_output[n][k][h][w] += (x[n][c][h-kH//2+kh][w-kW//2+kw] *
+                                                  weights[k][c][kh][kw])
+
     np.testing.assert_almost_equal(output["Y"], test_output, decimal=5)
 
   def test_conv_transpose(self):
@@ -600,10 +610,11 @@ class TestNode(unittest.TestCase):
                                    np.power(x, y))
 
   def test_reshape(self):
-    node_def = helper.make_node("Reshape", ["X"], ["Y"], shape=[10, 10])
+    node_def = helper.make_node("Reshape", ["X", "Y"], ["Z"])
     x = self._get_rnd(100)
-    output = run_node(node_def, [x])
-    np.testing.assert_almost_equal(output["Y"], x.reshape([10, 10]))
+    y = [10, 10]
+    output = run_node(node_def, [x, y])
+    np.testing.assert_almost_equal(output["Z"], x.reshape([10, 10]))
 
   def test_selu(self):
     node_def = helper.make_node("Selu", ["X"], ["Y"])

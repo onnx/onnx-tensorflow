@@ -6,6 +6,9 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
+import importlib
+from itertools import chain
+
 import tensorflow as tf
 import numpy as np
 from onnx_tf.common import (
@@ -16,7 +19,8 @@ from onnx_tf.common import (
   get_tf_shape_as_list,
   op_name_to_lower,
 )
-from onnx import onnx_pb2, helper
+from onnx_tf.opset_version import frontend_tf_opset_version
+from onnx import defs, helper
 from onnx.helper import (
   make_tensor_value_info,
   make_tensor,
@@ -62,18 +66,21 @@ class TensorflowNode(object):
   def type_converter(self, x):
     return TF_TYPE_TO_ONNX_TYPE[tf.as_dtype(x.type)]
 
-class TensorflowFrontend(object):
+class TensorflowFrontendBase(object):
   """ Tensorflow Frontend for ONNX
   """
 
+  frontend_version_cache = {}
+
   @classmethod
-  def tensorflow_graph_to_onnx_graph(cls, graph_def, output, name="graph"):
+  def tensorflow_graph_to_onnx_graph(cls, graph_def, output, opset=0, name="graph"):
     """Function that converts a tensorflow graph to an onnx graph.
 
     Args:
         graph_def: Tensorflow Graph Proto object.
         output: A Tensorflow NodeDef object specifying which node
           to be taken as output of the ONNX graph.
+        opset: Opset version of the operator set. Default 0 means using latest version.
         name: The name of the output ONNX Graph.
 
     Returns:
@@ -138,10 +145,22 @@ class TensorflowFrontend(object):
       else:
         handler_name = "handle_" + op_name_to_lower(node.op)
 
+        versions = frontend_tf_opset_version[op_name_to_lower(node.op)]
+
+        opset = defs.onnx_opset_version() if opset == 0 else opset
+        if opset == 0:
+          version = max(versions)
+        else:
+          versions = sorted(versions + [opset])
+          version = versions[max([i for i, v in enumerate(versions) if v == opset]) - 1]
+
+        frontend_ver = 'frontend_v{}'.format(version)
+        frontend = cls.frontend_version_cache.setdefault(frontend_ver, importlib.import_module(
+          'onnx_tf.frontends.' + frontend_ver).TensorflowFrontend)
         # Check if specialized handler exists.
-        if handler_name in dir(cls):
-          method_to_call = getattr(cls, handler_name)
-          ops_proto.append(method_to_call(node, consts))
+        if hasattr(frontend, handler_name):
+          method_to_call = getattr(frontend, handler_name)
+          ops_proto.append(method_to_call(node, consts=consts))
         elif node.op in TF_OP_STR_TO_ONNX_OP.keys():
           # Remove tensorflow-specific attrs that are not
           # needed/allowed in ONNX.
@@ -169,6 +188,13 @@ class TensorflowFrontend(object):
       output_proto.append(make_tensor_value_info(output_name,
                                                  output_onnx_type,
                                                  output.attr["_output_shapes"][i]))
+
+    inputs = list(chain.from_iterable(map(lambda p: list(p.input), ops_proto)))
+
+    # Remove proto in inputs_proto and consts_proto if proto is not used as input in ONNX
+    inputs_proto = list(filter(lambda x: x.name in inputs, inputs_proto))
+    consts_proto = list(filter(lambda x: x.name in inputs, consts_proto))
+
     return make_graph(ops_proto,
                       name,
                       inputs_proto,
@@ -182,64 +208,8 @@ class TensorflowFrontend(object):
             onnx_op, node.inputs, [node.name], name=node.name, broadcast=1)
 
   @classmethod
-  def handle_logical_and(cls, node, consts):
-    return cls._bin_op(node, "And")
-
-  @classmethod
-  def handle_logical_or(cls, node, consts):
-    return cls._bin_op(node, "Or")
-
-  @classmethod
-  def handle_pad(cls, node, consts):
-    assert node.inputs[1] in consts.keys()
-    supported_modes = ["constant", "reflect"]
-    mode = node.attr.get("mode", "constant")
-    assert mode.lower() in supported_modes
-    pads = np.transpose(consts[node.inputs[1]]).flatten()
-
-    return helper.make_node(
-            "Pad",
-            [node.inputs[0]],
-            [node.name],
-            name=node.name,
-            pads=pads,
-            mode=mode,
-            value=0.0)
-
-  @classmethod
-  def handle_random_standard_normal(cls, node, consts):
-    """ Tensorflow does not have a generic random_normal op.
-        The generic random_normal op is translated into a scaled
-        and offsetted random standard normal op.
-    """
-    return helper.make_node(
-            "RandomNormal",
-            [],
-            [node.name],
-            dtype=node.attr["dtype"],
-            seed=node.attr["seed"],
-            mean=0.0,
-            scale=1.0,
-            shape=node.attr["_output_shapes"][0])
-
-  @classmethod
-  def handle_random_uniform(cls, node, consts):
-    """ Tensorflow does not have a generic random_uniform op.
-        The generic random_uniform op is translated into a scaled
-        and offsetted random standard uniform op.
-    """
-    return helper.make_node(
-            "RandomUniform",
-            [],
-            [node.name],
-            dtype=node.attr["dtype"],
-            seed=node.attr["seed"],
-            high=1.0,
-            low=0.0,
-            shape=node.attr["_output_shapes"][0])
-
-  @classmethod
-  def _reduce_op(cls, op, node, consts):
+  def _reduce_op(cls, op, node, **kwargs):
+    consts = kwargs["consts"]
     assert node.inputs[1] in consts.keys()
     axes = consts[node.inputs[1]]
     return helper.make_node(op,
@@ -248,79 +218,4 @@ class TensorflowFrontend(object):
                             axes=axes,
                             keepdims=node.attr.get("keep_dims", 1))
 
-  @classmethod
-  def handle_max(cls, node, consts):
-    return cls._reduce_op("ReduceMax", node, consts)
-
-  @classmethod
-  def handle_mean(cls, node, consts):
-    return cls._reduce_op("ReduceMean", node, consts)
-
-  @classmethod
-  def handle_min(cls, node, consts):
-    return cls._reduce_op("ReduceMin", node, consts)
-
-  @classmethod
-  def handle_prod(cls, node, consts):
-    return cls._reduce_op("ReduceProd", node, consts)
-
-  @classmethod
-  def handle_sum(cls, node, consts):
-    return cls._reduce_op("ReduceSum", node, consts)
-
-  @classmethod
-  def handle_reshape(cls, node, consts):
-    assert node.inputs[1] in consts.keys()
-    shape = consts[node.inputs[1]]
-    return helper.make_node("Reshape",
-                            [node.inputs[0]],
-                            [node.name],
-                            shape=shape)
-
-  @classmethod
-  def handle_split_v(cls, node, consts):
-    split = consts[node.inputs[1]]
-    axis = int(consts[node.inputs[2]])
-    output_names = [node.name + ":{}".format(i) if i>0 else node.name for i in range(len(split))]
-    return helper.make_node("Split",
-                            [node.inputs[0]],
-                            output_names,
-                            split=split,
-                            axis=axis)
-
-  @classmethod
-  def handle_squeeze(cls, node, consts):
-    assert "squeeze_dims" in node.attr.keys(), ("Squeeze dims have to be"
-      "specified")
-    axes = node.attr["squeeze_dims"]
-    return helper.make_node("Squeeze",
-                            [node.inputs[0]],
-                            [node.name],
-                            axes=axes)
-
-  @classmethod
-  def handle_sub(cls, node, consts):
-    return cls._bin_op(node, "Sub")
-
-  @classmethod
-  def handle_transpose(cls, node, consts):
-    perm = consts[node.inputs[1]]
-    return helper.make_node("Transpose",
-                            [node.inputs[0]],
-                            [node.name],
-                            perm=perm)
-
-  @classmethod
-  def handle_logical_xor(cls, node, consts):
-    return cls._bin_op(node, "Xor")
-
-  @classmethod
-  def handle_concat_v2(cls, node, consts):
-    assert node.inputs[-1] in consts.keys()
-    axis = int(consts[node.inputs[-1]])
-    return helper.make_node("Concat",
-                            inputs=node.inputs[0:-1],
-                            outputs=[node.name],
-                            axis=axis)
-
-convert_graph = TensorflowFrontend.tensorflow_graph_to_onnx_graph
+convert_graph = TensorflowFrontendBase.tensorflow_graph_to_onnx_graph
