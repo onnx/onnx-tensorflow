@@ -7,12 +7,16 @@ from __future__ import unicode_literals
 from onnx_tf.third_party import get_info
 
 import onnx_tf.backend
+import onnx_tf.frontend
 
 def main():
     gen_doc_for = {
         "onnx_tf.backend.TensorflowBackendBase": [
             onnx_tf.backend.TensorflowBackendBase.prepare,
             ],
+        "onnx_tf.frontend.TensorflowFrontendBase": [
+            onnx_tf.frontend.TensorflowFrontendBase.tensorflow_graph_to_onnx_graph,
+        ]
     }
 
     with open('./doc/API.md', 'w') as doc_file:
@@ -24,6 +28,7 @@ def main():
                 doc_parsed = get_info.parse_docstring(func.__doc__)
                 doc_file.write("#### `" + scope + "." + func.__name__ + "`\n\n")
                 doc_file.write(doc_parsed['short_description'] + '\n\n')
+                doc_file.write(doc_parsed['long_description'] + '\n\n')
                 doc_file.write("_params_:\n\n")
                 for param in doc_parsed["params"]:
                     doc_file.write("`" + param["name"] + "` : " + param["doc"] + "\n\n")
