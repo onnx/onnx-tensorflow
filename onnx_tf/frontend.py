@@ -155,12 +155,8 @@ class TensorflowFrontendBase(object):
           version = versions[max([i for i, v in enumerate(versions) if v == opset]) - 1]
 
         frontend_ver = 'frontend_v{}'.format(version)
-        if frontend_ver not in cls.frontend_version_cache:
-            frontend = importlib.import_module('onnx_tf.frontends.' + frontend_ver).TensorflowFrontend
-            cls.frontend_version_cache[frontend_ver] = frontend
-        else:
-            frontend = cls.frontend_version_cache[frontend_ver]
-
+        frontend = cls.frontend_version_cache.setdefault(frontend_ver, importlib.import_module(
+          'onnx_tf.frontends.' + frontend_ver).TensorflowFrontend)
         # Check if specialized handler exists.
         if hasattr(frontend, handler_name):
           method_to_call = getattr(frontend, handler_name)

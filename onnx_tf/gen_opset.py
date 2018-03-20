@@ -50,10 +50,7 @@ def main():
                 tf_op_name = op_name_to_lower(ONNX_OP_TO_TF_OP_STR[schema.name])
             else:
                 continue
-            if tf_op_name in frontend_tf_opset_dict:
-                frontend_tf_opset_dict[tf_op_name].append(version)
-            else:
-                frontend_tf_opset_dict[tf_op_name] = [version]
+            frontend_tf_opset_dict.setdefault(tf_op_name, []).append(version)
             frontend_opset_dict[op_name].append(version)
 
         version += 1
