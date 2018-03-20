@@ -15,6 +15,11 @@ class TensorflowFrontend(TensorflowFrontendBase):
   """ Tensorflow Frontend for ONNX
   """
 
+  ONNX_TO_HANDLER = {
+    "pad": "pad",
+    "split": "split_v",
+  }
+
   @classmethod
   def handle_pad(cls, node, **kwargs):
     consts = kwargs["consts"]

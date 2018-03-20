@@ -173,6 +173,8 @@ TF_OP_STR_TO_ONNX_OP = {
   "Tanh": "Tanh",
 }
 
+ONNX_OP_TO_TF_OP_STR = invert(TF_OP_STR_TO_ONNX_OP)
+
 def get_tf_shape_as_list(tf_shape_dim):
   return list(map(lambda x: x.size, list(tf_shape_dim)))
 

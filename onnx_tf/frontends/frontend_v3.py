@@ -11,3 +11,5 @@ from onnx_tf.frontend import TensorflowFrontendBase
 class TensorflowFrontend(TensorflowFrontendBase):
   """ Tensorflow Frontend for ONNX
   """
+
+  ONNX_TO_HANDLER = {}

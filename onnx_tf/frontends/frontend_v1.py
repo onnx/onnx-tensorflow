@@ -15,6 +15,26 @@ class TensorflowFrontend(TensorflowFrontendBase):
   """ Tensorflow Frontend for ONNX
   """
 
+  ONNX_TO_HANDLER = {
+    "and": "logical_and",
+    "or": "logical_or",
+    "pad": "pad",
+    "random_normal": "random_standard_normal",
+    "random_uniform": "random_uniform",
+    "reduce_max": "max",
+    "reduce_mean": "mean",
+    "reduce_min": "min",
+    "reduce_prod": "prod",
+    "reduce_sum": "sum",
+    "reshape": "reshape",
+    "split": "split_v",
+    "squeeze": "squeeze",
+    "sub": "sub",
+    "transpose": "transpose",
+    "xor": "logical_xor",
+    "concat": "concat_v2",
+  }
+
   @classmethod
   def handle_logical_and(cls, node, **kwargs):
     return cls._bin_op(node, "And")

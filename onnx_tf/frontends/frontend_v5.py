@@ -14,6 +14,10 @@ class TensorflowFrontend(TensorflowFrontendBase):
   """ Tensorflow Frontend for ONNX
   """
 
+  ONNX_TO_HANDLER = {
+    "reshape": "reshape",
+  }
+
   @classmethod
   def handle_reshape(cls, node, **kwargs):
     return helper.make_node("Reshape",
