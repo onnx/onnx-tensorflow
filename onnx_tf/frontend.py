@@ -6,6 +6,7 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
+import importlib
 from itertools import chain
 
 import tensorflow as tf
@@ -19,7 +20,8 @@ from onnx_tf.common import (
   get_tf_shape_as_list,
   op_name_to_lower,
 )
-from onnx import onnx_pb2, helper
+from onnx_tf.opset_version import frontend_tf_opset_version
+from onnx import defs, helper
 from onnx.helper import (
   make_tensor_value_info,
   make_tensor,
@@ -66,7 +68,7 @@ class TensorflowNode(object):
   def type_converter(self, x):
     return TF_TYPE_TO_ONNX_TYPE[tf.as_dtype(x.type)]
 
-class TensorflowFrontend(object):
+class TensorflowFrontendBase(object):
   """ Tensorflow Frontend for ONNX
   """
 
@@ -84,14 +86,17 @@ class TensorflowFrontend(object):
     "Xor": {"broadcast": 1},
   }
 
+  frontend_version_cache = {}
+
   @classmethod
-  def tensorflow_graph_to_onnx_graph(cls, graph_def, output, name="graph"):
+  def tensorflow_graph_to_onnx_graph(cls, graph_def, output, opset=0, name="graph"):
     """Function that converts a tensorflow graph to an onnx graph.
 
     Args:
         graph_def: Tensorflow Graph Proto object.
         output: A Tensorflow NodeDef object specifying which node
           to be taken as output of the ONNX graph.
+        opset: Opset version of the operator set. Default 0 means using latest version.
         name: The name of the output ONNX Graph.
 
     Returns:
@@ -159,9 +164,26 @@ class TensorflowFrontend(object):
           map(lambda item: (item[0], get_attribute_value(item[1]) if isinstance(item[1], AttrValue) else item[1]),
               node.attr.items()))
 
+        versions = frontend_tf_opset_version[op_name_to_lower(node.op)]
+
+        opset = defs.onnx_opset_version() if opset == 0 else opset
+        if opset == 0:
+          version = max(versions)
+        else:
+          versions = sorted(versions + [opset])
+          version = versions[max([i for i, v in enumerate(versions) if v == opset]) - 1]
+
+        frontend_ver = 'frontend_v{}'.format(version)
+        if frontend_ver not in cls.frontend_version_cache:
+            frontend = importlib.import_module('onnx_tf.frontends.' + frontend_ver).TensorflowFrontend
+            cls.frontend_version_cache[frontend_ver] = frontend
+        else:
+            frontend = cls.frontend_version_cache[frontend_ver]
+          
         # Check if specialized handler exists.
-        if handler_name in dir(cls):
-          method_to_call = getattr(cls, handler_name)
+        if hasattr(frontend, handler_name):
+          method_to_call = getattr(frontend, handler_name)
+          ops_proto.append(method_to_call(node, consts=consts))
           node = method_to_call(node, consts=consts)
           if isinstance(node, list):
             ops_proto.extend(node)
@@ -214,106 +236,6 @@ class TensorflowFrontend(object):
             onnx_op, node.inputs, [node.name], name=node.name, broadcast=1)
 
   @classmethod
-  def _pool_op(cls, node, onnx_op, **kwargs):
-    auto_pad = node.attr["padding"].decode("UTF-8")
-    auto_pad = "SAME_UPPER" if auto_pad == "SAME" else auto_pad
-    data_format = node.attr["data_format"].decode("UTF-8")
-    spatial_indices = [i for i in range(len(data_format)) if data_format[i] not in ["N", "C"]]
-    strides = list(map(lambda i: node.attr["strides"][i], spatial_indices))
-    kernel_shape = list(map(lambda i: node.attr["ksize"][i], spatial_indices))
-    return helper.make_node(
-      onnx_op,
-      [node.inputs[0]],
-      [node.name],
-      auto_pad=auto_pad,
-      kernel_shape=kernel_shape,
-      strides=strides
-    )
-
-  @classmethod
-  def handle_avg_pool(cls, node, **kwargs):
-    return cls._pool_op(node, "AveragePool", **kwargs)
-
-  @classmethod
-  def handle_conv2_d(cls, node, **kwargs):
-    auto_pad = node.attr["padding"].decode("UTF-8")
-    auto_pad = "SAME_UPPER" if auto_pad == "SAME" else auto_pad
-    data_format = node.attr["data_format"].decode("UTF-8")
-    spatial_indices = [i for i in range(len(data_format)) if data_format[i] not in ["N", "C"]]
-    strides = list(map(lambda i: node.attr["strides"][i], spatial_indices))
-    dilations = list(map(lambda i: node.attr.get("dilations", [1, 1, 1, 1])[i], spatial_indices))
-    return helper.make_node(
-      "Conv",
-      [node.inputs[0], node.inputs[1]],
-      [node.name],
-      auto_pad=auto_pad,
-      strides=strides,
-      dilations=dilations
-    )
-
-  @classmethod
-  def handle_logical_and(cls, node, **kwargs):
-    return cls._bin_op(node, "And")
-
-  @classmethod
-  def handle_logical_or(cls, node, **kwargs):
-    return cls._bin_op(node, "Or")
-
-  @classmethod
-  def handle_max_pool(cls, node, **kwargs):
-    return cls._pool_op(node, "MaxPool", **kwargs)
-
-  @classmethod
-  def handle_pad(cls, node, **kwargs):
-    consts = kwargs["consts"]
-    assert node.inputs[1] in consts.keys()
-    supported_modes = ["constant", "reflect"]
-    mode = node.attr.get("mode", "constant")
-    assert mode.lower() in supported_modes
-    pads = np.transpose(consts[node.inputs[1]]).flatten()
-
-    return helper.make_node(
-            "Pad",
-            [node.inputs[0]],
-            [node.name],
-            name=node.name,
-            pads=pads,
-            mode=mode,
-            value=0.0)
-
-  @classmethod
-  def handle_random_standard_normal(cls, node, **kwargs):
-    """ Tensorflow does not have a generic random_normal op.
-        The generic random_normal op is translated into a scaled
-        and offsetted random standard normal op.
-    """
-    return helper.make_node(
-            "RandomNormal",
-            [],
-            [node.name],
-            dtype=node.attr["dtype"],
-            seed=node.attr["seed"],
-            mean=0.0,
-            scale=1.0,
-            shape=node.attr["_output_shapes"][0])
-
-  @classmethod
-  def handle_random_uniform(cls, node, **kwargs):
-    """ Tensorflow does not have a generic random_uniform op.
-        The generic random_uniform op is translated into a scaled
-        and offsetted random standard uniform op.
-    """
-    return helper.make_node(
-            "RandomUniform",
-            [],
-            [node.name],
-            dtype=node.attr["dtype"],
-            seed=node.attr["seed"],
-            high=1.0,
-            low=0.0,
-            shape=node.attr["_output_shapes"][0])
-
-  @classmethod
   def _reduce_op(cls, op, node, **kwargs):
     consts = kwargs["consts"]
     assert node.inputs[1] in consts.keys()
@@ -324,96 +246,4 @@ class TensorflowFrontend(object):
                             axes=axes,
                             keepdims=node.attr.get("keep_dims", 1))
 
-  @classmethod
-  def handle_max(cls, node, **kwargs):
-    return cls._reduce_op("ReduceMax", node, **kwargs)
-
-  @classmethod
-  def handle_mean(cls, node, **kwargs):
-    return cls._reduce_op("ReduceMean", node, **kwargs)
-
-  @classmethod
-  def handle_min(cls, node, **kwargs):
-    return cls._reduce_op("ReduceMin", node, **kwargs)
-
-  @classmethod
-  def handle_prod(cls, node, **kwargs):
-    return cls._reduce_op("ReduceProd", node, **kwargs)
-
-  @classmethod
-  def handle_sum(cls, node, **kwargs):
-    return cls._reduce_op("ReduceSum", node, **kwargs)
-
-  @classmethod
-  def handle_reshape(cls, node, **kwargs):
-    consts = kwargs["consts"]
-    assert node.inputs[1] in consts.keys()
-    shape = consts[node.inputs[1]]
-    return helper.make_node("Reshape",
-                            [node.inputs[0]],
-                            [node.name],
-                            shape=shape)
-
-  @classmethod
-  def handle_rsqrt(cls, node, **kwargs):
-    sqrt_node = helper.make_node("Sqrt",
-                                 [node.inputs[0]],
-                                 [node.name.replace("Rsqrt", "Sqrt")])
-    reciprocal_node = helper.make_node("Reciprocal",
-                                       [sqrt_node.output[0]],
-                                       [node.name.replace("Rsqrt", "Reciprocal")])
-    identity_node = helper.make_node("Identity",
-                                     [reciprocal_node.output[0]],
-                                     [node.name])
-    return [sqrt_node, reciprocal_node, identity_node]
-
-  @classmethod
-  def handle_split_v(cls, node, **kwargs):
-    consts = kwargs["consts"]
-    split = consts[node.inputs[1]]
-    axis = int(consts[node.inputs[2]])
-    output_names = [node.name + ":{}".format(i) if i>0 else node.name for i in range(len(split))]
-    return helper.make_node("Split",
-                            [node.inputs[0]],
-                            output_names,
-                            split=split,
-                            axis=axis)
-
-  @classmethod
-  def handle_squeeze(cls, node, **kwargs):
-    assert "squeeze_dims" in node.attr.keys(), ("Squeeze dims have to be"
-      "specified")
-    axes = node.attr["squeeze_dims"]
-    return helper.make_node("Squeeze",
-                            [node.inputs[0]],
-                            [node.name],
-                            axes=axes)
-
-  @classmethod
-  def handle_sub(cls, node, **kwargs):
-    return cls._bin_op(node, "Sub")
-
-  @classmethod
-  def handle_transpose(cls, node, **kwargs):
-    consts = kwargs["consts"]
-    perm = consts[node.inputs[1]]
-    return helper.make_node("Transpose",
-                            [node.inputs[0]],
-                            [node.name],
-                            perm=perm)
-
-  @classmethod
-  def handle_logical_xor(cls, node, **kwargs):
-    return cls._bin_op(node, "Xor")
-
-  @classmethod
-  def handle_concat_v2(cls, node, **kwargs):
-    consts = kwargs["consts"]
-    assert node.inputs[-1] in consts.keys()
-    axis = int(consts[node.inputs[-1]])
-    return helper.make_node("Concat",
-                            inputs=node.inputs[0:-1],
-                            outputs=[node.name],
-                            axis=axis)
-
-convert_graph = TensorflowFrontend.tensorflow_graph_to_onnx_graph
+convert_graph = TensorflowFrontendBase.tensorflow_graph_to_onnx_graph
