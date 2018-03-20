@@ -11,11 +11,11 @@ import onnx_tf.frontend
 
 def main():
     gen_doc_for = {
-        'onnx_tf.backend.TensorflowBackendBase': [
-            onnx_tf.backend.TensorflowBackendBase.prepare,
+        'onnx_tf.backend': [
+            onnx_tf.backend.prepare,
             ],
-        'onnx_tf.frontend.TensorflowFrontendBase': [
-            onnx_tf.frontend.TensorflowFrontendBase.tensorflow_graph_to_onnx_model,
+        'onnx_tf.frontend': [
+            onnx_tf.frontend.tensorflow_graph_to_onnx_model,
         ]
     }
 

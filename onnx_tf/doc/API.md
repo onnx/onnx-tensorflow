@@ -1,7 +1,7 @@
 ONNX-Tensorflow API
 ------
 
-#### `onnx_tf.frontend.TensorflowFrontendBase.tensorflow_graph_to_onnx_model`
+#### `onnx_tf.frontend.tensorflow_graph_to_onnx_model`
 
 <details>
   <summary>Converts a Tensorflow Graph Proto to an ONNX model
@@ -37,7 +37,7 @@ _returns_:
 
 The equivalent ONNX Model Proto object.
 
-#### `onnx_tf.backend.TensorflowBackendBase.prepare`
+#### `onnx_tf.backend.prepare`
 
 <details>
   <summary>Prepare an ONNX model for Tensorflow Backend

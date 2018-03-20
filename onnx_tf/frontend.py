@@ -252,3 +252,5 @@ class TensorflowFrontendBase(object):
                             keepdims=node.attr.get("keep_dims", 1))
 
 convert_graph = TensorflowFrontendBase.tensorflow_graph_to_onnx_graph
+
+tensorflow_graph_to_onnx_model = TensorflowFrontendBase.tensorflow_graph_to_onnx_model
