@@ -17,13 +17,19 @@ def invertible(dict):
     # onto is guaranteed, so check one-to-one
     return len(dict.values()) == len(set(dict.values()))
 
-def invert(dict):
+def invert(dict, to_list=False):
+  if to_list:
+    inverse = {}
+    for i in dict:
+      inverse.setdefault(dict.get(i), []).append(i)
+    return inverse
+  else:
     if not invertible(dict):
         raise ValueError("The dictionary is not invertible"
-            " because it is not one-to-one.")
+                         " because it is not one-to-one.")
     else:
-        inverse = {v: k for k, v in dict.items()}
-        return inverse
+      inverse = {v: k for k, v in dict.items()}
+      return inverse
 
 ONNX_TYPE_TO_TF_TYPE = {
     TensorProto.FLOAT: tf.float32,
@@ -173,7 +179,7 @@ TF_OP_STR_TO_ONNX_OP = {
   "Tanh": "Tanh",
 }
 
-ONNX_OP_TO_TF_OP_STR = invert(TF_OP_STR_TO_ONNX_OP)
+ONNX_OP_TO_TF_OP_STR = invert(TF_OP_STR_TO_ONNX_OP, to_list=True)
 
 def get_tf_shape_as_list(tf_shape_dim):
   return list(map(lambda x: x.size, list(tf_shape_dim)))

@@ -45,15 +45,13 @@ def main():
                 backend_opset_dict[op_name].append(version)
 
             if op_name in frontend.ONNX_TO_HANDLER:
-                tf_op_name = op_name_to_lower(frontend.ONNX_TO_HANDLER[op_name])
+                tf_op_names = [op_name_to_lower(frontend.ONNX_TO_HANDLER[op_name])]
             elif schema.name in ONNX_OP_TO_TF_OP_STR.keys():
-                tf_op_name = op_name_to_lower(ONNX_OP_TO_TF_OP_STR[schema.name])
+                tf_op_names = [op_name_to_lower(op) for op in ONNX_OP_TO_TF_OP_STR[schema.name]]
             else:
                 continue
-            if tf_op_name in frontend_tf_opset_dict:
-                frontend_tf_opset_dict[tf_op_name].append(version)
-            else:
-                frontend_tf_opset_dict[tf_op_name] = [version]
+            for tf_op_name in tf_op_names:
+                frontend_tf_opset_dict.setdefault(tf_op_name, []).append(version)
             frontend_opset_dict[op_name].append(version)
 
         version += 1

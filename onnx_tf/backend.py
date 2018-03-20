@@ -352,11 +352,8 @@ class TensorflowBackendBase(Backend):
       version = versions[max([i for i, v in enumerate(versions) if v == opset]) - 1]
 
     backend_ver = 'backend_v{}'.format(version)
-    if backend_ver not in cls.backend_version_cache:
-      backend = importlib.import_module('onnx_tf.backends.' + backend_ver).TensorflowBackend
-      cls.backend_version_cache[backend_ver] = backend
-    else:
-      backend = cls.backend_version_cache[backend_ver]
+    backend = cls.backend_version_cache.setdefault(backend_ver, importlib.import_module(
+      'onnx_tf.backends.' + backend_ver).TensorflowBackend)
 
     if hasattr(backend, handler_name):
       method_to_call = getattr(backend, handler_name)
