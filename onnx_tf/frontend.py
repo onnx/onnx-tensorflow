@@ -19,7 +19,7 @@ from onnx_tf.common import (
   get_tf_shape_as_list,
   op_name_to_lower,
 )
-from onnx_tf.opset_version import frontend_opset_version
+from onnx_tf.opset_version import frontend_tf_opset_version
 from onnx import defs, helper
 from onnx.helper import (
   make_tensor_value_info,
@@ -143,7 +143,7 @@ class TensorflowFrontendBase(object):
       else:
         handler_name = "handle_" + op_name_to_lower(node.op)
 
-        versions = frontend_opset_version[op_name_to_lower(node.op)]
+        versions = frontend_tf_opset_version[op_name_to_lower(node.op)]
 
         opset = defs.onnx_opset_version() if opset == 0 else opset
         if opset == 0:
