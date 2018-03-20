@@ -61,60 +61,76 @@ class TensorflowBackend(TensorflowBackendBase):
     return [tf.argmin(data, axis=axis)]
 
   @classmethod
-  def _compatibility_avg_pool(cls,
-                              node,
-                              input_dict,
-                              pool_func,
-                              guess_or_manual_pad):
+  def _compatibility_avg_pool(cls, node, input_dict):
+    def _get_pad_shape(auto_pad, input_spatial_shape, kernel_spatial_shape, strides_spatial, output_spatial_shape):
+      pad_shape = [0] * len(input_spatial_shape)
+      if auto_pad in ("SAME_UPPER", "SAME_LOWER"):
+        for i in range(len(input_spatial_shape)):
+          pad_shape[i] = (output_spatial_shape[i] - 1) * strides_spatial[i] + kernel_spatial_shape[i] - \
+                         input_spatial_shape[i]
+      elif auto_pad in ("VALID", ""):
+        pass
+      return pad_shape
+
+    def _get_output_shape(auto_pad, input_spatial_shape, kernel_spatial_shape, strides_spatial):
+      out_shape = [0] * len(input_spatial_shape)
+      if auto_pad in ("SAME_UPPER", "SAME_LOWER"):
+        for i in range(len(input_spatial_shape)):
+          out_shape[i] = int(np.ceil(float(input_spatial_shape[i]) / float(strides_spatial[i])))
+      elif auto_pad in ("VALID", ""):
+        for i in range(len(input_spatial_shape)):
+          out_shape[i] = int(
+            np.ceil(float(input_spatial_shape[i] - (kernel_spatial_shape[i] - 1)) / float(strides_spatial[i])))
+      return out_shape
+
+    def py_pool(x, kernel_shape, strides_shape, pads, out_shape, pad_shape):
+      x_shape = np.shape(x)
+      spatial_size = len(x_shape[2:])
+      pad_attr = [(0, 0), (0, 0)] + [(pads[i], pads[i + spatial_size]) for i in range(spatial_size)]
+      padded = np.pad(x, pad_attr, mode="constant", constant_values=np.nan)
+
+      y = np.zeros([x_shape[0], x_shape[1]] + list(out_shape))
+
+      for shape in itertools.product(range(x_shape[0]),
+                                     range(x_shape[1]),
+                                     *[range(
+                                       int((x_shape[i + 2] + pad_shape[i] - kernel_shape[i]) / strides_shape[i] + 1))
+                                       for i in range(spatial_size)]):
+        window = padded[shape[0], shape[1]]
+        window_vals = np.array([window[i] for i in list(
+          itertools.product(
+            *[range(strides_shape[i] * shape[i + 2], strides_shape[i] * shape[i + 2] + kernel_shape[i]) for i in
+              range(spatial_size)])
+        )])
+        average = np.average(window_vals[np.where(~np.isnan(window_vals))])
+        y[shape] = average
+      return y.astype(np.float32)
 
     x = input_dict[node.inputs[0]]
-    x_rank = len(x.get_shape())
-
+    x_shape = x.shape.as_list()
+    spatial_size = len(x_shape[2:])
     kernel_shape = node.attrs["kernel_shape"]
-    strides = node.attrs["strides"]
+    strides_shape = node.attrs.get("strides", [1] * spatial_size)
+    pads = node.attrs.get("pads", [0] * spatial_size * 2)
+    auto_pad = node.attrs.get("auto_pad", "")
 
-    pads = node.attrs.get("pads", [0, 0, 0, 0])
+    # Only auto_pad in ("SAME_LOWER", "") will come here.
+    if auto_pad == "SAME_LOWER":
+      out_shape = _get_output_shape(auto_pad, x_shape[2:], kernel_shape, strides_shape)
+      pad_shape = _get_pad_shape(auto_pad, x_shape[2:], kernel_shape, strides_shape, out_shape)
+      for i in range(spatial_size):
+        pads[i + spatial_size] = pad_shape[i] // 2
+        pads[i] = pad_shape[i] - pads[i + spatial_size]
+    elif auto_pad == "":
+      pad_shape = [pads[i] + pads[i + spatial_size] for i in range(spatial_size)]
+      out_shape = _get_output_shape(auto_pad, np.add(x_shape[2:], pad_shape), kernel_shape, strides_shape)
 
-    # pylint: disable=line-too-long
-    def py_pool(x, kernel_shape, strides, pad):
-      out_h = int((x.shape[2] + pads[0] + pads[2] - kernel_shape[0]) // strides[0]) + 1
-      out_w = int((x.shape[3] + pads[1] + pads[3] - kernel_shape[1]) // strides[1]) + 1
-
-      out = np.zeros([x.shape[0], x.shape[1], out_h, out_w], dtype=np.float32)
-      for n in range(0, x.shape[0]):
-        for c in range(0, x.shape[1]):
-          for h in range(0 - pad[0], x.shape[2] + pad[2], strides[0]):
-            for w in range(0 - pad[1], x.shape[3] + pad[3], strides[1]):
-              # skip window if window is outside padded region
-              if (h + kernel_shape[0] > x.shape[2] + pad[2]) or \
-                  (w + kernel_shape[1] > x.shape[3] + pad[3]):
-                continue
-              count = 0
-              val = 0
-              for kh in range(0, kernel_shape[0]):
-                for kw in range(0, kernel_shape[1]):
-                  current_h = h + kh
-                  current_w = w + kw
-                  if (current_h >= 0) and (current_w >= 0) and \
-                      (current_h < x.shape[2]) and (current_w < x.shape[3]):
-                    count += 1
-                    val += x[n][c][current_h][current_w]
-              out[n][c][int((h + pad[0]) // strides[0])][int((w + pad[1]) // strides[1])] = val / count
-      return out
-
-    pooled = tf.py_func(py_pool, [x, kernel_shape, strides, pads], tf.float32)
-    x_shape = list(x.get_shape())
-
-    out_h = int((x_shape[2] + pads[0] + pads[2] - kernel_shape[0]) // strides[0]) + 1
-    out_w = int((x_shape[3] + pads[1] + pads[3] - kernel_shape[1]) // strides[1]) + 1
-    pooled.set_shape([x_shape[0], x_shape[1], out_h, out_w])
-    # pylint: enable=line-too-long
-
+    pooled = tf.py_func(py_pool, [x, kernel_shape, strides_shape, pads, out_shape, pad_shape], tf.float32)
+    pooled.set_shape(x_shape[0:2] + out_shape)
     return [pooled]
 
   @classmethod
   def _pool(cls, node, input_dict, pool_func, can_pad_zero):
-
     x = input_dict[node.inputs[0]]
     x_rank = len(x.get_shape())
 
@@ -122,23 +138,26 @@ class TensorflowBackend(TensorflowBackendBase):
     storage_format, compute_format = cls.get_data_format(x_rank, support_cuda)
 
     kernel_shape = node.attrs["kernel_shape"]
-    strides = node.attrs["strides"]
+    strides = node.attrs.get("strides", [1] * (x_rank - 2))
 
     # By default, do not pad
-    pad = "VALID"
-    pads = node.attrs["pads"] if "pads" in node.attrs else None
+    pad = None
+    pads = node.attrs.get("pads", [0] * (x_rank - 2) * 2)
 
-    if pads:
-      pad = cls.get_tf_pad(x.get_shape().as_list(),
-                           kernel_shape,
-                           strides,
-                           pads)
-      if pad is None and can_pad_zero:
-        x = cls.get_padding_as_op(x, node.attrs["pads"])
+    if "auto_pad" in node.attrs:
+      if node.attrs["auto_pad"] == "SAME_UPPER":
+        pad = "SAME"
+      elif node.attrs["auto_pad"] == "VALID":
         pad = "VALID"
-      if pad is None and not can_pad_zero:
-        # Currently it's always average pooling
-        return cls._compatibility_avg_pool(node, input_dict, tf.nn.avg_pool, 0)
+      elif node.attrs["auto_pad"] == "SAME_LOWER":
+        pad = None
+
+    if pad is None and can_pad_zero:
+      pad = "VALID"
+      x = cls.get_padding_as_op(x, pads)
+    if pad is None and not can_pad_zero:
+      # Currently it's always average pooling
+      return cls._compatibility_avg_pool(node, input_dict)
 
     if support_cuda:
       pooled = pool_func(x, kernel_shape, padding=pad, strides=strides, data_format=compute_format)
