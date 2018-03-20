@@ -8,6 +8,7 @@ from onnx_tf.third_party import get_info
 
 import onnx_tf.backend
 import onnx_tf.frontend
+import opset_version
 
 def main():
     gen_doc_for = {
@@ -21,7 +22,7 @@ def main():
 
     with open('./doc/API.md', 'w') as doc_file:
         doc_file.write('ONNX-Tensorflow API\n')
-        doc_file.write('------\n\n')
+        doc_file.write('======\n\n')
 
         for scope, funcs in gen_doc_for.items():
             for func in funcs:
@@ -40,6 +41,34 @@ def main():
 
                 doc_file.write('_returns_:\n\n')
                 doc_file.write(doc_parsed['returns'] + '\n\n')
+
+    with open('./doc/support_status.md', 'w') as status_file:
+        status_file.write('ONNX-Tensorflow Support Status\n')
+        status_file.write('======\n\n')
+
+        status_file.write('Backend\n')
+        status_file.write('______\n\n')
+
+        status_file.write('| ONNX Op        | Supported Version  |\n')
+        status_file.write('| -------------- |:------------------:|\n')
+        for key, val in opset_version.backend_opset_version.items():
+            version_str = str(val)[1:-1]
+            status_file.write("|{}|{}|\n".format(key,
+                version_str if len(version_str) else "N/A"))
+
+        status_file.write('\n\n')
+
+        status_file.write('Frontend\n')
+        status_file.write('______\n\n')
+
+        status_file.write('| ONNX Op        | Supported Version  |\n')
+        status_file.write('| -------------- |:------------------:|\n')
+        for key, val in opset_version.frontend_opset_version.items():
+            version_str = str(val)[1:-1]
+            status_file.write("|{}|{}|\n".format(key,
+                version_str if len(version_str) else "N/A"))
+
+
 
 if __name__ == '__main__':
     main()
