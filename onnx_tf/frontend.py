@@ -280,13 +280,9 @@ class TensorflowFrontend(object):
 
   @classmethod
   def handle_reshape(cls, node, **kwargs):
-    consts = kwargs["consts"]
-    assert node.inputs[1] in consts.keys()
-    shape = consts[node.inputs[1]]
     return helper.make_node("Reshape",
-                            [node.inputs[0]],
-                            [node.name],
-                            shape=shape)
+                            [node.inputs[0], node.inputs[1]],
+                            [node.name])
 
   @classmethod
   def handle_split_v(cls, node, **kwargs):

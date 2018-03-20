@@ -29,6 +29,12 @@ backend_test.exclude(r'[a-z,_]*Conv2d_dilated[a-z,_]*')
 # Experimental op we do not currently support:
 backend_test.exclude(r'[a-z,_]*Upsample[a-z,_]*')
 
+# Reshape specification changed
+# https://github.com/onnx/onnx/issues/625
+backend_test.exclude(r'[a-z,_]*PixelShuffle[a-z,_]*')
+backend_test.exclude(r'[a-z,_]*inception_v1[a-z,_]*')
+backend_test.exclude(r'[a-z,_]*shufflenet[a-z,_]*')
+
 if 'TRAVIS' in os.environ:
     backend_test.exclude('test_vgg19')
 
