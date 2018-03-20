@@ -20,7 +20,7 @@ def invertible(dict):
 def invert(dict):
     if not invertible(dict):
         raise ValueError("The dictionary is not invertible"
-                         " because it is not one-to-one.")
+            " because it is not one-to-one.")
     else:
         inverse = {v: k for k, v in dict.items()}
         return inverse
