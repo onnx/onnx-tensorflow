@@ -7,13 +7,8 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-import collections
 from functools import partial
-import re
 import warnings
-import sys
-import itertools
-from math import ceil, floor
 
 try:
   from itertools import izip as zip
@@ -24,12 +19,7 @@ import numpy as np
 from onnx_tf.backend import TensorflowBackendBase
 from onnx_tf.common import (
   ONNX_OP_TO_TF_OP,
-  ONNX_ATTR_TO_TF_ATTR,
-  ONNX_ATTR_TO_TF_ATTR_PER_OP,
-  ONNX_ATTR_TO_REMOVE_PER_OP,
   ONNX_TYPE_TO_TF_TYPE,
-  STR_TO_TF_TYPE,
-  TF_TYPE_ENUM,
 )
 import onnx.numpy_helper
 import onnx.defs
@@ -76,7 +66,6 @@ class TensorflowBackend(TensorflowBackendBase):
                               input_dict,
                               pool_func,
                               guess_or_manual_pad):
-    from math import ceil
 
     x = input_dict[node.inputs[0]]
     x_rank = len(x.get_shape())
@@ -125,7 +114,6 @@ class TensorflowBackend(TensorflowBackendBase):
 
   @classmethod
   def _pool(cls, node, input_dict, pool_func, can_pad_zero):
-    from math import ceil
 
     x = input_dict[node.inputs[0]]
     x_rank = len(x.get_shape())

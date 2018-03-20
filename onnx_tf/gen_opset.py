@@ -25,7 +25,7 @@ def main():
     version = 1
     while True:
         try:
-            backend = (importlib.import_module('backend_v{}'
+            backend = (importlib.import_module('backends.backend_v{}'
                                 .format(version))
                                 .TensorflowBackend)
         except:

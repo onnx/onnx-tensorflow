@@ -7,13 +7,9 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-import collections
 import importlib
-from functools import partial
-import re
 import warnings
 import sys
-import itertools
 from math import ceil, floor
 
 try:
@@ -40,17 +36,13 @@ import onnx.defs
 
 from onnx.backend.base import (
   Backend,
-  BackendRep,
   Device,
   DeviceType,
   namedtupledict,
 )
 
-from onnx import onnx_pb2, helper
 import tensorflow as tf
 from tensorflow.python.client import device_lib
-from tensorflow.python.ops import array_ops
-
 
 # TODO: allow more flexible placement
 def get_device_option(device):
@@ -357,7 +349,7 @@ class TensorflowBackendBase(Backend):
       versions = sorted(versions + [opset])
       version = versions[max([i for i, v in enumerate(versions) if v == opset]) - 1]
 
-    backend = importlib.import_module('onnx_tf.backend_v{}'.format(version)).TensorflowBackend
+    backend = importlib.import_module('onnx_tf.backends.backend_v{}'.format(version)).TensorflowBackend
 
     if handler_name in dir(backend):
       method_to_call = getattr(backend, handler_name)

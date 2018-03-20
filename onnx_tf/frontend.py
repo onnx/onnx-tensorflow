@@ -152,7 +152,7 @@ class TensorflowFrontendBase(object):
           versions = sorted(versions + [opset])
           version = versions[max([i for i, v in enumerate(versions) if v == opset]) - 1]
 
-        frontend = importlib.import_module('onnx_tf.frontend_v{}'.format(version)).TensorflowFrontend
+        frontend = importlib.import_module('onnx_tf.frontends.frontend_v{}'.format(version)).TensorflowFrontend
 
         # Check if specialized handler exists.
         if handler_name in dir(frontend):
