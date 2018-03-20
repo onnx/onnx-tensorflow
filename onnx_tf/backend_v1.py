@@ -21,11 +21,7 @@ except ImportError:  # will be 3.x series
   pass
 
 import numpy as np
-from onnx import checker
-from onnx.onnx_pb2 import GraphProto, TensorProto, AttributeProto
-from onnx_tf.tf_net import TensorflowNet
 from onnx_tf.backend import TensorflowBackendBase
-from onnx_tf.backend_rep import TensorflowRep
 from onnx_tf.common import (
   ONNX_OP_TO_TF_OP,
   ONNX_ATTR_TO_TF_ATTR,
@@ -37,12 +33,8 @@ from onnx_tf.common import (
 )
 import onnx.numpy_helper
 import onnx.defs
-
-from onnx import onnx_pb2, helper
 import tensorflow as tf
-from tensorflow.python.client import device_lib
 from tensorflow.python.ops import array_ops
-
 
 class TensorflowBackend(TensorflowBackendBase):
   """ Tensorflow Backend for ONNX
@@ -230,26 +222,6 @@ class TensorflowBackend(TensorflowBackendBase):
     return [tf.constant(elements, dtype=dtype, shape=value.dims)]
 
   @classmethod
-  def get_data_format(cls, x_rank, support_cuda):
-    sp_dim_names = ["D", "H", "W"]
-    sp_dim_lst = []
-    for i in range(x_rank - 2):
-      sp_dim_lst.append(sp_dim_names[-i - 1])
-
-    sp_dim_string = "".join(reversed(sp_dim_lst))
-    storage_format = "NC" + sp_dim_string
-
-    if support_cuda:
-      compute_format = "NC" + sp_dim_string
-    else:
-      compute_format = "N" + sp_dim_string + "C"
-    return storage_format, compute_format
-
-  @classmethod
-  def get_perm_from_formats(cls, _from, _to):
-    return list(map(lambda x: _from.find(x), _to))
-
-  @classmethod
   def _conv(cls, node, input_dict, transpose=False):
     x = input_dict[node.inputs[0]]
     x_rank = len(x.get_shape())
@@ -423,7 +395,7 @@ class TensorflowBackend(TensorflowBackendBase):
   @classmethod
   def handle_global_lp_pool(cls, node, input_dict):
     x = input_dict[node.inputs[0]]
-    p = node.attrs.get("p", 2)
+    p = node.attrs.get("p", 2.)
     dims = list(range(len(x.shape)))
     dim_window = dims[2:]
     if len(dim_window) > 1 and p == 2:
@@ -632,7 +604,7 @@ class TensorflowBackend(TensorflowBackendBase):
 
   @classmethod
   def handle_pad(cls, node, input_dict):
-    num_dim = int(len(node.attrs["pads"]) / 2)
+    num_dim = int(len(node.attrs["paddings"]) / 2)
     mode = node.attrs["mode"]
 
     def _compatibility_edge_pad(x, pads):
@@ -641,7 +613,7 @@ class TensorflowBackend(TensorflowBackendBase):
 
     value = node.attrs.get("value", 0)
     # tf requires int32 paddings
-    pads = tf.constant(np.transpose(np.array(node.attrs["pads"])
+    pads = tf.constant(np.transpose(np.array(node.attrs["paddings"])
                                     .reshape([2, num_dim])
                                     .astype(np.int32)))
 
@@ -833,22 +805,3 @@ class TensorflowBackend(TensorflowBackendBase):
   @classmethod
   def handle_greater(cls, node, input_dict):
     return [cls._bin_op(node, input_dict, tf.greater)]
-
-  @classmethod
-  def supports_device(cls, device):
-    if device == "CUDA":
-      local_device_protos = device_lib.list_local_devices()
-      return len([x.name for x in
-                  local_device_protos if x.device_type == 'GPU']) > 0
-    elif device == "CPU":
-      return True
-    return False
-
-
-prepare = TensorflowBackend.prepare
-
-run_node = TensorflowBackend.run_node
-
-run_model = TensorflowBackend.run_model
-
-supports_device = TensorflowBackend.supports_device
