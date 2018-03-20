@@ -22,7 +22,12 @@ except ImportError: # will be 3.x series
 
 import numpy as np
 from onnx import checker
-from onnx.onnx_pb2 import GraphProto, TensorProto, AttributeProto
+from onnx.onnx_pb2 import (
+  GraphProto,
+  TensorProto,
+  AttributeProto,
+  ModelProto,
+)
 from onnx_tf.tf_net import TensorflowNet
 from onnx_tf.backend_rep import TensorflowRep
 from onnx_tf.common import (
@@ -321,14 +326,26 @@ class TensorflowBackend(Backend):
   def prepare(cls, model, device='CPU', **kwargs):
     super(TensorflowBackend, cls).prepare(model, device, **kwargs)
 
+    optimized_model = ModelProto()
+    optimized_model.ParseFromString(
+      cls.optimize_onnx(model.SerializeToString()))
+
     original_input_dict, predict_net = (
-        cls.onnx_graph_to_tensorflow_net(model.graph))
+        cls.onnx_graph_to_tensorflow_net(optimized_model.graph))
 
     initialized = {init.name for init in model.graph.initializer}
     uninitialized = [x for x in predict_net.external_input
                      if not x in initialized]
 
     return TensorflowRep(predict_net, original_input_dict, uninitialized)
+
+  @staticmethod
+  def optimize_onnx(input):
+      passes =  ['fuse_consecutive_transposes',
+                 'eliminate_nop_transpose',
+                 'fuse_transpose_into_gemm']
+      out = onnx.optimizer.optimize(input, passes)
+      return out
 
   @classmethod
   def onnx_initializer_to_input_dict_items(cls,
