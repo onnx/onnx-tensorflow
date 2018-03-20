@@ -21,9 +21,10 @@ from onnx_tf.common import (
 )
 from onnx import onnx_pb2, helper
 from onnx.helper import (
+  make_model,
+  make_graph,
   make_tensor_value_info,
   make_tensor,
-  make_graph,
   make_node,
 )
 from onnx.onnx_pb2 import GraphProto, TensorProto, AttributeProto
@@ -183,6 +184,21 @@ class TensorflowFrontend(object):
                       inputs_proto,
                       output_proto,
                       consts_proto)
+
+  @classmethod
+  def tensorflow_graph_to_onnx_model(cls,
+                                     graph_def,
+                                     output,
+                                     producer_name="onnx-tensorflow",
+                                     graph_name="graph"):
+    onnx_graph = tensorflow_graph_to_onnx_graph(graph_def,
+                                                output,
+                                                graph_name)
+    onnx_model = make_model(onnx_graph, producer_name=producer_name)
+    optimized_model = ModelProto()
+    optimized_model.ParseFromString(
+      optimize_onnx(onnx_model.SerializeToString()))
+    return optimized_model
 
   @classmethod
   def _bin_op(cls, node, onnx_op):
