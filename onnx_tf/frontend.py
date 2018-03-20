@@ -17,6 +17,7 @@ from onnx_tf.common import (
   TF_ATTR_TO_REMOVE,
   get_tf_shape_as_list,
   op_name_to_lower,
+  optimize_onnx,
 )
 from onnx import onnx_pb2, helper
 from onnx.helper import (

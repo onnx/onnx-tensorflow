@@ -3,11 +3,13 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
+import onnx
 import re
-from collections import namedtuple
-
-from onnx import TensorProto
 import tensorflow as tf
+
+from collections import namedtuple
+from onnx import TensorProto
+
 
 # Using the following two functions to prevent shooting ourselves
 # in the foot with non-invertible maps.
@@ -191,3 +193,10 @@ def get_tf_shape_as_list(tf_shape_dim):
 # the first letter.
 def op_name_to_lower(name):
   return re.sub('(?<!^)(?=[A-Z])', '_', name).lower()
+
+def optimize_onnx(input):
+  passes =  ['fuse_consecutive_transposes',
+             'eliminate_nop_transpose',
+             'fuse_transpose_into_gemm']
+  out = onnx.optimizer.optimize(input, passes)
+  return out
