@@ -13,12 +13,13 @@ import pprint
 from onnx_tf.common import (
   op_name_to_lower,
   ONNX_OP_TO_TF_OP,
-  TF_OP_STR_TO_ONNX_OP,
+  ONNX_OP_TO_TF_OP_STR
 )
 
 def main():
     backend_opset_dict = {}
     frontend_opset_dict = {}
+    frontend_tf_opset_dict = {}
 
     for schema in defs.get_all_schemas():
         op_name = op_name_to_lower(schema.name)
@@ -44,18 +45,24 @@ def main():
                 backend_opset_dict[op_name].append(version)
 
             if op_name in frontend.ONNX_TO_HANDLER:
-                op_name = op_name_to_lower(frontend.ONNX_TO_HANDLER[op_name])
-            elif schema.name in TF_OP_STR_TO_ONNX_OP.keys():
-                op_name = op_name_to_lower(TF_OP_STR_TO_ONNX_OP[schema.name])
+                tf_op_name = op_name_to_lower(frontend.ONNX_TO_HANDLER[op_name])
+            elif schema.name in ONNX_OP_TO_TF_OP_STR.keys():
+                tf_op_name = op_name_to_lower(ONNX_OP_TO_TF_OP_STR[schema.name])
             else:
                 continue
+            if tf_op_name in frontend_tf_opset_dict:
+                frontend_tf_opset_dict[tf_op_name].append(version)
+            else:
+                frontend_tf_opset_dict[tf_op_name] = [version]
             frontend_opset_dict[op_name].append(version)
+
         version += 1
 
     with open('opset_version.py', 'w') as version_file:
         pp = pprint.PrettyPrinter(indent=4)
-        version_file.write("backend_opset_version = " + pp.pformat(backend_opset_dict))
-        version_file.write("\nfrontend_opset_version = " + pp.pformat(frontend_opset_dict))
+        version_file.write("backend_opset_version = {\n " + pp.pformat(backend_opset_dict)[1:] + "\n\n")
+        version_file.write("frontend_opset_version = {\n " + pp.pformat(frontend_opset_dict)[1:] + "\n\n")
+        version_file.write("frontend_tf_opset_version = {\n " + pp.pformat(frontend_tf_opset_dict)[1:] + "\n")
 
 if __name__ == '__main__':
     main()
