@@ -20,8 +20,8 @@ def invertible(dict):
 def invert(dict, to_list=False):
   if to_list:
     inverse = {}
-    for i in dict:
-      inverse.setdefault(dict.get(i), []).append(i)
+    for k in dict:
+      inverse.setdefault(dict.get(k), []).append(k)
     return inverse
   else:
     if not invertible(dict):
