@@ -125,20 +125,14 @@ ONNX_OP_TO_TF_OP = {
   "abs": tf.abs,
   "cast": tf.cast,
   "ceil": tf.ceil,
-  "concat": tf.concat,
-  "depth_to_space": tf.depth_to_space,
   "dot": tf.contrib.keras.backend.dot,
   "exp": tf.exp,
   "floor": tf.floor,
   "gather": tf.gather,
-  "hard_sigmoid": tf.keras.backend.hard_sigmoid,
-  "hardmax": tf.contrib.seq2seq.hardmax,
+  "identity": tf.identity,
   "log": tf.log,
-  "log_softmax": tf.nn.log_softmax,
-  "lp_normalization": tf.norm,
   "neg": tf.negative,
   "not": tf.logical_not,
-  "pow": tf.pow,
   "random_normal": tf.random_normal,
   "random_uniform": tf.random_uniform,
   "reciprocal": tf.reciprocal,
@@ -150,7 +144,6 @@ ONNX_OP_TO_TF_OP = {
   "reduce_sum": tf.reduce_sum,
   "relu": tf.nn.relu,
   "sigmoid": tf.sigmoid,
-  "selu": tf.nn.selu,
   "shape": tf.shape,
   "size": tf.size,
   "softplus": tf.nn.softplus,
@@ -158,10 +151,7 @@ ONNX_OP_TO_TF_OP = {
   "sqrt": tf.sqrt,
   "squeeze": tf.squeeze,
   "tanh": tf.tanh,
-  "thresholded_relu": tf.keras.layers.ThresholdedReLU,
-  "top_k": tf.nn.top_k,
   "transpose": tf.transpose,
-  "unsqueeze": tf.expand_dims,
 }
 
 TF_OP_TO_ONNX_OP = invert(ONNX_OP_TO_TF_OP)
@@ -182,6 +172,8 @@ TF_OP_STR_TO_ONNX_OP = {
   "Sqrt": "Sqrt",
   "Tanh": "Tanh",
 }
+
+ONNX_OP_TO_TF_OP_STR = invert(TF_OP_STR_TO_ONNX_OP)
 
 def get_tf_shape_as_list(tf_shape_dim):
   return list(map(lambda x: x.size, list(tf_shape_dim)))
