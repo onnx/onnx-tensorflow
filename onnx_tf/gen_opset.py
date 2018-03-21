@@ -41,12 +41,15 @@ def main():
         for schema in defs.get_all_schemas():
             op_name = op_name_to_lower(schema.name)
             has_backend_handler = hasattr(backend, 'handle_' + op_name)
-            if has_backend_handler or (op_name in ONNX_OP_TO_TF_OP.keys()):
+            # Record only one version for trivial ops
+            if has_backend_handler or (version == 1 and
+                                       op_name in ONNX_OP_TO_TF_OP.keys()):
                 backend_opset_dict[op_name].append(version)
 
             if op_name in frontend.ONNX_TO_HANDLER:
                 tf_op_name = op_name_to_lower(frontend.ONNX_TO_HANDLER[op_name])
-            elif schema.name in ONNX_OP_TO_TF_OP_STR.keys():
+            elif (schema.name in ONNX_OP_TO_TF_OP_STR.keys() and
+                  version == 1) :
                 tf_op_name = op_name_to_lower(ONNX_OP_TO_TF_OP_STR[schema.name])
             else:
                 continue
