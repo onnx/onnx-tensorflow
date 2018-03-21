@@ -49,7 +49,7 @@ def main():
         status_file.write('Backend\n')
         status_file.write('______\n\n')
 
-        status_file.write('| ONNX Op        | Supported Version  |\n')
+        status_file.write('| ONNX Op        | Supported ONNX Version  |\n')
         status_file.write('| -------------- |:------------------:|\n')
         for key, val in opset_version.backend_opset_version.items():
             version_str = str(val)[1:-1]
@@ -61,9 +61,9 @@ def main():
         status_file.write('Frontend\n')
         status_file.write('______\n\n')
 
-        status_file.write('| ONNX Op        | Supported Version  |\n')
+        status_file.write('| Tensorflow Op        | Supported ONNX Version  |\n')
         status_file.write('| -------------- |:------------------:|\n')
-        for key, val in opset_version.frontend_opset_version.items():
+        for key, val in opset_version.frontend_tf_opset_version.items():
             version_str = str(val)[1:-1]
             status_file.write("|{}|{}|\n".format(key,
                 version_str if len(version_str) else "N/A"))
