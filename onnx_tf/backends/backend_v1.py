@@ -62,7 +62,7 @@ class TensorflowBackend(TensorflowBackendBase):
     return [tf.argmin(data, axis=axis)]
 
   @classmethod
-  def _compatibility_avg_pool(cls, node, input_dict):
+  def _compatibility_pool(cls, node, input_dict, pooling_type):
     def _get_pad_shape(auto_pad, input_spatial_shape, kernel_spatial_shape, strides_spatial, output_spatial_shape):
       pad_shape = [0] * len(input_spatial_shape)
       if auto_pad in ("SAME_UPPER", "SAME_LOWER"):
@@ -84,7 +84,8 @@ class TensorflowBackend(TensorflowBackendBase):
             np.ceil(float(input_spatial_shape[i] - (kernel_spatial_shape[i] - 1)) / float(strides_spatial[i])))
       return out_shape
 
-    def py_pool(x, kernel_shape, strides_shape, pads, out_shape, pad_shape):
+    def py_pool(x, kernel_shape, strides_shape, pads, out_shape, pad_shape, pooling_type):
+      pooling_type = pooling_type.decode('UTF-8')
       x_shape = np.shape(x)
       spatial_size = len(x_shape[2:])
       pad_attr = [(0, 0), (0, 0)] + [(pads[i], pads[i + spatial_size]) for i in range(spatial_size)]
@@ -103,8 +104,13 @@ class TensorflowBackend(TensorflowBackendBase):
             *[range(strides_shape[i] * shape[i + 2], strides_shape[i] * shape[i + 2] + kernel_shape[i]) for i in
               range(spatial_size)])
         )])
-        average = np.average(window_vals[np.where(~np.isnan(window_vals))])
-        y[shape] = average
+        if pooling_type == 'AVG':
+          f = np.average
+        elif pooling_type == 'MAX':
+          f = np.max
+        else:
+          raise NotImplementedError('Pooling type {} does not support. Should be AVG, MAX'.format(pooling_type))
+        y[shape] = f(window_vals[np.where(~np.isnan(window_vals))])
       return y.astype(np.float32)
 
     x = input_dict[node.inputs[0]]
@@ -126,12 +132,12 @@ class TensorflowBackend(TensorflowBackendBase):
       pad_shape = [pads[i] + pads[i + spatial_size] for i in range(spatial_size)]
       out_shape = _get_output_shape(auto_pad, np.add(x_shape[2:], pad_shape), kernel_shape, strides_shape)
 
-    pooled = tf.py_func(py_pool, [x, kernel_shape, strides_shape, pads, out_shape, pad_shape], tf.float32)
+    pooled = tf.py_func(py_pool, [x, kernel_shape, strides_shape, pads, out_shape, pad_shape, pooling_type], tf.float32)
     pooled.set_shape(x_shape[0:2] + out_shape)
     return [pooled]
 
   @classmethod
-  def _pool(cls, node, input_dict, pool_func, can_pad_zero):
+  def _pool(cls, node, input_dict, pool_func, pooling_type):
     x = input_dict[node.inputs[0]]
     x_rank = len(x.get_shape())
 
@@ -143,7 +149,6 @@ class TensorflowBackend(TensorflowBackendBase):
 
     # By default, do not pad
     pad = None
-    pads = node.attrs.get("pads", [0] * (x_rank - 2) * 2)
 
     if "auto_pad" in node.attrs:
       if node.attrs["auto_pad"] == "SAME_UPPER":
@@ -153,12 +158,8 @@ class TensorflowBackend(TensorflowBackendBase):
       elif node.attrs["auto_pad"] == "SAME_LOWER":
         pad = None
 
-    if pad is None and can_pad_zero:
-      pad = "VALID"
-      x = cls.get_padding_as_op(x, pads)
-    if pad is None and not can_pad_zero:
-      # Currently it's always average pooling
-      return cls._compatibility_avg_pool(node, input_dict)
+    if pad is None:
+      return cls._compatibility_pool(node, input_dict, pooling_type)
 
     if support_cuda:
       pooled = pool_func(x, kernel_shape, padding=pad, strides=strides, data_format=compute_format)
@@ -181,7 +182,7 @@ class TensorflowBackend(TensorflowBackendBase):
       return cls.handle_global_average_pool(node, input_dict)
 
     # 0 = cannot pad zero
-    return cls._pool(node, input_dict, partial(tf.nn.pool, pooling_type='AVG'), 0)
+    return cls._pool(node, input_dict, partial(tf.nn.pool, pooling_type='AVG'), 'AVG')
 
   @classmethod
   def handle_batch_normalization(cls, node, input_dict):
@@ -576,8 +577,7 @@ class TensorflowBackend(TensorflowBackendBase):
 
   @classmethod
   def handle_max_pool(cls, node, input_dict):
-    # 1 = can pad zero
-    return cls._pool(node, input_dict, partial(tf.nn.pool, pooling_type='MAX'), 1)
+    return cls._pool(node, input_dict, partial(tf.nn.pool, pooling_type='MAX'), 'MAX')
 
   @classmethod
   def handle_mean(cls, node, input_dict):
