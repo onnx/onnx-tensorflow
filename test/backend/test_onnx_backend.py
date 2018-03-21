@@ -17,8 +17,7 @@ backend_test = onnx.backend.test.BackendTest(tf_backend, __name__)
 # https://github.com/onnx/onnx/issues/349
 backend_test.exclude(r'[a-z,_]*GLU[a-z,_]*')
 
-# https://github.com/onnx/onnx/issues/341
-backend_test.exclude(r'[a-z,_]*MaxPool[a-z,_]*')
+# https://github.com/onnx/onnx/issues/576
 backend_test.exclude(r'[a-z,_]*AvgPool[a-z,_]*')
 
 # TF does not support dialation and strides at the same time:
