@@ -2,7 +2,7 @@
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
-from __future__ import unicode_literals
+# from __future__ import unicode_literals
 
 from onnx import defs
 from onnx.defs import OpSchema
@@ -17,52 +17,52 @@ from onnx_tf.common import (
 )
 
 def main():
-    backend_opset_dict = {}
-    frontend_opset_dict = {}
-    frontend_tf_opset_dict = {}
+  backend_opset_dict = {}
+  frontend_opset_dict = {}
+  frontend_tf_opset_dict = {}
+
+  for schema in defs.get_all_schemas():
+    op_name = str(op_name_to_lower(schema.name))
+    backend_opset_dict[op_name] = []
+    frontend_opset_dict[op_name] = []
+
+  version = 1
+  while True:
+    try:
+      backend = (importlib.import_module('backends.backend_v{}'
+                .format(version))
+                .TensorflowBackend)
+      frontend = (importlib.import_module('frontends.frontend_v{}'
+                .format(version))
+                .TensorflowFrontend)
+    except:
+      break
 
     for schema in defs.get_all_schemas():
-        op_name = op_name_to_lower(schema.name)
-        backend_opset_dict[op_name] = []
-        frontend_opset_dict[op_name] = []
+      op_name = op_name_to_lower(schema.name)
+      has_backend_handler = hasattr(backend, 'handle_' + op_name)
+      # Record only one version for trivial ops
+      if has_backend_handler or (version == 1 and
+                     op_name in ONNX_OP_TO_TF_OP.keys()):
+        backend_opset_dict[op_name].append(version)
 
-    version = 1
-    while True:
-        try:
-            backend = (importlib.import_module('backends.backend_v{}'
-                                .format(version))
-                                .TensorflowBackend)
-            frontend = (importlib.import_module('frontends.frontend_v{}'
-                                .format(version))
-                                .TensorflowFrontend)
-        except:
-            break
+      if op_name in frontend.ONNX_TO_HANDLER:
+        tf_op_name = op_name_to_lower(frontend.ONNX_TO_HANDLER[op_name])
+      elif (schema.name in ONNX_OP_TO_TF_OP_STR.keys() and
+          version == 1) :
+        tf_op_name = op_name_to_lower(ONNX_OP_TO_TF_OP_STR[schema.name])
+      else:
+        continue
+      frontend_tf_opset_dict.setdefault(str(tf_op_name), []).append(version)
+      frontend_opset_dict[op_name].append(version)
 
-        for schema in defs.get_all_schemas():
-            op_name = op_name_to_lower(schema.name)
-            has_backend_handler = hasattr(backend, 'handle_' + op_name)
-            # Record only one version for trivial ops
-            if has_backend_handler or (version == 1 and
-                                       op_name in ONNX_OP_TO_TF_OP.keys()):
-                backend_opset_dict[op_name].append(version)
+    version += 1
 
-            if op_name in frontend.ONNX_TO_HANDLER:
-                tf_op_name = op_name_to_lower(frontend.ONNX_TO_HANDLER[op_name])
-            elif (schema.name in ONNX_OP_TO_TF_OP_STR.keys() and
-                  version == 1) :
-                tf_op_name = op_name_to_lower(ONNX_OP_TO_TF_OP_STR[schema.name])
-            else:
-                continue
-            frontend_tf_opset_dict.setdefault(tf_op_name, []).append(version)
-            frontend_opset_dict[op_name].append(version)
-
-        version += 1
-
-    with open('opset_version.py', 'w') as version_file:
-        pp = pprint.PrettyPrinter(indent=4)
-        version_file.write("backend_opset_version = {\n " + pp.pformat(backend_opset_dict)[1:] + "\n\n")
-        version_file.write("frontend_opset_version = {\n " + pp.pformat(frontend_opset_dict)[1:] + "\n\n")
-        version_file.write("frontend_tf_opset_version = {\n " + pp.pformat(frontend_tf_opset_dict)[1:] + "\n")
+  with open('opset_version.py', 'w') as version_file:
+    pp = pprint.PrettyPrinter(indent=4)
+    version_file.write("backend_opset_version = {\n " + pp.pformat(backend_opset_dict)[1:] + "\n\n")
+    version_file.write("frontend_opset_version = {\n " + pp.pformat(frontend_opset_dict)[1:] + "\n\n")
+    version_file.write("frontend_tf_opset_version = {\n " + pp.pformat(frontend_tf_opset_dict)[1:] + "\n")
 
 if __name__ == '__main__':
-    main()
+  main()
