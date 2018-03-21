@@ -240,6 +240,7 @@ class TensorflowBackendBase(Backend):
 
   @classmethod
   def onnx_graph_to_tensorflow_net(cls, graph_def, opset):
+
     # initializer: TensorProtos representing the values to initialize
     # a given tensor.
     # initialized: A list of names of the initialized tensors.
@@ -300,6 +301,17 @@ class TensorflowBackendBase(Backend):
 
   @classmethod
   def prepare(cls, model, device='CPU', **kwargs):
+    """Prepare an ONNX model for Tensorflow Backend
+
+    This function converts an ONNX model to an internel representation
+    of the computational graph called TensorflowRep and returns
+    the converted representation.
+
+    :param model: the ONNX model to be converted
+    :param device: the device to execute this model on
+
+    :returns: a TensorflowRep class object representing the ONNX model
+    """
     super(TensorflowBackendBase, cls).prepare(model, device, **kwargs)
 
     original_input_dict, predict_net = (
