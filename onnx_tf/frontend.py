@@ -168,7 +168,11 @@ class TensorflowFrontendBase(object):
 
         versions = frontend_tf_opset_version[op_name_to_lower(node.op)]
 
-        opset = defs.onnx_opset_version() if opset == 0 else opset
+        assert isinstance(opset, int) and (opset <= defs.onnx_opset_version()) and (
+            opset >= 0), "Opset should be an int less than or equal to {}, but {}: {}".format(defs.onnx_opset_version(),
+                                                                                              type(opset).__name__,
+                                                                                              opset)
+
         if opset == 0:
           version = max(versions)
         else:
@@ -182,7 +186,6 @@ class TensorflowFrontendBase(object):
         # Check if specialized handler exists.
         if hasattr(frontend, handler_name):
           method_to_call = getattr(frontend, handler_name)
-          ops_proto.append(method_to_call(node, consts=consts))
           node = method_to_call(node, consts=consts)
           if isinstance(node, list):
             ops_proto.extend(node)
