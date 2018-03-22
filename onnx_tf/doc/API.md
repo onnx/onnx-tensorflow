@@ -1,6 +1,32 @@
 ONNX-Tensorflow API
 ======
 
+#### `onnx_tf.backend.prepare`
+
+<details>
+  <summary>Prepare an ONNX model for Tensorflow Backend
+
+  </summary>
+This function converts an ONNX model to an internel representation
+of the computational graph called TensorflowRep and returns
+the converted representation.
+
+</details>
+
+
+
+_params_:
+
+`model` : the ONNX model to be converted
+
+
+`device` : the device to execute this model on
+
+
+_returns_:
+
+a TensorflowRep class object representing the ONNX model
+
 #### `onnx_tf.frontend.tensorflow_graph_to_onnx_model`
 
 <details>
@@ -36,30 +62,4 @@ Default 0 means using latest version.
 _returns_:
 
 The equivalent ONNX Model Proto object.
-
-#### `onnx_tf.backend.prepare`
-
-<details>
-  <summary>Prepare an ONNX model for Tensorflow Backend
-
-  </summary>
-This function converts an ONNX model to an internel representation
-of the computational graph called TensorflowRep and returns
-the converted representation.
-
-</details>
-
-
-
-_params_:
-
-`model` : the ONNX model to be converted
-
-
-`device` : the device to execute this model on
-
-
-_returns_:
-
-a TensorflowRep class object representing the ONNX model
 
