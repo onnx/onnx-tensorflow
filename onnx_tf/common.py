@@ -4,7 +4,6 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import re
-from collections import namedtuple
 
 from onnx import TensorProto
 import tensorflow as tf
@@ -189,6 +188,8 @@ def op_name_to_lower(name):
   return re.sub('(?<!^)(?=[A-Z])', '_', name).lower()
 
 def get_attribute_value(attr):
+  """ convert Tensorflow AttrValue object to Python object
+  """
   if attr.HasField('list'):
     return get_list_value(attr.list)
   if attr.HasField('s'):
@@ -206,9 +207,11 @@ def get_attribute_value(attr):
   elif attr.HasField('tensor'):
     return attr.tensor
   else:
-    raise ValueError("Unsupported ONNX attribute: {}".format(attr))
+    raise ValueError("Unsupported Tensorflow attribute: {}".format(attr))
 
 def get_list_value(attr):
+  """ convert Tensorflow ListValue object to Python object
+  """
   if len(attr.s):
     return attr.s
   elif len(attr.i):
@@ -226,4 +229,4 @@ def get_list_value(attr):
   elif len(attr.func):
     return attr.func
   else:
-    raise ValueError("Unsupported ONNX attribute: {}".format(attr))
+    raise ValueError("Unsupported Tensorflow attribute: {}".format(attr))

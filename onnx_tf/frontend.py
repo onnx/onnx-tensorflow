@@ -66,6 +66,9 @@ class TensorflowNode(object):
       else:
         self.attr[new_key] = val
 
+      if isinstance(self.attr[new_key], AttrValue):
+        self.attr[new_key] = get_attribute_value(self.attr[new_key])
+
   def type_converter(self, x):
     return TF_TYPE_TO_ONNX_TYPE[tf.as_dtype(x.type)]
 
@@ -168,9 +171,6 @@ class TensorflowFrontendBase(object):
         inputs_proto.append(input_proto)
       else:
         handler_name = "handle_" + op_name_to_lower(node.op)
-        node.attr = dict(
-          map(lambda item: (item[0], get_attribute_value(item[1]) if isinstance(item[1], AttrValue) else item[1]),
-              node.attr.items()))
 
         versions = frontend_tf_opset_version[op_name_to_lower(node.op)]
 
