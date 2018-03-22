@@ -48,7 +48,11 @@ def main():
 
       tf_op_names = []
       if op_name in frontend.ONNX_TO_HANDLER:
-        tf_op_names.append(op_name_to_lower(frontend.ONNX_TO_HANDLER[op_name]))
+        handler = frontend.ONNX_TO_HANDLER[op_name]
+        if isinstance(handler, list):
+          tf_op_names.extend(list(map(op_name_to_lower, handler)))
+        else:
+          tf_op_names.append(op_name_to_lower(handler))
       if (schema.name in ONNX_OP_TO_TF_OP_STR.keys() and
         version == 1) :
         tf_op_names.append(op_name_to_lower(ONNX_OP_TO_TF_OP_STR[schema.name]))

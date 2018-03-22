@@ -18,7 +18,7 @@ class TensorflowFrontend(TensorflowFrontendBase):
   ONNX_TO_HANDLER = {
     "add": "bias_add",
     "and": "logical_and",
-    "conv": "conv2_d",
+    "conv": ["conv1_d", "conv2_d", "conv3_d"],
     "average_pool": "avg_pool",
     "max_pool": "max_pool",
     "or": "logical_or",
@@ -58,17 +58,17 @@ class TensorflowFrontend(TensorflowFrontendBase):
                             axis=axis)
 
   @classmethod
-  def handle_conv2_d(cls, node, **kwargs):
+  def _conv(cls, node, d, **kwargs):
     auto_pad = node.attr["padding"].decode("UTF-8")
     auto_pad = "SAME_UPPER" if auto_pad == "SAME" else auto_pad
     data_format = node.attr["data_format"].decode("UTF-8")
     spatial_indices = [i for i in range(len(data_format)) if data_format[i] not in ["N", "C"]]
     strides = list(map(lambda i: node.attr["strides"][i], spatial_indices))
-    dilations = list(map(lambda i: node.attr.get("dilations", [1, 1, 1, 1])[i], spatial_indices))
+    dilations = list(map(lambda i: node.attr.get("dilations", [1] * (d + 2))[i], spatial_indices))
     consts = kwargs["consts"]
     output_shapes = kwargs["output_shapes"]
     kernel_name = node.inputs[1].replace("/read", "")
-    kernel_shape = list(map(lambda i: consts[kernel_name].shape[i], (2, 3)))
+    kernel_shape = list(map(lambda i: consts[kernel_name].shape[i], list(range(d + 2))[d:]))
     output_shape = list(map(lambda i: node.attr["_output_shapes"][0][i], spatial_indices))
     input_shape = list(map(lambda i: output_shapes[node.inputs[0]][0][i], spatial_indices))
     pads = cls._cal_pads(auto_pad, len(spatial_indices), input_shape, output_shape, strides, kernel_shape)
@@ -80,6 +80,18 @@ class TensorflowFrontend(TensorflowFrontendBase):
       strides=strides,
       dilations=dilations
     )
+
+  @classmethod
+  def handle_conv1_d(cls, node, **kwargs):
+    return cls._conv(node, 1, **kwargs)
+
+  @classmethod
+  def handle_conv2_d(cls, node, **kwargs):
+    return cls._conv(node, 2, **kwargs)
+
+  @classmethod
+  def handle_conv3_d(cls, node, **kwargs):
+    return cls._conv(node, 3, **kwargs)
 
   @classmethod
   def handle_logical_and(cls, node, **kwargs):

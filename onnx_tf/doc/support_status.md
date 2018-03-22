@@ -126,7 +126,9 @@ ______
 |avg_pool|1|
 |bias_add|1|
 |concat_v2|1, 4|
+|conv1_d|1|
 |conv2_d|1|
+|conv3_d|1|
 |identity|1|
 |logical_and|1|
 |logical_not|1|
