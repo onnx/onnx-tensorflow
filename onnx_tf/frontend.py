@@ -79,6 +79,7 @@ class TensorflowFrontendBase(object):
   DEFAULT_TF_ATTR_PER_OP = {
     "Add": {"broadcast": 1},
     "And": {"broadcast": 1},
+    "BiasAdd": {"axis": 1, "broadcast": 1},
     "Div": {"broadcast": 1},
     "Equal": {"broadcast": 1},
     "Greater": {"broadcast": 1},
@@ -126,6 +127,10 @@ class TensorflowFrontendBase(object):
     # construction time.
     consts = {}
 
+    # This dict holds all output_shape, which can be used for next
+    # node's input shape.
+    output_shapes = {}
+
     # Sometimes the constants are used as inputs to ops. This list
     # holds initializers that creates global constant tensors available
     # to be accessed by ops as inputs (as oppose to attributes which
@@ -134,6 +139,10 @@ class TensorflowFrontendBase(object):
 
     for node in graph_def.node:
       node = TensorflowNode(node)
+
+      if "_output_shapes" in node.attr:
+        output_shapes[node.name] = node.attr["_output_shapes"]
+
       if node.op == "Placeholder":
         # Tensorflow requires dtype to be known.
         # TODO: currently `dtype` is translated to `to`.
@@ -192,7 +201,7 @@ class TensorflowFrontendBase(object):
         # Check if specialized handler exists.
         if hasattr(frontend, handler_name):
           method_to_call = getattr(frontend, handler_name)
-          node = method_to_call(node, consts=consts)
+          node = method_to_call(node, consts=consts, output_shapes=output_shapes)
           if isinstance(node, list):
             ops_proto.extend(node)
           else:
@@ -283,11 +292,15 @@ class TensorflowFrontendBase(object):
     spatial_indices = [i for i in range(len(data_format)) if data_format[i] not in ["N", "C"]]
     strides = list(map(lambda i: node.attr["strides"][i], spatial_indices))
     kernel_shape = list(map(lambda i: node.attr["ksize"][i], spatial_indices))
+    output_shapes = kwargs["output_shapes"]
+    output_shape = list(map(lambda i: node.attr["_output_shapes"][0][i], spatial_indices))
+    input_shape = list(map(lambda i: output_shapes[node.inputs[0]][0][i], spatial_indices))
+    pads = cls._cal_pads(auto_pad, len(spatial_indices), input_shape, output_shape, strides, kernel_shape)
     return helper.make_node(
       onnx_op,
       [node.inputs[0]],
       [node.name],
-      auto_pad=auto_pad,
+      pads=pads,
       kernel_shape=kernel_shape,
       strides=strides
     )

@@ -65,11 +65,18 @@ class TensorflowFrontend(TensorflowFrontendBase):
     spatial_indices = [i for i in range(len(data_format)) if data_format[i] not in ["N", "C"]]
     strides = list(map(lambda i: node.attr["strides"][i], spatial_indices))
     dilations = list(map(lambda i: node.attr.get("dilations", [1, 1, 1, 1])[i], spatial_indices))
+    consts = kwargs["consts"]
+    output_shapes = kwargs["output_shapes"]
+    kernel_name = node.inputs[1].replace("/read", "")
+    kernel_shape = list(map(lambda i: consts[kernel_name].shape[i], (2, 3)))
+    output_shape = list(map(lambda i: node.attr["_output_shapes"][0][i], spatial_indices))
+    input_shape = list(map(lambda i: output_shapes[node.inputs[0]][0][i], spatial_indices))
+    pads = cls._cal_pads(auto_pad, len(spatial_indices), input_shape, output_shape, strides, kernel_shape)
     return helper.make_node(
       "Conv",
       [node.inputs[0], node.inputs[1]],
       [node.name],
-      auto_pad=auto_pad,
+      pads=pads,
       strides=strides,
       dilations=dilations
     )
