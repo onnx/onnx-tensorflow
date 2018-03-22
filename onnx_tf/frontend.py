@@ -26,6 +26,7 @@ from onnx.helper import (
   make_tensor_value_info,
   make_tensor,
   make_graph,
+  make_model,
   make_node,
 )
 from onnx.onnx_pb2 import GraphProto, TensorProto, AttributeProto
@@ -90,18 +91,19 @@ class TensorflowFrontendBase(object):
 
   @classmethod
   def tensorflow_graph_to_onnx_graph(cls, graph_def, output, opset=0, name="graph"):
-    """Function that converts a tensorflow graph to an onnx graph.
+    """Converts a Tensorflow Graph Proto to an ONNX graph
 
-    Args:
-        graph_def: Tensorflow Graph Proto object.
-        output: A Tensorflow NodeDef object specifying which node
-          to be taken as output of the ONNX graph.
-        opset: Opset version of the operator set. Default 0 means using latest version.
-        name: The name of the output ONNX Graph.
+    This function converts a Tensorflow Graph proto to an equivalent
+    representation of ONNX graph.
 
-    Returns:
-        The equivalent ONNX Graph Proto object.
+    :param graph_def: Tensorflow Graph Proto object.
+    :param output: A Tensorflow NodeDef object specifying which node
+      to be taken as output of the ONNX graph.
+    :param opset: Opset version of the operator set.
+      Default 0 means using latest version.
+    :param name: The name of the output ONNX Graph.
 
+    :returns: The equivalent ONNX Graph Proto object.
     """
 
     # This list holds the protobuf objects of type ValueInfoProto
@@ -174,12 +176,9 @@ class TensorflowFrontendBase(object):
           version = versions[max([i for i, v in enumerate(versions) if v == opset]) - 1]
 
         frontend_ver = 'frontend_v{}'.format(version)
-        if frontend_ver not in cls.frontend_version_cache:
-            frontend = importlib.import_module('onnx_tf.frontends.' + frontend_ver).TensorflowFrontend
-            cls.frontend_version_cache[frontend_ver] = frontend
-        else:
-            frontend = cls.frontend_version_cache[frontend_ver]
-          
+        frontend = cls.frontend_version_cache.setdefault(frontend_ver, importlib.import_module(
+          'onnx_tf.frontends.' + frontend_ver).TensorflowFrontend)
+
         # Check if specialized handler exists.
         if hasattr(frontend, handler_name):
           method_to_call = getattr(frontend, handler_name)
@@ -230,6 +229,38 @@ class TensorflowFrontendBase(object):
                       consts_proto)
 
   @classmethod
+  def tensorflow_graph_to_onnx_model(cls,
+                                     graph_def,
+                                     output,
+                                     opset=0,
+                                     producer_name="onnx-tensorflow",
+                                     graph_name="graph"):
+    """Converts a Tensorflow Graph Proto to an ONNX model
+
+    This function converts a Tensorflow Graph proto to an equivalent
+    representation of ONNX model.
+
+    :param graph_def: Tensorflow Graph Proto object.
+    :param output: A Tensorflow NodeDef object specifying which node
+      to be taken as output of the ONNX graph.
+    :param opset: Opset version of the operator set.
+      Default 0 means using latest version.
+    :param producer_name: The name of the producer.
+    :param graph_name: The name of the output ONNX Graph.
+
+    :returns: The equivalent ONNX Model Proto object.
+    """
+    onnx_graph = cls.tensorflow_graph_to_onnx_graph(graph_def,
+                                                    output,
+                                                    opset,
+                                                    graph_name)
+    onnx_model = make_model(onnx_graph,
+                            producer_name=producer_name,
+                            opset_imports=[opset])
+
+    return onnx_model
+
+  @classmethod
   def _bin_op(cls, node, onnx_op):
     node.attr["broadcast"] = 1
     return helper.make_node(
@@ -247,3 +278,5 @@ class TensorflowFrontendBase(object):
                             keepdims=node.attr.get("keep_dims", 1))
 
 convert_graph = TensorflowFrontendBase.tensorflow_graph_to_onnx_graph
+
+tensorflow_graph_to_onnx_model = TensorflowFrontendBase.tensorflow_graph_to_onnx_model
