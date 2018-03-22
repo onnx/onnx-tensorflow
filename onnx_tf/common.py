@@ -157,7 +157,6 @@ ONNX_OP_TO_TF_OP = {
 TF_OP_TO_ONNX_OP = invert(ONNX_OP_TO_TF_OP)
 
 TF_OP_STR_TO_ONNX_OP = {
-  "BiasAdd": "Add",
   "Identity": "Identity",
   "LogicalNot": "Not",
   "MatMul": "MatMul",

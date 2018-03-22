@@ -16,6 +16,7 @@ class TensorflowFrontend(TensorflowFrontendBase):
   """
 
   ONNX_TO_HANDLER = {
+    "add": "bias_add",
     "and": "logical_and",
     "or": "logical_or",
     "pad": "pad",
@@ -34,6 +35,10 @@ class TensorflowFrontend(TensorflowFrontendBase):
     "xor": "logical_xor",
     "concat": "concat_v2",
   }
+
+  @classmethod
+  def handle_bias_add(cls, node, **kwargs):
+    return cls._bin_op(node, "Add")
 
   @classmethod
   def handle_logical_and(cls, node, **kwargs):
