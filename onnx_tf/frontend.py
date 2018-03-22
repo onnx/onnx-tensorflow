@@ -142,6 +142,12 @@ class TensorflowFrontendBase(object):
         inputs_proto.append(input_proto)
       elif node.op == "Const":
         const_dim = len(node.attr["value"].shape)
+
+        # Weight format is MC(HW) in onnx which is (HW)CM
+        if "kernel" in node.name:
+            dims = list(range(np.ndim(node.attr["value"])))
+            node.attr["value"] = np.transpose(node.attr["value"], axes=dims[-2:][::-1] + dims[:len(dims) - 2])
+
         consts[node.name] = node.attr["value"]
         raw_values = ([node.attr["value"].tolist()]
                       if const_dim == 0
@@ -268,6 +274,33 @@ class TensorflowFrontendBase(object):
     node.attr["broadcast"] = 1
     return helper.make_node(
             onnx_op, node.inputs, [node.name], name=node.name, broadcast=1)
+
+  @classmethod
+  def _pool_op(cls, node, onnx_op, **kwargs):
+    auto_pad = node.attr["padding"].decode("UTF-8")
+    auto_pad = "SAME_UPPER" if auto_pad == "SAME" else auto_pad
+    data_format = node.attr["data_format"].decode("UTF-8")
+    spatial_indices = [i for i in range(len(data_format)) if data_format[i] not in ["N", "C"]]
+    strides = list(map(lambda i: node.attr["strides"][i], spatial_indices))
+    kernel_shape = list(map(lambda i: node.attr["ksize"][i], spatial_indices))
+    return helper.make_node(
+      onnx_op,
+      [node.inputs[0]],
+      [node.name],
+      auto_pad=auto_pad,
+      kernel_shape=kernel_shape,
+      strides=strides
+    )
+
+  @classmethod
+  def _cal_pads(cls, auto_pad, spatial_dim, input_shape, output_shape, strides, kernel_shape):
+    pads = [0] * spatial_dim * 2
+    if auto_pad == "SAME_UPPER":
+      for i in range(spatial_dim):
+        pad_shape = (output_shape[i] - 1) * strides[i] + kernel_shape[i] - input_shape[i]
+        pads[i] = pad_shape // 2
+        pads[i + spatial_dim] = pad_shape - pad_shape // 2
+    return pads
 
   @classmethod
   def _reduce_op(cls, op, node, **kwargs):

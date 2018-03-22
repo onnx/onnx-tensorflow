@@ -18,6 +18,9 @@ class TensorflowFrontend(TensorflowFrontendBase):
   ONNX_TO_HANDLER = {
     "add": "bias_add",
     "and": "logical_and",
+    "conv": "conv2_d",
+    "average_pool": "avg_pool",
+    "max_pool": "max_pool",
     "or": "logical_or",
     "pad": "pad",
     "random_normal": "random_standard_normal",
@@ -37,8 +40,39 @@ class TensorflowFrontend(TensorflowFrontendBase):
   }
 
   @classmethod
+  def handle_avg_pool(cls, node, **kwargs):
+    return cls._pool_op(node, "AveragePool", **kwargs)
+
+  @classmethod
   def handle_bias_add(cls, node, **kwargs):
     return cls._bin_op(node, "Add")
+
+  @classmethod
+  def handle_concat_v2(cls, node, **kwargs):
+    consts = kwargs["consts"]
+    assert node.inputs[-1] in consts.keys()
+    axis = int(consts[node.inputs[-1]])
+    return helper.make_node("Concat",
+                            inputs=node.inputs[0:-1],
+                            outputs=[node.name],
+                            axis=axis)
+
+  @classmethod
+  def handle_conv2_d(cls, node, **kwargs):
+    auto_pad = node.attr["padding"].decode("UTF-8")
+    auto_pad = "SAME_UPPER" if auto_pad == "SAME" else auto_pad
+    data_format = node.attr["data_format"].decode("UTF-8")
+    spatial_indices = [i for i in range(len(data_format)) if data_format[i] not in ["N", "C"]]
+    strides = list(map(lambda i: node.attr["strides"][i], spatial_indices))
+    dilations = list(map(lambda i: node.attr.get("dilations", [1, 1, 1, 1])[i], spatial_indices))
+    return helper.make_node(
+      "Conv",
+      [node.inputs[0], node.inputs[1]],
+      [node.name],
+      auto_pad=auto_pad,
+      strides=strides,
+      dilations=dilations
+    )
 
   @classmethod
   def handle_logical_and(cls, node, **kwargs):
@@ -101,6 +135,10 @@ class TensorflowFrontend(TensorflowFrontendBase):
   @classmethod
   def handle_max(cls, node, **kwargs):
     return cls._reduce_op("ReduceMax", node, **kwargs)
+
+  @classmethod
+  def handle_max_pool(cls, node, **kwargs):
+    return cls._pool_op(node, "MaxPool", **kwargs)
 
   @classmethod
   def handle_mean(cls, node, **kwargs):
@@ -166,13 +204,3 @@ class TensorflowFrontend(TensorflowFrontendBase):
   @classmethod
   def handle_logical_xor(cls, node, **kwargs):
     return cls._bin_op(node, "Xor")
-
-  @classmethod
-  def handle_concat_v2(cls, node, **kwargs):
-    consts = kwargs["consts"]
-    assert node.inputs[-1] in consts.keys()
-    axis = int(consts[node.inputs[-1]])
-    return helper.make_node("Concat",
-                            inputs=node.inputs[0:-1],
-                            outputs=[node.name],
-                            axis=axis)
