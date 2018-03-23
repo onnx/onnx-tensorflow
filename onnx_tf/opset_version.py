@@ -7,7 +7,7 @@ backend_opset_version = {
     'arg_max': [1],
     'arg_min': [1],
     'average_pool': [1],
-    'batch_normalization': [1],
+    'batch_normalization': [1, 6],
     'cast': [1],
     'ceil': [1],
     'clip': [1],

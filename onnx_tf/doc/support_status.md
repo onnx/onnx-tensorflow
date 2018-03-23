@@ -14,7 +14,7 @@ ______
 |arg_max|1|
 |arg_min|1|
 |average_pool|1|
-|batch_normalization|1|
+|batch_normalization|1, 6|
 |cast|1|
 |ceil|1|
 |clip|1|
@@ -129,7 +129,7 @@ ______
 |conv1_d|1|
 |conv2_d|1|
 |conv3_d|1|
-|identity|1|
+|identity|1||
 |logical_and|1|
 |logical_not|1|
 |logical_or|1|
