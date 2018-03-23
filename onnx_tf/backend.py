@@ -274,10 +274,8 @@ class TensorflowBackendBase(Backend):
 
     # tensor dict: this dictionary is a map from variable names
     # to the latest produced TF tensors of the given name.
-    # This dictionary will get updated as build the graph because
-    # some ops may produce a result tensor with the same name as
-    # the input tensor. The input dict tracks the latest produced
-    # tensors.
+    # This dictionary will get updated as we build the graph to
+    # record the names of newly produced tensors.
     tensor_dict = dict(input_dict_items)
     # Since tensor dict may be updated, we need to keep a copy
     # of the original input dict where we track the earliest
