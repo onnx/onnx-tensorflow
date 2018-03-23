@@ -7,10 +7,9 @@ from onnx.backend.base import BackendRep, namedtupledict
 import tensorflow as tf
 
 class TensorflowRep(BackendRep):
-  def __init__(self, predict_net, input_dict, uninitialized):
+  def __init__(self, predict_net, uninitialized):
     super(TensorflowRep, self).__init__()
     self.predict_net = predict_net
-    self.input_dict = input_dict
     # The list of uninitialized external_inputs in workspace, we need this to
     # pair the name with given sequence inputs.
     self.uninitialized = uninitialized
@@ -33,10 +32,11 @@ class TensorflowRep(BackendRep):
         # single input
         feed_dict = dict([(self.uninitialized[0], inputs)])
 
-      feed_dict = { self.input_dict[key]: feed_dict[key] for key in self.uninitialized }
+      feed_dict = { self.predict_net.tensor_dict[key]: feed_dict[key] for key in self.uninitialized }
 
       sess.run(tf.global_variables_initializer())
-      external_output = dict(filter(lambda kv: kv[0] in self.predict_net.external_output, list(self.predict_net.output_dict.items())))
+      external_output = dict(filter(lambda kv: kv[0] in self.predict_net.external_output,
+                                    list(self.predict_net.tensor_dict.items())))
 
       output_values = sess.run(list(external_output.values()), feed_dict=feed_dict)
       return namedtupledict('Outputs',

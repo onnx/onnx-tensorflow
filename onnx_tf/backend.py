@@ -240,7 +240,7 @@ class TensorflowBackendBase(Backend):
 
   @classmethod
   def onnx_graph_to_tensorflow_net(cls, graph_def, opset):
-    tf.tf.reset_default_graph()
+    tf.reset_default_graph()
 
     # initializer: TensorProtos representing the values to initialize
     # a given tensor.
@@ -294,9 +294,9 @@ class TensorflowBackendBase(Backend):
                         curr_node_output_map)
 
       predict_net.op.extend(output_ops)
-    predict_net.output_dict = tensor_dict
+    predict_net.tensor_dict = tensor_dict
 
-    return input_dict, predict_net
+    return predict_net
 
   @classmethod
   def prepare(cls, model, device='CPU', **kwargs):
@@ -313,14 +313,14 @@ class TensorflowBackendBase(Backend):
     """
     super(TensorflowBackendBase, cls).prepare(model, device, **kwargs)
 
-    original_input_dict, predict_net = (
+    predict_net = (
       cls.onnx_graph_to_tensorflow_net(model.graph, opset=model.opset_import[0].version))
 
     initialized = {init.name for init in model.graph.initializer}
     uninitialized = [x for x in predict_net.external_input
                      if not x in initialized]
 
-    return TensorflowRep(predict_net, original_input_dict, uninitialized)
+    return TensorflowRep(predict_net, uninitialized)
 
   @classmethod
   def onnx_initializer_to_input_dict_items(cls,

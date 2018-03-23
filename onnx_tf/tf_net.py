@@ -16,4 +16,4 @@ class TensorflowNet(object):
   	self.external_output = []
   	self.output = []
 
-  	self.output_dict = {}
+  	self.tensor_dict = {}
