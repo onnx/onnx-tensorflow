@@ -77,6 +77,7 @@ class TensorflowFrontend(TensorflowFrontendBase):
       [node.inputs[0], node.inputs[1]],
       [node.name],
       pads=pads,
+      kernel_shape=kernel_shape,
       strides=strides,
       dilations=dilations
     )
