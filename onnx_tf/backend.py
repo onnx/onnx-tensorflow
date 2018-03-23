@@ -241,6 +241,7 @@ class TensorflowBackendBase(Backend):
   @classmethod
   def onnx_graph_to_tensorflow_net(cls, graph_def, opset):
     tf.tf.reset_default_graph()
+
     # initializer: TensorProtos representing the values to initialize
     # a given tensor.
     # initialized: A list of names of the initialized tensors.
@@ -271,33 +272,31 @@ class TensorflowBackendBase(Backend):
                          name=value_info.name, shape=shape)
       input_dict_items.append([value_info.name, x])
 
-    # input dict: this dictionary is a map from variable names
-    # to the latest produced tensors of the given name.
+    # tensor dict: this dictionary is a map from variable names
+    # to the latest produced TF tensors of the given name.
     # This dictionary will get updated as build the graph because
     # some ops may produce a result tensor with the same name as
     # the input tensor. The input dict tracks the latest produced
     # tensors.
-    input_dict = dict(input_dict_items)
-    # Since input dict may be updated, we need to keep a copy
+    tensor_dict = dict(input_dict_items)
+    # Since tensor dict may be updated, we need to keep a copy
     # of the original input dict where we track the earliest
     # defined tensors so we can have access to the placeholders
     # to feed in input tensors when we run the graph.
-    original_input_dict = dict(input_dict_items)
-    output_dict = input_dict
+    input_dict = dict(input_dict_items)
 
     for node in graph_def.node:
       node = OnnxNode(node)
 
-      output_ops = cls._onnx_node_to_tensorflow_op(node, input_dict, opset=opset)
+      output_ops = cls._onnx_node_to_tensorflow_op(node, tensor_dict, opset=opset)
       curr_node_output_map = list(zip(node.outputs, output_ops))
-      input_dict = dict(list(input_dict.items()) +
+      tensor_dict = dict(list(input_dict.items()) +
                         curr_node_output_map)
 
-      output_dict = dict(list(output_dict.items()) +
-                         curr_node_output_map)
       predict_net.op.extend(output_ops)
-    predict_net.output_dict = output_dict
-    return original_input_dict, predict_net
+    predict_net.output_dict = tensor_dict
+
+    return input_dict, predict_net
 
   @classmethod
   def prepare(cls, model, device='CPU', **kwargs):
