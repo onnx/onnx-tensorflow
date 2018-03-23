@@ -240,7 +240,7 @@ class TensorflowBackendBase(Backend):
 
   @classmethod
   def onnx_graph_to_tensorflow_net(cls, graph_def, opset):
-
+    tf.tf.reset_default_graph()
     # initializer: TensorProtos representing the values to initialize
     # a given tensor.
     # initialized: A list of names of the initialized tensors.
