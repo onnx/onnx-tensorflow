@@ -120,7 +120,6 @@ class TestNode(unittest.TestCase):
     node_def = helper.make_node("BatchNormalization",
                                 ["X", "scale", "bias", "mean", "var"],
                                 ["Y"],
-                                consumed_inputs=[0, 0, 0, 1, 1],
                                 epsilon=0.001)
     x_shape = [3, 5, 4, 2]
     momentum = 0.9
