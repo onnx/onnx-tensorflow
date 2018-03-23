@@ -288,7 +288,7 @@ class TensorflowBackendBase(Backend):
 
       output_ops = cls._onnx_node_to_tensorflow_op(node, tensor_dict, opset=opset)
       curr_node_output_map = list(zip(node.outputs, output_ops))
-      tensor_dict = dict(list(input_dict.items()) +
+      tensor_dict = dict(list(tensor_dict.items()) +
                         curr_node_output_map)
 
       predict_net.op.extend(output_ops)
