@@ -7,32 +7,32 @@ from onnx.backend.base import BackendRep, namedtupledict
 import tensorflow as tf
 
 class TensorflowRep(BackendRep):
-  def __init__(self, predict_net, uninitialized):
+  def __init__(self, predict_net):
     super(TensorflowRep, self).__init__()
     self.predict_net = predict_net
-    # The list of uninitialized external_inputs in workspace, we need this to
-    # pair the name with given sequence inputs.
-    self.uninitialized = uninitialized
 
   def run(self, inputs, **kwargs):
     super(TensorflowRep, self).run(inputs, **kwargs)
+
     # TODO: handle name scope if necessary
     with tf.Session() as sess:
       if isinstance(inputs, dict):
         feed_dict = inputs
       elif isinstance(inputs, list) or isinstance(inputs, tuple):
-        if len(self.uninitialized) != len(inputs):
+        if len(self.predict_net.external_input) != len(inputs):
           raise RuntimeError('Expected {} values for uninitialized '
                      'graph inputs ({}), but got {}.'.format(
-                       len(self.uninitialized),
-                       ', '.join(self.uninitialized),
+                       len(self.predict_net.external_input),
+                       ', '.join(self.predict_net.external_input),
                        len(inputs)))
-        feed_dict = dict(zip(self.uninitialized, inputs))
+        feed_dict = dict(zip(self.predict_net.external_input, inputs))
       else:
         # single input
-        feed_dict = dict([(self.uninitialized[0], inputs)])
+        feed_dict = dict([(self.predict_net.external_input[0], inputs)])
 
-      feed_dict = { self.predict_net.tensor_dict[key]: feed_dict[key] for key in self.uninitialized }
+      feed_dict = { self.predict_net.tensor_dict[key]: feed_dict[key]
+                                                       for key in
+                                                       self.predict_net.external_input }
 
       sess.run(tf.global_variables_initializer())
       external_output = dict(filter(lambda kv: kv[0] in self.predict_net.external_output,

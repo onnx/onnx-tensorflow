@@ -240,7 +240,6 @@ class TensorflowBackendBase(Backend):
 
   @classmethod
   def onnx_graph_to_tensorflow_net(cls, graph_def, opset):
-    tf.reset_default_graph()
 
     # initializer: TensorProtos representing the values to initialize
     # a given tensor.
@@ -256,7 +255,9 @@ class TensorflowBackendBase(Backend):
     predict_net.name = graph_def.name
 
     predict_net.external_input.extend(
-      value_info.name for value_info in graph_def.input)
+      value_info.name for value_info in graph_def.input
+      if value_info.name not in initialized)
+
     predict_net.external_output.extend(
       value_info.name for value_info in graph_def.output)
 
@@ -264,7 +265,6 @@ class TensorflowBackendBase(Backend):
     for value_info in graph_def.input:
       if value_info.name in initialized:
         continue
-
       shape = list(d.dim_value for d in
                    value_info.type.tensor_type.shape.dim)
       x = tf.placeholder(TF_TYPE_ENUM[
@@ -288,10 +288,9 @@ class TensorflowBackendBase(Backend):
 
       output_ops = cls._onnx_node_to_tensorflow_op(node, tensor_dict, opset=opset)
       curr_node_output_map = list(zip(node.outputs, output_ops))
-      tensor_dict = dict(list(input_dict.items()) +
+      tensor_dict = dict(list(tensor_dict.items()) +
                         curr_node_output_map)
 
-      predict_net.op.extend(output_ops)
     predict_net.tensor_dict = tensor_dict
 
     return predict_net
@@ -314,11 +313,7 @@ class TensorflowBackendBase(Backend):
     predict_net = (
       cls.onnx_graph_to_tensorflow_net(model.graph, opset=model.opset_import[0].version))
 
-    initialized = {init.name for init in model.graph.initializer}
-    uninitialized = [x for x in predict_net.external_input
-                     if not x in initialized]
-
-    return TensorflowRep(predict_net, uninitialized)
+    return TensorflowRep(predict_net)
 
   @classmethod
   def onnx_initializer_to_input_dict_items(cls,
