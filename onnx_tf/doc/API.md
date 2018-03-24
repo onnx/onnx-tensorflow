@@ -27,6 +27,29 @@ _returns_:
 
 a TensorflowRep class object representing the ONNX model
 
+#### `onnx_tf.backend_rep.TensorflowRep.export_graph`
+
+<details>
+  <summary>Export backend representation to a Tensorflow proto file.
+
+  </summary>
+This function obtains the graph proto corresponding to the ONNX
+model associated with the backend representation and serializes
+to a protobuf file.
+
+</details>
+
+
+
+_params_:
+
+`path` : the path to the output TF protobuf file.
+
+
+_returns_:
+
+none.
+
 #### `onnx_tf.frontend.tensorflow_graph_to_onnx_model`
 
 <details>

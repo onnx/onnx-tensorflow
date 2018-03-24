@@ -8,9 +8,14 @@ class TensorflowNet(object):
 	Placeholder class for a protobuf definition.
   """
   def __init__(self):
-  	self.op = []
+  	# Record the computational graph
+  	self.graph = None
+  	# Record string names of input tensors as defined in
+  	# the ONNX model.
   	self.external_input = []
+  	# Record string names of output tensors as defined in
+  	# the ONNX model.
   	self.external_output = []
-  	self.output = []
-
-  	self.output_dict = {}
+  	# String name -> TF tensor map that records every tensor
+  	# produced for the execution of the graph.
+  	self.tensor_dict = {}
