@@ -16,6 +16,7 @@ from onnx_tf.common import (
   TF_OP_STR_TO_ONNX_OP,
   TF_ATTR_TO_ONNX_ATTR,
   TF_ATTR_TO_REMOVE,
+  get_attribute_value,
   get_tf_shape_as_list,
   op_name_to_lower,
 )
@@ -25,10 +26,12 @@ from onnx.helper import (
   make_tensor_value_info,
   make_tensor,
   make_graph,
+  make_model,
   make_node,
 )
 from onnx.onnx_pb2 import GraphProto, TensorProto, AttributeProto
 from tensorflow.python.framework.tensor_util import MakeNdarray
+from tensorflow.core.framework.attr_value_pb2 import AttrValue
 
 class TensorflowNode(object):
 
@@ -63,12 +66,30 @@ class TensorflowNode(object):
       else:
         self.attr[new_key] = val
 
+      if isinstance(self.attr[new_key], AttrValue):
+        self.attr[new_key] = get_attribute_value(self.attr[new_key])
+
   def type_converter(self, x):
     return TF_TYPE_TO_ONNX_TYPE[tf.as_dtype(x.type)]
 
 class TensorflowFrontendBase(object):
   """ Tensorflow Frontend for ONNX
   """
+
+  DEFAULT_TF_ATTR_PER_OP = {
+    "Add": {"broadcast": 1},
+    "And": {"broadcast": 1},
+    "BiasAdd": {"axis": 1, "broadcast": 1},
+    "Div": {"broadcast": 1},
+    "Equal": {"broadcast": 1},
+    "Greater": {"broadcast": 1},
+    "Less": {"broadcast": 1},
+    "Mul": {"broadcast": 1},
+    "Or": {"broadcast": 1},
+    "Pow": {"broadcast": 1},
+    "Sub": {"broadcast": 1},
+    "Xor": {"broadcast": 1},
+  }
 
   frontend_version_cache = {}
 
@@ -106,6 +127,10 @@ class TensorflowFrontendBase(object):
     # construction time.
     consts = {}
 
+    # This dict holds all output_shape, which can be used for next
+    # node's input shape.
+    output_shapes = {}
+
     # Sometimes the constants are used as inputs to ops. This list
     # holds initializers that creates global constant tensors available
     # to be accessed by ops as inputs (as oppose to attributes which
@@ -114,6 +139,10 @@ class TensorflowFrontendBase(object):
 
     for node in graph_def.node:
       node = TensorflowNode(node)
+
+      if "_output_shapes" in node.attr:
+        output_shapes[node.name] = node.attr["_output_shapes"]
+
       if node.op == "Placeholder":
         # Tensorflow requires dtype to be known.
         # TODO: currently `dtype` is translated to `to`.
@@ -125,6 +154,12 @@ class TensorflowFrontendBase(object):
         inputs_proto.append(input_proto)
       elif node.op == "Const":
         const_dim = len(node.attr["value"].shape)
+
+        # Weight format is MC(HW) in onnx which is (HW)CM
+        if "kernel" in node.name:
+            dims = list(range(np.ndim(node.attr["value"])))
+            node.attr["value"] = np.transpose(node.attr["value"], axes=dims[-2:][::-1] + dims[:len(dims) - 2])
+
         consts[node.name] = node.attr["value"]
         raw_values = ([node.attr["value"].tolist()]
                       if const_dim == 0
@@ -148,7 +183,11 @@ class TensorflowFrontendBase(object):
 
         versions = frontend_tf_opset_version[op_name_to_lower(node.op)]
 
-        opset = defs.onnx_opset_version() if opset == 0 else opset
+        assert isinstance(opset, int) and (opset <= defs.onnx_opset_version()) and (
+            opset >= 0), "Opset should be an int less than or equal to {}, but {}: {}".format(defs.onnx_opset_version(),
+                                                                                              type(opset).__name__,
+                                                                                              opset)
+
         if opset == 0:
           version = max(versions)
         else:
@@ -158,16 +197,21 @@ class TensorflowFrontendBase(object):
         frontend_ver = 'frontend_v{}'.format(version)
         frontend = cls.frontend_version_cache.setdefault(frontend_ver, importlib.import_module(
           'onnx_tf.frontends.' + frontend_ver).TensorflowFrontend)
+
         # Check if specialized handler exists.
         if hasattr(frontend, handler_name):
           method_to_call = getattr(frontend, handler_name)
-          ops_proto.append(method_to_call(node, consts=consts))
+          node = method_to_call(node, consts=consts, output_shapes=output_shapes)
+          if isinstance(node, list):
+            ops_proto.extend(node)
+          else:
+            ops_proto.append(node)
         elif node.op in TF_OP_STR_TO_ONNX_OP.keys():
           # Remove tensorflow-specific attrs that are not
           # needed/allowed in ONNX.
-          node.attr = dict(filter(lambda pair: pair[0]
-                                               not in TF_ATTR_TO_REMOVE, node.attr.items()))
-
+          attr = cls.DEFAULT_TF_ATTR_PER_OP.get(node.op, {})
+          attr.update(dict(filter(lambda pair: pair[0] not in TF_ATTR_TO_REMOVE, node.attr.items())))
+          node.attr = attr
           node_output = node.name
           ops_proto.append(make_node(TF_OP_STR_TO_ONNX_OP[node.op],
                                      node.inputs,
@@ -224,10 +268,10 @@ class TensorflowFrontendBase(object):
 
     :returns: The equivalent ONNX Model Proto object.
     """
-    onnx_graph = tensorflow_graph_to_onnx_graph(graph_def,
-                                                output,
-                                                opset,
-                                                graph_name)
+    onnx_graph = cls.tensorflow_graph_to_onnx_graph(graph_def,
+                                                    output,
+                                                    opset,
+                                                    graph_name)
     onnx_model = make_model(onnx_graph,
                             producer_name=producer_name,
                             opset_imports=[opset])
@@ -239,6 +283,37 @@ class TensorflowFrontendBase(object):
     node.attr["broadcast"] = 1
     return helper.make_node(
             onnx_op, node.inputs, [node.name], name=node.name, broadcast=1)
+
+  @classmethod
+  def _pool_op(cls, node, onnx_op, **kwargs):
+    auto_pad = node.attr["padding"].decode("UTF-8")
+    auto_pad = "SAME_UPPER" if auto_pad == "SAME" else auto_pad
+    data_format = node.attr["data_format"].decode("UTF-8")
+    spatial_indices = [i for i in range(len(data_format)) if data_format[i] not in ["N", "C"]]
+    strides = list(map(lambda i: node.attr["strides"][i], spatial_indices))
+    kernel_shape = list(map(lambda i: node.attr["ksize"][i], spatial_indices))
+    output_shapes = kwargs["output_shapes"]
+    output_shape = list(map(lambda i: node.attr["_output_shapes"][0][i], spatial_indices))
+    input_shape = list(map(lambda i: output_shapes[node.inputs[0]][0][i], spatial_indices))
+    pads = cls._cal_pads(auto_pad, len(spatial_indices), input_shape, output_shape, strides, kernel_shape)
+    return helper.make_node(
+      onnx_op,
+      [node.inputs[0]],
+      [node.name],
+      pads=pads,
+      kernel_shape=kernel_shape,
+      strides=strides
+    )
+
+  @classmethod
+  def _cal_pads(cls, auto_pad, spatial_dim, input_shape, output_shape, strides, kernel_shape):
+    pads = [0] * spatial_dim * 2
+    if auto_pad == "SAME_UPPER":
+      for i in range(spatial_dim):
+        pad_shape = (output_shape[i] - 1) * strides[i] + kernel_shape[i] - input_shape[i]
+        pads[i] = pad_shape // 2
+        pads[i + spatial_dim] = pad_shape - pad_shape // 2
+    return pads
 
   @classmethod
   def _reduce_op(cls, op, node, **kwargs):

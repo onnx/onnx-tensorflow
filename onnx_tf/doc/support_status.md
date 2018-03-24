@@ -123,12 +123,20 @@ ______
 | Tensorflow Op        | Supported ONNX Version  |
 | -------------- |:------------------:|
 |add|1|
+|avg_pool|1|
+|bias_add|1|
 |concat_v2|1, 4|
+|conv1_d|1|
+|conv2_d|1|
+|conv3_d|1|
+|identity|1|
 |logical_and|1|
 |logical_not|1|
 |logical_or|1|
 |logical_xor|1|
+|mat_mul|1|
 |max|1|
+|max_pool|1|
 |mean|1|
 |min|1|
 |mul|1|
@@ -141,6 +149,7 @@ ______
 |relu|1|
 |reshape|1, 5|
 |sigmoid|1|
+|softmax|1|
 |split_v|1, 2|
 |sqrt|1|
 |squeeze|1|
