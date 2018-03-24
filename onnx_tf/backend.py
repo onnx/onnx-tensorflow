@@ -137,6 +137,12 @@ class TensorflowBackendBase(Backend):
     "reduce_min": {"keepdims": 1},
     "reduce_prod": {"keepdims": 1},
     "reduce_sum": {"keepdims": 1},
+
+    # Force to use NCHW temporally
+    # https://github.com/onnx/onnx/pull/443
+    "conv": {"data_format": "channels_first"},
+    "max_pool": {"data_format": "NCHW"},
+    "average_pool": {"data_format": "NCHW"},
   }
 
   backend_version_cache = {}

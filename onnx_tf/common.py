@@ -4,7 +4,6 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import re
-from collections import namedtuple
 
 from onnx import TensorProto
 import tensorflow as tf
@@ -119,7 +118,8 @@ TF_ATTR_TO_ONNX_ATTR_PER_OP = {k: invert(v) for k, v in ONNX_ATTR_TO_TF_ATTR_PER
 
 ONNX_ATTR_TO_REMOVE_PER_OP = {}
 
-TF_ATTR_TO_REMOVE = ["_output_shapes", "T", "seed2", "Tidx"]
+TF_ATTR_TO_REMOVE = ["_output_shapes", "T", "seed2", "Tidx", "_class", "Tshape", "Tpaddings", "data_format",
+                     "transpose_a", "transpose_b"]
 
 ONNX_OP_TO_TF_OP = {
   "abs": tf.abs,
@@ -157,8 +157,11 @@ ONNX_OP_TO_TF_OP = {
 TF_OP_TO_ONNX_OP = invert(ONNX_OP_TO_TF_OP)
 
 TF_OP_STR_TO_ONNX_OP = {
+  "Identity": "Identity",
   "LogicalNot": "Not",
+  "MatMul": "MatMul",
   "Relu": "Relu",
+  "Softmax": "Softmax",
   "Pow": "Pow",
   # TODO:
   # handle Mul, Add, Sub,
@@ -183,3 +186,47 @@ def get_tf_shape_as_list(tf_shape_dim):
 # the first letter.
 def op_name_to_lower(name):
   return re.sub('(?<!^)(?=[A-Z])', '_', name).lower()
+
+def get_attribute_value(attr):
+  """ convert Tensorflow AttrValue object to Python object
+  """
+  if attr.HasField('list'):
+    return get_list_value(attr.list)
+  if attr.HasField('s'):
+    return attr.s
+  elif attr.HasField('i'):
+    return attr.i
+  elif attr.HasField('f'):
+    return attr.f
+  elif attr.HasField('b'):
+    return attr.b
+  elif attr.HasField('type'):
+    return attr.type
+  elif attr.HasField('shape'):
+    return attr.type
+  elif attr.HasField('tensor'):
+    return attr.tensor
+  else:
+    raise ValueError("Unsupported Tensorflow attribute: {}".format(attr))
+
+def get_list_value(attr):
+  """ convert Tensorflow ListValue object to Python object
+  """
+  if len(attr.s):
+    return attr.s
+  elif len(attr.i):
+    return attr.i
+  elif len(attr.f):
+    return attr.f
+  elif len(attr.b):
+    return attr.b
+  elif len(attr.tensor):
+    return attr.tensor
+  elif len(attr.type):
+    return attr.type
+  elif len(attr.shape):
+    return attr.shape
+  elif len(attr.func):
+    return attr.func
+  else:
+    raise ValueError("Unsupported Tensorflow attribute: {}".format(attr))

@@ -29,7 +29,7 @@ def main():
     doc_file.write('ONNX-Tensorflow API\n')
     doc_file.write('======\n\n')
 
-    for scope, funcs in gen_doc_for.items():
+    for scope, funcs in sorted(gen_doc_for.items()):
       for func in funcs:
         doc_parsed = get_info.parse_docstring(func.__doc__)
         doc_file.write('#### `' + scope + '.' + func.__name__ + '`\n\n')
