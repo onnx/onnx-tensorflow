@@ -4,10 +4,12 @@ ONNX-Tensorflow API
 #### `onnx_tf.backend_rep.TensorflowRep.export_graph`
 
 <details>
-  <summary>Export an ONNX-TF backend representation to a Tensorflow
+  <summary>Export backend representation to a Tensorflow proto file.
 
   </summary>
-graph protobuf object file.
+This function obtains the graph proto corresponding to the ONNX
+model associated with the backend representation and serializes
+to a protobuf file.
 
 </details>
 

@@ -44,8 +44,11 @@ class TensorflowRep(BackendRep):
           list(external_output.keys()))(*output_values)
 
   def export_graph(self, path):
-    """Export an ONNX-TF backend representation to a Tensorflow
-    graph protobuf object file.
+    """Export backend representation to a Tensorflow proto file.
+
+    This function obtains the graph proto corresponding to the ONNX
+    model associated with the backend representation and serializes
+    to a protobuf file.
 
     :param path: the path to the output TF protobuf file.
 
