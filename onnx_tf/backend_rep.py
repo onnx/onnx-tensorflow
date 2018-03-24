@@ -15,29 +15,30 @@ class TensorflowRep(BackendRep):
     super(TensorflowRep, self).run(inputs, **kwargs)
 
     # TODO: handle name scope if necessary
-    with tf.Session() as sess:
-      if isinstance(inputs, dict):
-        feed_dict = inputs
-      elif isinstance(inputs, list) or isinstance(inputs, tuple):
-        if len(self.predict_net.external_input) != len(inputs):
-          raise RuntimeError('Expected {} values for uninitialized '
-                     'graph inputs ({}), but got {}.'.format(
-                       len(self.predict_net.external_input),
-                       ', '.join(self.predict_net.external_input),
-                       len(inputs)))
-        feed_dict = dict(zip(self.predict_net.external_input, inputs))
-      else:
-        # single input
-        feed_dict = dict([(self.predict_net.external_input[0], inputs)])
+    with self.predict_net.graph.as_default():
+      with tf.Session() as sess:
+        if isinstance(inputs, dict):
+          feed_dict = inputs
+        elif isinstance(inputs, list) or isinstance(inputs, tuple):
+          if len(self.predict_net.external_input) != len(inputs):
+            raise RuntimeError('Expected {} values for uninitialized '
+                       'graph inputs ({}), but got {}.'.format(
+                         len(self.predict_net.external_input),
+                         ', '.join(self.predict_net.external_input),
+                         len(inputs)))
+          feed_dict = dict(zip(self.predict_net.external_input, inputs))
+        else:
+          # single input
+          feed_dict = dict([(self.predict_net.external_input[0], inputs)])
 
-      feed_dict = { self.predict_net.tensor_dict[key]: feed_dict[key]
-                                                       for key in
-                                                       self.predict_net.external_input }
+        feed_dict = { self.predict_net.tensor_dict[key]: feed_dict[key]
+                                                         for key in
+                                                         self.predict_net.external_input }
 
-      sess.run(tf.global_variables_initializer())
-      external_output = dict(filter(lambda kv: kv[0] in self.predict_net.external_output,
-                                    list(self.predict_net.tensor_dict.items())))
+        sess.run(tf.global_variables_initializer())
+        external_output = dict(filter(lambda kv: kv[0] in self.predict_net.external_output,
+                                      list(self.predict_net.tensor_dict.items())))
 
-      output_values = sess.run(list(external_output.values()), feed_dict=feed_dict)
-      return namedtupledict('Outputs',
-        list(external_output.keys()))(*output_values)
+        output_values = sess.run(list(external_output.values()), feed_dict=feed_dict)
+        return namedtupledict('Outputs',
+          list(external_output.keys()))(*output_values)
