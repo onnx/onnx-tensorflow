@@ -8,15 +8,20 @@ from onnx_tf.third_party import get_info
 
 import onnx_tf.backend
 import onnx_tf.frontend
+
+import onnx_tf.backend_rep
 import opset_version
 
 def main():
   gen_doc_for = {
     'onnx_tf.backend': [
       onnx_tf.backend.prepare,
-      ],
+    ],
     'onnx_tf.frontend': [
       onnx_tf.frontend.tensorflow_graph_to_onnx_model,
+    ],
+    'onnx_tf.backend_rep.TensorflowRep': [
+      onnx_tf.backend_rep.TensorflowRep.export_graph,
     ]
   }
 

@@ -42,3 +42,16 @@ class TensorflowRep(BackendRep):
         output_values = sess.run(list(external_output.values()), feed_dict=feed_dict)
         return namedtupledict('Outputs',
           list(external_output.keys()))(*output_values)
+
+  def export_graph(self, path):
+    """Export an ONNX-TF backend representation to a Tensorflow
+    graph protobuf object file.
+
+    :param path: the path to the output TF protobuf file.
+
+    :returns: none.
+    """
+    graph_proto = self.predict_net.graph.as_graph_def()
+    file = open(path, "wb")
+    file.write(graph_proto.SerializeToString())
+    file.close()
