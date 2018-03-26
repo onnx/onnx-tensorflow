@@ -24,7 +24,7 @@ from onnx_tf.common import (
     op_name_to_lower,
 )
 from onnx_tf.opset_version import frontend_tf_opset_version
-from onnx import defs, helper
+from onnx import defs, helper, OperatorSetIdProto
 from onnx.helper import (
     make_tensor_value_info,
     make_tensor,
@@ -308,7 +308,9 @@ class TensorflowFrontendBase(object):
     onnx_graph = cls.tensorflow_graph_to_onnx_graph(graph_def, output, opset,
                                                     graph_name)
     onnx_model = make_model(
-        onnx_graph, producer_name=producer_name, opset_imports=[opset])
+        onnx_graph,
+        producer_name=producer_name,
+        opset_imports=[OperatorSetIdProto(domain='', version=opset)])
 
     return onnx_model
 
