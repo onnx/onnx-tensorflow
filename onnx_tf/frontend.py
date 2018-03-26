@@ -24,7 +24,7 @@ from onnx_tf.common import (
     op_name_to_lower,
 )
 from onnx_tf.opset_version import frontend_tf_opset_version
-from onnx import defs, helper, OperatorSetIdProto
+from onnx import defs, helper
 from onnx.helper import (
     make_tensor_value_info,
     make_tensor,
