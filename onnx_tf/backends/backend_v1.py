@@ -17,15 +17,17 @@ except ImportError:  # will be 3.x series
   pass
 
 import numpy as np
+import tensorflow as tf
+from tensorflow.python.ops import array_ops
+
 from onnx_tf.backend import TensorflowBackendBase
 from onnx_tf.common import (
-  ONNX_OP_TO_TF_OP,
-  ONNX_TYPE_TO_TF_TYPE,
+    ONNX_OP_TO_TF_OP,
+    ONNX_TYPE_TO_TF_TYPE,
 )
 import onnx.numpy_helper
 import onnx.defs
-import tensorflow as tf
-from tensorflow.python.ops import array_ops
+
 
 class TensorflowBackend(TensorflowBackendBase):
   """ Tensorflow Backend for ONNX
@@ -46,8 +48,7 @@ class TensorflowBackend(TensorflowBackendBase):
     keepdims = node.attrs.get("keepdims", 1)
     if keepdims == 1:
       warnings.warn("Definition of ArgMax with keepdims enabled is "
-                    "incompatible between onnx and tensorflow.",
-                    UserWarning)
+                    "incompatible between onnx and tensorflow.", UserWarning)
     return [tf.argmax(data, axis=axis)]
 
   @classmethod
@@ -57,13 +58,14 @@ class TensorflowBackend(TensorflowBackendBase):
     keepdims = node.attrs.get("keepdims", 1)
     if keepdims == 1:
       warnings.warn("Definition of ArgMin with keepdims enabled is "
-                    "incompatible between onnx and tensorflow.",
-                    UserWarning)
+                    "incompatible between onnx and tensorflow.", UserWarning)
     return [tf.argmin(data, axis=axis)]
 
   @classmethod
   def _compatibility_pool(cls, node, input_dict, pooling_type):
-    def _get_pad_shape(auto_pad, input_spatial_shape, kernel_spatial_shape, strides_spatial, output_spatial_shape):
+
+    def _get_pad_shape(auto_pad, input_spatial_shape, kernel_spatial_shape,
+                       strides_spatial, output_spatial_shape):
       pad_shape = [0] * len(input_spatial_shape)
       if auto_pad in ("SAME_UPPER", "SAME_LOWER"):
         for i in range(len(input_spatial_shape)):
@@ -73,43 +75,57 @@ class TensorflowBackend(TensorflowBackendBase):
         pass
       return pad_shape
 
-    def _get_output_shape(auto_pad, input_spatial_shape, kernel_spatial_shape, strides_spatial):
+    def _get_output_shape(auto_pad, input_spatial_shape, kernel_spatial_shape,
+                          strides_spatial):
       out_shape = [0] * len(input_spatial_shape)
       if auto_pad in ("SAME_UPPER", "SAME_LOWER"):
         for i in range(len(input_spatial_shape)):
-          out_shape[i] = int(np.ceil(float(input_spatial_shape[i]) / float(strides_spatial[i])))
+          out_shape[i] = int(
+              np.ceil(
+                  float(input_spatial_shape[i]) / float(strides_spatial[i])))
       elif auto_pad in ("VALID", ""):
         for i in range(len(input_spatial_shape)):
           out_shape[i] = int(
-            np.ceil(float(input_spatial_shape[i] - (kernel_spatial_shape[i] - 1)) / float(strides_spatial[i])))
+              np.ceil(
+                  float(input_spatial_shape[i] - (kernel_spatial_shape[i] - 1))
+                  / float(strides_spatial[i])))
       return out_shape
 
-    def py_pool(x, kernel_shape, strides_shape, pads, out_shape, pad_shape, pooling_type):
+    def py_pool(x, kernel_shape, strides_shape, pads, out_shape, pad_shape,
+                pooling_type):
       pooling_type = pooling_type.decode('UTF-8')
       x_shape = np.shape(x)
       spatial_size = len(x_shape[2:])
-      pad_attr = [(0, 0), (0, 0)] + [(pads[i], pads[i + spatial_size]) for i in range(spatial_size)]
+      pad_attr = [(0, 0), (0, 0)] + [
+          (pads[i], pads[i + spatial_size]) for i in range(spatial_size)
+      ]
       padded = np.pad(x, pad_attr, mode="constant", constant_values=np.nan)
 
       y = np.zeros([x_shape[0], x_shape[1]] + list(out_shape))
 
-      for shape in itertools.product(range(x_shape[0]),
-                                     range(x_shape[1]),
-                                     *[range(
-                                       int((x_shape[i + 2] + pad_shape[i] - kernel_shape[i]) / strides_shape[i] + 1))
-                                       for i in range(spatial_size)]):
+      for shape in itertools.product(
+          range(x_shape[0]), range(x_shape[1]), *[
+              range(
+                  int((x_shape[i + 2] + pad_shape[i] - kernel_shape[i]
+                      ) / strides_shape[i] + 1)) for i in range(spatial_size)
+          ]):
         window = padded[shape[0], shape[1]]
-        window_vals = np.array([window[i] for i in list(
-          itertools.product(
-            *[range(strides_shape[i] * shape[i + 2], strides_shape[i] * shape[i + 2] + kernel_shape[i]) for i in
-              range(spatial_size)])
-        )])
+        window_vals = np.array([
+            window[i] for i in list(
+                itertools.product(*[
+                    range(strides_shape[i] * shape[i + 2],
+                          strides_shape[i] * shape[i + 2] + kernel_shape[i])
+                    for i in range(spatial_size)
+                ]))
+        ])
         if pooling_type == 'AVG':
           f = np.average
         elif pooling_type == 'MAX':
           f = np.max
         else:
-          raise NotImplementedError('Pooling type {} does not support. Should be AVG, MAX'.format(pooling_type))
+          raise NotImplementedError(
+              'Pooling type {} does not support. Should be AVG, MAX'.format(
+                  pooling_type))
         y[shape] = f(window_vals[np.where(~np.isnan(window_vals))])
       return y.astype(np.float32)
 
@@ -123,16 +139,23 @@ class TensorflowBackend(TensorflowBackendBase):
 
     # Only auto_pad in ("SAME_LOWER", "") will come here.
     if auto_pad == "SAME_LOWER":
-      out_shape = _get_output_shape(auto_pad, x_shape[2:], kernel_shape, strides_shape)
-      pad_shape = _get_pad_shape(auto_pad, x_shape[2:], kernel_shape, strides_shape, out_shape)
+      out_shape = _get_output_shape(auto_pad, x_shape[2:], kernel_shape,
+                                    strides_shape)
+      pad_shape = _get_pad_shape(auto_pad, x_shape[2:], kernel_shape,
+                                 strides_shape, out_shape)
       for i in range(spatial_size):
         pads[i + spatial_size] = pad_shape[i] // 2
         pads[i] = pad_shape[i] - pads[i + spatial_size]
     elif auto_pad == "":
-      pad_shape = [pads[i] + pads[i + spatial_size] for i in range(spatial_size)]
-      out_shape = _get_output_shape(auto_pad, np.add(x_shape[2:], pad_shape), kernel_shape, strides_shape)
+      pad_shape = [
+          pads[i] + pads[i + spatial_size] for i in range(spatial_size)
+      ]
+      out_shape = _get_output_shape(auto_pad, np.add(x_shape[2:], pad_shape),
+                                    kernel_shape, strides_shape)
 
-    pooled = tf.py_func(py_pool, [x, kernel_shape, strides_shape, pads, out_shape, pad_shape, pooling_type], tf.float32)
+    pooled = tf.py_func(py_pool, [
+        x, kernel_shape, strides_shape, pads, out_shape, pad_shape, pooling_type
+    ], tf.float32)
     pooled.set_shape(x_shape[0:2] + out_shape)
     return [pooled]
 
@@ -162,11 +185,24 @@ class TensorflowBackend(TensorflowBackendBase):
       return cls._compatibility_pool(node, input_dict, pooling_type)
 
     if support_cuda:
-      pooled = pool_func(x, kernel_shape, padding=pad, strides=strides, data_format=compute_format)
+      pooled = pool_func(
+          x,
+          kernel_shape,
+          padding=pad,
+          strides=strides,
+          data_format=compute_format)
     else:
-      x = tf.transpose(x, perm=cls.get_perm_from_formats(storage_format, compute_format))
-      pooled = pool_func(x, kernel_shape, padding=pad, strides=strides, data_format=compute_format)
-      pooled = tf.transpose(pooled, perm=cls.get_perm_from_formats(compute_format, storage_format))
+      x = tf.transpose(
+          x, perm=cls.get_perm_from_formats(storage_format, compute_format))
+      pooled = pool_func(
+          x,
+          kernel_shape,
+          padding=pad,
+          strides=strides,
+          data_format=compute_format)
+      pooled = tf.transpose(
+          pooled,
+          perm=cls.get_perm_from_formats(compute_format, storage_format))
 
     return [pooled]
 
@@ -182,21 +218,27 @@ class TensorflowBackend(TensorflowBackendBase):
       return cls.handle_global_average_pool(node, input_dict)
 
     # 0 = cannot pad zero
-    return cls._pool(node, input_dict, partial(tf.nn.pool, pooling_type='AVG'), 'AVG')
+    return cls._pool(node, input_dict, partial(tf.nn.pool, pooling_type='AVG'),
+                     'AVG')
 
   @classmethod
   def handle_batch_normalization(cls, node, input_dict):
     x = input_dict[node.inputs[0]]
     total_num_dim = len(x.get_shape())
-    scale = cls._explicit_broadcast(input_dict[node.inputs[1]], 1, total_num_dim)
+    scale = cls._explicit_broadcast(input_dict[node.inputs[1]], 1,
+                                    total_num_dim)
     bias = cls._explicit_broadcast(input_dict[node.inputs[2]], 1, total_num_dim)
-    running_mean = cls._explicit_broadcast(input_dict[node.inputs[3]], 1, total_num_dim)
-    running_variance = cls._explicit_broadcast(input_dict[node.inputs[4]], 1, total_num_dim)
+    running_mean = cls._explicit_broadcast(input_dict[node.inputs[3]], 1,
+                                           total_num_dim)
+    running_variance = cls._explicit_broadcast(input_dict[node.inputs[4]], 1,
+                                               total_num_dim)
 
     variance_epsilon = node.attrs.get("epsilon", 0.00001)
     if node.attrs.get("is_test", 0):
-      return [tf.nn.batch_normalization(x, running_mean, running_variance, bias, scale,
-                                        variance_epsilon)]
+      return [
+          tf.nn.batch_normalization(x, running_mean, running_variance, bias,
+                                    scale, variance_epsilon)
+      ]
     spatial = node.attrs.get("spatial", 1) == 1
     momentum = node.attrs.get("momentum", 0.9)
     axis = [0] if spatial else [0] + list(range(2, total_num_dim))
@@ -206,13 +248,19 @@ class TensorflowBackend(TensorflowBackendBase):
     running_mean = running_mean * momentum + mean * (1 - momentum)
     running_variance = running_variance * momentum + variance * (1 - momentum)
     # TODO: need to conform to the documentation here
-    return [tf.nn.batch_normalization(x, running_mean, running_variance, bias, scale,
-                                      variance_epsilon)]
+    return [
+        tf.nn.batch_normalization(x, running_mean, running_variance, bias,
+                                  scale, variance_epsilon)
+    ]
 
   @classmethod
   def handle_clip(cls, node, input_dict):
-    max_val = node.attrs["max"] if "max" in node.attrs.keys() else tf.reduce_max(input_dict[node.inputs[0]])
-    min_val = node.attrs["min"] if "min" in node.attrs.keys() else tf.reduce_min(input_dict[node.inputs[0]])
+    max_val = node.attrs[
+        "max"] if "max" in node.attrs.keys() else tf.reduce_max(
+            input_dict[node.inputs[0]])
+    min_val = node.attrs[
+        "min"] if "min" in node.attrs.keys() else tf.reduce_min(
+            input_dict[node.inputs[0]])
 
     return [tf.clip_by_value(input_dict[node.inputs[0]], min_val, max_val)]
 
@@ -249,11 +297,12 @@ class TensorflowBackend(TensorflowBackendBase):
 
     if "kernel_shape" in node.attrs.keys():
       kernel_shape = node.attrs["kernel_shape"]
-      assert in_weights.get_shape().as_list()[2:] == kernel_shape, ("kernel_shape "
-                                                                    "attr of convolution does not match the actual weight "
-                                                                    "passed to this operation, attr {}, actual {}").format(
-        kernel_shape,
-        in_weights.get_shape().as_list())
+      assert in_weights.get_shape().as_list()[2:] == kernel_shape, (
+          "kernel_shape "
+          "attr of convolution does not match the actual weight "
+          "passed to this operation, attr {}, actual {}").format(
+              kernel_shape,
+              in_weights.get_shape().as_list())
 
     weights = tf.transpose(in_weights, perm)
     dilations = node.attrs.get("dilations", None)
@@ -264,27 +313,35 @@ class TensorflowBackend(TensorflowBackendBase):
 
     if "group" in node.attrs:
 
-      weight_groups = tf.split(weights,
-                               num_or_size_splits=node.attrs["group"],
-                               axis=-1)
+      weight_groups = tf.split(
+          weights, num_or_size_splits=node.attrs["group"], axis=-1)
 
       if support_cuda:
         xs = tf.split(x, num_or_size_splits=node.attrs["group"], axis=1)
       else:
-        x = tf.transpose(x, perm=cls.get_perm_from_formats(storage_format, compute_format))
+        x = tf.transpose(
+            x, perm=cls.get_perm_from_formats(storage_format, compute_format))
         xs = tf.split(x, num_or_size_splits=node.attrs["group"], axis=-1)
 
-      convolved = [tf.nn.convolution(x, weight, "VALID", strides=strides,
-                                     dilation_rate=dilations,
-                                     data_format=compute_format) for
-                   (x, weight) in zip(xs, weight_groups)]
+      convolved = [
+          tf.nn.convolution(
+              x,
+              weight,
+              "VALID",
+              strides=strides,
+              dilation_rate=dilations,
+              data_format=compute_format)
+          for (x, weight) in zip(xs, weight_groups)
+      ]
 
       if len(node.inputs) == 2:
         if support_cuda:
           output = tf.concat(convolved, axis=1)
         else:
           output = tf.concat(convolved, axis=-1)
-          output = tf.transpose(output, perm=cls.get_perm_from_formats(compute_format, storage_format))
+          output = tf.transpose(
+              output,
+              perm=cls.get_perm_from_formats(compute_format, storage_format))
       else:
         bias = input_dict[node.inputs[2]]
 
@@ -294,29 +351,42 @@ class TensorflowBackend(TensorflowBackendBase):
         else:
           output = tf.concat(convolved, axis=-1)
           output = tf.nn.bias_add(output, bias, data_format=compute_format)
-          output = tf.transpose(output, perm=cls.get_perm_from_formats(compute_format, storage_format))
+          output = tf.transpose(
+              output,
+              perm=cls.get_perm_from_formats(compute_format, storage_format))
 
       return [output]
 
     if not support_cuda:
-      x = tf.transpose(x, perm=cls.get_perm_from_formats(storage_format, compute_format))
+      x = tf.transpose(
+          x, perm=cls.get_perm_from_formats(storage_format, compute_format))
 
-    convolved = tf.nn.convolution(x, weights, "VALID", strides=strides,
-                                  dilation_rate=dilations,
-                                  data_format=compute_format)
+    convolved = tf.nn.convolution(
+        x,
+        weights,
+        "VALID",
+        strides=strides,
+        dilation_rate=dilations,
+        data_format=compute_format)
 
     if not support_cuda:
-      convolved = tf.transpose(convolved, perm=cls.get_perm_from_formats(compute_format, storage_format))
+      convolved = tf.transpose(
+          convolved,
+          perm=cls.get_perm_from_formats(compute_format, storage_format))
 
     if len(node.inputs) == 2:
       return [convolved]
     else:
       bias = input_dict[node.inputs[2]]
       if not support_cuda:
-        convolved = tf.transpose(convolved, perm=cls.get_perm_from_formats(storage_format, compute_format))
+        convolved = tf.transpose(
+            convolved,
+            perm=cls.get_perm_from_formats(storage_format, compute_format))
       output = tf.nn.bias_add(convolved, bias, data_format=compute_format)
       if not support_cuda:
-        output = tf.transpose(output, perm=cls.get_perm_from_formats(compute_format, storage_format))
+        output = tf.transpose(
+            output,
+            perm=cls.get_perm_from_formats(compute_format, storage_format))
       return [output]
 
   @classmethod
@@ -334,11 +404,15 @@ class TensorflowBackend(TensorflowBackendBase):
     support_cuda = cls.supports_device("CUDA")
     storage_format, compute_format = cls.get_data_format(x_rank, support_cuda)
     if support_cuda:
-      y = tf.depth_to_space(x, block_size=node.attrs["blocksize"], data_format=compute_format)
+      y = tf.depth_to_space(
+          x, block_size=node.attrs["blocksize"], data_format=compute_format)
     else:
-      x = tf.transpose(x, perm=cls.get_perm_from_formats(storage_format, compute_format))
-      y = tf.depth_to_space(x, block_size=node.attrs["blocksize"], data_format=compute_format)
-      y = tf.transpose(y, perm=cls.get_perm_from_formats(compute_format, storage_format))
+      x = tf.transpose(
+          x, perm=cls.get_perm_from_formats(storage_format, compute_format))
+      y = tf.depth_to_space(
+          x, block_size=node.attrs["blocksize"], data_format=compute_format)
+      y = tf.transpose(
+          y, perm=cls.get_perm_from_formats(compute_format, storage_format))
     return [y]
 
   @classmethod
@@ -361,7 +435,10 @@ class TensorflowBackend(TensorflowBackendBase):
 
     alpha = node.attrs.get("alpha", 1.0)
     if "alpha" in node.attrs.keys():
-      return [tf.cast(x < 0.0, tf.float32) * alpha * (tf.exp(x) - 1.0) + tf.cast(x >= 0.0, tf.float32) * x]
+      return [
+          tf.cast(x < 0.0, tf.float32) * alpha *
+          (tf.exp(x) - 1.0) + tf.cast(x >= 0.0, tf.float32) * x
+      ]
     else:
       return [tf.nn.elu(x)]
 
@@ -436,13 +513,14 @@ class TensorflowBackend(TensorflowBackendBase):
 
     if "axis" in node.attrs:
       axis = node.attrs["axis"]
-      axis = (axis if axis >= 0
-      else len(input_dict[node.inputs[0]].get_shape()) + axis)
+      axis = (axis if axis >= 0 else
+              len(input_dict[node.inputs[0]].get_shape()) + axis)
     else:
       axis = 1
 
     shape = tf.shape(x)
-    cal_shape = (tf.reduce_prod(shape[0:axis]), tf.reduce_prod(shape[axis:tf.size(shape)]))
+    cal_shape = (tf.reduce_prod(shape[0:axis]),
+                 tf.reduce_prod(shape[axis:tf.size(shape)]))
     x = tf.reshape(x, cal_shape)
 
     return [tf.reshape(tf.contrib.seq2seq.hardmax(x), shape)]
@@ -474,8 +552,8 @@ class TensorflowBackend(TensorflowBackendBase):
     # but in ONNX/Caffe accepts diameter.
     # This could be a problem.
     x_t = tf.transpose(x, perm=[0, 2, 3, 1])
-    normed = tf.nn.lrn(x_t, depth_radius=depth_radius,
-                       bias=bias, alpha=tf_alpha, beta=beta)
+    normed = tf.nn.lrn(
+        x_t, depth_radius=depth_radius, bias=bias, alpha=tf_alpha, beta=beta)
     normed = tf.transpose(normed, perm=[0, 3, 1, 2])
     return [normed]
 
@@ -493,13 +571,17 @@ class TensorflowBackend(TensorflowBackendBase):
     if "activations" in node.attrs:
       activations = list(map(lambda x: x.lower(), node.attrs["activations"]))
       if activations[0] != "sigmoid" or activations[1] != "tanh":
-        warnings.warn("Tensorflow uses sigmiod and tanh as first two activation functions."
-                      "So activations attr will be set to sigmiod, tanh and {}.".format(activations[2]))
+        warnings.warn(
+            "Tensorflow uses sigmiod and tanh as first two activation functions."
+            "So activations attr will be set to sigmiod, tanh and {}.".format(
+                activations[2]))
       tf_activations = [ONNX_OP_TO_TF_OP[activations[2]]]
       if direction == "bidirectional":
         if activations[3] != "sigmoid" or activations[4] != "tanh":
-          warnings.warn("Tensorflow uses sigmiod and tanh as first two activation functions."
-                        "So activations attr will be set to sigmiod, tanh and {}.".format(activations[4]))
+          warnings.warn(
+              "Tensorflow uses sigmiod and tanh as first two activation functions."
+              "So activations attr will be set to sigmiod, tanh and {}.".format(
+                  activations[4]))
         tf_activations.append(ONNX_OP_TO_TF_OP[activations[5]])
 
     cell_kwargs["activation"] = tf_activations[0]
@@ -512,26 +594,24 @@ class TensorflowBackend(TensorflowBackendBase):
 
     # TODO: handle data types
     if direction == "forward":
-      output, state = tf.nn.dynamic_rnn(cell,
-                                        input_dict[node.inputs[0]],
-                                        time_major=True,
-                                        dtype=tf.float32)
+      output, state = tf.nn.dynamic_rnn(
+          cell, input_dict[node.inputs[0]], time_major=True, dtype=tf.float32)
     elif direction == "bidirectional":
-      output, state = tf.nn.bidirectional_dynamic_rnn(cell,
-                                                      cell_bw,
-                                                      input_dict[node.inputs[0]],
-                                                      time_major=True,
-                                                      dtype=tf.float32)
+      output, state = tf.nn.bidirectional_dynamic_rnn(
+          cell,
+          cell_bw,
+          input_dict[node.inputs[0]],
+          time_major=True,
+          dtype=tf.float32)
     elif direction == "reverse":
+
       def _reverse(input_, seq_dim):
         return array_ops.reverse(input_, axis=[seq_dim])
 
       time_dim = 0
       inputs_reverse = _reverse(input_dict[node.inputs[0]], time_dim)
-      output, state = tf.nn.dynamic_rnn(cell,
-                                        inputs_reverse,
-                                        time_major=True,
-                                        dtype=tf.float32)
+      output, state = tf.nn.dynamic_rnn(
+          cell, inputs_reverse, time_major=True, dtype=tf.float32)
 
     state = state[0]
     c, h = state
@@ -559,13 +639,14 @@ class TensorflowBackend(TensorflowBackendBase):
 
     if "axis" in node.attrs:
       axis = node.attrs["axis"]
-      axis = (axis if axis >= 0
-      else len(input_dict[node.inputs[0]].get_shape()) + axis)
+      axis = (axis if axis >= 0 else
+              len(input_dict[node.inputs[0]].get_shape()) + axis)
     else:
       axis = 1
 
     shape = tf.shape(x)
-    cal_shape = (tf.reduce_prod(shape[0:axis]), tf.reduce_prod(shape[axis:tf.size(shape)]))
+    cal_shape = (tf.reduce_prod(shape[0:axis]),
+                 tf.reduce_prod(shape[axis:tf.size(shape)]))
     x = tf.reshape(x, cal_shape)
 
     return [tf.reshape(tf.nn.log_softmax(x - tf.reduce_max(x)), shape)]
@@ -577,7 +658,8 @@ class TensorflowBackend(TensorflowBackendBase):
 
   @classmethod
   def handle_max_pool(cls, node, input_dict):
-    return cls._pool(node, input_dict, partial(tf.nn.pool, pooling_type='MAX'), 'MAX')
+    return cls._pool(node, input_dict, partial(tf.nn.pool, pooling_type='MAX'),
+                     'MAX')
 
   @classmethod
   def handle_mean(cls, node, input_dict):
@@ -621,19 +703,16 @@ class TensorflowBackend(TensorflowBackendBase):
 
     value = node.attrs.get("value", 0)
     # tf requires int32 paddings
-    pads = tf.constant(np.transpose(np.array(node.attrs["paddings"])
-                                    .reshape([2, num_dim])
-                                    .astype(np.int32)))
+    pads = tf.constant(
+        np.transpose(
+            np.array(node.attrs["paddings"]).reshape([2, num_dim]).astype(
+                np.int32)))
 
     x = input_dict[node.inputs[0]]
     if mode.lower() == "edge":
       return [tf.py_func(_compatibility_edge_pad, [x, pads], x.dtype)]
 
-    return [tf.pad(input_dict[node.inputs[0]],
-                   pads,
-                   mode,
-                   None,
-                   value)]
+    return [tf.pad(input_dict[node.inputs[0]], pads, mode, None, value)]
 
   @classmethod
   def handle_pow(cls, node, input_dict):
@@ -691,8 +770,10 @@ class TensorflowBackend(TensorflowBackendBase):
     alpha = node.attrs["alpha"] if "alpha" in node.attrs else 1.6732
     gamma = node.attrs["gamma"] if "gamma" in node.attrs else 1.0507
 
-    return [tf.clip_by_value(x, 0, tf.reduce_max(x)) * gamma + (
-        tf.exp(tf.clip_by_value(x, tf.reduce_min(x), 0)) - 1) * alpha * gamma]
+    return [
+        tf.clip_by_value(x, 0, tf.reduce_max(x)) * gamma +
+        (tf.exp(tf.clip_by_value(x, tf.reduce_min(x), 0)) - 1) * alpha * gamma
+    ]
 
   @classmethod
   def handle_slice(cls, node, input_dict):
@@ -713,9 +794,10 @@ class TensorflowBackend(TensorflowBackendBase):
       full_begin[axes[i]] = starts[i]
       full_sizes[axes[i]] = ends[i] - starts[i]
 
-    return [tf.slice(input_dict[node.inputs[0]],
-                     tf.constant(full_begin),
-                     tf.constant(full_sizes))]
+    return [
+        tf.slice(input_dict[node.inputs[0]], tf.constant(full_begin),
+                 tf.constant(full_sizes))
+    ]
 
   @classmethod
   def handle_softmax(cls, node, input_dict):
@@ -725,13 +807,14 @@ class TensorflowBackend(TensorflowBackendBase):
 
     if "axis" in node.attrs:
       axis = node.attrs["axis"]
-      axis = (axis if axis >= 0
-      else len(input_dict[node.inputs[0]].get_shape()) + axis)
+      axis = (axis if axis >= 0 else
+              len(input_dict[node.inputs[0]].get_shape()) + axis)
     else:
       axis = 1
 
     shape = tf.shape(x)
-    cal_shape = (tf.reduce_prod(shape[0:axis]), tf.reduce_prod(shape[axis:tf.size(shape)]))
+    cal_shape = (tf.reduce_prod(shape[0:axis]),
+                 tf.reduce_prod(shape[axis:tf.size(shape)]))
     x = tf.reshape(x, cal_shape)
 
     return [tf.reshape(tf.nn.softmax(x - tf.reduce_max(x)), shape)]
@@ -743,17 +826,21 @@ class TensorflowBackend(TensorflowBackendBase):
     support_cuda = cls.supports_device("CUDA")
     storage_format, compute_format = cls.get_data_format(x_rank, support_cuda)
     if support_cuda:
-      y = tf.space_to_depth(x, block_size=node.attrs["blocksize"], data_format=compute_format)
+      y = tf.space_to_depth(
+          x, block_size=node.attrs["blocksize"], data_format=compute_format)
     else:
-      x = tf.transpose(x, perm=cls.get_perm_from_formats(storage_format, compute_format))
-      y = tf.space_to_depth(x, block_size=node.attrs["blocksize"], data_format=compute_format)
-      y = tf.transpose(y, perm=cls.get_perm_from_formats(compute_format, storage_format))
+      x = tf.transpose(
+          x, perm=cls.get_perm_from_formats(storage_format, compute_format))
+      y = tf.space_to_depth(
+          x, block_size=node.attrs["blocksize"], data_format=compute_format)
+      y = tf.transpose(
+          y, perm=cls.get_perm_from_formats(compute_format, storage_format))
     return [y]
 
   @classmethod
   def handle_split(cls, node, input_dict):
-    split = (tf.constant(node.attrs["split"]) if
-    "split" in node.attrs else input_dict[node.inputs[1]])
+    split = (tf.constant(node.attrs["split"])
+             if "split" in node.attrs else input_dict[node.inputs[1]])
     axis = node.attrs["axis"]
     return list(tf.split(input_dict[node.inputs[0]], split, axis))
 
@@ -803,8 +890,7 @@ class TensorflowBackend(TensorflowBackendBase):
 
   @classmethod
   def handle_mat_mul(cls, node, input_dict):
-    return [tf.matmul(input_dict[node.inputs[0]],
-                      input_dict[node.inputs[1]])]
+    return [tf.matmul(input_dict[node.inputs[0]], input_dict[node.inputs[1]])]
 
   @classmethod
   def handle_xor(cls, node, input_dict):

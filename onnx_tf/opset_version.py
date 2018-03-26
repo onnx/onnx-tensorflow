@@ -107,7 +107,8 @@ backend_opset_version = {
     'transpose': [1],
     'unsqueeze': [1],
     'upsample': [],
-    'xor': [1]}
+    'xor': [1]
+}
 
 frontend_opset_version = {
     'a_ten': [],
@@ -218,7 +219,8 @@ frontend_opset_version = {
     'transpose': [1],
     'unsqueeze': [],
     'upsample': [],
-    'xor': [1]}
+    'xor': [1]
+}
 
 frontend_tf_opset_version = {
     'add': [1],
@@ -255,4 +257,5 @@ frontend_tf_opset_version = {
     'sub': [1],
     'sum': [1],
     'tanh': [1],
-    'transpose': [1]}
+    'transpose': [1]
+}

@@ -18,41 +18,34 @@ except ImportError:  # will be 3.x series
   pass
 
 import numpy as np
-from onnx_tf.tf_net import TensorflowNet
-from onnx_tf.backend_rep import TensorflowRep
-from onnx_tf.opset_version import backend_opset_version
-from onnx_tf.common import (
-  ONNX_OP_TO_TF_OP,
-  ONNX_ATTR_TO_TF_ATTR,
-  ONNX_ATTR_TO_TF_ATTR_PER_OP,
-  ONNX_ATTR_TO_REMOVE_PER_OP,
-  ONNX_TYPE_TO_TF_TYPE,
-  STR_TO_TF_TYPE,
-  TF_TYPE_ENUM,
-  op_name_to_lower
-)
-import onnx.numpy_helper
-import onnx.defs
-
-from onnx.backend.base import (
-  Backend,
-  Device,
-  DeviceType,
-  namedtupledict,
-)
-
 import tensorflow as tf
 from tensorflow.python.client import device_lib
 
+from onnx_tf.tf_net import TensorflowNet
+from onnx_tf.backend_rep import TensorflowRep
+from onnx_tf.opset_version import backend_opset_version
+from onnx_tf.common import (ONNX_OP_TO_TF_OP, ONNX_ATTR_TO_TF_ATTR,
+                            ONNX_ATTR_TO_TF_ATTR_PER_OP,
+                            ONNX_ATTR_TO_REMOVE_PER_OP, ONNX_TYPE_TO_TF_TYPE,
+                            STR_TO_TF_TYPE, TF_TYPE_ENUM, op_name_to_lower)
+from onnx.backend.base import (
+    Backend,
+    Device,
+    DeviceType,
+    namedtupledict,
+)
+import onnx.defs
+import onnx.numpy_helper
+
+
 # TODO: allow more flexible placement
 def get_device_option(device):
-  m = {DeviceType.CPU: '/cpu',
-       DeviceType.CUDA: '/gpu'}
+  m = {DeviceType.CPU: '/cpu', DeviceType.CUDA: '/gpu'}
   return m[device.type]
 
 
 # TODO: Move this into ONNX main library
-def convertAttributeProto(onnx_arg):
+def convert_attribute_proto(onnx_arg):
   """
   Convert an ONNX AttributeProto into an appropriate Python object
   for the type.
@@ -90,7 +83,7 @@ class OnnxAttributes(dict):
   def from_onnx(args):
     d = OnnxAttributes()
     for arg in args:
-      d[arg.name] = convertAttributeProto(arg)
+      d[arg.name] = convert_attribute_proto(arg)
     return d
 
   def caffe2(self, kmap=lambda x: x):
@@ -123,26 +116,50 @@ class TensorflowBackendBase(Backend):
   """ Tensorflow Backend for ONNX
   """
   attr_translator = {
-    "dtype": lambda cls, x: ONNX_TYPE_TO_TF_TYPE[x],
-    "keepdims": lambda cls, x: bool(x),
-    "to": lambda cls, x: STR_TO_TF_TYPE[x.lower()],
+      "dtype": lambda cls, x: ONNX_TYPE_TO_TF_TYPE[x],
+      "keepdims": lambda cls, x: bool(x),
+      "to": lambda cls, x: STR_TO_TF_TYPE[x.lower()],
   }
 
   DEFAULT_ONNX_ATTR_PER_OP = {
-    "random_normal": {"mean": 0, "scale": 1},
-    "random_uniform": {"low": 0, "high": 1},
-    "reduce_log_sum_exp": {"keepdims": 1},
-    "reduce_max": {"keepdims": 1},
-    "reduce_mean": {"keepdims": 1},
-    "reduce_min": {"keepdims": 1},
-    "reduce_prod": {"keepdims": 1},
-    "reduce_sum": {"keepdims": 1},
+      "random_normal": {
+          "mean": 0,
+          "scale": 1
+      },
+      "random_uniform": {
+          "low": 0,
+          "high": 1
+      },
+      "reduce_log_sum_exp": {
+          "keepdims": 1
+      },
+      "reduce_max": {
+          "keepdims": 1
+      },
+      "reduce_mean": {
+          "keepdims": 1
+      },
+      "reduce_min": {
+          "keepdims": 1
+      },
+      "reduce_prod": {
+          "keepdims": 1
+      },
+      "reduce_sum": {
+          "keepdims": 1
+      },
 
-    # Force to use NCHW temporally
-    # https://github.com/onnx/onnx/pull/443
-    "conv": {"data_format": "channels_first"},
-    "max_pool": {"data_format": "NCHW"},
-    "average_pool": {"data_format": "NCHW"},
+      # Force to use NCHW temporally
+      # https://github.com/onnx/onnx/pull/443
+      "conv": {
+          "data_format": "channels_first"
+      },
+      "max_pool": {
+          "data_format": "NCHW"
+      },
+      "average_pool": {
+          "data_format": "NCHW"
+      },
   }
 
   backend_version_cache = {}
@@ -154,22 +171,16 @@ class TensorflowBackendBase(Backend):
     num_dim = int(len(input_shape))
     num_sp_dim = int(len(kernel_shape))
 
-    if pads == [0] * num_sp_dim * 2 or pads == None:
+    if pads == [0] * num_sp_dim * 2 or pads is None:
       return "VALID"
 
     is_same_padding = True
-    for (input_size,
-         stride_size,
-         kernel_size,
-         left_pad,
-         right_pad) in zip(input_shape,
-                           strides,
-                           kernel_shape,
-                           pads[:num_sp_dim],
-                           pads[num_sp_dim:]):
+    for (input_size, stride_size, kernel_size, left_pad, right_pad) in zip(
+        input_shape, strides, kernel_shape, pads[:num_sp_dim],
+        pads[num_sp_dim:]):
       output_size = ceil(float(input_size) / float(stride_size))
-      padding_total = int((output_size - 1) * stride_size +
-                          kernel_size - input_size)
+      padding_total = int(
+          (output_size - 1) * stride_size + kernel_size - input_size)
       padding_left = int(floor(float(padding_total) / 2.0))
       padding_right = padding_total - padding_left
 
@@ -188,9 +199,9 @@ class TensorflowBackendBase(Backend):
     tf_pads = np.transpose(np.array(pads).reshape([2, num_dim]))
     tf_pads = [0, 0, 0, 0] + tf_pads.flatten().tolist()
 
-    padding = tf.constant(np.array(tf_pads)
-                          .reshape([num_dim + 2, 2])
-                          .astype(np.int32))  # tf requires int32 paddings
+    padding = tf.constant(
+        np.array(tf_pads).reshape([num_dim + 2, 2])
+        .astype(np.int32))  # tf requires int32 paddings
     return tf.pad(x, padding)
 
   @classmethod
@@ -236,8 +247,8 @@ class TensorflowBackendBase(Backend):
         feed_dict_raw = dict(zip(node.inputs, inputs))
 
       # TODO: is constant the best way for feeding inputs?
-      input_dict = dict([(x[0], tf.constant(x[1])) for x in
-                         feed_dict_raw.items()])
+      input_dict = dict(
+          [(x[0], tf.constant(x[1])) for x in feed_dict_raw.items()])
       ops = cls._onnx_node_to_tensorflow_op(node, input_dict)
       output_vals = []
 
@@ -257,7 +268,7 @@ class TensorflowBackendBase(Backend):
       # initialized: A list of names of the initialized tensors.
       if graph_def.initializer:
         input_dict_items = cls.onnx_initializer_to_input_dict_items(
-          graph_def.initializer)
+            graph_def.initializer)
         initialized = {init.name for init in graph_def.initializer}
       else:
         input_dict_items = []
@@ -266,23 +277,22 @@ class TensorflowBackendBase(Backend):
       predict_net.name = graph_def.name
       predict_net.graph = model_graph
 
-      predict_net.external_input.extend(
-        value_info.name for value_info in graph_def.input
-        if value_info.name not in initialized)
+      predict_net.external_input.extend(value_info.name
+                                        for value_info in graph_def.input
+                                        if value_info.name not in initialized)
 
       predict_net.external_output.extend(
-        value_info.name for value_info in graph_def.output)
-
+          value_info.name for value_info in graph_def.output)
 
       # creating placeholders for currently unkown inputs
       for value_info in graph_def.input:
         if value_info.name in initialized:
           continue
-        shape = list(d.dim_value for d in
-                     value_info.type.tensor_type.shape.dim)
-        x = tf.placeholder(TF_TYPE_ENUM[
-                             value_info.type.tensor_type.elem_type],
-                           name=value_info.name, shape=shape)
+        shape = list(d.dim_value for d in value_info.type.tensor_type.shape.dim)
+        x = tf.placeholder(
+            TF_TYPE_ENUM[value_info.type.tensor_type.elem_type],
+            name=value_info.name,
+            shape=shape)
         input_dict_items.append([value_info.name, x])
 
       # tensor dict: this dictionary is a map from variable names
@@ -299,10 +309,10 @@ class TensorflowBackendBase(Backend):
       for node in graph_def.node:
         node = OnnxNode(node)
 
-        output_ops = cls._onnx_node_to_tensorflow_op(node, tensor_dict, opset=opset)
+        output_ops = cls._onnx_node_to_tensorflow_op(
+            node, tensor_dict, opset=opset)
         curr_node_output_map = list(zip(node.outputs, output_ops))
-        tensor_dict = dict(list(tensor_dict.items()) +
-                          curr_node_output_map)
+        tensor_dict = dict(list(tensor_dict.items()) + curr_node_output_map)
 
       predict_net.tensor_dict = tensor_dict
 
@@ -323,8 +333,8 @@ class TensorflowBackendBase(Backend):
     """
     super(TensorflowBackendBase, cls).prepare(model, device, **kwargs)
 
-    predict_net = (
-      cls.onnx_graph_to_tensorflow_net(model.graph, opset=model.opset_import[0].version))
+    predict_net = (cls.onnx_graph_to_tensorflow_net(
+        model.graph, opset=model.opset_import[0].version))
 
     return TensorflowRep(predict_net)
 
@@ -332,14 +342,16 @@ class TensorflowBackendBase(Backend):
   def onnx_initializer_to_input_dict_items(cls,
                                            initializer,
                                            init_net_name='init'):
+
     def tensor2list(onnx_tensor):
       # Use the onnx.numpy_helper because the data may be raw
       return onnx.numpy_helper.to_array(onnx_tensor).flatten().tolist()
 
-    input_dict = [(tp.name, tf.constant(tensor2list(tp),
-                                        shape=tp.dims,
-                                        dtype=ONNX_TYPE_TO_TF_TYPE[
-                                          tp.data_type]))
+    input_dict = [(tp.name,
+                   tf.constant(
+                       tensor2list(tp),
+                       shape=tp.dims,
+                       dtype=ONNX_TYPE_TO_TF_TYPE[tp.data_type]))
                   for tp in initializer]
     return input_dict
 
@@ -366,11 +378,14 @@ class TensorflowBackendBase(Backend):
       version = max(versions)
     else:
       versions = sorted(versions + [opset])
-      version = versions[max([i for i, v in enumerate(versions) if v == opset]) - 1]
+      version = versions[max([i for i, v in enumerate(versions) if v == opset])
+                         - 1]
 
     backend_ver = 'backend_v{}'.format(version)
-    backend = cls.backend_version_cache.setdefault(backend_ver, importlib.import_module(
-      'onnx_tf.backends.' + backend_ver).TensorflowBackend)
+    backend = cls.backend_version_cache.setdefault(
+        backend_ver,
+        importlib.import_module(
+            'onnx_tf.backends.' + backend_ver).TensorflowBackend)
 
     if hasattr(backend, handler_name):
       method_to_call = getattr(backend, handler_name)
@@ -378,7 +393,8 @@ class TensorflowBackendBase(Backend):
     elif op_name_lowered in ONNX_OP_TO_TF_OP.keys():
       return backend.handle_trivial(node, input_dict)
     else:
-      raise NotImplementedError("{} op is not implemented.".format(node.op_type))
+      raise NotImplementedError("{} op is not implemented.".format(
+          node.op_type))
 
   @classmethod
   def handle_trivial(cls, node, input_dict):
@@ -408,17 +424,20 @@ class TensorflowBackendBase(Backend):
     # TODO: Per op attribute name mapping has the final say.
 
     # Modify the map according to onnx_tf_per_op_attr_map
-    attr_map = dict([(x, ONNX_ATTR_TO_TF_ATTR_PER_OP[op_name_lowered][
-      x] if op_name_lowered in ONNX_ATTR_TO_TF_ATTR_PER_OP and x in ONNX_ATTR_TO_TF_ATTR_PER_OP[
-      op_name_lowered].keys() else attr_map[x]) for x
-                     in attr_map.keys()])
+    attr_map = dict([(x, ONNX_ATTR_TO_TF_ATTR_PER_OP[op_name_lowered][x]
+                      if op_name_lowered in ONNX_ATTR_TO_TF_ATTR_PER_OP and
+                      x in ONNX_ATTR_TO_TF_ATTR_PER_OP[op_name_lowered].keys()
+                      else attr_map[x]) for x in attr_map.keys()])
 
     # Substitute attribute names in attrs.
     attrs = dict([(attr_map[x], y) for (x, y) in attrs.items()])
     # Remove the key according to onnx_tf_per_op_attr_remove
-    attrs = {x: attrs[x] for x in attrs if
-             not (op_name_lowered in ONNX_ATTR_TO_REMOVE_PER_OP and x in ONNX_ATTR_TO_REMOVE_PER_OP[
-               op_name_lowered])}
+    attrs = {
+        x: attrs[x]
+        for x in attrs
+        if not (op_name_lowered in ONNX_ATTR_TO_REMOVE_PER_OP and
+                x in ONNX_ATTR_TO_REMOVE_PER_OP[op_name_lowered])
+    }
     inputs = [input_dict[name] for name in node.inputs]
     return [ONNX_OP_TO_TF_OP[op_name_to_lower(node.op_type)] \
               (*inputs, **attrs)]
@@ -447,8 +466,8 @@ class TensorflowBackendBase(Backend):
   def supports_device(cls, device):
     if device == "CUDA":
       local_device_protos = device_lib.list_local_devices()
-      return len([x.name for x in
-                  local_device_protos if x.device_type == 'GPU']) > 0
+      return len(
+          [x.name for x in local_device_protos if x.device_type == 'GPU']) > 0
     elif device == "CPU":
       return True
     return False

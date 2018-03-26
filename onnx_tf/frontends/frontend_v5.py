@@ -15,11 +15,10 @@ class TensorflowFrontend(TensorflowFrontendBase):
   """
 
   ONNX_TO_HANDLER = {
-    "reshape": "reshape",
+      "reshape": "reshape",
   }
 
   @classmethod
   def handle_reshape(cls, node, **kwargs):
-    return helper.make_node("Reshape",
-                            [node.inputs[0], node.inputs[1]],
+    return helper.make_node("Reshape", [node.inputs[0], node.inputs[1]],
                             [node.name])

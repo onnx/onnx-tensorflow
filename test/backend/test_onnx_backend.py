@@ -29,12 +29,10 @@ backend_test.exclude(r'[a-z,_]*Conv2d_dilated[a-z,_]*')
 backend_test.exclude(r'[a-z,_]*Upsample[a-z,_]*')
 
 if 'TRAVIS' in os.environ:
-    backend_test.exclude('test_vgg19')
+  backend_test.exclude('test_vgg19')
 
 # import all test cases at global scope to make them visible to python.unittest
-globals().update(backend_test
-                 .enable_report()
-                 .test_cases)
+globals().update(backend_test.enable_report().test_cases)
 
 if __name__ == '__main__':
-    unittest.main()
+  unittest.main()

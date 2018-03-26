@@ -3,10 +3,13 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-from onnx.backend.base import BackendRep, namedtupledict
 import tensorflow as tf
 
+from onnx.backend.base import BackendRep, namedtupledict
+
+
 class TensorflowRep(BackendRep):
+
   def __init__(self, predict_net):
     super(TensorflowRep, self).__init__()
     self.predict_net = predict_net
@@ -22,26 +25,29 @@ class TensorflowRep(BackendRep):
         elif isinstance(inputs, list) or isinstance(inputs, tuple):
           if len(self.predict_net.external_input) != len(inputs):
             raise RuntimeError('Expected {} values for uninitialized '
-                       'graph inputs ({}), but got {}.'.format(
-                         len(self.predict_net.external_input),
-                         ', '.join(self.predict_net.external_input),
-                         len(inputs)))
+                               'graph inputs ({}), but got {}.'.format(
+                                   len(self.predict_net.external_input),
+                                   ', '.join(self.predict_net.external_input),
+                                   len(inputs)))
           feed_dict = dict(zip(self.predict_net.external_input, inputs))
         else:
           # single input
           feed_dict = dict([(self.predict_net.external_input[0], inputs)])
 
-        feed_dict = { self.predict_net.tensor_dict[key]: feed_dict[key]
-                                                         for key in
-                                                         self.predict_net.external_input }
+        feed_dict = {
+            self.predict_net.tensor_dict[key]: feed_dict[key]
+            for key in self.predict_net.external_input
+        }
 
         sess.run(tf.global_variables_initializer())
-        external_output = dict(filter(lambda kv: kv[0] in self.predict_net.external_output,
-                                      list(self.predict_net.tensor_dict.items())))
+        external_output = dict(
+            filter(lambda kv: kv[0] in self.predict_net.external_output,
+                   list(self.predict_net.tensor_dict.items())))
 
-        output_values = sess.run(list(external_output.values()), feed_dict=feed_dict)
+        output_values = sess.run(
+            list(external_output.values()), feed_dict=feed_dict)
         return namedtupledict('Outputs',
-          list(external_output.keys()))(*output_values)
+                              list(external_output.keys()))(*output_values)
 
   def export_graph(self, path):
     """Export backend representation to a Tensorflow proto file.

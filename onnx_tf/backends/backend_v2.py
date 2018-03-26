@@ -8,8 +8,10 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import numpy as np
-from onnx_tf.backend import TensorflowBackendBase
 import tensorflow as tf
+
+from onnx_tf.backend import TensorflowBackendBase
+
 
 class TensorflowBackend(TensorflowBackendBase):
   """ Tensorflow Backend for ONNX
@@ -36,19 +38,16 @@ class TensorflowBackend(TensorflowBackendBase):
 
     value = node.attrs.get("value", 0)
     # tf requires int32 paddings
-    pads = tf.constant(np.transpose(np.array(node.attrs["pads"])
-                                    .reshape([2, num_dim])
-                                    .astype(np.int32)))
+    pads = tf.constant(
+        np.transpose(
+            np.array(node.attrs["pads"]).reshape([2, num_dim])
+            .astype(np.int32)))
 
     x = input_dict[node.inputs[0]]
     if mode.lower() == "edge":
       return [tf.py_func(_compatibility_edge_pad, [x, pads], x.dtype)]
 
-    return [tf.pad(input_dict[node.inputs[0]],
-                   pads,
-                   mode,
-                   None,
-                   value)]
+    return [tf.pad(input_dict[node.inputs[0]], pads, mode, None, value)]
 
   @classmethod
   def handle_split(cls, node, input_dict):

@@ -15,7 +15,7 @@ class TensorflowFrontend(TensorflowFrontendBase):
   """
 
   ONNX_TO_HANDLER = {
-    "concat": "concat_v2",
+      "concat": "concat_v2",
   }
 
   @classmethod
@@ -23,7 +23,5 @@ class TensorflowFrontend(TensorflowFrontendBase):
     consts = kwargs["consts"]
     assert node.inputs[-1] in consts.keys()
     axis = int(consts[node.inputs[-1]])
-    return helper.make_node("Concat",
-                            inputs=node.inputs[0:-1],
-                            outputs=[node.name],
-                            axis=axis)
+    return helper.make_node(
+        "Concat", inputs=node.inputs[0:-1], outputs=[node.name], axis=axis)
