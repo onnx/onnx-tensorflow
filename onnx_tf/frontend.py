@@ -308,7 +308,9 @@ class TensorflowFrontendBase(object):
     onnx_graph = cls.tensorflow_graph_to_onnx_graph(graph_def, output, opset,
                                                     graph_name)
     onnx_model = make_model(
-        onnx_graph, producer_name=producer_name, opset_imports=[opset])
+        onnx_graph,
+        producer_name=producer_name,
+        opset_imports=[helper.make_opsetid('', opset)])
 
     return onnx_model
 
