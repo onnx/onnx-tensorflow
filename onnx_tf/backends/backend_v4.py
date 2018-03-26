@@ -7,8 +7,10 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-from onnx_tf.backend import TensorflowBackendBase
 import tensorflow as tf
+
+from onnx_tf.backend import TensorflowBackendBase
+
 
 class TensorflowBackend(TensorflowBackendBase):
   """ Tensorflow Backend for ONNX
