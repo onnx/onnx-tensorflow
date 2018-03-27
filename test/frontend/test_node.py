@@ -13,22 +13,23 @@ from onnx import helper
 # for testing
 from onnx_tf.backend import prepare
 
+
 def get_node_by_name(nodes, name):
   for node in nodes:
     if node.name == name:
       return node
 
+
 def get_rnd(shape, low=-1.0, high=1.0, dtype=np.float32):
-  if (dtype==np.float32):
-    return (np.random.uniform(low, high, np.prod(shape))
-                     .reshape(shape)
-                     .astype(np.float32))
-  elif (dtype==np.int32):
-    return (np.random.uniform(low, high, np.prod(shape))
-                     .reshape(shape)
-                     .astype(np.int32))
-  elif dtype==np.bool_:
+  if (dtype == np.float32):
+    return (np.random.uniform(low, high, np.prod(shape)).reshape(shape).astype(
+        np.float32))
+  elif (dtype == np.int32):
+    return (np.random.uniform(low, high, np.prod(shape)).reshape(shape).astype(
+        np.int32))
+  elif dtype == np.bool_:
     return np.random.choice(a=[False, True], size=shape)
+
 
 class TestNode(unittest.TestCase):
   """ Tests for nodes.
@@ -36,6 +37,7 @@ class TestNode(unittest.TestCase):
   Therefore edit test_cases to add more tests.
   """
   pass
+
 
 def create_test(test_data):
   test_option = test_data[5] if len(test_data) > 5 else {}
@@ -55,9 +57,8 @@ def create_test(test_data):
     tf_param_list = []
     for idx, input_tensor in enumerate(inputs):
       if type(input_tensor) is np.ndarray:
-        placeholder = tf.placeholder(input_tensor.dtype,
-                                     shape=input_tensor.shape,
-                                     name="in_" + str(idx))
+        placeholder = tf.placeholder(
+            input_tensor.dtype, shape=input_tensor.shape, name="in_" + str(idx))
         onnx_feed_dict["in_" + str(idx)] = input_tensor
         tf_feed_dict[placeholder] = input_tensor
         tf_param_list.append(placeholder)
@@ -75,7 +76,8 @@ def create_test(test_data):
     for ext_output in backend_rep.predict_net.external_output:
       backend_output.append(backend_rep_outputs[ext_output])
     backend_output = np.asarray(backend_output)
-    backend_output = np.squeeze(backend_output, 0) if backend_output.shape[0] == 1 else backend_output
+    backend_output = np.squeeze(
+        backend_output, 0) if backend_output.shape[0] == 1 else backend_output
 
     with tf.Session() as sess:
       tf_output = sess.run(test_op, tf_feed_dict)
@@ -88,6 +90,7 @@ def create_test(test_data):
       np.testing.assert_allclose(backend_o, tf_o)
 
   return do_test_expected
+
 
 # organized as a tuple of the format:
 # (test_name, tensorflow_op, output_node_name, LIST of inputs, MAP of attributes)
@@ -120,9 +123,9 @@ test_cases = [
 ]
 
 for k, val in enumerate(test_cases):
-    test_method = create_test(val)
-    test_method.__name__ = str(val[0])
-    setattr (TestNode, test_method.__name__, test_method)
+  test_method = create_test(val)
+  test_method.__name__ = str(val[0])
+  setattr(TestNode, test_method.__name__, test_method)
 
 if __name__ == '__main__':
   unittest.main()

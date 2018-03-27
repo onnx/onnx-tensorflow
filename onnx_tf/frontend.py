@@ -6,43 +6,49 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
+import importlib
 from itertools import chain
 
-import tensorflow as tf
 import numpy as np
+import tensorflow as tf
+from tensorflow.python.framework.tensor_util import MakeNdarray
+from tensorflow.core.framework.attr_value_pb2 import AttrValue
+
 from onnx_tf.common import (
-  TF_TYPE_TO_ONNX_TYPE,
-  TF_OP_STR_TO_ONNX_OP,
-  TF_ATTR_TO_ONNX_ATTR,
-  TF_ATTR_TO_REMOVE,
-  get_tf_shape_as_list,
-  op_name_to_lower,
-  optimize_onnx,
+    TF_TYPE_TO_ONNX_TYPE,
+    TF_OP_STR_TO_ONNX_OP,
+    TF_ATTR_TO_ONNX_ATTR,
+    TF_ATTR_TO_REMOVE,
+    get_attribute_value,
+    get_tf_shape_as_list,
+    op_name_to_lower,
+    optimize_onnx,
 )
-from onnx import onnx_pb2, helper
+from onnx_tf.opset_version import frontend_tf_opset_version
+from onnx import defs, helper
 from onnx.helper import (
-  make_model,
-  make_graph,
-  make_tensor_value_info,
-  make_tensor,
-  make_node,
+    make_tensor_value_info,
+    make_tensor,
+    make_graph,
+    make_model,
+    make_node,
 )
 from onnx.onnx_pb2 import GraphProto, TensorProto, AttributeProto
-from tensorflow.python.framework.tensor_util import MakeNdarray
+
 
 class TensorflowNode(object):
 
   # Keyed by old attribute names.
   attr_translator = {
-    "_output_shapes": lambda self, x: list(map(lambda shape: get_tf_shape_as_list(shape.dim), x.list.shape)),
-    "shape": lambda self, x: get_tf_shape_as_list(x.shape.dim),
-    "T": lambda self, x: self.type_converter(x),
-    "dtype": lambda self, x: self.type_converter(x),
-    "value": lambda self, x: MakeNdarray(x.tensor),
-    "seed2": lambda self, x: float(x.i),
-    "seed": lambda self, x: float(x.i),
-    "keep_dims": lambda self, x: int(x.b),
-    "squeeze_dims": lambda self, x: list(x.list.i),
+      "_output_shapes": lambda self, x: list(map(lambda shape: get_tf_shape_as_list(shape.dim), x.list.shape)),
+      "shape": lambda self, x: get_tf_shape_as_list(x.shape.dim),
+      "T": lambda self, x: self.type_converter(x),
+      "dtype": lambda self, x: self.type_converter(x),
+      "value": lambda self, x: MakeNdarray(x.tensor),
+      "seed2": lambda self, x: float(x.i),
+      "seed": lambda self, x: float(x.i),
+      "keep_dims": lambda self, x: int(x.b),
+      "squeeze_dims": lambda self, x: list(x.list.i),
   }
 
   def __init__(self, node_proto):
@@ -63,26 +69,78 @@ class TensorflowNode(object):
       else:
         self.attr[new_key] = val
 
+      if isinstance(self.attr[new_key], AttrValue):
+        self.attr[new_key] = get_attribute_value(self.attr[new_key])
+
   def type_converter(self, x):
     return TF_TYPE_TO_ONNX_TYPE[tf.as_dtype(x.type)]
 
-class TensorflowFrontend(object):
+
+class TensorflowFrontendBase(object):
   """ Tensorflow Frontend for ONNX
   """
 
+  DEFAULT_TF_ATTR_PER_OP = {
+      "Add": {
+          "broadcast": 1
+      },
+      "And": {
+          "broadcast": 1
+      },
+      "BiasAdd": {
+          "axis": 1,
+          "broadcast": 1
+      },
+      "Div": {
+          "broadcast": 1
+      },
+      "Equal": {
+          "broadcast": 1
+      },
+      "Greater": {
+          "broadcast": 1
+      },
+      "Less": {
+          "broadcast": 1
+      },
+      "Mul": {
+          "broadcast": 1
+      },
+      "Or": {
+          "broadcast": 1
+      },
+      "Pow": {
+          "broadcast": 1
+      },
+      "Sub": {
+          "broadcast": 1
+      },
+      "Xor": {
+          "broadcast": 1
+      },
+  }
+
+  frontend_version_cache = {}
+
   @classmethod
-  def tensorflow_graph_to_onnx_graph(cls, graph_def, output, name="graph"):
-    """Function that converts a tensorflow graph to an onnx graph.
+  def tensorflow_graph_to_onnx_graph(cls,
+                                     graph_def,
+                                     output,
+                                     opset=0,
+                                     name="graph"):
+    """Converts a Tensorflow Graph Proto to an ONNX graph
 
-    Args:
-        graph_def: Tensorflow Graph Proto object.
-        output: A Tensorflow NodeDef object specifying which node
-          to be taken as output of the ONNX graph.
-        name: The name of the output ONNX Graph.
+    This function converts a Tensorflow Graph proto to an equivalent
+    representation of ONNX graph.
 
-    Returns:
-        The equivalent ONNX Graph Proto object.
+    :param graph_def: Tensorflow Graph Proto object.
+    :param output: A Tensorflow NodeDef object specifying which node
+      to be taken as output of the ONNX graph.
+    :param opset: Opset version of the operator set.
+      Default 0 means using latest version.
+    :param name: The name of the output ONNX Graph.
 
+    :returns: The equivalent ONNX Graph Proto object.
     """
 
     # This list holds the protobuf objects of type ValueInfoProto
@@ -102,6 +160,10 @@ class TensorflowFrontend(object):
     # construction time.
     consts = {}
 
+    # This dict holds all output_shape, which can be used for next
+    # node's input shape.
+    output_shapes = {}
+
     # Sometimes the constants are used as inputs to ops. This list
     # holds initializers that creates global constant tensors available
     # to be accessed by ops as inputs (as oppose to attributes which
@@ -110,53 +172,94 @@ class TensorflowFrontend(object):
 
     for node in graph_def.node:
       node = TensorflowNode(node)
+
+      if "_output_shapes" in node.attr:
+        output_shapes[node.name] = node.attr["_output_shapes"]
+
       if node.op == "Placeholder":
         # Tensorflow requires dtype to be known.
         # TODO: currently `dtype` is translated to `to`.
         onnx_type = node.attr["dtype"]
         shape = node.attr["shape"]
-        input_proto = make_tensor_value_info(node.name,
-                                             onnx_type,
-                                             shape)
+        input_proto = make_tensor_value_info(node.name, onnx_type, shape)
         inputs_proto.append(input_proto)
       elif node.op == "Const":
         const_dim = len(node.attr["value"].shape)
+
+        # Weight format is MC(HW) in onnx which is (HW)CM
+        if "kernel" in node.name:
+          dims = list(range(np.ndim(node.attr["value"])))
+          node.attr["value"] = np.transpose(
+              node.attr["value"], axes=dims[-2:][::-1] + dims[:len(dims) - 2])
+
         consts[node.name] = node.attr["value"]
-        raw_values = ([node.attr["value"].tolist()]
-                      if const_dim == 0
-                      else node.attr["value"].flatten().tolist())
+        raw_values = ([node.attr["value"].tolist()] if const_dim == 0 else
+                      node.attr["value"].flatten().tolist())
         if const_dim == 0:
-            values = [node.attr["value"]]
+          values = [node.attr["value"]]
         else:
-            values = node.attr["value"]
+          values = node.attr["value"]
         shape = np.array(values).shape
-        consts_proto.append(make_tensor(
-                            name=node.name,
-                            data_type=node.attr["dtype"],
-                            dims=shape,
-                            vals=raw_values))
-        input_proto = make_tensor_value_info(node.name,
-                                             node.attr["dtype"],
+        consts_proto.append(
+            make_tensor(
+                name=node.name,
+                data_type=node.attr["dtype"],
+                dims=shape,
+                vals=raw_values))
+        input_proto = make_tensor_value_info(node.name, node.attr["dtype"],
                                              shape)
         inputs_proto.append(input_proto)
       else:
         handler_name = "handle_" + op_name_to_lower(node.op)
+
+        versions = frontend_tf_opset_version[op_name_to_lower(node.op)]
+
+        assert isinstance(
+            opset, int
+        ) and (opset <= defs.onnx_opset_version()) and (
+            opset >= 0
+        ), "Opset should be an int less than or equal to {}, but {}: {}".format(
+            defs.onnx_opset_version(),
+            type(opset).__name__, opset)
+
+        if opset == 0:
+          version = max(versions)
+        else:
+          versions = sorted(versions + [opset])
+          version = versions[
+              max([i for i, v in enumerate(versions) if v == opset]) - 1]
+
+        frontend_ver = 'frontend_v{}'.format(version)
+        frontend = cls.frontend_version_cache.setdefault(
+            frontend_ver,
+            importlib.import_module('onnx_tf.frontends.' + frontend_ver)
+            .TensorflowFrontend)
+
         # Check if specialized handler exists.
-        if handler_name in dir(cls):
-          method_to_call = getattr(cls, handler_name)
-          ops_proto.append(method_to_call(node, consts=consts))
+        if hasattr(frontend, handler_name):
+          method_to_call = getattr(frontend, handler_name)
+          node = method_to_call(
+              node, consts=consts, output_shapes=output_shapes)
+          if isinstance(node, list):
+            ops_proto.extend(node)
+          else:
+            ops_proto.append(node)
         elif node.op in TF_OP_STR_TO_ONNX_OP.keys():
           # Remove tensorflow-specific attrs that are not
           # needed/allowed in ONNX.
-          node.attr = dict(filter(lambda pair: pair[0]
-                                               not in TF_ATTR_TO_REMOVE, node.attr.items()))
-
+          attr = cls.DEFAULT_TF_ATTR_PER_OP.get(node.op, {})
+          attr.update(
+              dict(
+                  filter(lambda pair: pair[0] not in TF_ATTR_TO_REMOVE,
+                         node.attr.items())))
+          node.attr = attr
           node_output = node.name
-          ops_proto.append(make_node(TF_OP_STR_TO_ONNX_OP[node.op],
-                                     node.inputs,
-                                     [node_output],
-                                     name=node.name,
-                                     **node.attr))
+          ops_proto.append(
+              make_node(
+                  TF_OP_STR_TO_ONNX_OP[node.op],
+                  node.inputs, [node_output],
+                  name=node.name,
+                  **node.attr))
         else:
           raise NotImplementedError("{} op is not implemented.".format(node.op))
 
@@ -169,9 +272,9 @@ class TensorflowFrontend(object):
     output_proto = []
     for i in range(len(output.attr["_output_shapes"])):
       output_name = output.name + ":{}".format(i) if i > 0 else output.name
-      output_proto.append(make_tensor_value_info(output_name,
-                                                 output_onnx_type,
-                                                 output.attr["_output_shapes"][i]))
+      output_proto.append(
+          make_tensor_value_info(output_name, output_onnx_type,
+                                 output.attr["_output_shapes"][i]))
 
     inputs = list(chain.from_iterable(map(lambda p: list(p.input), ops_proto)))
 
@@ -179,16 +282,13 @@ class TensorflowFrontend(object):
     inputs_proto = list(filter(lambda x: x.name in inputs, inputs_proto))
     consts_proto = list(filter(lambda x: x.name in inputs, consts_proto))
 
-    return make_graph(ops_proto,
-                      name,
-                      inputs_proto,
-                      output_proto,
-                      consts_proto)
+    return make_graph(ops_proto, name, inputs_proto, output_proto, consts_proto)
 
   @classmethod
   def tensorflow_graph_to_onnx_model(cls,
                                      graph_def,
                                      output,
+<<<<<<< HEAD
                                      producer_name="onnx-tensorflow",
                                      graph_name="graph"):
     onnx_graph = tensorflow_graph_to_onnx_graph(graph_def,
@@ -209,149 +309,87 @@ class TensorflowFrontend(object):
   @classmethod
   def handle_logical_and(cls, node, **kwargs):
     return cls._bin_op(node, "And")
+=======
+                                     opset=0,
+                                     producer_name="onnx-tensorflow",
+                                     graph_name="graph"):
+    """Converts a Tensorflow Graph Proto to an ONNX model
 
-  @classmethod
-  def handle_logical_or(cls, node, **kwargs):
-    return cls._bin_op(node, "Or")
+    This function converts a Tensorflow Graph proto to an equivalent
+    representation of ONNX model.
 
-  @classmethod
-  def handle_pad(cls, node, **kwargs):
-    consts = kwargs["consts"]
-    assert node.inputs[1] in consts.keys()
-    supported_modes = ["constant", "reflect"]
-    mode = node.attr.get("mode", "constant")
-    assert mode.lower() in supported_modes
-    pads = np.transpose(consts[node.inputs[1]]).flatten()
+    :param graph_def: Tensorflow Graph Proto object.
+    :param output: A Tensorflow NodeDef object specifying which node
+      to be taken as output of the ONNX graph.
+    :param opset: Opset version of the operator set.
+      Default 0 means using latest version.
+    :param producer_name: The name of the producer.
+    :param graph_name: The name of the output ONNX Graph.
 
-    return helper.make_node(
-            "Pad",
-            [node.inputs[0]],
-            [node.name],
-            name=node.name,
-            pads=pads,
-            mode=mode,
-            value=0.0)
-
-  @classmethod
-  def handle_random_standard_normal(cls, node, **kwargs):
-    """ Tensorflow does not have a generic random_normal op.
-        The generic random_normal op is translated into a scaled
-        and offsetted random standard normal op.
+    :returns: The equivalent ONNX Model Proto object.
     """
-    return helper.make_node(
-            "RandomNormal",
-            [],
-            [node.name],
-            dtype=node.attr["dtype"],
-            seed=node.attr["seed"],
-            mean=0.0,
-            scale=1.0,
-            shape=node.attr["_output_shapes"][0])
+    onnx_graph = cls.tensorflow_graph_to_onnx_graph(graph_def, output, opset,
+                                                    graph_name)
+    onnx_model = make_model(
+        onnx_graph,
+        producer_name=producer_name,
+        opset_imports=[helper.make_opsetid('', opset)])
+>>>>>>> origin/master
+
+    return onnx_model
 
   @classmethod
-  def handle_random_uniform(cls, node, **kwargs):
-    """ Tensorflow does not have a generic random_uniform op.
-        The generic random_uniform op is translated into a scaled
-        and offsetted random standard uniform op.
-    """
+  def _bin_op(cls, node, onnx_op):
+    node.attr["broadcast"] = 1
     return helper.make_node(
-            "RandomUniform",
-            [],
-            [node.name],
-            dtype=node.attr["dtype"],
-            seed=node.attr["seed"],
-            high=1.0,
-            low=0.0,
-            shape=node.attr["_output_shapes"][0])
+        onnx_op, node.inputs, [node.name], name=node.name, broadcast=1)
+
+  @classmethod
+  def _pool_op(cls, node, onnx_op, **kwargs):
+    auto_pad = node.attr["padding"].decode("UTF-8")
+    auto_pad = "SAME_UPPER" if auto_pad == "SAME" else auto_pad
+    data_format = node.attr["data_format"].decode("UTF-8")
+    spatial_indices = [
+        i for i in range(len(data_format)) if data_format[i] not in ["N", "C"]
+    ]
+    strides = list(map(lambda i: node.attr["strides"][i], spatial_indices))
+    kernel_shape = list(map(lambda i: node.attr["ksize"][i], spatial_indices))
+    output_shapes = kwargs["output_shapes"]
+    output_shape = list(
+        map(lambda i: node.attr["_output_shapes"][0][i], spatial_indices))
+    input_shape = list(
+        map(lambda i: output_shapes[node.inputs[0]][0][i], spatial_indices))
+    pads = cls._cal_pads(auto_pad, len(spatial_indices), input_shape,
+                         output_shape, strides, kernel_shape)
+    return helper.make_node(
+        onnx_op, [node.inputs[0]], [node.name],
+        pads=pads,
+        kernel_shape=kernel_shape,
+        strides=strides)
+
+  @classmethod
+  def _cal_pads(cls, auto_pad, spatial_dim, input_shape, output_shape, strides,
+                kernel_shape):
+    pads = [0] * spatial_dim * 2
+    if auto_pad == "SAME_UPPER":
+      for i in range(spatial_dim):
+        pad_shape = (
+            output_shape[i] - 1) * strides[i] + kernel_shape[i] - input_shape[i]
+        pads[i] = pad_shape // 2
+        pads[i + spatial_dim] = pad_shape - pad_shape // 2
+    return pads
 
   @classmethod
   def _reduce_op(cls, op, node, **kwargs):
     consts = kwargs["consts"]
     assert node.inputs[1] in consts.keys()
     axes = consts[node.inputs[1]]
-    return helper.make_node(op,
-                            [node.inputs[0]],
-                            [node.name],
-                            axes=axes,
-                            keepdims=node.attr.get("keep_dims", 1))
+    return helper.make_node(
+        op, [node.inputs[0]], [node.name],
+        axes=axes,
+        keepdims=node.attr.get("keep_dims", 1))
 
-  @classmethod
-  def handle_max(cls, node, **kwargs):
-    return cls._reduce_op("ReduceMax", node, **kwargs)
 
-  @classmethod
-  def handle_mean(cls, node, **kwargs):
-    return cls._reduce_op("ReduceMean", node, **kwargs)
+convert_graph = TensorflowFrontendBase.tensorflow_graph_to_onnx_graph
 
-  @classmethod
-  def handle_min(cls, node, **kwargs):
-    return cls._reduce_op("ReduceMin", node, **kwargs)
-
-  @classmethod
-  def handle_prod(cls, node, **kwargs):
-    return cls._reduce_op("ReduceProd", node, **kwargs)
-
-  @classmethod
-  def handle_sum(cls, node, **kwargs):
-    return cls._reduce_op("ReduceSum", node, **kwargs)
-
-  @classmethod
-  def handle_reshape(cls, node, **kwargs):
-    consts = kwargs["consts"]
-    assert node.inputs[1] in consts.keys()
-    shape = consts[node.inputs[1]]
-    return helper.make_node("Reshape",
-                            [node.inputs[0]],
-                            [node.name],
-                            shape=shape)
-
-  @classmethod
-  def handle_split_v(cls, node, **kwargs):
-    consts = kwargs["consts"]
-    split = consts[node.inputs[1]]
-    axis = int(consts[node.inputs[2]])
-    output_names = [node.name + ":{}".format(i) if i>0 else node.name for i in range(len(split))]
-    return helper.make_node("Split",
-                            [node.inputs[0]],
-                            output_names,
-                            split=split,
-                            axis=axis)
-
-  @classmethod
-  def handle_squeeze(cls, node, **kwargs):
-    assert "squeeze_dims" in node.attr.keys(), ("Squeeze dims have to be"
-      "specified")
-    axes = node.attr["squeeze_dims"]
-    return helper.make_node("Squeeze",
-                            [node.inputs[0]],
-                            [node.name],
-                            axes=axes)
-
-  @classmethod
-  def handle_sub(cls, node, **kwargs):
-    return cls._bin_op(node, "Sub")
-
-  @classmethod
-  def handle_transpose(cls, node, **kwargs):
-    consts = kwargs["consts"]
-    perm = consts[node.inputs[1]]
-    return helper.make_node("Transpose",
-                            [node.inputs[0]],
-                            [node.name],
-                            perm=perm)
-
-  @classmethod
-  def handle_logical_xor(cls, node, **kwargs):
-    return cls._bin_op(node, "Xor")
-
-  @classmethod
-  def handle_concat_v2(cls, node, **kwargs):
-    consts = kwargs["consts"]
-    assert node.inputs[-1] in consts.keys()
-    axis = int(consts[node.inputs[-1]])
-    return helper.make_node("Concat",
-                            inputs=node.inputs[0:-1],
-                            outputs=[node.name],
-                            axis=axis)
-
-convert_graph = TensorflowFrontend.tensorflow_graph_to_onnx_graph
+tensorflow_graph_to_onnx_model = TensorflowFrontendBase.tensorflow_graph_to_onnx_model
