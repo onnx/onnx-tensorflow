@@ -19,6 +19,7 @@ class TensorflowFrontend(TensorflowFrontendBase):
   ONNX_TO_HANDLER = {
       "add": "bias_add",
       "and": "logical_and",
+      "batch_normalization": "fused_batch_norm",
       "conv": ["conv1_d", "conv2_d", "conv3_d"],
       "average_pool": "avg_pool",
       "max_pool": "max_pool",
@@ -43,6 +44,15 @@ class TensorflowFrontend(TensorflowFrontendBase):
   @classmethod
   def handle_avg_pool(cls, node, **kwargs):
     return cls._pool_op(node, "AveragePool", **kwargs)
+
+  @classmethod
+  def handle_fused_batch_norm(cls, node, **kwargs):
+    return helper.make_node(
+        "BatchNormalization",
+        node.inputs, [node.name],
+        epsilon=node.attr.get("epsilon", 1e-5),
+        is_test=node.attr.get("is_training", 0),
+        consumed_inputs=node.attr.get("consumed_inputs", [0, 0, 0, 1, 1]))
 
   @classmethod
   def handle_bias_add(cls, node, **kwargs):
