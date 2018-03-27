@@ -170,6 +170,7 @@ TF_OP_STR_TO_ONNX_OP = {
     "LogicalNot": "Not",
     "MatMul": "MatMul",
     "Relu": "Relu",
+    "Shape": "Shape",
     "Softmax": "Softmax",
     "Pow": "Pow",
     # TODO:

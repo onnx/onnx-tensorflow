@@ -129,6 +129,7 @@ ______
 |conv1_d|1|
 |conv2_d|1|
 |conv3_d|1|
+|fused_batch_norm|1, 6|
 |identity|1|
 |logical_and|1|
 |logical_not|1|
@@ -148,6 +149,7 @@ ______
 |reciprocal|1|
 |relu|1|
 |reshape|1, 5|
+|shape|1|
 |sigmoid|1|
 |softmax|1|
 |split_v|1, 2|
