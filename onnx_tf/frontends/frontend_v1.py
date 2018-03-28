@@ -56,7 +56,7 @@ class TensorflowFrontend(TensorflowFrontendBase):
 
   @classmethod
   def handle_bias_add(cls, node, **kwargs):
-    return cls._bin_op(node, "Add")
+    return cls._bin_op(node, "Add", axis=1)
 
   @classmethod
   def handle_concat_v2(cls, node, **kwargs):

@@ -315,10 +315,14 @@ class TensorflowFrontendBase(object):
     return onnx_model
 
   @classmethod
-  def _bin_op(cls, node, onnx_op):
+  def _bin_op(cls, node, onnx_op, axis=None):
     node.attr["broadcast"] = 1
-    return helper.make_node(
-        onnx_op, node.inputs, [node.name], name=node.name, broadcast=1)
+    if (axis):
+      return helper.make_node(
+          onnx_op, node.inputs, [node.name], name=node.name, broadcast=1, axis=axis)
+    else:
+      return helper.make_node(
+          onnx_op, node.inputs, [node.name], name=node.name, broadcast=1)
 
   @classmethod
   def _pool_op(cls, node, onnx_op, **kwargs):
