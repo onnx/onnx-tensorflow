@@ -82,7 +82,6 @@ class TensorflowFrontend(TensorflowFrontendBase):
     dilations = list(
         map(lambda i: node.attr.get("dilations", [1] * (d + 2))[i],
             spatial_indices))
-    consts = kwargs["consts"]
     node_dict = kwargs["node_dict"]
     kernel_shape = node_dict[node.inputs[1]].attr["_output_shapes"][0][:d]
     output_shape = list(
