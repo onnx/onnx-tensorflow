@@ -185,12 +185,6 @@ class TensorflowFrontendBase(object):
       elif node.op == "Const":
         const_dim = len(node.attr["value"].shape)
 
-        # Weight format is MC(HW) in onnx which is (HW)CM
-        if "kernel" in node.name:
-          dims = list(range(np.ndim(node.attr["value"])))
-          node.attr["value"] = np.transpose(
-              node.attr["value"], axes=dims[-2:][::-1] + dims[:len(dims) - 2])
-
         consts[node.name] = node.attr["value"]
         raw_values = ([node.attr["value"].tolist()] if const_dim == 0 else
                       node.attr["value"].flatten().tolist())

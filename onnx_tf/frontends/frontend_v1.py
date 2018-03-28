@@ -81,9 +81,7 @@ class TensorflowFrontend(TensorflowFrontendBase):
     consts = kwargs["consts"]
     output_shapes = kwargs["output_shapes"]
     kernel_name = node.inputs[1].replace("/read", "")
-    kernel_shape = list(
-        map(lambda i: consts[kernel_name].shape[i],
-            list(range(d + 2))[d:]))
+    kernel_shape = consts[kernel_name].shape[:d]
     output_shape = list(
         map(lambda i: node.attr["_output_shapes"][0][i], spatial_indices))
     input_shape = list(
