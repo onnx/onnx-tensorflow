@@ -6,8 +6,6 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-import copy
-
 import numpy as np
 
 from onnx_tf.frontend import TensorflowFrontendBase
@@ -93,16 +91,19 @@ class TensorflowFrontend(TensorflowFrontendBase):
                          output_shape, strides, kernel_shape)
     # Copy weight
     new_kernel_name = node.inputs[1].replace("/read", "/transposed/read")
-    kernel = copy.deepcopy(consts_proto[kernel_name])
+    kernel = consts_proto[kernel_name]
     field = mapping.STORAGE_TENSOR_TYPE_TO_FIELD[
         mapping.TENSOR_TYPE_TO_STORAGE_TENSOR_TYPE[kernel.data_type]]
-    transposed_kernel = np.transpose(
+    transposed_vals = np.transpose(
         np.reshape(np.array(getattr(kernel, field)), kernel.dims),
         axes=dims[-2:][::-1] + dims[:len(dims) - 2])
-    getattr(kernel, field)._values = transposed_kernel.flatten().tolist()
-    setattr(kernel, "name", new_kernel_name.replace("/read", ""))
-    getattr(kernel, "dims")._values = transposed_kernel.shape
-    kwargs["additional_consts_proto"].append(kernel)
+    transposed_kernel = helper.make_tensor(
+      name=new_kernel_name.replace("/read", ""),
+      data_type=kernel.data_type,
+      dims=transposed_vals.shape,
+      vals=transposed_vals.flatten().tolist()
+    )
+    kwargs["additional_consts_proto"].append(transposed_kernel)
 
     kernel_node = helper.make_node(
         "Identity", [new_kernel_name.replace("/read", "")], [new_kernel_name])
