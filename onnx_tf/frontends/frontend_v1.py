@@ -83,13 +83,7 @@ class TensorflowFrontend(TensorflowFrontendBase):
             spatial_indices))
     consts = kwargs["consts"]
     output_shapes = kwargs["output_shapes"]
-    print("output shape", kwargs["node_dict"][node.inputs[1]].node_proto)
-    print("node attr", kwargs["node_dict"][node.inputs[1]].attr)
     kernel_shape = kwargs["node_dict"][node.inputs[1]].attr["_output_shapes"][0][:d]
-    print("kernel_shape", kernel_shape)
-    # kernel_shape = list(
-    #     map(lambda i: consts[kernel_name].shape[i],
-    #         list(range(d + 2))[d:]))
     output_shape = list(
         map(lambda i: node.attr["_output_shapes"][0][i], spatial_indices))
     input_shape = list(
@@ -98,7 +92,7 @@ class TensorflowFrontend(TensorflowFrontendBase):
                          output_shape, strides, kernel_shape)
     transpose_node = helper.make_node(
       "Transpose", [node.inputs[1]], [node.inputs[1] + "_transposed"],
-      perm=[d+1, d] + range(d))
+      perm=[d + 1, d] + range(d))
     conv_node = helper.make_node(
         "Conv", [node.inputs[0], node.inputs[1] + "_transposed"], [node.name],
         pads=pads,

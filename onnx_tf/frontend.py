@@ -57,11 +57,7 @@ class TensorflowNode(object):
     self.op = node_proto.op
     self.inputs = list(node_proto.input)
     self.attr = {}
-    if self.op == "Identity":
-        print("attr items", node_proto.attr.items())
     for key, val in node_proto.attr.items():
-      if self.op == "Identity":
-        print("key", key)
       new_key = key
 
       if key in TF_ATTR_TO_ONNX_ATTR.keys():
@@ -169,12 +165,9 @@ class TensorflowFrontendBase(object):
     # is supplied by the `consts` map above).
     consts_proto = []
 
-    # for node in graph_def.node:
-    #   if node.op == "Identity"
-
     node_tup = [(node.name, TensorflowNode(node)) for node in graph_def.node]
 
-    for _, node in node_tup:
+    for name, node in node_tup:
       if "_output_shapes" in node.attr:
         output_shapes[node.name] = node.attr["_output_shapes"]
 
@@ -183,18 +176,12 @@ class TensorflowFrontendBase(object):
         # TODO: currently `dtype` is translated to `to`.
         onnx_type = node.attr["dtype"]
         shape = node.attr["shape"]
-        input_proto = make_tensor_value_info(node.name, onnx_type, shape)
+        input_proto = make_tensor_value_info(name, onnx_type, shape)
         inputs_proto.append(input_proto)
       elif node.op == "Const":
         const_dim = len(node.attr["value"].shape)
 
-        # # Weight format is MC(HW) in onnx which is (HW)CM
-        # if "kernel" in node.name:
-        #   dims = list(range(np.ndim(node.attr["value"])))
-        #   node.attr["value"] = np.transpose(
-        #       node.attr["value"], axes=dims[-2:][::-1] + dims[:len(dims) - 2])
-
-        consts[node.name] = node.attr["value"]
+        consts[name] = node.attr["value"]
         raw_values = ([node.attr["value"].tolist()] if const_dim == 0 else
                       node.attr["value"].flatten().tolist())
         if const_dim == 0:
@@ -204,11 +191,11 @@ class TensorflowFrontendBase(object):
         shape = np.array(values).shape
         consts_proto.append(
             make_tensor(
-                name=node.name,
+                name=name,
                 data_type=node.attr["dtype"],
                 dims=shape,
                 vals=raw_values))
-        input_proto = make_tensor_value_info(node.name, node.attr["dtype"],
+        input_proto = make_tensor_value_info(name, node.attr["dtype"],
                                              shape)
         inputs_proto.append(input_proto)
       else:
@@ -253,12 +240,12 @@ class TensorflowFrontendBase(object):
           filtered_attr = dict(
                             filter(lambda pair: pair[0] not in TF_ATTR_TO_REMOVE,
                                    node.attr.items()))
-          node_output = node.name
+          node_output = name
           ops_proto.append(
               make_node(
                   TF_OP_STR_TO_ONNX_OP[node.op],
                   node.inputs, [node_output],
-                  name=node.name,
+                  name=name,
                   **filtered_attr))
         else:
           raise NotImplementedError("{} op is not implemented.".format(node.op))
