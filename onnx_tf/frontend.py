@@ -86,10 +86,6 @@ class TensorflowFrontendBase(object):
       "And": {
           "broadcast": 1
       },
-      "BiasAdd": {
-          "axis": 1,
-          "broadcast": 1
-      },
       "Div": {
           "broadcast": 1
       },
