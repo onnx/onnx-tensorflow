@@ -9,7 +9,7 @@ from __future__ import unicode_literals
 import numpy as np
 
 from onnx_tf.frontend import TensorflowFrontendBase
-from onnx import helper
+from onnx import helper, mapping
 
 
 class TensorflowFrontend(TensorflowFrontendBase):
@@ -81,24 +81,44 @@ class TensorflowFrontend(TensorflowFrontendBase):
     dilations = list(
         map(lambda i: node.attr.get("dilations", [1] * (d + 2))[i],
             spatial_indices))
-    consts = kwargs["consts"]
+    consts_proto = kwargs["consts_proto"]
     output_shapes = kwargs["output_shapes"]
     kernel_name = node.inputs[1].replace("/read", "")
-    kernel_shape = list(
-        map(lambda i: consts[kernel_name].shape[i],
-            list(range(d + 2))[d:]))
+    kernel_shape = consts_proto[kernel_name].dims[:d]
+    dims = list(range(len(consts_proto[kernel_name].dims)))
     output_shape = list(
         map(lambda i: node.attr["_output_shapes"][0][i], spatial_indices))
     input_shape = list(
         map(lambda i: output_shapes[node.inputs[0]][0][i], spatial_indices))
     pads = cls._cal_pads(auto_pad, len(spatial_indices), input_shape,
                          output_shape, strides, kernel_shape)
-    return helper.make_node(
-        "Conv", [node.inputs[0], node.inputs[1]], [node.name],
-        pads=pads,
-        kernel_shape=kernel_shape,
-        strides=strides,
-        dilations=dilations)
+    # Copy weight
+    new_kernel_name = node.inputs[1].replace("/read", "/transposed/read")
+    kernel = consts_proto[kernel_name]
+    field = mapping.STORAGE_TENSOR_TYPE_TO_FIELD[
+        mapping.TENSOR_TYPE_TO_STORAGE_TENSOR_TYPE[kernel.data_type]]
+    transposed_vals = np.transpose(
+        np.reshape(np.array(getattr(kernel, field)), kernel.dims),
+        axes=dims[-2:][::-1] + dims[:len(dims) - 2])
+    transposed_kernel = helper.make_tensor(
+      name=new_kernel_name.replace("/read", ""),
+      data_type=kernel.data_type,
+      dims=transposed_vals.shape,
+      vals=transposed_vals.flatten().tolist()
+    )
+    kwargs["additional_consts_proto"].append(transposed_kernel)
+
+    kernel_node = helper.make_node(
+        "Identity", [new_kernel_name.replace("/read", "")], [new_kernel_name])
+    return [
+        kernel_node,
+        helper.make_node(
+            "Conv", [node.inputs[0], kernel_node.output[0]], [node.name],
+            pads=pads,
+            kernel_shape=kernel_shape,
+            strides=strides,
+            dilations=dilations)
+    ]
 
   @classmethod
   def handle_conv1_d(cls, node, **kwargs):
