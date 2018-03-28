@@ -18,6 +18,30 @@ except ImportError:  # will be 3.x series
   pass
 
 import numpy as np
+<<<<<<< HEAD
+from onnx import checker
+from onnx.onnx_pb2 import (
+  GraphProto,
+  TensorProto,
+  AttributeProto,
+  ModelProto,
+)
+from onnx_tf.tf_net import TensorflowNet
+from onnx_tf.backend_rep import TensorflowRep
+from onnx_tf.common import (
+  ONNX_OP_TO_TF_OP,
+  ONNX_ATTR_TO_TF_ATTR,
+  ONNX_ATTR_TO_TF_ATTR_PER_OP,
+  ONNX_ATTR_TO_REMOVE_PER_OP,
+  ONNX_TYPE_TO_TF_TYPE,
+  STR_TO_TF_TYPE,
+  TF_TYPE_ENUM,
+  optimize_onnx,
+)
+import onnx.numpy_helper
+import onnx.defs
+
+=======
 import tensorflow as tf
 from tensorflow.python.client import device_lib
 
@@ -28,6 +52,7 @@ from onnx_tf.common import (ONNX_OP_TO_TF_OP, ONNX_ATTR_TO_TF_ATTR,
                             ONNX_ATTR_TO_TF_ATTR_PER_OP,
                             ONNX_ATTR_TO_REMOVE_PER_OP, ONNX_TYPE_TO_TF_TYPE,
                             STR_TO_TF_TYPE, TF_TYPE_ENUM, op_name_to_lower)
+>>>>>>> origin/master
 from onnx.backend.base import (
     Backend,
     Device,
@@ -323,9 +348,18 @@ class TensorflowBackendBase(Backend):
   def prepare(cls, model, device='CPU', **kwargs):
     """Prepare an ONNX model for Tensorflow Backend
 
+<<<<<<< HEAD
+    optimized_model = ModelProto()
+    optimized_model.ParseFromString(
+      optimize_onnx(model.SerializeToString()))
+
+    original_input_dict, predict_net = (
+        cls.onnx_graph_to_tensorflow_net(optimized_model.graph))
+=======
     This function converts an ONNX model to an internel representation
     of the computational graph called TensorflowRep and returns
     the converted representation.
+>>>>>>> origin/master
 
     :param model: the ONNX model to be converted
     :param device: the device to execute this model on

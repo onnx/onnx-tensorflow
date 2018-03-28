@@ -22,6 +22,7 @@ from onnx_tf.common import (
     get_attribute_value,
     get_tf_shape_as_list,
     op_name_to_lower,
+    optimize_onnx,
 )
 from onnx_tf.opset_version import frontend_tf_opset_version
 from onnx import defs, helper
@@ -283,6 +284,28 @@ class TensorflowFrontendBase(object):
   def tensorflow_graph_to_onnx_model(cls,
                                      graph_def,
                                      output,
+<<<<<<< HEAD
+                                     producer_name="onnx-tensorflow",
+                                     graph_name="graph"):
+    onnx_graph = tensorflow_graph_to_onnx_graph(graph_def,
+                                                output,
+                                                graph_name)
+    onnx_model = make_model(onnx_graph, producer_name=producer_name)
+    optimized_model = ModelProto()
+    optimized_model.ParseFromString(
+      optimize_onnx(onnx_model.SerializeToString()))
+    return optimized_model
+
+  @classmethod
+  def _bin_op(cls, node, onnx_op):
+    node.attr["broadcast"] = 1
+    return helper.make_node(
+            onnx_op, node.inputs, [node.name], name=node.name, broadcast=1)
+
+  @classmethod
+  def handle_logical_and(cls, node, **kwargs):
+    return cls._bin_op(node, "And")
+=======
                                      opset=0,
                                      producer_name="onnx-tensorflow",
                                      graph_name="graph"):
@@ -307,6 +330,7 @@ class TensorflowFrontendBase(object):
         onnx_graph,
         producer_name=producer_name,
         opset_imports=[helper.make_opsetid('', opset)])
+>>>>>>> origin/master
 
     return onnx_model
 

@@ -3,6 +3,7 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
+import onnx
 import re
 
 import tensorflow as tf
@@ -198,7 +199,6 @@ def get_tf_shape_as_list(tf_shape_dim):
 def op_name_to_lower(name):
   return re.sub('(?<!^)(?=[A-Z])', '_', name).lower()
 
-
 def get_attribute_value(attr):
   """ convert Tensorflow AttrValue object to Python object
   """
@@ -243,3 +243,11 @@ def get_list_value(attr):
     return attr.func
   else:
     raise ValueError("Unsupported Tensorflow attribute: {}".format(attr))
+
+
+def optimize_onnx(input):
+  passes =  ['fuse_consecutive_transposes',
+             'eliminate_nop_transpose',
+             'fuse_transpose_into_gemm']
+  out = onnx.optimizer.optimize(input, passes)
+  return out
