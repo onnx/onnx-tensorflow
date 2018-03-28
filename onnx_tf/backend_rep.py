@@ -40,14 +40,14 @@ class TensorflowRep(BackendRep):
         }
 
         sess.run(tf.global_variables_initializer())
-        external_output = dict(
-            filter(lambda kv: kv[0] in self.predict_net.external_output,
-                   list(self.predict_net.tensor_dict.items())))
+        external_output = [
+            self.predict_net.tensor_dict[output]
+            for output in self.predict_net.external_output
+        ]
 
-        output_values = sess.run(
-            list(external_output.values()), feed_dict=feed_dict)
+        output_values = sess.run(external_output, feed_dict=feed_dict)
         return namedtupledict('Outputs',
-                              list(external_output.keys()))(*output_values)
+                              self.predict_net.external_output)(*output_values)
 
   def export_graph(self, path):
     """Export backend representation to a Tensorflow proto file.
