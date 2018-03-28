@@ -228,7 +228,7 @@ class TensorflowFrontendBase(object):
         if hasattr(frontend, handler_name):
           method_to_call = getattr(frontend, handler_name)
           node = method_to_call(
-              node, consts=consts, output_shapes=output_shapes, node_dict=dict(node_tup))
+              node, consts=consts, node_dict=dict(node_tup))
           if isinstance(node, list):
             ops_proto.extend(node)
           else:
@@ -322,11 +322,11 @@ class TensorflowFrontendBase(object):
     ]
     strides = list(map(lambda i: node.attr["strides"][i], spatial_indices))
     kernel_shape = list(map(lambda i: node.attr["ksize"][i], spatial_indices))
-    output_shapes = kwargs["output_shapes"]
+    node_dict = kwargs["node_dict"]
     output_shape = list(
         map(lambda i: node.attr["_output_shapes"][0][i], spatial_indices))
     input_shape = list(
-        map(lambda i: output_shapes[node.inputs[0]][0][i], spatial_indices))
+        map(lambda i: node_dict[node.inputs[0]].attr["_output_shapes"][0][i], spatial_indices))
     pads = cls._cal_pads(auto_pad, len(spatial_indices), input_shape,
                          output_shape, strides, kernel_shape)
     return helper.make_node(

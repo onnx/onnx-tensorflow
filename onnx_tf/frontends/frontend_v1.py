@@ -9,6 +9,7 @@ from __future__ import unicode_literals
 import numpy as np
 
 from onnx_tf.frontend import TensorflowFrontendBase
+from onnx_tf.common import get_unique_suffix
 from onnx import helper
 
 
@@ -82,19 +83,21 @@ class TensorflowFrontend(TensorflowFrontendBase):
         map(lambda i: node.attr.get("dilations", [1] * (d + 2))[i],
             spatial_indices))
     consts = kwargs["consts"]
-    output_shapes = kwargs["output_shapes"]
-    kernel_shape = kwargs["node_dict"][node.inputs[1]].attr["_output_shapes"][0][:d]
+    node_dict = kwargs["node_dict"]
+    kernel_shape = node_dict[node.inputs[1]].attr["_output_shapes"][0][:d]
     output_shape = list(
         map(lambda i: node.attr["_output_shapes"][0][i], spatial_indices))
     input_shape = list(
-        map(lambda i: output_shapes[node.inputs[0]][0][i], spatial_indices))
+        map(lambda i: node_dict[node.inputs[0]].attr["_output_shapes"][0][i],
+            spatial_indices))
     pads = cls._cal_pads(auto_pad, len(spatial_indices), input_shape,
                          output_shape, strides, kernel_shape)
+    unique_suffix = get_unique_suffix()
     transpose_node = helper.make_node(
-      "Transpose", [node.inputs[1]], [node.inputs[1] + "_transposed"],
+      "Transpose", [node.inputs[1]], [node.inputs[1] + "_T_" + unique_suffix],
       perm=[d + 1, d] + range(d))
     conv_node = helper.make_node(
-        "Conv", [node.inputs[0], node.inputs[1] + "_transposed"], [node.name],
+        "Conv", [node.inputs[0], node.inputs[1] + "_T_" + unique_suffix], [node.name],
         pads=pads,
         kernel_shape=kernel_shape,
         strides=strides,
