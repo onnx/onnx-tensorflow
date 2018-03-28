@@ -155,10 +155,6 @@ class TensorflowFrontendBase(object):
     # construction time.
     consts = {}
 
-    # This dict holds all output_shape, which can be used for next
-    # node's input shape.
-    output_shapes = {}
-
     # Sometimes the constants are used as inputs to ops. This list
     # holds initializers that creates global constant tensors available
     # to be accessed by ops as inputs (as oppose to attributes which
@@ -168,8 +164,6 @@ class TensorflowFrontendBase(object):
     node_tup = [(node.name, TensorflowNode(node)) for node in graph_def.node]
 
     for name, node in node_tup:
-      if "_output_shapes" in node.attr:
-        output_shapes[node.name] = node.attr["_output_shapes"]
 
       if node.op == "Placeholder":
         # Tensorflow requires dtype to be known.
