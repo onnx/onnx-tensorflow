@@ -168,6 +168,8 @@ class TensorflowFrontendBase(object):
     # to be accessed by ops as inputs (as oppose to attributes which
     # is supplied by the `consts` map above).
     consts_proto = []
+    consts_proto_dict = {}
+    additional_consts_proto = []
 
     for node in graph_def.node:
       node = TensorflowNode(node)
@@ -193,12 +195,14 @@ class TensorflowFrontendBase(object):
         else:
           values = node.attr["value"]
         shape = np.array(values).shape
-        consts_proto.append(
-            make_tensor(
-                name=node.name,
-                data_type=node.attr["dtype"],
-                dims=shape,
-                vals=raw_values))
+        tensor = make_tensor(
+            name=node.name,
+            data_type=node.attr["dtype"],
+            dims=shape,
+            vals=raw_values)
+        consts_proto.append(tensor)
+        consts_proto_dict[node.name] = tensor
+
         input_proto = make_tensor_value_info(node.name, node.attr["dtype"],
                                              shape)
         inputs_proto.append(input_proto)
@@ -232,7 +236,11 @@ class TensorflowFrontendBase(object):
         if hasattr(frontend, handler_name):
           method_to_call = getattr(frontend, handler_name)
           node = method_to_call(
-              node, consts=consts, output_shapes=output_shapes)
+              node,
+              consts=consts,
+              consts_proto=consts_proto_dict,
+              output_shapes=output_shapes,
+              additional_consts_proto=additional_consts_proto)
           if isinstance(node, list):
             ops_proto.extend(node)
           else:
@@ -270,7 +278,11 @@ class TensorflowFrontendBase(object):
                                  output.attr["_output_shapes"][i]))
 
     inputs = list(chain.from_iterable(map(lambda p: list(p.input), ops_proto)))
-
+    inputs_proto = [
+        make_tensor_value_info(p.name, p.data_type, list(p.dims))
+        for p in additional_consts_proto
+    ] + inputs_proto
+    consts_proto = additional_consts_proto + consts_proto
     # Remove proto in inputs_proto and consts_proto if proto is not used as input in ONNX
     inputs_proto = list(filter(lambda x: x.name in inputs, inputs_proto))
     consts_proto = list(filter(lambda x: x.name in inputs, consts_proto))
