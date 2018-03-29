@@ -4,7 +4,7 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import re
-
+import uuid
 import tensorflow as tf
 
 from onnx import TensorProto
@@ -243,3 +243,6 @@ def get_list_value(attr):
     return attr.func
   else:
     raise ValueError("Unsupported Tensorflow attribute: {}".format(attr))
+
+def get_unique_suffix():
+    return str(uuid.uuid4())[:8]
