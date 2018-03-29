@@ -68,8 +68,8 @@ _params_:
 `graph_def` : Tensorflow Graph Proto object.
 
 
-`output` : A Tensorflow NodeDef object specifying which node
-to be taken as output of the ONNX graph.
+`output` : A string specifying the name of the output
+graph node.
 
 
 `opset` : Opset version of the operator set.
