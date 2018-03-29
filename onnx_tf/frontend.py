@@ -278,8 +278,8 @@ class TensorflowFrontendBase(object):
     representation of ONNX model.
 
     :param graph_def: Tensorflow Graph Proto object.
-    :param output: A Tensorflow NodeDef object specifying which node
-      to be taken as output of the ONNX graph.
+    :param output: A string specifying the name of the output
+      graph node.
     :param opset: Opset version of the operator set.
       Default 0 means using latest version.
     :param producer_name: The name of the producer.
@@ -287,7 +287,14 @@ class TensorflowFrontendBase(object):
 
     :returns: The equivalent ONNX Model Proto object.
     """
-    onnx_graph = cls.tensorflow_graph_to_onnx_graph(graph_def, output, opset,
+    def get_node_by_name(nodes, name):
+      for node in nodes:
+        if node.name == name:
+          return node
+      raise ValueError("Node {} is not found in the graph provided".format(name))
+
+    output_node = get_node_by_name(graph_def.node, output)
+    onnx_graph = cls.tensorflow_graph_to_onnx_graph(graph_def, output_node, opset,
                                                     graph_name)
     onnx_model = make_model(
         onnx_graph,
