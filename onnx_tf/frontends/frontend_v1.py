@@ -93,10 +93,11 @@ class TensorflowFrontend(TensorflowFrontendBase):
                          output_shape, strides, kernel_shape)
     unique_suffix = get_unique_suffix()
     transpose_node = helper.make_node(
-      "Transpose", [node.inputs[1]], [node.inputs[1] + "_T_" + unique_suffix],
-      perm=[d + 1, d] + range(d))
+        "Transpose", [node.inputs[1]], [node.inputs[1] + "_T_" + unique_suffix],
+        perm=[d + 1, d] + list(range(d)))
     conv_node = helper.make_node(
-        "Conv", [node.inputs[0], node.inputs[1] + "_T_" + unique_suffix], [node.name],
+        "Conv", [node.inputs[0], node.inputs[1] + "_T_" + unique_suffix],
+        [node.name],
         pads=pads,
         kernel_shape=kernel_shape,
         strides=strides,
