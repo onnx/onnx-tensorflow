@@ -280,13 +280,15 @@ class TensorflowFrontendBase(object):
     :param graph_def: Tensorflow Graph Proto object.
     :param output: A string specifying the name of the output
       graph node.
-    :param opset: Opset version of the operator set.
-      Default 0 means using latest version.
+    :param opset: Opset version number or dict.
+      Default is 0 means using latest version with domain ''.
+      Dict should be {str domain: int version number, }.
     :param producer_name: The name of the producer.
     :param graph_name: The name of the output ONNX Graph.
 
     :returns: The equivalent ONNX Model Proto object.
     """
+
     def get_node_by_name(nodes, name):
       for node in nodes:
         if node.name == name:
@@ -294,12 +296,19 @@ class TensorflowFrontendBase(object):
       raise ValueError("Node {} is not found in the graph provided".format(name))
 
     output_node = get_node_by_name(graph_def.node, output)
-    onnx_graph = cls.tensorflow_graph_to_onnx_graph(graph_def, output_node, opset,
-                                                    graph_name)
+    onnx_graph = cls.tensorflow_graph_to_onnx_graph(graph_def, output_node,
+                                                    opset, graph_name)
+
+    assert isinstance(
+        opset, (int, dict)), "opset is expected to int or dict, but {}.".format(
+            type(opset))
+    opset_imports = [
+        helper.make_opsetid('', opset)
+        if isinstance(opset, int) else helper.make_opsetid(item[0], item[1])
+        for item in opset.items()
+    ]
     onnx_model = make_model(
-        onnx_graph,
-        producer_name=producer_name,
-        opset_imports=[helper.make_opsetid('', opset)])
+        onnx_graph, producer_name=producer_name, opset_imports=opset_imports)
 
     return onnx_model
 
