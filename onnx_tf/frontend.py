@@ -121,7 +121,7 @@ class TensorflowFrontendBase(object):
   def tensorflow_graph_to_onnx_graph(cls,
                                      graph_def,
                                      output,
-                                     opset=0,
+                                     opset={"": 0},
                                      name="graph"):
     """Converts a Tensorflow Graph Proto to an ONNX graph
 
@@ -131,8 +131,7 @@ class TensorflowFrontendBase(object):
     :param graph_def: Tensorflow Graph Proto object.
     :param output: A Tensorflow NodeDef object specifying which node
       to be taken as output of the ONNX graph.
-    :param opset: Opset version of the operator set.
-      Default 0 means using latest version.
+    :param opset: Opset, which should be {str domain: int version number, }.
     :param name: The name of the output ONNX Graph.
 
     :returns: The equivalent ONNX Graph Proto object.
@@ -197,20 +196,20 @@ class TensorflowFrontendBase(object):
 
         versions = frontend_tf_opset_version[op_name_to_lower(node.op)]
 
+        opset_ver = opset[""]
         assert isinstance(
-            opset, int
-        ) and (opset <= defs.onnx_opset_version()) and (
-            opset >= 0
+          opset_ver, int
+        ) and (opset_ver <= defs.onnx_opset_version()) and (
+            opset_ver >= 0
         ), "Opset should be an int less than or equal to {}, but {}: {}".format(
-            defs.onnx_opset_version(),
-            type(opset).__name__, opset)
+            defs.onnx_opset_version(), type(opset_ver), opset_ver)
 
-        if opset == 0:
+        if opset_ver == 0:
           version = max(versions)
         else:
-          versions = sorted(versions + [opset])
+          versions = sorted(versions + [opset_ver])
           version = versions[
-              max([i for i, v in enumerate(versions) if v == opset]) - 1]
+              max([i for i, v in enumerate(versions) if v == opset_ver]) - 1]
 
         frontend_ver = 'frontend_v{}'.format(version)
         frontend = cls.frontend_version_cache.setdefault(
@@ -293,20 +292,21 @@ class TensorflowFrontendBase(object):
       for node in nodes:
         if node.name == name:
           return node
-      raise ValueError("Node {} is not found in the graph provided".format(name))
-
-    output_node = get_node_by_name(graph_def.node, output)
-    onnx_graph = cls.tensorflow_graph_to_onnx_graph(graph_def, output_node,
-                                                    opset, graph_name)
+      raise ValueError(
+          "Node {} is not found in the graph provided".format(name))
 
     assert isinstance(
         opset, (int, dict)), "opset is expected to int or dict, but {}.".format(
             type(opset))
+    if isinstance(opset, int):
+      opset = {"": opset}
     opset_imports = [
-        helper.make_opsetid('', opset)
-        if isinstance(opset, int) else helper.make_opsetid(item[0], item[1])
-        for item in opset.items()
+        helper.make_opsetid(item[0], item[1]) for item in opset.items()
     ]
+
+    output_node = get_node_by_name(graph_def.node, output)
+    onnx_graph = cls.tensorflow_graph_to_onnx_graph(graph_def, output_node,
+                                                    opset, graph_name)
     onnx_model = make_model(
         onnx_graph, producer_name=producer_name, opset_imports=opset_imports)
 
