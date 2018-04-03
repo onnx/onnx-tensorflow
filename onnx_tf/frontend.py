@@ -225,12 +225,16 @@ class TensorflowFrontendBase(object):
               max([i for i, v in enumerate(versions) if v == opset_ver]) - 1]
 
         camel_domain = "".join(w.title() for w in op_domain.split("."))
-        frontend_ver = 'frontend_v{}'.format(version)
-        frontend = cls.frontend_version_cache.setdefault(
-            frontend_ver + "_" + op_domain,
-            getattr(
-                importlib.import_module('onnx_tf.frontends.' + frontend_ver),
-                "{}TensorflowFrontend".format(camel_domain)))
+        frontend_ver = "frontend_v{}".format(version)
+        frontend_class_name = "{}TensorflowFrontend".format(camel_domain)
+        frontend_module = cls.frontend_version_cache.setdefault(
+            frontend_ver,
+            importlib.import_module("onnx_tf.frontends." + frontend_ver))
+        if hasattr(frontend_module, frontend_class_name):
+          frontend = getattr(frontend_module, frontend_class_name)
+        else:
+          assert NotImplementedError, \
+            "{} for domain {} is not implemented".format(frontend_ver, op_domain)
 
         # Check if specialized handler exists.
         if hasattr(frontend, handler_name):
@@ -293,9 +297,9 @@ class TensorflowFrontendBase(object):
     :param graph_def: Tensorflow Graph Proto object.
     :param output: A string specifying the name of the output
       graph node.
-    :param opset: Opset version number or list.
+    :param opset: Opset version number, list or tuple.
       Default is 0 means using latest version with domain ''.
-      List item should be tuple (str domain, int version number).
+      List or tuple items should be (str domain, int version number).
     :param producer_name: The name of the producer.
     :param graph_name: The name of the output ONNX Graph.
 
