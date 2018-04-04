@@ -878,7 +878,8 @@ class TensorflowBackend(TensorflowBackendBase):
   def handle_top_k(cls, node, input_dict):
     x = input_dict[node.inputs[0]]
     k = node.attrs["k"] if "k" in node.attrs else 1
-    return list(tf.nn.top_k(x, k=k))
+    values, indices = tf.nn.top_k(x, k=k)
+    return [values, tf.cast(indices, dtype=tf.int64)]
 
   @classmethod
   def handle_unsqueeze(cls, node, input_dict):

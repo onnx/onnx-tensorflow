@@ -148,6 +148,12 @@ class TensorflowBackendBase(Backend):
       "reduce_sum": {
           "keepdims": 1
       },
+      "shape": {
+          "out_type": tf.int64
+      },
+      "size": {
+          "out_type": tf.int64
+      },
 
       # Force to use NCHW temporally
       # https://github.com/onnx/onnx/pull/443
