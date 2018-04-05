@@ -72,8 +72,9 @@ _params_:
 graph node.
 
 
-`opset` : Opset version of the operator set.
-Default 0 means using latest version.
+`opset` : Opset version number, list or tuple.
+Default is 0 means using latest version with domain ''.
+List or tuple items should be (str domain, int version number).
 
 
 `producer_name` : The name of the producer.
