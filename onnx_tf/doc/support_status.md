@@ -122,6 +122,7 @@ ______
 
 | Tensorflow Op        | Supported ONNX Version  |
 | -------------- |:------------------:|
+|add|1|
 |avg_pool|1|
 |bias_add|1|
 |concat_v2|1, 4|
