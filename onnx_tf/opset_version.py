@@ -260,7 +260,7 @@ frontend_tf_opset_version = {
     'split_v': [1, 2],
     'sqrt': [1],
     'squeeze': [1],
-    'subtract': [1],
+    'sub': [1],
     'sum': [1],
     'tanh': [1],
     'transpose': [1]

@@ -188,7 +188,7 @@ TF_OP_STR_TO_ONNX_OP = {
     "Shape": "Shape",
     "Sigmoid": "Sigmoid",
     "Softmax": "Softmax",
-    "Subtract": "Sub",
+    "Sub": "Sub",
     "Sqrt": "Sqrt",
     "Tanh": "Tanh",
 }
