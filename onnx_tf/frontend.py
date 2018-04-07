@@ -160,6 +160,10 @@ class TensorflowFrontendBase(object):
     # is supplied by the `consts` map above).
     consts_proto = []
 
+    # This list holds the protobuf objects of type ValueInfoProto
+    # representing the all nodes' outputs to the converted ONNX graph.
+    value_info_proto = []
+
     node_tup = [(node.name, TensorflowNode(node)) for node in graph_def.node]
 
     for name, node in node_tup:
@@ -191,6 +195,13 @@ class TensorflowFrontendBase(object):
         input_proto = make_tensor_value_info(name, node.attr["dtype"], shape)
         inputs_proto.append(input_proto)
       else:
+        for i in range(len(node.attr["_output_shapes"])):
+          node_name = node.name + ":{}".format(i) if i > 0 else node.name
+          value_info_proto.append(
+              make_tensor_value_info(node_name,
+                                     node.attr.get("T", TensorProto.BOOL),
+                                     node.attr["_output_shapes"][i]))
+
         splitted_op_name = node.op.split(".")
         op_domain = "" if len(splitted_op_name) == 1 else ".".join(
             splitted_op_name[:-1])
@@ -280,7 +291,13 @@ class TensorflowFrontendBase(object):
     inputs_proto = list(filter(lambda x: x.name in inputs, inputs_proto))
     consts_proto = list(filter(lambda x: x.name in inputs, consts_proto))
 
-    return make_graph(ops_proto, name, inputs_proto, output_proto, consts_proto)
+    return make_graph(
+        ops_proto,
+        name,
+        inputs_proto,
+        output_proto,
+        initializer=consts_proto,
+        value_info=value_info_proto)
 
   @classmethod
   def tensorflow_graph_to_onnx_model(cls,
