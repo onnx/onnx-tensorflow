@@ -83,12 +83,6 @@ class TensorflowFrontendBase(object):
       "Add": {
           "broadcast": 1
       },
-      "And": {
-          "broadcast": 1
-      },
-      "Div": {
-          "broadcast": 1
-      },
       "Equal": {
           "broadcast": 1
       },
@@ -101,16 +95,25 @@ class TensorflowFrontendBase(object):
       "Mul": {
           "broadcast": 1
       },
-      "Or": {
+      "Pow": {
           "broadcast": 1
       },
-      "Pow": {
+      "RealDiv": {
           "broadcast": 1
       },
       "Sub": {
           "broadcast": 1
       },
-      "Xor": {
+      "LogicalAnd": {
+          "broadcast": 1
+      },
+      "LogicalNot": {
+          "broadcast": 1
+      },
+      "LogicalOr": {
+          "broadcast": 1
+      },
+      "LogicalXor": {
           "broadcast": 1
       },
   }
@@ -260,8 +263,8 @@ class TensorflowFrontendBase(object):
           # needed/allowed in ONNX.
           attr = cls.DEFAULT_TF_ATTR_PER_OP.get(node.op, {})
           filtered_attr = dict(
-                            filter(lambda pair: pair[0] not in TF_ATTR_TO_REMOVE,
-                                   node.attr.items()))
+              filter(lambda pair: pair[0] not in TF_ATTR_TO_REMOVE,
+                     node.attr.items()))
           node_output = name
           ops_proto.append(
               make_node(
@@ -352,7 +355,11 @@ class TensorflowFrontendBase(object):
     node.attr["broadcast"] = 1
     if (axis):
       return helper.make_node(
-          onnx_op, node.inputs, [node.name], name=node.name, broadcast=1, axis=axis)
+          onnx_op,
+          node.inputs, [node.name],
+          name=node.name,
+          broadcast=1,
+          axis=axis)
     else:
       return helper.make_node(
           onnx_op, node.inputs, [node.name], name=node.name, broadcast=1)
@@ -371,7 +378,8 @@ class TensorflowFrontendBase(object):
     output_shape = list(
         map(lambda i: node.attr["_output_shapes"][0][i], spatial_indices))
     input_shape = list(
-        map(lambda i: node_dict[node.inputs[0]].attr["_output_shapes"][0][i], spatial_indices))
+        map(lambda i: node_dict[node.inputs[0]].attr["_output_shapes"][0][i],
+            spatial_indices))
     pads = cls._cal_pads(auto_pad, len(spatial_indices), input_shape,
                          output_shape, strides, kernel_shape)
     return helper.make_node(
