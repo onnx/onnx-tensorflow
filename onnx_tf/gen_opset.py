@@ -33,6 +33,14 @@ def main():
     except:
       break
 
+    # Register all tf ops in ONNX_TO_HANDLER
+    tf_op_names = []
+    for handler in frontend.ONNX_TO_HANDLER.values():
+      if isinstance(handler, list):
+        tf_op_names.extend(list(map(op_name_to_lower, handler)))
+      else:
+        tf_op_names.append(op_name_to_lower(handler))
+
     for schema in defs.get_all_schemas():
       op_name = op_name_to_lower(schema.name)
       has_backend_handler = hasattr(backend, 'handle_' + op_name)
@@ -41,19 +49,16 @@ def main():
                                  op_name in ONNX_OP_TO_TF_OP.keys()):
         backend_opset_dict[op_name].append(version)
 
-      tf_op_names = []
-      if op_name in frontend.ONNX_TO_HANDLER:
-        handler = frontend.ONNX_TO_HANDLER[op_name]
-        if isinstance(handler, list):
-          tf_op_names.extend(list(map(op_name_to_lower, handler)))
-        else:
-          tf_op_names.append(op_name_to_lower(handler))
-      if (schema.name in ONNX_OP_TO_TF_OP_STR.keys() and version == 1):
+      # Register once if onnx op in ONNX_OP_TO_TF_OP_STR
+      if version == 1 and schema.name in ONNX_OP_TO_TF_OP_STR and \
+          ONNX_OP_TO_TF_OP_STR[schema.name] not in tf_op_names:
         tf_op_names.append(op_name_to_lower(ONNX_OP_TO_TF_OP_STR[schema.name]))
-      for tf_op_name in tf_op_names:
-        frontend_tf_opset_dict.setdefault(str(tf_op_name), []).append(version)
-      if tf_op_names:
         frontend_opset_dict[op_name].append(version)
+      # Register if onnx op in ONNX_TO_HANDLER
+      elif op_name in frontend.ONNX_TO_HANDLER:
+        frontend_opset_dict[op_name].append(version)
+    for tf_op_name in tf_op_names:
+      frontend_tf_opset_dict.setdefault(str(tf_op_name), []).append(version)
 
     version += 1
 
