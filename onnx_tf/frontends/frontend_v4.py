@@ -14,11 +14,8 @@ class TensorflowFrontend(TensorflowFrontendBase):
   """ Tensorflow Frontend for ONNX
   """
 
-  ONNX_TO_HANDLER = {
-      "concat": "concat_v2",
-  }
-
   @classmethod
+  @TensorflowFrontendBase.register_onnx_op("concat")
   def handle_concat_v2(cls, node, **kwargs):
     consts = kwargs["consts"]
     assert node.inputs[-1] in consts.keys()
