@@ -107,9 +107,6 @@ class TensorflowFrontendBase(object):
       "LogicalAnd": {
           "broadcast": 1
       },
-      "LogicalNot": {
-          "broadcast": 1
-      },
       "LogicalOr": {
           "broadcast": 1
       },
