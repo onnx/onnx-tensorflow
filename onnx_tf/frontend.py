@@ -265,13 +265,14 @@ class TensorflowFrontendBase(object):
           filtered_attr = dict(
               filter(lambda pair: pair[0] not in TF_ATTR_TO_REMOVE,
                      node.attr.items()))
+          attr.update(filtered_attr)
           node_output = name
           ops_proto.append(
               make_node(
                   TF_OP_STR_TO_ONNX_OP[node.op],
                   node.inputs, [node_output],
                   name=name,
-                  **filtered_attr))
+                  **attr))
         else:
           raise NotImplementedError("{} op is not implemented.".format(node.op))
 
