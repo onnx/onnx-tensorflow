@@ -12,18 +12,20 @@ from onnx_tf.frontend import TensorflowFrontendBase
 from onnx_tf.common import get_unique_suffix
 from onnx import helper
 
+register_onnx_op = TensorflowFrontendBase.register_onnx_op
+
 
 class TensorflowFrontend(TensorflowFrontendBase):
   """ Tensorflow Frontend for ONNX
   """
 
   @classmethod
-  @TensorflowFrontendBase.register_onnx_op("average_pool")
+  @register_onnx_op("average_pool")
   def handle_avg_pool(cls, node, **kwargs):
     return cls._pool_op(node, "AveragePool", **kwargs)
 
   @classmethod
-  @TensorflowFrontendBase.register_onnx_op("batch_normalization")
+  @register_onnx_op("batch_normalization")
   def handle_fused_batch_norm(cls, node, **kwargs):
     return helper.make_node(
         "BatchNormalization",
@@ -33,7 +35,7 @@ class TensorflowFrontend(TensorflowFrontendBase):
         consumed_inputs=node.attr.get("consumed_inputs", [0, 0, 0, 1, 1]))
 
   @classmethod
-  @TensorflowFrontendBase.register_onnx_op("add")
+  @register_onnx_op("add")
   def handle_bias_add(cls, node, **kwargs):
     data_format = node.attr.get("data_format", "NHWC")
     channel_first = data_format[1] == "C"
@@ -41,7 +43,7 @@ class TensorflowFrontend(TensorflowFrontendBase):
     return cls._bin_op(node, "Add", axis=axis)
 
   @classmethod
-  @TensorflowFrontendBase.register_onnx_op("concat")
+  @register_onnx_op("concat")
   def handle_concat_v2(cls, node, **kwargs):
     consts = kwargs["consts"]
     assert node.inputs[-1] in consts.keys()
@@ -85,22 +87,22 @@ class TensorflowFrontend(TensorflowFrontendBase):
     return [transpose_node, conv_node]
 
   @classmethod
-  @TensorflowFrontendBase.register_onnx_op("conv")
+  @register_onnx_op("conv")
   def handle_conv1_d(cls, node, **kwargs):
     return cls._conv(node, 1, **kwargs)
 
   @classmethod
-  @TensorflowFrontendBase.register_onnx_op("conv")
+  @register_onnx_op("conv")
   def handle_conv2_d(cls, node, **kwargs):
     return cls._conv(node, 2, **kwargs)
 
   @classmethod
-  @TensorflowFrontendBase.register_onnx_op("conv")
+  @register_onnx_op("conv")
   def handle_conv3_d(cls, node, **kwargs):
     return cls._conv(node, 3, **kwargs)
 
   @classmethod
-  @TensorflowFrontendBase.register_onnx_op("pad")
+  @register_onnx_op("pad")
   def handle_pad(cls, node, **kwargs):
     consts = kwargs["consts"]
     assert node.inputs[1] in consts.keys()
@@ -117,7 +119,7 @@ class TensorflowFrontend(TensorflowFrontendBase):
         value=0.0)
 
   @classmethod
-  @TensorflowFrontendBase.register_onnx_op("random_normal")
+  @register_onnx_op("random_normal")
   def handle_random_standard_normal(cls, node, **kwargs):
     """ Tensorflow does not have a generic random_normal op.
         The generic random_normal op is translated into a scaled
@@ -132,7 +134,7 @@ class TensorflowFrontend(TensorflowFrontendBase):
         shape=node.attr["_output_shapes"][0])
 
   @classmethod
-  @TensorflowFrontendBase.register_onnx_op("random_uniform")
+  @register_onnx_op("random_uniform")
   def handle_random_uniform(cls, node, **kwargs):
     """ Tensorflow does not have a generic random_uniform op.
         The generic random_uniform op is translated into a scaled
@@ -147,37 +149,37 @@ class TensorflowFrontend(TensorflowFrontendBase):
         shape=node.attr["_output_shapes"][0])
 
   @classmethod
-  @TensorflowFrontendBase.register_onnx_op("reduce_max")
+  @register_onnx_op("reduce_max")
   def handle_max(cls, node, **kwargs):
     return cls._reduce_op("ReduceMax", node, **kwargs)
 
   @classmethod
-  @TensorflowFrontendBase.register_onnx_op("max_pool")
+  @register_onnx_op("max_pool")
   def handle_max_pool(cls, node, **kwargs):
     return cls._pool_op(node, "MaxPool", **kwargs)
 
   @classmethod
-  @TensorflowFrontendBase.register_onnx_op("reduce_mean")
+  @register_onnx_op("reduce_mean")
   def handle_mean(cls, node, **kwargs):
     return cls._reduce_op("ReduceMean", node, **kwargs)
 
   @classmethod
-  @TensorflowFrontendBase.register_onnx_op("reduce_min")
+  @register_onnx_op("reduce_min")
   def handle_min(cls, node, **kwargs):
     return cls._reduce_op("ReduceMin", node, **kwargs)
 
   @classmethod
-  @TensorflowFrontendBase.register_onnx_op("reduce_prod")
+  @register_onnx_op("reduce_prod")
   def handle_prod(cls, node, **kwargs):
     return cls._reduce_op("ReduceProd", node, **kwargs)
 
   @classmethod
-  @TensorflowFrontendBase.register_onnx_op("reduce_sum")
+  @register_onnx_op("reduce_sum")
   def handle_sum(cls, node, **kwargs):
     return cls._reduce_op("ReduceSum", node, **kwargs)
 
   @classmethod
-  @TensorflowFrontendBase.register_onnx_op("reshape")
+  @register_onnx_op("reshape")
   def handle_reshape(cls, node, **kwargs):
     consts = kwargs["consts"]
     assert node.inputs[1] in consts.keys()
@@ -186,7 +188,7 @@ class TensorflowFrontend(TensorflowFrontendBase):
         "Reshape", [node.inputs[0]], [node.name], shape=shape)
 
   @classmethod
-  @TensorflowFrontendBase.register_onnx_op("split")
+  @register_onnx_op("split")
   def handle_split_v(cls, node, **kwargs):
     consts = kwargs["consts"]
     split = consts[node.inputs[1]]
@@ -199,7 +201,7 @@ class TensorflowFrontend(TensorflowFrontendBase):
         "Split", [node.inputs[0]], output_names, split=split, axis=axis)
 
   @classmethod
-  @TensorflowFrontendBase.register_onnx_op("squeeze")
+  @register_onnx_op("squeeze")
   def handle_squeeze(cls, node, **kwargs):
     assert "squeeze_dims" in node.attr.keys(), ("Squeeze dims have to be"
                                                 "specified")
@@ -207,7 +209,7 @@ class TensorflowFrontend(TensorflowFrontendBase):
     return helper.make_node("Squeeze", [node.inputs[0]], [node.name], axes=axes)
 
   @classmethod
-  @TensorflowFrontendBase.register_onnx_op("transpose")
+  @register_onnx_op("transpose")
   def handle_transpose(cls, node, **kwargs):
     consts = kwargs["consts"]
     perm = consts[node.inputs[1]]

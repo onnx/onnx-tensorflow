@@ -11,13 +11,15 @@ import numpy as np
 from onnx_tf.frontend import TensorflowFrontendBase
 from onnx import helper
 
+register_onnx_op = TensorflowFrontendBase.register_onnx_op
+
 
 class TensorflowFrontend(TensorflowFrontendBase):
   """ Tensorflow Frontend for ONNX
   """
 
   @classmethod
-  @TensorflowFrontendBase.register_onnx_op("pad")
+  @register_onnx_op("pad")
   def handle_pad(cls, node, **kwargs):
     consts = kwargs["consts"]
     assert node.inputs[1] in consts.keys()
@@ -34,7 +36,7 @@ class TensorflowFrontend(TensorflowFrontendBase):
         value=0.0)
 
   @classmethod
-  @TensorflowFrontendBase.register_onnx_op("split")
+  @register_onnx_op("split")
   def handle_split_v(cls, node, **kwargs):
     consts = kwargs["consts"]
     split = consts[node.inputs[1]]

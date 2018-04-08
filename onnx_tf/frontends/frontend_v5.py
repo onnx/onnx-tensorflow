@@ -9,13 +9,15 @@ from __future__ import unicode_literals
 from onnx_tf.frontend import TensorflowFrontendBase
 from onnx import helper
 
+register_onnx_op = TensorflowFrontendBase.register_onnx_op
+
 
 class TensorflowFrontend(TensorflowFrontendBase):
   """ Tensorflow Frontend for ONNX
   """
 
   @classmethod
-  @TensorflowFrontendBase.register_onnx_op("reshape")
+  @register_onnx_op("reshape")
   def handle_reshape(cls, node, **kwargs):
     return helper.make_node("Reshape", [node.inputs[0], node.inputs[1]],
                             [node.name])

@@ -411,6 +411,17 @@ class TensorflowFrontendBase(object):
 
   @staticmethod
   def register_onnx_op(onnx_op):
+    """ Decorator for registering handler to onnx.
+    Use this to make an ONNX_TO_HANDLER dict for mapping onnx_op and tf_op.
+    Usage:
+    ```
+      @classmethod
+      @register_onnx_op("conv")
+      def hander_conv2_d(cls, *args, **kwargs):
+        pass
+    ```
+    Pass corresponding onnx op name to decorator.
+    """
 
     def decorator(func):
       frontend_ver = func.__module__.split(".")[-1]
