@@ -24,13 +24,14 @@ from onnx_tf.common import (
     op_name_to_lower,
 )
 from onnx_tf.opset_version import frontend_tf_opset_version
-from onnx import defs, helper
+from onnx import defs
 from onnx.helper import (
     make_tensor_value_info,
     make_tensor,
     make_graph,
     make_model,
     make_node,
+    make_opsetid,
 )
 from onnx.onnx_pb2 import GraphProto, TensorProto, AttributeProto
 
@@ -83,12 +84,6 @@ class TensorflowFrontendBase(object):
       "Add": {
           "broadcast": 1
       },
-      "And": {
-          "broadcast": 1
-      },
-      "Div": {
-          "broadcast": 1
-      },
       "Equal": {
           "broadcast": 1
       },
@@ -101,16 +96,22 @@ class TensorflowFrontendBase(object):
       "Mul": {
           "broadcast": 1
       },
-      "Or": {
+      "Pow": {
           "broadcast": 1
       },
-      "Pow": {
+      "RealDiv": {
           "broadcast": 1
       },
       "Sub": {
           "broadcast": 1
       },
-      "Xor": {
+      "LogicalAnd": {
+          "broadcast": 1
+      },
+      "LogicalOr": {
+          "broadcast": 1
+      },
+      "LogicalXor": {
           "broadcast": 1
       },
   }
@@ -260,15 +261,16 @@ class TensorflowFrontendBase(object):
           # needed/allowed in ONNX.
           attr = cls.DEFAULT_TF_ATTR_PER_OP.get(node.op, {})
           filtered_attr = dict(
-                            filter(lambda pair: pair[0] not in TF_ATTR_TO_REMOVE,
-                                   node.attr.items()))
+              filter(lambda pair: pair[0] not in TF_ATTR_TO_REMOVE,
+                     node.attr.items()))
+          attr.update(filtered_attr)
           node_output = name
           ops_proto.append(
               make_node(
                   TF_OP_STR_TO_ONNX_OP[node.op],
                   node.inputs, [node_output],
                   name=name,
-                  **filtered_attr))
+                  **attr))
         else:
           raise NotImplementedError("{} op is not implemented.".format(node.op))
 
@@ -337,7 +339,7 @@ class TensorflowFrontendBase(object):
              type(opset))
     if isinstance(opset, int):
       opset = [("", opset)]
-    opset_imports = [helper.make_opsetid(item[0], item[1]) for item in opset]
+    opset_imports = [make_opsetid(item[0], item[1]) for item in opset]
 
     output_node = get_node_by_name(graph_def.node, output)
     onnx_graph = cls.tensorflow_graph_to_onnx_graph(graph_def, output_node,
@@ -350,11 +352,15 @@ class TensorflowFrontendBase(object):
   @classmethod
   def _bin_op(cls, node, onnx_op, axis=None):
     node.attr["broadcast"] = 1
-    if (axis):
-      return helper.make_node(
-          onnx_op, node.inputs, [node.name], name=node.name, broadcast=1, axis=axis)
+    if axis is not None:
+      return make_node(
+          onnx_op,
+          node.inputs, [node.name],
+          name=node.name,
+          broadcast=1,
+          axis=axis)
     else:
-      return helper.make_node(
+      return make_node(
           onnx_op, node.inputs, [node.name], name=node.name, broadcast=1)
 
   @classmethod
@@ -371,10 +377,11 @@ class TensorflowFrontendBase(object):
     output_shape = list(
         map(lambda i: node.attr["_output_shapes"][0][i], spatial_indices))
     input_shape = list(
-        map(lambda i: node_dict[node.inputs[0]].attr["_output_shapes"][0][i], spatial_indices))
+        map(lambda i: node_dict[node.inputs[0]].attr["_output_shapes"][0][i],
+            spatial_indices))
     pads = cls._cal_pads(auto_pad, len(spatial_indices), input_shape,
                          output_shape, strides, kernel_shape)
-    return helper.make_node(
+    return make_node(
         onnx_op, [node.inputs[0]], [node.name],
         pads=pads,
         kernel_shape=kernel_shape,
@@ -397,7 +404,7 @@ class TensorflowFrontendBase(object):
     consts = kwargs["consts"]
     assert node.inputs[1] in consts.keys()
     axes = consts[node.inputs[1]]
-    return helper.make_node(
+    return make_node(
         op, [node.inputs[0]], [node.name],
         axes=axes,
         keepdims=node.attr.get("keep_dims", 1))

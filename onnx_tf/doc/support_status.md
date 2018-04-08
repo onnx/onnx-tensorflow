@@ -129,8 +129,11 @@ ______
 |conv1_d|1|
 |conv2_d|1|
 |conv3_d|1|
+|equal|1|
 |fused_batch_norm|1, 6|
+|greater|1|
 |identity|1|
+|less|1|
 |logical_and|1|
 |logical_not|1|
 |logical_or|1|
@@ -146,6 +149,7 @@ ______
 |prod|1|
 |random_standard_normal|1|
 |random_uniform|1|
+|real_div|1|
 |reciprocal|1|
 |relu|1|
 |reshape|1, 5|

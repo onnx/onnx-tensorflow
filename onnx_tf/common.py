@@ -166,21 +166,29 @@ ONNX_OP_TO_TF_OP = {
 TF_OP_TO_ONNX_OP = invert(ONNX_OP_TO_TF_OP)
 
 TF_OP_STR_TO_ONNX_OP = {
-    "Identity": "Identity",
-    "LogicalNot": "Not",
-    "MatMul": "MatMul",
-    "Relu": "Relu",
-    "Shape": "Shape",
-    "Softmax": "Softmax",
-    "Pow": "Pow",
     # TODO:
     # handle Mul, Add, Sub,
     # these are temporarily added to
     # test other ops
-    "Mul": "Mul",
     "Add": "Add",
+    "Equal": "Equal",
+    "Greater": "Greater",
+    "Identity": "Identity",
+    "Less": "Less",
+    "LogicalAnd": "And",
+    "LogicalNot": "Not",
+    "LogicalOr": "Or",
+    "LogicalXor": "Xor",
+    "MatMul": "MatMul",
+    "Mul": "Mul",
+    "Pow": "Pow",
+    "RealDiv": "Div",
     "Reciprocal": "Reciprocal",
+    "Relu": "Relu",
+    "Shape": "Shape",
     "Sigmoid": "Sigmoid",
+    "Softmax": "Softmax",
+    "Sub": "Sub",
     "Sqrt": "Sqrt",
     "Tanh": "Tanh",
 }
@@ -244,5 +252,6 @@ def get_list_value(attr):
   else:
     raise ValueError("Unsupported Tensorflow attribute: {}".format(attr))
 
+
 def get_unique_suffix():
-    return str(uuid.uuid4())[:8]
+  return str(uuid.uuid4())[:8]

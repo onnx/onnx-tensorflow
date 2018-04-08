@@ -16,15 +16,12 @@ from onnx import helper
 class TensorflowFrontend(TensorflowFrontendBase):
   """ Tensorflow Frontend for ONNX
   """
-
   ONNX_TO_HANDLER = {
       "add": "bias_add",
-      "and": "logical_and",
+      "average_pool": "avg_pool",
       "batch_normalization": "fused_batch_norm",
       "conv": ["conv1_d", "conv2_d", "conv3_d"],
-      "average_pool": "avg_pool",
       "max_pool": "max_pool",
-      "or": "logical_or",
       "pad": "pad",
       "random_normal": "random_standard_normal",
       "random_uniform": "random_uniform",
@@ -36,9 +33,7 @@ class TensorflowFrontend(TensorflowFrontendBase):
       "reshape": "reshape",
       "split": "split_v",
       "squeeze": "squeeze",
-      "sub": "sub",
       "transpose": "transpose",
-      "xor": "logical_xor",
       "concat": "concat_v2",
   }
 
@@ -116,14 +111,6 @@ class TensorflowFrontend(TensorflowFrontendBase):
   @classmethod
   def handle_conv3_d(cls, node, **kwargs):
     return cls._conv(node, 3, **kwargs)
-
-  @classmethod
-  def handle_logical_and(cls, node, **kwargs):
-    return cls._bin_op(node, "And")
-
-  @classmethod
-  def handle_logical_or(cls, node, **kwargs):
-    return cls._bin_op(node, "Or")
 
   @classmethod
   def handle_pad(cls, node, **kwargs):
@@ -221,16 +208,8 @@ class TensorflowFrontend(TensorflowFrontendBase):
     return helper.make_node("Squeeze", [node.inputs[0]], [node.name], axes=axes)
 
   @classmethod
-  def handle_sub(cls, node, **kwargs):
-    return cls._bin_op(node, "Sub")
-
-  @classmethod
   def handle_transpose(cls, node, **kwargs):
     consts = kwargs["consts"]
     perm = consts[node.inputs[1]]
     return helper.make_node(
         "Transpose", [node.inputs[0]], [node.name], perm=perm)
-
-  @classmethod
-  def handle_logical_xor(cls, node, **kwargs):
-    return cls._bin_op(node, "Xor")
