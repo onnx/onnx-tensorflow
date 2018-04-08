@@ -24,13 +24,14 @@ from onnx_tf.common import (
     op_name_to_lower,
 )
 from onnx_tf.opset_version import frontend_tf_opset_version
-from onnx import defs, helper
+from onnx import defs
 from onnx.helper import (
     make_tensor_value_info,
     make_tensor,
     make_graph,
     make_model,
     make_node,
+    make_opsetid,
 )
 from onnx.onnx_pb2 import GraphProto, TensorProto, AttributeProto
 
@@ -338,7 +339,7 @@ class TensorflowFrontendBase(object):
              type(opset))
     if isinstance(opset, int):
       opset = [("", opset)]
-    opset_imports = [helper.make_opsetid(item[0], item[1]) for item in opset]
+    opset_imports = [make_opsetid(item[0], item[1]) for item in opset]
 
     output_node = get_node_by_name(graph_def.node, output)
     onnx_graph = cls.tensorflow_graph_to_onnx_graph(graph_def, output_node,
@@ -351,15 +352,15 @@ class TensorflowFrontendBase(object):
   @classmethod
   def _bin_op(cls, node, onnx_op, axis=None):
     node.attr["broadcast"] = 1
-    if (axis):
-      return helper.make_node(
+    if axis is not None:
+      return make_node(
           onnx_op,
           node.inputs, [node.name],
           name=node.name,
           broadcast=1,
           axis=axis)
     else:
-      return helper.make_node(
+      return make_node(
           onnx_op, node.inputs, [node.name], name=node.name, broadcast=1)
 
   @classmethod
@@ -380,7 +381,7 @@ class TensorflowFrontendBase(object):
             spatial_indices))
     pads = cls._cal_pads(auto_pad, len(spatial_indices), input_shape,
                          output_shape, strides, kernel_shape)
-    return helper.make_node(
+    return make_node(
         onnx_op, [node.inputs[0]], [node.name],
         pads=pads,
         kernel_shape=kernel_shape,
@@ -403,7 +404,7 @@ class TensorflowFrontendBase(object):
     consts = kwargs["consts"]
     assert node.inputs[1] in consts.keys()
     axes = consts[node.inputs[1]]
-    return helper.make_node(
+    return make_node(
         op, [node.inputs[0]], [node.name],
         axes=axes,
         keepdims=node.attr.get("keep_dims", 1))
