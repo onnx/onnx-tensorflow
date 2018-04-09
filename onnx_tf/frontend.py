@@ -409,6 +409,35 @@ class TensorflowFrontendBase(object):
         axes=axes,
         keepdims=node.attr.get("keep_dims", 1))
 
+  @staticmethod
+  def register_onnx_op(onnx_op):
+    """ Decorator for registering handler to onnx.
+
+    Use this to make an ONNX_TO_HANDLER dict for mapping onnx_op and tf_op.
+    Usage:
+    ```
+      @classmethod
+      @register_onnx_op("Conv")
+      def hander_conv2_d(cls, *args, **kwargs):
+        pass
+    ```
+    Pass corresponding onnx op name to decorator.
+
+    :param onnx_op: ONNX operator name.
+    """
+
+    def decorator(func):
+      frontend_ver = func.__module__.split(".")[-1]
+      onnx_to_handler = getattr(TensorflowFrontendBase, "ONNX_TO_HANDLER", {})
+      onnx_to_handler_ver = onnx_to_handler.setdefault(frontend_ver, {})
+      tf_op = "_".join([x for x in func.__name__.split("_")[1:]])
+      tf_ops = onnx_to_handler_ver.setdefault(onnx_op, [])
+      tf_ops.append(tf_op)
+      setattr(TensorflowFrontendBase, "ONNX_TO_HANDLER", onnx_to_handler)
+      return func
+
+    return decorator
+
 
 convert_graph = TensorflowFrontendBase.tensorflow_graph_to_onnx_graph
 

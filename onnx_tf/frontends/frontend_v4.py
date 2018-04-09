@@ -9,16 +9,15 @@ from __future__ import unicode_literals
 from onnx_tf.frontend import TensorflowFrontendBase
 from onnx import helper
 
+register_onnx_op = TensorflowFrontendBase.register_onnx_op
+
 
 class TensorflowFrontend(TensorflowFrontendBase):
   """ Tensorflow Frontend for ONNX
   """
 
-  ONNX_TO_HANDLER = {
-      "concat": "concat_v2",
-  }
-
   @classmethod
+  @register_onnx_op("Concat")
   def handle_concat_v2(cls, node, **kwargs):
     consts = kwargs["consts"]
     assert node.inputs[-1] in consts.keys()
