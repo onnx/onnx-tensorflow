@@ -412,6 +412,7 @@ class TensorflowFrontendBase(object):
   @staticmethod
   def register_onnx_op(onnx_op):
     """ Decorator for registering handler to onnx.
+
     Use this to make an ONNX_TO_HANDLER dict for mapping onnx_op and tf_op.
     Usage:
     ```
@@ -421,6 +422,8 @@ class TensorflowFrontendBase(object):
         pass
     ```
     Pass corresponding onnx op name to decorator.
+
+    :param onnx_op: ONNX operator name.
     """
 
     def decorator(func):
