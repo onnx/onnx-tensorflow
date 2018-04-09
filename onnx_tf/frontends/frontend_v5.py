@@ -17,7 +17,7 @@ class TensorflowFrontend(TensorflowFrontendBase):
   """
 
   @classmethod
-  @register_onnx_op("reshape")
+  @register_onnx_op("Reshape")
   def handle_reshape(cls, node, **kwargs):
     return helper.make_node("Reshape", [node.inputs[0], node.inputs[1]],
                             [node.name])

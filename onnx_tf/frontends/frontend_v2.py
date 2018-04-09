@@ -19,7 +19,7 @@ class TensorflowFrontend(TensorflowFrontendBase):
   """
 
   @classmethod
-  @register_onnx_op("pad")
+  @register_onnx_op("Pad")
   def handle_pad(cls, node, **kwargs):
     consts = kwargs["consts"]
     assert node.inputs[1] in consts.keys()
@@ -36,7 +36,7 @@ class TensorflowFrontend(TensorflowFrontendBase):
         value=0.0)
 
   @classmethod
-  @register_onnx_op("split")
+  @register_onnx_op("Split")
   def handle_split_v(cls, node, **kwargs):
     consts = kwargs["consts"]
     split = consts[node.inputs[1]]

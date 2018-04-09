@@ -17,7 +17,7 @@ class TensorflowFrontend(TensorflowFrontendBase):
   """
 
   @classmethod
-  @register_onnx_op("concat")
+  @register_onnx_op("Concat")
   def handle_concat_v2(cls, node, **kwargs):
     consts = kwargs["consts"]
     assert node.inputs[-1] in consts.keys()

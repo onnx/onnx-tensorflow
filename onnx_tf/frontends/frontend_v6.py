@@ -17,7 +17,7 @@ class TensorflowFrontend(TensorflowFrontendBase):
   """
 
   @classmethod
-  @register_onnx_op("batch_normalization")
+  @register_onnx_op("BatchNormalization")
   def handle_fused_batch_norm(cls, node, **kwargs):
     return helper.make_node(
         "BatchNormalization",
