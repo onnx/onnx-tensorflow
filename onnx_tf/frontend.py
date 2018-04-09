@@ -416,7 +416,7 @@ class TensorflowFrontendBase(object):
     Usage:
     ```
       @classmethod
-      @register_onnx_op("conv")
+      @register_onnx_op("Conv")
       def hander_conv2_d(cls, *args, **kwargs):
         pass
     ```
