@@ -379,7 +379,7 @@ class TensorflowBackendBase(Backend):
     handler_name = "handle_" + op_name_lowered
 
     # Check if specialized handler exists.
-    versions = backend_opset_version[op_name_lowered]
+    versions = backend_opset_version[node.op_type]
 
     if opset == 0:
       version = max(versions)
