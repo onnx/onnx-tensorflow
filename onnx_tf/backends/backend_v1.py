@@ -890,6 +890,37 @@ class TensorflowBackend(TensorflowBackendBase):
     return [x]
 
   @classmethod
+  def handle_upsample(cls, node, input_dict):
+    x = input_dict[node.inputs[0]]
+    x_shape = x.shape.as_list()
+    support_cuda = cls.supports_device("CUDA")
+    storage_format, compute_format = cls.get_data_format(
+        len(x_shape), support_cuda)
+    height_scale = node.attrs["height_scale"]
+    width_scale = node.attrs["width_scale"]
+    mode = node.attrs.get("mode", "nearest")
+    size = np.asarray([
+        np.floor(x_shape[storage_format.find("H")] * height_scale),
+        np.floor(x_shape[storage_format.find("W")] * width_scale)
+    ])
+    if mode == "nearest":
+      method = tf.image.ResizeMethod.NEAREST_NEIGHBOR
+    else:
+      method = tf.image.ResizeMethod.BILINEAR
+
+    if storage_format == "NHWC":
+      return [tf.image.resize_images(x, size, method)]
+    else:
+      return [
+          tf.transpose(
+              tf.image.resize_images(
+                  tf.transpose(
+                      x, perm=cls.get_perm_from_formats(storage_format,
+                                                        "NHWC")), size, method),
+              perm=cls.get_perm_from_formats("NHWC", storage_format))
+      ]
+
+  @classmethod
   def handle_mat_mul(cls, node, input_dict):
     return [tf.matmul(input_dict[node.inputs[0]], input_dict[node.inputs[1]])]
 

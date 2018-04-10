@@ -106,7 +106,7 @@ backend_opset_version = {
     'TopK': [1],
     'Transpose': [1],
     'Unsqueeze': [1],
-    'Upsample': [],
+    'Upsample': [1],
     'Xor': [1]
 }
 
