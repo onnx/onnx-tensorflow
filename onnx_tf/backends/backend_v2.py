@@ -51,6 +51,12 @@ class TensorflowBackend(TensorflowBackendBase):
 
   @classmethod
   def handle_split(cls, node, input_dict):
-    split = tf.constant(node.attrs["split"])
-    axis = node.attrs["axis"]
+    x_shape = input_dict[node.inputs[0]].get_shape().as_list()
+    axis = node.attrs.get("axis", 0)
+    if "split" in node.attrs:
+      split = node.attrs["split"]
+    else:
+      per_part = x_shape[axis] / len(node.outputs)
+      assert int(per_part) == per_part
+      split = [int(per_part)] * len(node.outputs)
     return list(tf.split(input_dict[node.inputs[0]], split, axis))
