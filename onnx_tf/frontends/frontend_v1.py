@@ -37,10 +37,7 @@ class TensorflowFrontend(TensorflowFrontendBase):
   @classmethod
   @register_onnx_op("Add")
   def handle_bias_add(cls, node, **kwargs):
-    data_format = node.attr.get("data_format", "NHWC")
-    channel_first = data_format[1] == "C"
-    axis = 1 if channel_first else -1
-    return cls._bin_op(node, "Add", axis=axis)
+    return cls._bin_op(node, "Add", axis=1)
 
   @classmethod
   @register_onnx_op("Concat")
