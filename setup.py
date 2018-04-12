@@ -11,5 +11,5 @@ setup(
     author='Arpith Jacob, Tian Jin, Gheorghe-Teodor Bercea',
     author_email='tian.jin1@ibm.com',
     license='Apache License 2.0',
-    packages=['onnx_tf'],
+    packages=['onnx_tf', 'onnx_tf.backends', 'onnx_tf.frontends'],
     zip_safe=False)
