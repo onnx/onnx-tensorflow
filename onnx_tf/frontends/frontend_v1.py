@@ -84,6 +84,12 @@ class TensorflowFrontend(TensorflowFrontendBase):
         strides=strides,
         dilations=dilations)
 
+    kwargs["inference_shapes"][node_dict[node.inputs[1]].name] = np.take(
+        node_dict[node.inputs[1]].attr["_output_shapes"][0],
+        [d + 1, d] + list(range(d))).tolist()
+    kwargs["inference_shapes"][node.name] = [
+        node.attr["_output_shapes"][0][data_format.find(c)] for c in "NCHW"
+    ]
     return [transpose_node, conv_node]
 
   @classmethod
