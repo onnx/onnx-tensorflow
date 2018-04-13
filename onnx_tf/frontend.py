@@ -286,8 +286,8 @@ class TensorflowFrontendBase(object):
       if "_output_shapes" in node.attr:
         for i in range(len(node.attr["_output_shapes"])):
           node_name = node.name + ":{}".format(i) if i > 0 else node.name
-          if node_name in inference_shape:
-            output_shapes = inference_shape[node_name]
+          if node_name in inference_shapes:
+            output_shapes = inference_shapes[node_name]
           else:
             output_shapes = node.attr["_output_shapes"][i]
           value_info = make_tensor_value_info(node_name,
