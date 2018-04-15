@@ -273,7 +273,7 @@ class TensorflowFrontendBase(object):
                 "{} op is not implemented. "
                 "If {} op is not supported by onnx, pb might not pass the checker".
                 format(node.op, node.op))
-            onnx_op = op_name_to_lower(node.op)
+            onnx_op = node.op
           ops_proto.append(
               make_node(onnx_op, node.inputs, [node_output], name=name, **attr))
 
