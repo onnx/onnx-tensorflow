@@ -8,6 +8,7 @@ from __future__ import unicode_literals
 
 import importlib
 from itertools import chain
+import warnings
 
 import numpy as np
 import tensorflow as tf
@@ -211,7 +212,7 @@ class TensorflowFrontendBase(object):
         handler_name = "handle_" + op_name_to_lower(op_name)
 
         # TODO per domain frontend_tf_opset_version?
-        versions = frontend_tf_opset_version[op_name_to_lower(op_name)]
+        versions = frontend_tf_opset_version.get(op_name_to_lower(op_name), [])
 
         opset_dict = {}
         onnx_domain = defs.ONNX_DOMAIN
@@ -256,7 +257,7 @@ class TensorflowFrontendBase(object):
             ops_proto.extend(node)
           else:
             ops_proto.append(node)
-        elif node.op in TF_OP_STR_TO_ONNX_OP.keys():
+        else:
           # Remove tensorflow-specific attrs that are not
           # needed/allowed in ONNX.
           attr = cls.DEFAULT_TF_ATTR_PER_OP.get(node.op, {})
@@ -265,14 +266,16 @@ class TensorflowFrontendBase(object):
                      node.attr.items()))
           attr.update(filtered_attr)
           node_output = name
+          if node.op in TF_OP_STR_TO_ONNX_OP.keys():
+            onnx_op = TF_OP_STR_TO_ONNX_OP[node.op]
+          else:
+            warnings.warn(
+                "{} op is not implemented. "
+                "If {} op is not supported by onnx, pb might not pass the checker".
+                format(node.op, node.op))
+            onnx_op = op_name_to_lower(node.op)
           ops_proto.append(
-              make_node(
-                  TF_OP_STR_TO_ONNX_OP[node.op],
-                  node.inputs, [node_output],
-                  name=name,
-                  **attr))
-        else:
-          raise NotImplementedError("{} op is not implemented.".format(node.op))
+              make_node(onnx_op, node.inputs, [node_output], name=name, **attr))
 
     output = TensorflowNode(output)
     # making output proto
