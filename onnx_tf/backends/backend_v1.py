@@ -653,8 +653,10 @@ class TensorflowBackend(TensorflowBackendBase):
 
   @classmethod
   def handle_max(cls, node, input_dict):
-    values = [input_dict[a] for a in node.inputs]
-    return [tf.reduce_max(tf.stack(values), axis=0)]
+    maximum = input_dict[node.inputs[0]]
+    for inp in node.inputs[1:]:
+      maximum = tf.maximum(maximum, input_dict[inp])
+    return [maximum]
 
   @classmethod
   def handle_max_pool(cls, node, input_dict):

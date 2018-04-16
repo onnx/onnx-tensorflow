@@ -154,6 +154,13 @@ class TensorflowFrontend(TensorflowFrontendBase):
     return cls._reduce_op("ReduceMax", node, **kwargs)
 
   @classmethod
+  @register_onnx_op("Max")
+  def handle_maximum(cls, node, **kwargs):
+    return helper.make_node(
+        "Max", node.inputs, [node.name],
+        name=node.name)
+
+  @classmethod
   @register_onnx_op("MaxPool")
   def handle_max_pool(cls, node, **kwargs):
     return cls._pool_op(node, "MaxPool", **kwargs)
