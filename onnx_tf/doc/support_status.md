@@ -122,9 +122,9 @@ ______
 
 | Tensorflow Op        | Supported ONNX Version  |
 | -------------- |:------------------:|
-|add|1|
+|add|1, 6|
 |avg_pool|1|
-|bias_add|1|
+|bias_add|1, 6|
 |concat_v2|1, 4|
 |conv1_d|1|
 |conv2_d|1|
@@ -134,7 +134,7 @@ ______
 |greater|1|
 |identity|1|
 |less|1|
-|logical_and|1|
+|logical_and|1, 6|
 |logical_not|1|
 |logical_or|1|
 |logical_xor|1|
@@ -143,23 +143,23 @@ ______
 |max_pool|1|
 |mean|1|
 |min|1|
-|mul|1|
+|mul|1, 6|
 |pad|1, 2|
 |pow|1|
 |prod|1|
 |random_standard_normal|1|
 |random_uniform|1|
-|real_div|1|
-|reciprocal|1|
-|relu|1|
+|real_div|1, 6, 6|
+|reciprocal|1, 6|
+|relu|1, 6|
 |reshape|1, 5|
 |shape|1|
-|sigmoid|1|
+|sigmoid|1, 6|
 |softmax|1|
 |split_v|1, 2|
-|sqrt|1|
+|sqrt|1, 6|
 |squeeze|1|
-|sub|1|
+|sub|1, 6|
 |sum|1|
-|tanh|1|
+|tanh|1, 6|
 |transpose|1|
