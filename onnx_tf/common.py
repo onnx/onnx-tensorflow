@@ -6,6 +6,7 @@ from __future__ import unicode_literals
 import re
 import uuid
 import tensorflow as tf
+from tensorflow.python.framework.dtypes import as_dtype
 
 from onnx import TensorProto
 
@@ -132,7 +133,6 @@ TF_ATTR_TO_REMOVE = [
 
 ONNX_OP_TO_TF_OP = {
     "abs": tf.abs,
-    "cast": tf.cast,
     "ceil": tf.ceil,
     "dot": tf.contrib.keras.backend.dot,
     "exp": tf.exp,
@@ -171,6 +171,7 @@ TF_OP_STR_TO_ONNX_OP = {
     # these are temporarily added to
     # test other ops
     "Add": "Add",
+    "Cast": "Cast",
     "Equal": "Equal",
     "Greater": "Greater",
     "Identity": "Identity",

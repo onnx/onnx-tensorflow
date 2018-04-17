@@ -118,7 +118,7 @@ class TensorflowBackendBase(Backend):
   attr_translator = {
       "dtype": lambda cls, x: ONNX_TYPE_TO_TF_TYPE[x],
       "keepdims": lambda cls, x: bool(x),
-      "to": lambda cls, x: STR_TO_TF_TYPE[x.lower()],
+      "to": lambda cls, x: ONNX_TYPE_TO_TF_TYPE[x],
   }
 
   DEFAULT_ONNX_ATTR_PER_OP = {
