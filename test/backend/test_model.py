@@ -40,7 +40,7 @@ class TestModel(unittest.TestCase):
     graph_def = helper.make_graph(
         [
             helper.make_node("Add", ["X", "Y"], ["Z0"]),
-            helper.make_node("Cast", ["Z0"], ["Z"], to="float"),
+            helper.make_node("Cast", ["Z0"], ["Z"], to=TensorProto.FLOAT),
             helper.make_node("Mul", ["Z", "weight"], ["W"]),
             helper.make_node("Tanh", ["W"], ["W1"]),
             helper.make_node("Sigmoid", ["W1"], ["W2"])
