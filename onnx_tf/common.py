@@ -133,6 +133,7 @@ TF_ATTR_TO_REMOVE = [
 
 ONNX_OP_TO_TF_OP = {
     "abs": tf.abs,
+    "cast": tf.cast,
     "ceil": tf.ceil,
     "dot": tf.contrib.keras.backend.dot,
     "exp": tf.exp,
