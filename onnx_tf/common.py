@@ -172,7 +172,6 @@ TF_OP_STR_TO_ONNX_OP = {
     # these are temporarily added to
     # test other ops
     "Add": "Add",
-    "Cast": "Cast",
     "Equal": "Equal",
     "Greater": "Greater",
     "Identity": "Identity",
