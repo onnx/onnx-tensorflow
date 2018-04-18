@@ -338,6 +338,8 @@ class TensorflowFrontendBase(object):
          tuple)), "opset is expected to int, list or tuple, but {}.".format(
              type(opset))
     if isinstance(opset, int):
+      if opset == 0:
+        opset = defs.onnx_opset_version()
       opset = [("", opset)]
     opset_imports = [make_opsetid(item[0], item[1]) for item in opset]
 
