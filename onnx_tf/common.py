@@ -6,6 +6,7 @@ from __future__ import unicode_literals
 import re
 import uuid
 import tensorflow as tf
+from tensorflow.python.framework.dtypes import as_dtype
 
 from onnx import TensorProto
 
