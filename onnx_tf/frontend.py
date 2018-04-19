@@ -257,20 +257,9 @@ class TensorflowFrontendBase(object):
           else:
             ops_proto.append(node)
         elif node.op in TF_OP_STR_TO_ONNX_OP.keys():
-          # Remove tensorflow-specific attrs that are not
-          # needed/allowed in ONNX.
-          attr = cls.DEFAULT_TF_ATTR_PER_OP.get(node.op, {})
-          filtered_attr = dict(
-              filter(lambda pair: pair[0] not in TF_ATTR_TO_REMOVE,
-                     node.attr.items()))
-          attr.update(filtered_attr)
-          node_output = name
-          ops_proto.append(
-              make_node(
-                  TF_OP_STR_TO_ONNX_OP[node.op],
-                  node.inputs, [node_output],
-                  name=name,
-                  **attr))
+          node = frontend.handle_trivial(
+              node, consts=consts, node_dict=dict(node_tup))
+          ops_proto.append(node)
         else:
           raise NotImplementedError("{} op is not implemented.".format(node.op))
 
@@ -350,6 +339,21 @@ class TensorflowFrontendBase(object):
         onnx_graph, producer_name=producer_name, opset_imports=opset_imports)
 
     return onnx_model
+
+  @classmethod
+  def handle_trivial(cls, node, **kwargs):
+    # Remove tensorflow-specific attrs that are not
+    # needed/allowed in ONNX.
+    attr = cls.DEFAULT_TF_ATTR_PER_OP.get(node.op, {})
+    filtered_attr = dict(
+        filter(lambda pair: pair[0] not in TF_ATTR_TO_REMOVE,
+               node.attr.items()))
+    attr.update(filtered_attr)
+    return make_node(
+        TF_OP_STR_TO_ONNX_OP[node.op],
+        node.inputs, [node.name],
+        name=node.name,
+        **attr)
 
   @classmethod
   def _bin_op(cls, node, onnx_op, axis=None):
