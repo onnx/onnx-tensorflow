@@ -62,11 +62,6 @@ class TensorflowFrontend(TensorflowFrontendBase):
     return TensorflowFrontendV1.handle_trivial(node, **kwargs)
 
   @classmethod
-  @register_onnx_op("Div")
-  def handle_real_div(cls, node, **kwargs):
-    return TensorflowFrontendV1.handle_trivial(node, **kwargs)
-
-  @classmethod
   @register_onnx_op("Sigmoid")
   def handle_sigmoid(cls, node, **kwargs):
     return TensorflowFrontendV1.handle_trivial(node, **kwargs)
