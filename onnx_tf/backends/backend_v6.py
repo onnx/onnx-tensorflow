@@ -13,6 +13,9 @@ from onnx_tf.backends.backend_v1 import TensorflowBackend as TensorflowBackendV1
 
 class TensorflowBackend(TensorflowBackendBase):
   """ Tensorflow Backend for ONNX
+
+  Lots of handler in this file just call backend_v1 due to
+  ONNX removed `consumed_inputs` attr for them which is not used in handler.
   """
 
   @classmethod

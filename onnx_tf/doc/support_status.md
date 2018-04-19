@@ -149,7 +149,7 @@ ______
 |prod|1|
 |random_standard_normal|1|
 |random_uniform|1|
-|real_div|1, 6, 6|
+|real_div|1, 6|
 |reciprocal|1, 6|
 |relu|1, 6|
 |reshape|1, 5|

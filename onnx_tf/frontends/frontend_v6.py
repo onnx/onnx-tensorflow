@@ -15,6 +15,9 @@ register_onnx_op = TensorflowFrontendBase.register_onnx_op
 
 class TensorflowFrontend(TensorflowFrontendBase):
   """ Tensorflow Frontend for ONNX
+
+  Lots of handler in this file just call frontend_v1 due to
+  ONNX removed `consumed_inputs` attr for them which is not used in handler.
   """
 
   @classmethod
