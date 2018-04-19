@@ -27,7 +27,7 @@ from onnx_tf.opset_version import backend_opset_version
 from onnx_tf.common import (ONNX_OP_TO_TF_OP, ONNX_ATTR_TO_TF_ATTR,
                             ONNX_ATTR_TO_TF_ATTR_PER_OP,
                             ONNX_ATTR_TO_REMOVE_PER_OP, ONNX_TYPE_TO_TF_TYPE,
-                            STR_TO_TF_TYPE, TF_TYPE_ENUM, op_name_to_lower)
+                            TF_TYPE_ENUM, op_name_to_lower)
 from onnx.backend.base import (
     Backend,
     Device,
@@ -118,7 +118,7 @@ class TensorflowBackendBase(Backend):
   attr_translator = {
       "dtype": lambda cls, x: ONNX_TYPE_TO_TF_TYPE[x],
       "keepdims": lambda cls, x: bool(x),
-      "to": lambda cls, x: STR_TO_TF_TYPE[x.lower()],
+      "to": lambda cls, x: ONNX_TYPE_TO_TF_TYPE[x],
   }
 
   DEFAULT_ONNX_ATTR_PER_OP = {

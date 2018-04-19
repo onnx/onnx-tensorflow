@@ -125,6 +125,7 @@ ______
 |add|1, 6|
 |avg_pool|1|
 |bias_add|1, 6|
+|cast|1|
 |concat_v2|1, 4|
 |conv1_d|1|
 |conv2_d|1|
