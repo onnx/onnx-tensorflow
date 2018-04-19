@@ -142,6 +142,7 @@ ______
 |mat_mul|1|
 |max|1|
 |max_pool|1|
+|maximum|1|
 |mean|1|
 |min|1|
 |mul|1, 6|
