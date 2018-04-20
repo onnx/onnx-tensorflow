@@ -25,6 +25,8 @@ from onnx_tf.common import (
     ONNX_OP_TO_TF_OP,
     ONNX_TYPE_TO_TF_TYPE,
 )
+from onnx_tf.custom_lstm import OnnxLSTMCell, extract_onnx_lstm_weights
+
 import onnx.numpy_helper
 import onnx.defs
 
@@ -581,66 +583,73 @@ class TensorflowBackend(TensorflowBackendBase):
 
   @classmethod
   def handle_l_s_t_m(cls, node, input_dict):
-    hidden_size = node.attrs["hidden_size"]
-    cell_kwargs = {}
+    # Get LSTM inputs
+    X = node.inputs[0] # [seq_length, batch_size, input_size]
+    W = node.inputs[1] # [num_directions, 4*hidden_size, input_size]
+    R = node.inputs[2] # [num_directions, 4*hidden_size, hidden_size]
+    B = node.inputs[3] # or 0  # [num_directions, 8*hidden_size]
+    sequence_lens = node.inputs[4] if len(node.inputs) >= 5 else None # [batch_size]
+    initial_h = node.inputs[5] if len(node.inputs) >= 6 else None # [num_directions, batch_size, hidden_size]
+    initial_c = node.inputs[6] if len(node.inputs) >= 7 else None # [num_directions, batch_size, hidden_size]
+    P = node.inputs[7] if len(node.inputs) == 8 else None  # [num_directions, 3*hidden_size]
+    if P is not None:
+      raise NotImplementedError("Peephole connections for LSTMs have not been implemented yet.")
 
+
+    # Get LSTM attributes
+    activation_alpha = node.attrs.get("activation_alpha", None) # Does not do anything yet
+    activation_beta = node.attrs.get("activation_beta", None)   # Does not do anything yet
     direction = node.attrs.get("direction", "forward")
-
-    if "clip" in node.attrs:
-      cell_kwargs["cell_clip"] = node.attrs["clip"]
-
-    tf_activations = [tf.nn.tanh]
-    if "activations" in node.attrs:
+    if "activations" in node.attrs: # TODO: Warning in case of activations which are not supported by TF
       activations = list(map(lambda x: x.lower(), node.attrs["activations"]))
-      if activations[0] != "sigmoid" or activations[1] != "tanh":
-        warnings.warn(
-            "Tensorflow uses sigmiod and tanh as first two activation functions."
-            "So activations attr will be set to sigmiod, tanh and {}.".format(
-                activations[2]))
-      tf_activations = [ONNX_OP_TO_TF_OP[activations[2]]]
+    else:
       if direction == "bidirectional":
-        if activations[3] != "sigmoid" or activations[4] != "tanh":
-          warnings.warn(
-              "Tensorflow uses sigmiod and tanh as first two activation functions."
-              "So activations attr will be set to sigmiod, tanh and {}.".format(
-                  activations[4]))
-        tf_activations.append(ONNX_OP_TO_TF_OP[activations[5]])
+        activations = ["sigmoid", "tanh", "tanh", "sigmoid", "tanh", "tanh"]
+      else:
+        activations = ["sigmoid", "tanh", "tanh"]
+    clip = float(node.attrs["clip"]) if "clip" in node.attrs else None
+    hidden_size = int(node.attrs["hidden_size"])
+    input_forget = int(node.attrs.get("input_forget", "0"))
+    output_sequence = int(node.attrs.get("output_sequence", "0"))
 
-    cell_kwargs["activation"] = tf_activations[0]
-    lstm_cell = tf.contrib.rnn.LSTMCell(hidden_size, **cell_kwargs)
-    cell = tf.contrib.rnn.MultiRNNCell([lstm_cell])
-    if direction == "bidirectional":
-      cell_kwargs["activation"] = tf_activations[1]
-      lstm_cell_bw = [tf.contrib.rnn.LSTMCell(hidden_size, **cell_kwargs)]
-      cell_bw = tf.contrib.rnn.MultiRNNCell([lstm_cell_bw])
 
-    # TODO: handle data types
-    if direction == "forward":
-      output, state = tf.nn.dynamic_rnn(
-          cell, input_dict[node.inputs[0]], time_major=True, dtype=tf.float32)
-    elif direction == "bidirectional":
-      output, state = tf.nn.bidirectional_dynamic_rnn(
-          cell,
-          cell_bw,
-          input_dict[node.inputs[0]],
-          time_major=True,
-          dtype=tf.float32)
-    elif direction == "reverse":
+    # Read weights and create TensorFlow LSTMs, differentiating
+    # between the unidirectional and the bidirectional case
+    dummy_session = tf.Session()
+    if direction == "forward" or direction == "reverse":
+      W_weights = input_dict[W].eval(session=dummy_session)
+      R_weights = input_dict[R].eval(session=dummy_session)
+      B_weights = input_dict[B].eval(session=dummy_session)
+      tf_kernel, tf_bias = extract_onnx_lstm_weights(W_weights, R_weights,  B_weights)
 
-      def _reverse(input_, seq_dim):
-        return array_ops.reverse(input_, axis=[seq_dim])
+      tf_kern_init = tf.constant_initializer(tf_kernel, verify_shape=True, dtype=tf.float32)
+      tf_bias_init = tf.constant_initializer(tf_bias, verify_shape=True, dtype=tf.float32)
+      tf_initial_state = tf.contrib.rnn.LSTMStateTuple(tf.reshape(input_dict[initial_c], (1,hidden_size)) , tf.reshape(input_dict[initial_h], (1,hidden_size)))
+      tf_activation = ONNX_OP_TO_TF_OP[activations[2]]
 
-      time_dim = 0
-      inputs_reverse = _reverse(input_dict[node.inputs[0]], time_dim)
-      output, state = tf.nn.dynamic_rnn(
-          cell, inputs_reverse, time_major=True, dtype=tf.float32)
+      # Create TensorFlow LSTM cell
+      tf_cell = OnnxLSTMCell(hidden_size,
+                          kernel_initializer=tf_kern_init,
+                          bias_initializer=tf_bias_init,
+                          activation = tf_activation,
+                          cell_clip=clip)
 
-    state = state[0]
-    c, h = state
-    states = [h, c]
-    outputs = [output]
-    outputs.extend(states)
-    return outputs
+      if direction == "reverse":
+        tf_lstm_input = array_ops.reverse(input_dict[X], axis=0)
+      else:
+        tf_lstm_input = input_dict[X]
+
+      outputs, (last_cell, last_hidden) = tf.nn.dynamic_rnn(tf_cell,
+                                          tf_lstm_input,
+                                          time_major=True,
+                                          initial_state=tf_initial_state)
+    
+      return [outputs, last_hidden, last_cell]
+
+      
+    else: # direction == "bidirectional"
+      raise NotImplementedError("Bidirectional LSTMs have not been implemented yet.")
+
 
   @classmethod
   def handle_leaky_relu(cls, node, input_dict):
