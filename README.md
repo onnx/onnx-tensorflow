@@ -11,7 +11,7 @@
 ## To install:
 Firstly install [ONNX](https://github.com/onnx/onnx) which cannot be installed by pip unless protoc is available.
 
-Secondly install Tensorflow.
+Secondly install Tensorflow>=1.5.0.
 
 Then, run `pip install onnx-tf`
 
@@ -33,7 +33,7 @@ The result is `[ 0.   0.1]`
 
 ## Development Install:
 - Install ONNX
-- Install Tensorflow
+- Install Tensorflow>=1.5.0
 - Run `git clone git@github.com:onnx/onnx-tensorflow.git && cd onnx-tensorflow`
 - Run `pip install -e .`
 - Development follows conventions [here](https://github.com/onnx/onnx-caffe2/blob/master/onnx_caffe2/backend.py)
