@@ -365,7 +365,8 @@ class TensorflowBackend(TensorflowBackendBase):
             data_format=compute_format)
 
         if "output_padding" in node.attrs:
-          output_padding = [[0, 0]] + node.attrs["output_padding"]
+          output_padding = [[0, 0]
+                           ] + [[0, p] for p in node.attrs["output_padding"]]
           output_padding.insert(compute_c_idx, [0, 0])
           conv_rs = tf.pad(conv_rs, output_padding)
 
@@ -378,7 +379,6 @@ class TensorflowBackend(TensorflowBackendBase):
             for d, s in zip(compute_format, output_shape)
         ]
         conv_rs = tf.slice(conv_rs, begin=begin, size=size)
-        # conv_rs = conv_rs[:, 1:-1, 1:-1, :]
         convolved.append(conv_rs)
     else:
       convolved = [
