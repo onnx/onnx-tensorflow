@@ -370,13 +370,13 @@ class TensorflowBackend(TensorflowBackendBase):
           output_padding.insert(compute_c_idx, [0, 0])
           conv_rs = tf.pad(conv_rs, output_padding)
 
+        conv_rs_shape = conv_rs.get_shape().as_list()
         begin = [0] + pads[:spatial_size]
         begin.insert(compute_c_idx, 0)
         size = [
-            output_shape[compute_format.find(d)]
-            if d in ["N", "C"] else output_shape[compute_format.find(d)] -
+            s if d in ["N", "C"] else s - pads[spatial_format.find(d)] -
             pads[spatial_format.find(d) + spatial_size]
-            for d, s in zip(compute_format, output_shape)
+            for d, s in zip(compute_format, conv_rs_shape)
         ]
         conv_rs = tf.slice(conv_rs, begin=begin, size=size)
         convolved.append(conv_rs)
