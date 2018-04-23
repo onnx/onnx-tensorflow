@@ -8,9 +8,11 @@ from __future__ import unicode_literals
 
 import numpy as np
 
-from onnx_tf.frontend import TensorflowFrontendBase
-from onnx_tf.common import get_unique_suffix
 from onnx import helper
+from onnx_tf.common import as_dtype
+from onnx_tf.common import get_unique_suffix
+from onnx_tf.common import TF_TYPE_TO_ONNX_TYPE
+from onnx_tf.frontend import TensorflowFrontendBase
 
 register_onnx_op = TensorflowFrontendBase.register_onnx_op
 
@@ -41,6 +43,12 @@ class TensorflowFrontend(TensorflowFrontendBase):
     channel_first = data_format[1] == "C"
     axis = 1 if channel_first else -1
     return cls._bin_op(node, "Add", axis=axis)
+
+  @classmethod
+  @register_onnx_op("Cast")
+  def handle_cast(cls, node, **kwargs):
+    dst_t = TF_TYPE_TO_ONNX_TYPE[as_dtype(node.attr["DstT"])]
+    return helper.make_node("Cast", [node.inputs[0]], [node.name], to=dst_t)
 
   @classmethod
   @register_onnx_op("Concat")
@@ -152,6 +160,13 @@ class TensorflowFrontend(TensorflowFrontendBase):
   @register_onnx_op("ReduceMax")
   def handle_max(cls, node, **kwargs):
     return cls._reduce_op("ReduceMax", node, **kwargs)
+
+  @classmethod
+  @register_onnx_op("Max")
+  def handle_maximum(cls, node, **kwargs):
+    return helper.make_node(
+        "Max", node.inputs, [node.name],
+        name=node.name)
 
   @classmethod
   @register_onnx_op("MaxPool")
