@@ -7,6 +7,7 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import importlib
+import inspect
 from itertools import chain
 import warnings
 
@@ -124,7 +125,8 @@ class TensorflowFrontendBase(object):
                                      graph_def,
                                      output,
                                      opset=(("", 0),),
-                                     name="graph"):
+                                     name="graph",
+                                     ignore_unimplemented=False):
     """Converts a Tensorflow Graph Proto to an ONNX graph
 
     This function converts a Tensorflow Graph proto to an equivalent
@@ -135,6 +137,9 @@ class TensorflowFrontendBase(object):
       to be taken as output of the ONNX graph.
     :param opset: Opset, which should be ((str domain: int version number),).
     :param name: The name of the output ONNX Graph.
+    :param ignore_unimplemented: Convert to ONNX graph with ignoring unimplemented operators.
+      This is an experimental feature. By enabling this feature,
+      the graph would not be guaranteed to match the ONNX specifications.
 
     :returns: The equivalent ONNX Graph Proto object.
     """
@@ -246,11 +251,14 @@ class TensorflowFrontendBase(object):
         if hasattr(frontend_module, frontend_class_name):
           frontend = getattr(frontend_module, frontend_class_name)
         else:
-          assert NotImplementedError, \
-            "{} for domain {} is not implemented".format(frontend_ver, op_domain)
+          frontend = None
+          cls._catch_exception(NotImplementedError
+                               if not ignore_unimplemented else warnings.warn,
+                               "{} for domain {} is not implemented".format(
+                                   frontend_ver, op_domain))
 
         # Check if specialized handler exists.
-        if hasattr(frontend, handler_name):
+        if frontend and hasattr(frontend, handler_name):
           method_to_call = getattr(frontend, handler_name)
           node = method_to_call(node, consts=consts, node_dict=dict(node_tup))
           if isinstance(node, list):
@@ -269,10 +277,9 @@ class TensorflowFrontendBase(object):
           if node.op in TF_OP_STR_TO_ONNX_OP.keys():
             onnx_op = TF_OP_STR_TO_ONNX_OP[node.op]
           else:
-            warnings.warn(
-                "{} op is not implemented. "
-                "If {} op is not supported by onnx, pb might not pass the checker".
-                format(node.op, node.op))
+            cls._catch_exception(NotImplementedError
+                                 if not ignore_unimplemented else warnings.warn,
+                                 "{} op is not implemented.".format(node.op))
             onnx_op = node.op
           ops_proto.append(
               make_node(onnx_op, node.inputs, [node_output], name=name, **attr))
@@ -310,7 +317,8 @@ class TensorflowFrontendBase(object):
                                      output,
                                      opset=0,
                                      producer_name="onnx-tensorflow",
-                                     graph_name="graph"):
+                                     graph_name="graph",
+                                     ignore_unimplemented=False):
     """Converts a Tensorflow Graph Proto to an ONNX model
 
     This function converts a Tensorflow Graph proto to an equivalent
@@ -324,6 +332,9 @@ class TensorflowFrontendBase(object):
       List or tuple items should be (str domain, int version number).
     :param producer_name: The name of the producer.
     :param graph_name: The name of the output ONNX Graph.
+    :param ignore_unimplemented: Convert to ONNX model with ignoring unimplemented operators.
+      This is an experimental feature. By enabling this feature,
+      the model would not be guaranteed to match the ONNX specifications.
 
     :returns: The equivalent ONNX Model Proto object.
     """
@@ -345,8 +356,8 @@ class TensorflowFrontendBase(object):
     opset_imports = [make_opsetid(item[0], item[1]) for item in opset]
 
     output_node = get_node_by_name(graph_def.node, output)
-    onnx_graph = cls.tensorflow_graph_to_onnx_graph(graph_def, output_node,
-                                                    opset, graph_name)
+    onnx_graph = cls.tensorflow_graph_to_onnx_graph(
+        graph_def, output_node, opset, graph_name, ignore_unimplemented)
     onnx_model = make_model(
         onnx_graph, producer_name=producer_name, opset_imports=opset_imports)
 
@@ -411,6 +422,13 @@ class TensorflowFrontendBase(object):
         op, [node.inputs[0]], [node.name],
         axes=axes,
         keepdims=node.attr.get("keep_dims", 1))
+
+  @classmethod
+  def _catch_exception(cls, exception, message):
+    if inspect.isclass(exception) and issubclass(exception, Exception):
+      raise exception(message)
+    elif callable(exception):
+      exception(message)
 
   @staticmethod
   def register_onnx_op(onnx_op):
