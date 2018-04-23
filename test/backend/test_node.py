@@ -187,6 +187,25 @@ class TestNode(unittest.TestCase):
     np.testing.assert_equal(output["Y"].shape, shape)
     np.testing.assert_almost_equal(output["Y"].flatten(), values)
 
+  def test_constant_fill(self):
+    shape = [1, 2, 3, 4]
+    extra_shape = [5, 6]
+    value = 3.
+    node_def = helper.make_node(
+        "ConstantFill",
+        ["X"],
+        ["Y"],
+        value=value,
+        extra_shape=extra_shape,
+        dtype=1,
+    )
+    x = self._get_rnd(shape)
+    y = np.zeros(shape + extra_shape)
+    y.fill(value)
+    output = run_node(node_def, [x])
+    np.testing.assert_equal(output["Y"].dtype, tf.float32)
+    np.testing.assert_equal(output["Y"], y)
+
   def test_conv(self):
     device = "CUDA"
     if not supports_device(device):

@@ -13,7 +13,7 @@ backend_opset_version = {
     'Clip': [1, 6],
     'Concat': [1, 4],
     'Constant': [1],
-    'ConstantFill': [],
+    'ConstantFill': [1],
     'Conv': [1],
     'ConvTranspose': [1],
     'Crop': [],
