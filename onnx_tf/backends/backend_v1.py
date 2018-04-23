@@ -279,6 +279,28 @@ class TensorflowBackend(TensorflowBackendBase):
     return [tf.constant(elements, dtype=dtype, shape=value.dims)]
 
   @classmethod
+  def handle_constant_fill(cls, node, input_dict):
+    if node.inputs and "shape" in node.attrs:
+      raise RuntimeError(
+          "Cannot set the shape argument and pass in an input at the same time."
+      )
+    if not node.inputs and "extra_shape" in node.attrs:
+      raise RuntimeError("Cannot set extra_shape when there is no input.")
+
+    if "shape" in node.attrs:
+      shape = node.attrs["shape"]
+    else:
+      shape = input_dict[
+          node.inputs[0]].get_shape().as_list() if node.attrs.get(
+              "input_as_shape", 0) == 0 else input_dict[node.inputs[0]]
+    if "extra_shape" in node.attrs:
+      shape = tf.concat([shape, node.attrs["extra_shape"]], 0)
+
+    return [
+        tf.cast(tf.fill(shape, node.attrs["value"]), dtype=node.attrs["dtype"])
+    ]
+
+  @classmethod
   def _conv(cls, node, input_dict, transpose=False):
     x = input_dict[node.inputs[0]]
     x_rank = len(x.get_shape())
