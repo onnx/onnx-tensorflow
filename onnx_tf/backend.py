@@ -294,8 +294,9 @@ class TensorflowBackendBase(Backend):
       for value_info in graph_def.input:
         if value_info.name in initialized:
           continue
-        shape = list(d.dim_value if d.dim_value >= 0 else None
-                     for d in value_info.type.tensor_type.shape.dim)
+        shape = list(
+            d.dim_value if (d.dim_value >= 0 and d.dim_param == "") else None
+            for d in value_info.type.tensor_type.shape.dim)
         x = tf.placeholder(
             TF_TYPE_ENUM[value_info.type.tensor_type.elem_type],
             name=value_info.name,
