@@ -258,7 +258,7 @@ class TensorflowFrontendBase(object):
                                    frontend_ver, op_domain))
 
         # Check if specialized handler exists.
-        if frontend and hasattr(frontend, handler_name):
+        if frontend is not None and hasattr(frontend, handler_name):
           method_to_call = getattr(frontend, handler_name)
           node = method_to_call(node, consts=consts, node_dict=dict(node_tup))
           if isinstance(node, list):
