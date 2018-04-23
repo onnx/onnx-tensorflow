@@ -280,6 +280,15 @@ class TensorflowBackend(TensorflowBackendBase):
 
   @classmethod
   def _conv(cls, node, input_dict, transpose=False):
+    """ Convolution method for both conv and transposed conv
+    For transposed conv,
+      Attr pads is not used for input, but declares how much output is padded.
+      Here, output means output from transposed conv which already pad output_padding if set.
+      So the pseudo explanation for output should be:
+        output = conv_transpoe_output + output_padding - pads
+      And conv_transpoe_output shape should be:
+        conv_transpoe_output_shape[i] = strides[i] * (input_shape[i] - 1) + kernel_shape[i]
+    """
     x = input_dict[node.inputs[0]]
     x_rank = len(x.get_shape())
     x_shape = x.get_shape().as_list()
@@ -329,6 +338,8 @@ class TensorflowBackend(TensorflowBackendBase):
       xs = tf.split(x, num_or_size_splits=group, axis=-1)
 
     if transpose:
+      if dilations is not None:
+        raise RuntimeError("Cannot set dilation for conv transpose.")
       convolved = []
       for (x, weight) in zip(xs, weight_groups):
         x_spatial_shape = [
@@ -355,7 +366,7 @@ class TensorflowBackend(TensorflowBackendBase):
         else:
           raise NotImplementedError(
               "Transposed convolution for {}d is not implemented in Tensorflow".
-              format(x - spatial_size))
+              format(spatial_size))
         conv_rs = conv_func(
             x,
             weights,
