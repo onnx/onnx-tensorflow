@@ -346,6 +346,8 @@ class TensorflowBackend(TensorflowBackendBase):
             x_shape[storage_format.find(d)] for d in spatial_format
         ]
         weights_shape = weights.get_shape().as_list()
+
+        # calculate output shape
         output_shape = node.attrs.get("output_shape", None)
         if output_shape is None:
           output_shape = [x_shape[storage_format.find("N")]] + [
@@ -354,9 +356,11 @@ class TensorflowBackend(TensorflowBackendBase):
           ]
           output_shape.insert(compute_c_idx, weights_shape[-2])
 
-        strides = [1] + strides
-        strides.insert(compute_c_idx, 1)
+        # make strides to match input rank
+        strides_full = [1] + strides
+        strides_full.insert(compute_c_idx, 1)
 
+        # get corresponding function in tf
         if spatial_size == 1:
           conv_func = tf.nn.conv1d_transpose
         elif spatial_size == 2:
@@ -367,20 +371,24 @@ class TensorflowBackend(TensorflowBackendBase):
           raise NotImplementedError(
               "Transposed convolution for {}d is not implemented in Tensorflow".
               format(spatial_size))
+
+        # use raw input x to do transposed conv
         conv_rs = conv_func(
             x,
             weights,
             output_shape,
-            strides,
+            strides_full,
             padding="VALID",
             data_format=compute_format)
 
+        # pad output first by output_padding attr
         if "output_padding" in node.attrs:
           output_padding = [[0, 0]
                            ] + [[0, p] for p in node.attrs["output_padding"]]
           output_padding.insert(compute_c_idx, [0, 0])
           conv_rs = tf.pad(conv_rs, output_padding)
 
+        # remove pads set in pads attr
         conv_rs_shape = conv_rs.get_shape().as_list()
         begin = [0] + pads[:spatial_size]
         begin.insert(compute_c_idx, 0)
@@ -390,6 +398,7 @@ class TensorflowBackend(TensorflowBackendBase):
             for d, s in zip(compute_format, conv_rs_shape)
         ]
         conv_rs = tf.slice(conv_rs, begin=begin, size=size)
+
         convolved.append(conv_rs)
     else:
       convolved = [
