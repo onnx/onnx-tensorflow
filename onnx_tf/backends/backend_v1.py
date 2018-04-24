@@ -321,7 +321,7 @@ class TensorflowBackend(TensorflowBackendBase):
     dilations = node.attrs.get("dilations", None)
     strides = node.attrs.get("strides", None)
 
-    pads = node.attrs.get("pads", [0, 0] * (x_rank - 2))
+    pads = node.attrs.get("pads", [0, 0] * spatial_size)
 
     if not transpose:
       x = cls.get_padding_as_op(x, pads)
@@ -338,8 +338,8 @@ class TensorflowBackend(TensorflowBackendBase):
       xs = tf.split(x, num_or_size_splits=group, axis=-1)
 
     if transpose:
-      if dilations is not None:
-        raise RuntimeError("Cannot set dilation for conv transpose.")
+      if dilations is not None and dilations != [1] * spatial_size:
+        raise RuntimeError("Cannot set non-1 dilation for conv transpose.")
       convolved = []
       for (x, weight) in zip(xs, weight_groups):
         x_spatial_shape = [
