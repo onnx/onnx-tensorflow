@@ -9,6 +9,7 @@ from __future__ import unicode_literals
 import numpy as np
 
 from onnx import helper
+from onnx.onnx_pb2 import TensorProto
 from onnx_tf.common import as_dtype
 from onnx_tf.common import get_unique_suffix
 from onnx_tf.common import TF_TYPE_TO_ONNX_TYPE
@@ -222,6 +223,13 @@ class TensorflowFrontend(TensorflowFrontendBase):
                                                 "specified")
     axes = node.attr["squeeze_dims"]
     return helper.make_node("Squeeze", [node.inputs[0]], [node.name], axes=axes)
+
+  @classmethod
+  @register_onnx_op("Tile")
+  def handle_tile(cls, node, **kwargs):
+    data_type_cast_map = kwargs["data_type_cast_map"]
+    data_type_cast_map[node.inputs[1]] = TensorProto.INT64
+    return helper.make_node("Tile", node.inputs, [node.name])
 
   @classmethod
   @register_onnx_op("Transpose")

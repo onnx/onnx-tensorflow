@@ -936,10 +936,7 @@ class TensorflowBackend(TensorflowBackendBase):
   @classmethod
   def handle_tile(cls, node, input_dict):
     x = input_dict[node.inputs[0]]
-    axis = input_dict[node.inputs[1]]
-    tiles = input_dict[node.inputs[2]]
-    multiples = tf.Variable([1] * len(x.shape))
-    multiples = multiples[axis].assign(tiles)
+    multiples = input_dict[node.inputs[1]]
     return [tf.tile(x, multiples=multiples)]
 
   @classmethod

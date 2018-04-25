@@ -214,7 +214,7 @@ frontend_opset_version = {
     'Sum': [],
     'Tanh': [1, 6],
     'ThresholdedRelu': [],
-    'Tile': [],
+    'Tile': [1],
     'TopK': [],
     'Transpose': [1],
     'Unsqueeze': [],
@@ -265,5 +265,6 @@ frontend_tf_opset_version = {
     'sub': [1, 6],
     'sum': [1],
     'tanh': [1, 6],
+    'tile': [1],
     'transpose': [1]
 }
