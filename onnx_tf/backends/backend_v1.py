@@ -296,9 +296,12 @@ class TensorflowBackend(TensorflowBackendBase):
     if "extra_shape" in node.attrs:
       shape = tf.concat([shape, node.attrs["extra_shape"]], 0)
 
-    return [
-        tf.cast(tf.fill(shape, node.attrs["value"]), dtype=node.attrs["dtype"])
-    ]
+    value = node.attrs.get("value", 0.)
+
+    if "dtype" in node.attrs:
+      return [tf.cast(tf.fill(shape, value), dtype=node.attrs["dtype"])]
+
+    return [tf.fill(shape, value)]
 
   @classmethod
   def _conv(cls, node, input_dict, transpose=False):
