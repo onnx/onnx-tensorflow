@@ -68,26 +68,29 @@ def create_test(test_data):
     tf_graph = tf.get_default_graph().as_graph_def(add_shapes=True)
     # Construct onnx graph, run with backend.
     output_node = get_node_by_name(tf_graph.node, output_name)
-    onnx_graph = convert_graph(tf_graph, output_node)
+    onnx_graph = convert_graph(tf_graph,
+                               output_node,
+                               ignore_unimplemented=test_option.get("ignore_unimplemented", False))
     onnx_model = helper.make_model(onnx_graph)
-    backend_rep = prepare(onnx_model)
-    backend_output = []
-    backend_rep_outputs = backend_rep.run(onnx_feed_dict)
-    for ext_output in backend_rep.predict_net.external_output:
-      backend_output.append(backend_rep_outputs[ext_output])
-    backend_output = np.asarray(backend_output)
-    backend_output = np.squeeze(
-        backend_output, 0) if backend_output.shape[0] == 1 else backend_output
+    if not test_option.get("ignore_unimplemented", False):
+      backend_rep = prepare(onnx_model)
+      backend_output = []
+      backend_rep_outputs = backend_rep.run(onnx_feed_dict)
+      for ext_output in backend_rep.predict_net.external_output:
+        backend_output.append(backend_rep_outputs[ext_output])
+      backend_output = np.asarray(backend_output)
+      backend_output = np.squeeze(
+          backend_output, 0) if backend_output.shape[0] == 1 else backend_output
 
-    with tf.Session() as sess:
-      tf_output = sess.run(test_op, tf_feed_dict)
+      with tf.Session() as sess:
+        tf_output = sess.run(test_op, tf_feed_dict)
 
-    # skip comparison if test_option specifies that
-    # the test is call only.
-    if (test_option.get("call_only", False)):
-      return
-    for backend_o, tf_o in zip(backend_output, tf_output):
-      np.testing.assert_allclose(backend_o, tf_o)
+      # skip comparison if test_option specifies that
+      # the test is call only.
+      if (test_option.get("call_only", False)):
+        return
+      for backend_o, tf_o in zip(backend_output, tf_output):
+        np.testing.assert_allclose(backend_o, tf_o)
 
   return do_test_expected
 
@@ -98,6 +101,8 @@ def create_test(test_data):
 # in the sense that numpy array are passed in via tf.placeholder
 # whereas python arrays are passed in as constants.
 test_cases = [
+# Use reverse to test ignore_unimplemented
+("test_unimplemented", tf.reverse, "ReverseV2", [get_rnd([1, 2, 3, 4]), [3]], {}, {"ignore_unimplemented": True}),
 ("test_cast", tf.cast, "Cast", [get_rnd([10, 10]), tf.float16], {}),
 ("test_relu", tf.nn.relu, "Relu", [get_rnd([10, 10])], {}),
 ("test_or", tf.logical_or, "LogicalOr", [get_rnd([10, 10], dtype=np.bool_), get_rnd([10, 10], dtype=np.bool_)], {}),

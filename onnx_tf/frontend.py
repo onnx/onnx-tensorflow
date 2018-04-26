@@ -237,8 +237,8 @@ class TensorflowFrontendBase(object):
 
         opset_ver = opset_dict[op_domain]
 
-        frontend = None
-        # Get corresponding frontend module with version
+        frontend = cls
+        # Get corresponding frontend class with version
         if versions:
           if opset_ver == 0:
             version = max(versions)
@@ -262,7 +262,7 @@ class TensorflowFrontendBase(object):
                                      frontend_ver, op_domain))
 
         # Check if specialized handler exists.
-        if frontend is not None and hasattr(frontend, handler_name):
+        if hasattr(frontend, handler_name):
           method_to_call = getattr(frontend, handler_name)
           node = method_to_call(node, consts=consts, node_dict=dict(node_tup))
           if isinstance(node, list):
@@ -271,14 +271,6 @@ class TensorflowFrontendBase(object):
             ops_proto.append(node)
         # Deal with no handler (defined in common.py) or totally not implemented ops
         else:
-          # Remove tensorflow-specific attrs that are not
-          # needed/allowed in ONNX.
-          attr = cls.DEFAULT_TF_ATTR_PER_OP.get(node.op, {})
-          filtered_attr = dict(
-              filter(lambda pair: pair[0] not in TF_ATTR_TO_REMOVE,
-                     node.attr.items()))
-          attr.update(filtered_attr)
-          node_output = name
           if node.op in TF_OP_STR_TO_ONNX_OP.keys():
             onnx_op = TF_OP_STR_TO_ONNX_OP[node.op]
           else:
@@ -286,8 +278,13 @@ class TensorflowFrontendBase(object):
                                  if not ignore_unimplemented else warnings.warn,
                                  "{} op is not implemented.".format(node.op))
             onnx_op = node.op
+
           ops_proto.append(
-              make_node(onnx_op, node.inputs, [node_output], name=name, **attr))
+              frontend.handle_trivial(
+                  node,
+                  consts=consts,
+                  node_dict=dict(node_tup),
+                  onnx_op=onnx_op))
 
     output = TensorflowNode(output)
     # making output proto
@@ -370,6 +367,21 @@ class TensorflowFrontendBase(object):
         onnx_graph, producer_name=producer_name, opset_imports=opset_imports)
 
     return onnx_model
+
+  @classmethod
+  def handle_trivial(cls, node, **kwargs):
+    if "onnx_op" in kwargs:
+      onnx_op = kwargs["onnx_op"]
+    else:
+      onnx_op = TF_OP_STR_TO_ONNX_OP[node.op]
+    # Remove tensorflow-specific attrs that are not
+    # needed/allowed in ONNX.
+    attr = cls.DEFAULT_TF_ATTR_PER_OP.get(node.op, {})
+    filtered_attr = dict(
+        filter(lambda pair: pair[0] not in TF_ATTR_TO_REMOVE,
+               node.attr.items()))
+    attr.update(filtered_attr)
+    return make_node(onnx_op, node.inputs, [node.name], name=node.name, **attr)
 
   @classmethod
   def _bin_op(cls, node, onnx_op, axis=None):
