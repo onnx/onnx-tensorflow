@@ -137,7 +137,8 @@ class TensorflowFrontendBase(object):
       to be taken as output of the ONNX graph.
     :param opset: Opset, which should be ((str domain: int version number),).
     :param name: The name of the output ONNX Graph.
-    :param ignore_unimplemented: Convert to ONNX graph with ignoring unimplemented operators.
+    :param ignore_unimplemented: Convert to ONNX model and ignore all the operators
+      that are not currently supported by onnx-tensorflow.
       This is an experimental feature. By enabling this feature,
       the graph would not be guaranteed to match the ONNX specifications.
 
@@ -336,7 +337,8 @@ class TensorflowFrontendBase(object):
       List or tuple items should be (str domain, int version number).
     :param producer_name: The name of the producer.
     :param graph_name: The name of the output ONNX Graph.
-    :param ignore_unimplemented: Convert to ONNX model with ignoring unimplemented operators.
+    :param ignore_unimplemented: Convert to ONNX model and ignore all the operators
+      that are not currently supported by onnx-tensorflow.
       This is an experimental feature. By enabling this feature,
       the model would not be guaranteed to match the ONNX specifications.
 
