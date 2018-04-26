@@ -8,6 +8,7 @@ from __future__ import unicode_literals
 
 import importlib
 from itertools import chain
+from collections import OrderedDict
 
 import numpy as np
 import tensorflow as tf
@@ -137,7 +138,30 @@ class TensorflowFrontendBase(object):
 
     :returns: The equivalent ONNX Graph Proto object.
     """
+    def topological_sort(nodes):
+        """Topological sort of graph."""
+        op_name_to_index = OrderedDict()
+        sorted_nodes = OrderedDict()
+        for i, node in enumerate(nodes):
+            op_name_to_index[nodes[i].output[0]] = i
+        for i, node in enumerate(nodes):            
+            sorted_nodes = sort_parent(node, op_name_to_index, nodes, sorted_nodes)
 
+        return sorted_nodes.values()
+
+    def sort_parent(node, op_name_to_index, nodes, sorted_nodes):  
+        node_name = node.output[0]      
+        for inp in node.input:
+            if inp in op_name_to_index and inp not in sorted_nodes:
+                j = nodes[op_name_to_index[inp]]
+                sorted_nodes = sort_parent(j, op_name_to_index, nodes, sorted_nodes)
+                sorted_nodes[inp] = j
+        if node_name not in sorted_nodes:
+            j = nodes[op_name_to_index[node_name]]
+            sorted_nodes[node_name] = j
+
+        return sorted_nodes
+  
     # This list holds the protobuf objects of type ValueInfoProto
     # representing the input to the converted ONNX graph.
     inputs_proto = []
@@ -263,6 +287,7 @@ class TensorflowFrontendBase(object):
         else:
           raise NotImplementedError("{} op is not implemented.".format(node.op))
 
+    ops_proto = topological_sort(ops_proto)
     output = TensorflowNode(output)
     # making output proto
     # TODO: deal with multi-output case.
