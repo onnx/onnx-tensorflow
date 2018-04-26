@@ -232,30 +232,33 @@ class TensorflowFrontendBase(object):
               version >= 0
           ), "Opset should be an int less than or equal to {}, but {}: {}".format(
               defs.onnx_opset_version(), type(version), version)
-          defs.ONNX_DOMAIN = onnx_domain
+        defs.ONNX_DOMAIN = onnx_domain
 
         opset_ver = opset_dict[op_domain]
-        if opset_ver == 0:
-          version = max(versions)
-        else:
-          versions = sorted(versions + [opset_ver])
-          version = versions[
-              max([i for i, v in enumerate(versions) if v == opset_ver]) - 1]
 
-        camel_domain = "".join(w.title() for w in op_domain.split("."))
-        frontend_ver = "frontend_v{}".format(version)
-        frontend_class_name = "{}TensorflowFrontend".format(camel_domain)
-        frontend_module = cls.frontend_version_cache.setdefault(
-            frontend_ver,
-            importlib.import_module("onnx_tf.frontends." + frontend_ver))
-        if hasattr(frontend_module, frontend_class_name):
-          frontend = getattr(frontend_module, frontend_class_name)
-        else:
-          frontend = None
-          cls._catch_exception(NotImplementedError
-                               if not ignore_unimplemented else warnings.warn,
-                               "{} for domain {} is not implemented".format(
-                                   frontend_ver, op_domain))
+        frontend = None
+        # Get corresponding frontend module with version
+        if versions:
+          if opset_ver == 0:
+            version = max(versions)
+          else:
+            versions = sorted(versions + [opset_ver])
+            version = versions[
+                max([i for i, v in enumerate(versions) if v == opset_ver]) - 1]
+
+          camel_domain = "".join(w.title() for w in op_domain.split("."))
+          frontend_ver = "frontend_v{}".format(version)
+          frontend_class_name = "{}TensorflowFrontend".format(camel_domain)
+          frontend_module = cls.frontend_version_cache.setdefault(
+              frontend_ver,
+              importlib.import_module("onnx_tf.frontends." + frontend_ver))
+          if hasattr(frontend_module, frontend_class_name):
+            frontend = getattr(frontend_module, frontend_class_name)
+          else:
+            cls._catch_exception(NotImplementedError
+                                 if not ignore_unimplemented else warnings.warn,
+                                 "{} for domain {} is not implemented".format(
+                                     frontend_ver, op_domain))
 
         # Check if specialized handler exists.
         if frontend is not None and hasattr(frontend, handler_name):
@@ -265,6 +268,7 @@ class TensorflowFrontendBase(object):
             ops_proto.extend(node)
           else:
             ops_proto.append(node)
+        # Deal with no handler (defined in common.py) or totally not implemented ops
         else:
           # Remove tensorflow-specific attrs that are not
           # needed/allowed in ONNX.
