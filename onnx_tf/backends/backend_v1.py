@@ -279,18 +279,56 @@ class TensorflowBackend(TensorflowBackendBase):
     return [tf.constant(elements, dtype=dtype, shape=value.dims)]
 
   @classmethod
+  def handle_constant_fill(cls, node, input_dict):
+    if node.inputs and "shape" in node.attrs:
+      raise RuntimeError(
+          "Cannot set the shape argument and pass in an input at the same time."
+      )
+    if not node.inputs and "extra_shape" in node.attrs:
+      raise RuntimeError("Cannot set extra_shape when there is no input.")
+
+    if "shape" in node.attrs:
+      shape = node.attrs["shape"]
+    else:
+      shape = input_dict[
+          node.inputs[0]].get_shape().as_list() if node.attrs.get(
+              "input_as_shape", 0) == 0 else input_dict[node.inputs[0]]
+    if "extra_shape" in node.attrs:
+      shape = tf.concat([shape, node.attrs["extra_shape"]], 0)
+
+    value = node.attrs.get("value", 0.)
+
+    if "dtype" in node.attrs:
+      return [tf.cast(tf.fill(shape, value), dtype=node.attrs["dtype"])]
+
+    return [tf.fill(shape, value)]
+
+  @classmethod
   def _conv(cls, node, input_dict, transpose=False):
+    """ Convolution method for both conv and transposed conv
+    For transposed conv,
+      Attr pads is not used for input, but declares how much output is padded.
+      Here, output means output from transposed conv which already pad output_padding if set.
+      So the pseudo explanation for output should be:
+        output = conv_transpoe_output + output_padding - pads
+      And conv_transpoe_output shape should be:
+        conv_transpoe_output_shape[i] = strides[i] * (input_shape[i] - 1) + kernel_shape[i]
+    """
     x = input_dict[node.inputs[0]]
     x_rank = len(x.get_shape())
+    x_shape = x.get_shape().as_list()
+    spatial_size = x_rank - 2
 
     support_cuda = cls.supports_device("CUDA")
     storage_format, compute_format = cls.get_data_format(x_rank, support_cuda)
+    compute_c_idx = compute_format.find("C")
+    spatial_format = "".join([d for d in compute_format if d not in ["N", "C"]])
 
     in_weights = input_dict[node.inputs[1]]
     weights_rank = len(in_weights.get_shape())
     if transpose:
-      # Translate weights from (C x M x KH x KW) to (KH x KW X C X M)
-      perm = list(range(2, weights_rank)) + [0, 1]
+      # Translate weights from (C x M x KH x KW) to (KH x KW X M X C)
+      perm = list(range(2, weights_rank)) + [1, 0]
     else:
       # Translate weights from (M x C x KH x KW) to (KH x KW X C X M)
       perm = list(range(2, weights_rank)) + [1, 0]
@@ -308,21 +346,86 @@ class TensorflowBackend(TensorflowBackendBase):
     dilations = node.attrs.get("dilations", None)
     strides = node.attrs.get("strides", None)
 
-    if "pads" in node.attrs.keys():
-      x = cls.get_padding_as_op(x, node.attrs["pads"])
+    pads = node.attrs.get("pads", [0, 0] * spatial_size)
 
-    if "group" in node.attrs:
+    if not transpose:
+      x = cls.get_padding_as_op(x, pads)
 
-      weight_groups = tf.split(
-          weights, num_or_size_splits=node.attrs["group"], axis=-1)
+    group = node.attrs.get("group", 1)
 
-      if support_cuda:
-        xs = tf.split(x, num_or_size_splits=node.attrs["group"], axis=1)
-      else:
-        x = tf.transpose(
-            x, perm=cls.get_perm_from_formats(storage_format, compute_format))
-        xs = tf.split(x, num_or_size_splits=node.attrs["group"], axis=-1)
+    weight_groups = tf.split(weights, num_or_size_splits=group, axis=-1)
 
+    if support_cuda:
+      xs = tf.split(x, num_or_size_splits=group, axis=1)
+    else:
+      x = tf.transpose(
+          x, perm=cls.get_perm_from_formats(storage_format, compute_format))
+      xs = tf.split(x, num_or_size_splits=group, axis=-1)
+
+    if transpose:
+      if dilations is not None and dilations != [1] * spatial_size:
+        raise RuntimeError("Cannot set non-1 dilation for conv transpose.")
+      convolved = []
+      for (x, weight) in zip(xs, weight_groups):
+        x_spatial_shape = [
+            x_shape[storage_format.find(d)] for d in spatial_format
+        ]
+        weights_shape = weights.get_shape().as_list()
+
+        # calculate output shape
+        output_shape = node.attrs.get("output_shape", None)
+        if output_shape is None:
+          output_shape = [x_shape[storage_format.find("N")]] + [
+              strides[i] * (x_spatial_shape[i] - 1) + weights_shape[i]
+              for i in list(range(spatial_size))
+          ]
+          output_shape.insert(compute_c_idx, weights_shape[-2])
+
+        # make strides to match input rank
+        strides_full = [1] + strides
+        strides_full.insert(compute_c_idx, 1)
+
+        # get corresponding function in tf
+        if spatial_size == 1:
+          conv_func = tf.nn.conv1d_transpose
+        elif spatial_size == 2:
+          conv_func = tf.nn.conv2d_transpose
+        elif spatial_size == 3:
+          conv_func = tf.nn.conv3d_transpose
+        else:
+          raise NotImplementedError(
+              "Transposed convolution for {}d is not implemented in Tensorflow".
+              format(spatial_size))
+
+        # use raw input x to do transposed conv
+        conv_rs = conv_func(
+            x,
+            weights,
+            output_shape,
+            strides_full,
+            padding="VALID",
+            data_format=compute_format)
+
+        # pad output first by output_padding attr
+        if "output_padding" in node.attrs:
+          output_padding = [[0, 0]
+                           ] + [[0, p] for p in node.attrs["output_padding"]]
+          output_padding.insert(compute_c_idx, [0, 0])
+          conv_rs = tf.pad(conv_rs, output_padding)
+
+        # remove pads set in pads attr
+        conv_rs_shape = conv_rs.get_shape().as_list()
+        begin = [0] + pads[:spatial_size]
+        begin.insert(compute_c_idx, 0)
+        size = [
+            s if d in ["N", "C"] else s - pads[spatial_format.find(d)] -
+            pads[spatial_format.find(d) + spatial_size]
+            for d, s in zip(compute_format, conv_rs_shape)
+        ]
+        conv_rs = tf.slice(conv_rs, begin=begin, size=size)
+
+        convolved.append(conv_rs)
+    else:
       convolved = [
           tf.nn.convolution(
               x,
@@ -334,60 +437,30 @@ class TensorflowBackend(TensorflowBackendBase):
           for (x, weight) in zip(xs, weight_groups)
       ]
 
-      if len(node.inputs) == 2:
-        if support_cuda:
-          output = tf.concat(convolved, axis=1)
-        else:
-          output = tf.concat(convolved, axis=-1)
-          output = tf.transpose(
-              output,
-              perm=cls.get_perm_from_formats(compute_format, storage_format))
-      else:
-        bias = input_dict[node.inputs[2]]
-
-        if support_cuda:
-          output = tf.concat(convolved, axis=1)
-          output = tf.nn.bias_add(output, bias, data_format=compute_format)
-        else:
-          output = tf.concat(convolved, axis=-1)
-          output = tf.nn.bias_add(output, bias, data_format=compute_format)
-          output = tf.transpose(
-              output,
-              perm=cls.get_perm_from_formats(compute_format, storage_format))
-
-      return [output]
-
-    if not support_cuda:
-      x = tf.transpose(
-          x, perm=cls.get_perm_from_formats(storage_format, compute_format))
-
-    convolved = tf.nn.convolution(
-        x,
-        weights,
-        "VALID",
-        strides=strides,
-        dilation_rate=dilations,
-        data_format=compute_format)
-
-    if not support_cuda:
-      convolved = tf.transpose(
-          convolved,
-          perm=cls.get_perm_from_formats(compute_format, storage_format))
-
     if len(node.inputs) == 2:
-      return [convolved]
-    else:
-      bias = input_dict[node.inputs[2]]
-      if not support_cuda:
-        convolved = tf.transpose(
-            convolved,
-            perm=cls.get_perm_from_formats(storage_format, compute_format))
-      output = tf.nn.bias_add(convolved, bias, data_format=compute_format)
-      if not support_cuda:
+      if support_cuda:
+        output = tf.concat(convolved, axis=1)
+      else:
+        output = tf.concat(convolved, axis=-1)
         output = tf.transpose(
             output,
             perm=cls.get_perm_from_formats(compute_format, storage_format))
-      return [output]
+    else:
+      bias = input_dict[node.inputs[2]]
+      bias = cls._explicit_broadcast(
+          bias, broadcast_dim=compute_c_idx, total_num_dim=x_rank)
+
+      if support_cuda:
+        output = tf.concat(convolved, axis=1)
+        output = tf.add(output, bias)
+      else:
+        output = tf.concat(convolved, axis=-1)
+        output = tf.add(output, bias)
+        output = tf.transpose(
+            output,
+            perm=cls.get_perm_from_formats(compute_format, storage_format))
+
+    return [output]
 
   @classmethod
   def handle_conv(cls, node, input_dict):
@@ -789,8 +862,9 @@ class TensorflowBackend(TensorflowBackendBase):
 
     for i in range(slice_len):
       ends[i] = full_sizes[axes[i]] + ends[i] if ends[i] < 0 else ends[i]
-      ends[i] = np.min([full_sizes[axes[i]], ends[i]])
-      starts[i] = np.min([full_sizes[axes[i]], starts[i]])
+      if full_sizes[axes[i]] is not None:
+        ends[i] = np.min([full_sizes[axes[i]], ends[i]])
+        starts[i] = np.min([full_sizes[axes[i]], starts[i]])
       full_begin[axes[i]] = starts[i]
       full_sizes[axes[i]] = ends[i] - starts[i]
 

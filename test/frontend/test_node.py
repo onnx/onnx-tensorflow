@@ -98,6 +98,7 @@ def create_test(test_data):
 # in the sense that numpy array are passed in via tf.placeholder
 # whereas python arrays are passed in as constants.
 test_cases = [
+("test_cast", tf.cast, "Cast", [get_rnd([10, 10]), tf.float16], {}),
 ("test_relu", tf.nn.relu, "Relu", [get_rnd([10, 10])], {}),
 ("test_or", tf.logical_or, "LogicalOr", [get_rnd([10, 10], dtype=np.bool_), get_rnd([10, 10], dtype=np.bool_)], {}),
 ("test_pow", tf.pow, "Pow", [get_rnd([10, 10]), get_rnd([10, 10])], {}),
