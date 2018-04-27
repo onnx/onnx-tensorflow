@@ -33,9 +33,7 @@ from onnx.helper import (
     make_node,
     make_opsetid,
 )
-from onnx.helper import mapping
 from onnx.onnx_pb2 import TensorProto
-from onnx.onnx_pb2 import ValueInfoProto
 
 
 class TensorflowNode(object):
@@ -167,10 +165,6 @@ class TensorflowFrontendBase(object):
     # representing the all nodes' outputs to the converted ONNX graph.
     value_info_proto = []
 
-    # A map holds nodes name and new data type. Will be used to
-    # process protos to match ONNX type constraints.
-    data_type_cast_map = {}
-
     node_tup = [(node.name, TensorflowNode(node)) for node in graph_def.node]
 
     for name, node in node_tup:
@@ -292,9 +286,6 @@ class TensorflowFrontendBase(object):
     inputs_proto = list(filter(lambda x: x.name in inputs, inputs_proto))
     consts_proto = list(filter(lambda x: x.name in inputs, consts_proto))
 
-    inputs_proto = cls._data_type_caster(inputs_proto, data_type_cast_map)
-    consts_proto = cls._data_type_caster(consts_proto, data_type_cast_map)
-
     return make_graph(
         ops_proto,
         name,
@@ -302,38 +293,6 @@ class TensorflowFrontendBase(object):
         output_proto,
         initializer=consts_proto,
         value_info=value_info_proto)
-
-  @classmethod
-  def _data_type_caster(cls, protos, data_type_cast_map):
-    """Cast to a new data type if node name is in data_type_cast_map.
-    Be used to precess protos to match ONNX type constraints.
-
-    :param protos: Target protos.
-      TensorProto for inputs and ValueInfoProto for consts.
-    :param data_type_cast_map: A {node.name: new_data_type} dict.
-    :return: Processed protos.
-    """
-    if not data_type_cast_map:
-      return protos
-    result = []
-    for proto in protos:
-      new_proto = proto
-      if proto.name in data_type_cast_map \
-          and proto.data_type != data_type_cast_map[proto.name]:
-        if type(proto) == TensorProto:
-          field = mapping.STORAGE_TENSOR_TYPE_TO_FIELD[
-              mapping.TENSOR_TYPE_TO_STORAGE_TENSOR_TYPE[proto.data_type]]
-          vals = getattr(proto, field)
-          new_proto = make_tensor(
-              name=proto.name,
-              data_type=data_type_cast_map[proto.name],
-              dims=proto.dims,
-              vals=vals)
-        elif type(proto) == ValueInfoProto \
-            and proto.type.tensor_type.elem_type != data_type_cast_map[proto.name]:
-          new_proto.type.tensor_type.elem_type = data_type_cast_map[proto.name]
-      result.append(new_proto)
-    return result
 
   @classmethod
   def tensorflow_graph_to_onnx_model(cls,
