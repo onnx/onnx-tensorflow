@@ -164,9 +164,7 @@ class TensorflowFrontend(TensorflowFrontendBase):
   @classmethod
   @register_onnx_op("Max")
   def handle_maximum(cls, node, **kwargs):
-    return helper.make_node(
-        "Max", node.inputs, [node.name],
-        name=node.name)
+    return helper.make_node("Max", node.inputs, [node.name], name=node.name)
 
   @classmethod
   @register_onnx_op("MaxPool")
@@ -227,6 +225,12 @@ class TensorflowFrontend(TensorflowFrontendBase):
   @register_onnx_op("Transpose")
   def handle_transpose(cls, node, **kwargs):
     consts = kwargs["consts"]
-    perm = consts[node.inputs[1]]
+    if node.inputs[1] in consts:
+      perm = consts[node.inputs[1]]
+    else:
+      input_rank = len(
+          kwargs['node_dict'][node.inputs[0]].attr['_output_shapes'][0])
+      perm = list(reversed(range(input_rank)))
+
     return helper.make_node(
         "Transpose", [node.inputs[0]], [node.name], perm=perm)
