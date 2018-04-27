@@ -225,11 +225,12 @@ class TensorflowFrontend(TensorflowFrontendBase):
   @register_onnx_op("Transpose")
   def handle_transpose(cls, node, **kwargs):
     consts = kwargs["consts"]
-    perm = consts.get(node.inputs[1],
-                      list(
-                          reversed(
-                              range(
-                                  len(kwargs['node_dict'][node.inputs[0]].attr[
-                                      '_output_shapes'][0])))))
+    if node.inputs[1] in consts:
+      perm = consts[node.inputs[1]]
+    else:
+      input_rank = len(
+          kwargs['node_dict'][node.inputs[0]].attr['_output_shapes'][0])
+      perm = list(reversed(range(input_rank)))
+
     return helper.make_node(
         "Transpose", [node.inputs[0]], [node.name], perm=perm)
