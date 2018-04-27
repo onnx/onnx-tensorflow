@@ -92,6 +92,9 @@ class TensorflowFrontend(TensorflowFrontendBase):
         strides=strides,
         dilations=dilations)
 
+    kwargs["inference_shapes"][node.name] = [
+        node.attr["_output_shapes"][0][data_format.find(c)] for c in "NCHW"
+    ]
     return [transpose_node, conv_node]
 
   @classmethod

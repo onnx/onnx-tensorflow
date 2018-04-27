@@ -165,6 +165,9 @@ class TensorflowFrontendBase(object):
     # representing the all nodes' outputs to the converted ONNX graph.
     value_info_proto = []
 
+    # This dictionary holds inference shapes.
+    inference_shapes = {}
+
     node_tup = [(node.name, TensorflowNode(node)) for node in graph_def.node]
 
     for name, node in node_tup:
@@ -196,13 +199,6 @@ class TensorflowFrontendBase(object):
         input_proto = make_tensor_value_info(name, node.attr["dtype"], shape)
         inputs_proto.append(input_proto)
       else:
-        for i in range(len(node.attr["_output_shapes"])):
-          node_name = node.name + ":{}".format(i) if i > 0 else node.name
-          value_info_proto.append(
-              make_tensor_value_info(node_name,
-                                     node.attr.get("T", TensorProto.BOOL),
-                                     node.attr["_output_shapes"][i]))
-
         splitted_op_name = node.op.split(".")
         op_domain = "" if len(splitted_op_name) == 1 else ".".join(
             splitted_op_name[:-1])
@@ -251,11 +247,15 @@ class TensorflowFrontendBase(object):
         # Check if specialized handler exists.
         if hasattr(frontend, handler_name):
           method_to_call = getattr(frontend, handler_name)
-          node = method_to_call(node, consts=consts, node_dict=dict(node_tup))
-          if isinstance(node, list):
-            ops_proto.extend(node)
+          op = method_to_call(
+              node,
+              consts=consts,
+              node_dict=dict(node_tup),
+              inference_shapes=inference_shapes)
+          if isinstance(op, list):
+            ops_proto.extend(op)
           else:
-            ops_proto.append(node)
+            ops_proto.append(op)
         elif node.op in TF_OP_STR_TO_ONNX_OP.keys():
           node = frontend.handle_trivial(
               node, consts=consts, node_dict=dict(node_tup))
@@ -263,18 +263,29 @@ class TensorflowFrontendBase(object):
         else:
           raise NotImplementedError("{} op is not implemented.".format(node.op))
 
-    output = TensorflowNode(output)
     # making output proto
     # TODO: deal with multi-output case.
     # TODO: default to BOOL, cf.
     # https://github.com/tensorflow/tensorflow/issues/14769
-    output_onnx_type = output.attr.get("T", TensorProto.BOOL)
+    output = TensorflowNode(output)
     output_proto = []
-    for i in range(len(output.attr["_output_shapes"])):
-      output_name = output.name + ":{}".format(i) if i > 0 else output.name
-      output_proto.append(
-          make_tensor_value_info(output_name, output_onnx_type,
-                                 output.attr["_output_shapes"][i]))
+
+    # make value_info
+    for name, node in node_tup:
+      if "_output_shapes" in node.attr:
+        for i in range(len(node.attr["_output_shapes"])):
+          node_name = node.name + ":{}".format(i) if i > 0 else node.name
+          if node_name in inference_shapes:
+            output_shapes = inference_shapes[node_name]
+          else:
+            output_shapes = node.attr["_output_shapes"][i]
+          value_info = make_tensor_value_info(node_name,
+                                              node.attr.get(
+                                                  "T", TensorProto.BOOL),
+                                              output_shapes)
+          value_info_proto.append(value_info)
+          if name == output.name:
+            output_proto.append(value_info)
 
     inputs = list(chain.from_iterable(map(lambda p: list(p.input), ops_proto)))
 
