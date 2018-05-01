@@ -225,6 +225,9 @@ class TensorflowFrontend(TensorflowFrontendBase):
   @classmethod
   @register_onnx_op("Tile")
   def handle_tile(cls, node, **kwargs):
+    if kwargs["node_dict"][node.inputs[1]].attr["dtype"] != TensorProto.INT64:
+      data_type_cast_map = kwargs["data_type_cast_map"]
+      data_type_cast_map[node.inputs[1]] = TensorProto.INT64
     return helper.make_node("Tile", node.inputs, [node.name])
 
   @classmethod
