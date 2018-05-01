@@ -33,7 +33,7 @@ from onnx.helper import (
     make_node,
     make_opsetid,
 )
-from onnx.onnx_pb2 import GraphProto, TensorProto, AttributeProto
+from onnx.onnx_pb2 import TensorProto
 
 
 class TensorflowNode(object):
@@ -251,7 +251,11 @@ class TensorflowFrontendBase(object):
         # Check if specialized handler exists.
         if hasattr(frontend, handler_name):
           method_to_call = getattr(frontend, handler_name)
-          node = method_to_call(node, consts=consts, node_dict=dict(node_tup))
+          node = method_to_call(
+              node,
+              consts=consts,
+              node_dict=dict(node_tup),
+              data_type_cast_map=data_type_cast_map)
           if isinstance(node, list):
             ops_proto.extend(node)
           else:
