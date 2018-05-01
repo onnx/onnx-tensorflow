@@ -755,12 +755,11 @@ class TestNode(unittest.TestCase):
     np.testing.assert_almost_equal(output["Y"], np.tanh(x), decimal=5)
 
   def test_tile(self):
-    node_def = helper.make_node("Tile", ["X1", "X2", "X3"], ["Z"])
+    node_def = helper.make_node("Tile", ["X1", "X2"], ["Z"])
     x = self._get_rnd([3, 5, 5, 3])
-    axis = 2
-    tiles = 2
-    output = run_node(node_def, [x, axis, tiles])
-    np.testing.assert_allclose(output["Z"], np.tile(x, (1, 1, 2, 1)), rtol=1e-3)
+    repeats = [1, 1, 2, 1]
+    output = run_node(node_def, [x, repeats])
+    np.testing.assert_allclose(output["Z"], np.tile(x, repeats), rtol=1e-3)
 
   def test_transpose(self):
     node_def = helper.make_node("Transpose", ["X"], ["Y"], perm=[0, 2, 1])

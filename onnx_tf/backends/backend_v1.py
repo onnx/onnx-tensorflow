@@ -862,8 +862,9 @@ class TensorflowBackend(TensorflowBackendBase):
 
     for i in range(slice_len):
       ends[i] = full_sizes[axes[i]] + ends[i] if ends[i] < 0 else ends[i]
-      ends[i] = np.min([full_sizes[axes[i]], ends[i]])
-      starts[i] = np.min([full_sizes[axes[i]], starts[i]])
+      if full_sizes[axes[i]] is not None:
+        ends[i] = np.min([full_sizes[axes[i]], ends[i]])
+        starts[i] = np.min([full_sizes[axes[i]], starts[i]])
       full_begin[axes[i]] = starts[i]
       full_sizes[axes[i]] = ends[i] - starts[i]
 
@@ -936,10 +937,7 @@ class TensorflowBackend(TensorflowBackendBase):
   @classmethod
   def handle_tile(cls, node, input_dict):
     x = input_dict[node.inputs[0]]
-    axis = input_dict[node.inputs[1]]
-    tiles = input_dict[node.inputs[2]]
-    multiples = tf.Variable([1] * len(x.shape))
-    multiples = multiples[axis].assign(tiles)
+    multiples = input_dict[node.inputs[1]]
     return [tf.tile(x, multiples=multiples)]
 
   @classmethod

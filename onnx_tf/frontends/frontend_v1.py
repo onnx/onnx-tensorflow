@@ -9,6 +9,7 @@ from __future__ import unicode_literals
 import numpy as np
 
 from onnx import helper
+from onnx.onnx_pb2 import TensorProto
 from onnx_tf.common import as_dtype
 from onnx_tf.common import get_unique_suffix
 from onnx_tf.common import TF_TYPE_TO_ONNX_TYPE
@@ -164,9 +165,7 @@ class TensorflowFrontend(TensorflowFrontendBase):
   @classmethod
   @register_onnx_op("Max")
   def handle_maximum(cls, node, **kwargs):
-    return helper.make_node(
-        "Max", node.inputs, [node.name],
-        name=node.name)
+    return helper.make_node("Max", node.inputs, [node.name], name=node.name)
 
   @classmethod
   @register_onnx_op("MaxPool")
@@ -224,9 +223,20 @@ class TensorflowFrontend(TensorflowFrontendBase):
     return helper.make_node("Squeeze", [node.inputs[0]], [node.name], axes=axes)
 
   @classmethod
+  @register_onnx_op("Tile")
+  def handle_tile(cls, node, **kwargs):
+    return helper.make_node("Tile", node.inputs, [node.name])
+
+  @classmethod
   @register_onnx_op("Transpose")
   def handle_transpose(cls, node, **kwargs):
     consts = kwargs["consts"]
-    perm = consts[node.inputs[1]]
+    if node.inputs[1] in consts:
+      perm = consts[node.inputs[1]]
+    else:
+      input_rank = len(
+          kwargs['node_dict'][node.inputs[0]].attr['_output_shapes'][0])
+      perm = list(reversed(range(input_rank)))
+
     return helper.make_node(
         "Transpose", [node.inputs[0]], [node.name], perm=perm)
