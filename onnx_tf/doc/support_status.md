@@ -164,4 +164,5 @@ ______
 |sub|1, 6|
 |sum|1|
 |tanh|1, 6|
+|tile|1|
 |transpose|1|
