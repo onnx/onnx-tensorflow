@@ -306,7 +306,7 @@ class TensorflowFrontendBase(object):
   @classmethod
   def _data_type_caster(cls, protos, data_type_cast_map):
     """Cast to a new data type if node name is in data_type_cast_map.
-    Be used to precess protos to match ONNX type constraints.
+    Be used to process protos to match ONNX type constraints.
 
     :param protos: Target protos.
       TensorProto for inputs and ValueInfoProto for consts.
@@ -318,20 +318,21 @@ class TensorflowFrontendBase(object):
     result = []
     for proto in protos:
       new_proto = proto
-      if proto.name in data_type_cast_map \
-          and proto.data_type != data_type_cast_map[proto.name]:
-        if type(proto) == TensorProto:
+      if proto.name in data_type_cast_map:
+        new_data_type = data_type_cast_map[proto.name]
+        if type(proto) == TensorProto and proto.data_type != new_data_type:
           field = mapping.STORAGE_TENSOR_TYPE_TO_FIELD[
               mapping.TENSOR_TYPE_TO_STORAGE_TENSOR_TYPE[proto.data_type]]
           vals = getattr(proto, field)
           new_proto = make_tensor(
               name=proto.name,
-              data_type=data_type_cast_map[proto.name],
+              data_type=new_data_type,
               dims=proto.dims,
               vals=vals)
-        elif type(proto) == ValueInfoProto \
-            and proto.type.tensor_type.elem_type != data_type_cast_map[proto.name]:
-          new_proto.type.tensor_type.elem_type = data_type_cast_map[proto.name]
+        elif type(
+            proto
+        ) == ValueInfoProto and proto.type.tensor_type.elem_type != new_data_type:
+          new_proto.type.tensor_type.elem_type = new_data_type
       result.append(new_proto)
     return result
 
