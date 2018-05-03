@@ -10,7 +10,7 @@ import caffe2.python.onnx.backend as c2
 import onnx
 import onnx_tf.backend as tf
 from onnx import helper
-from onnx.onnx_pb2 import TensorProto
+from onnx import TensorProto
 
 
 def find_between(s, first, last):

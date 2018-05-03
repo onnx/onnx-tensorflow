@@ -9,7 +9,7 @@ from __future__ import unicode_literals
 import numpy as np
 
 from onnx import helper
-from onnx.onnx_pb2 import TensorProto
+from onnx import TensorProto
 from onnx_tf.common import as_dtype
 from onnx_tf.common import get_unique_suffix
 from onnx_tf.common import TF_TYPE_TO_ONNX_TYPE

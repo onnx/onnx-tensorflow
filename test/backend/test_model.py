@@ -9,7 +9,7 @@ import tensorflow as tf
 import onnx
 from onnx_tf.backend import run_node, prepare
 from onnx import helper
-from onnx.onnx_pb2 import TensorProto
+from onnx import TensorProto
 
 
 class TestModel(unittest.TestCase):
