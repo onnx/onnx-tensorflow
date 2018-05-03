@@ -123,6 +123,8 @@ ______
 | Tensorflow Op        | Supported ONNX Version  |
 | -------------- |:------------------:|
 |add|1, 6|
+|arg_max|1|
+|arg_min|1|
 |avg_pool|1|
 |bias_add|1, 6|
 |cast|1|
