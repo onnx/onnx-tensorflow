@@ -9,7 +9,7 @@ import tensorflow as tf
 from onnx_tf.backend import run_node
 from onnx_tf.backend import supports_device
 from onnx import helper
-from onnx.onnx_pb2 import TensorProto
+from onnx import TensorProto
 
 
 class TestNode(unittest.TestCase):

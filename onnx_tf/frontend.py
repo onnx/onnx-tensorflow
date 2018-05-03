@@ -25,6 +25,8 @@ from onnx_tf.common import (
 )
 from onnx_tf.opset_version import frontend_tf_opset_version
 from onnx import defs
+from onnx import TensorProto
+from onnx import ValueInfoProto
 from onnx.helper import (
     make_tensor_value_info,
     make_tensor,
@@ -34,8 +36,6 @@ from onnx.helper import (
     make_opsetid,
 )
 from onnx.helper import mapping
-from onnx.onnx_pb2 import TensorProto
-from onnx.onnx_pb2 import ValueInfoProto
 
 
 class TensorflowNode(object):
