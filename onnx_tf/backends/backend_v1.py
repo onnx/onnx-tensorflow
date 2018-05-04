@@ -92,14 +92,16 @@ class TensorflowBackend(TensorflowBackendBase):
       return out_shape
 
     def py_pool(x, kernel_shape, strides_shape, pads, out_shape, pad_shape,
-                pooling_type):
+                count_include_pad, pooling_type):
       pooling_type = pooling_type.decode('UTF-8')
       x_shape = np.shape(x)
       spatial_size = len(x_shape[2:])
       pad_attr = [(0, 0), (0, 0)] + [
           (pads[i], pads[i + spatial_size]) for i in range(spatial_size)
       ]
-      padded = np.pad(x, pad_attr, mode="constant", constant_values=np.nan)
+      constant_values = np.nan if count_include_pad == 0 else 0
+      padded = np.pad(
+          x, pad_attr, mode="constant", constant_values=constant_values)
 
       y = np.zeros([x_shape[0], x_shape[1]] + list(out_shape))
 
@@ -126,7 +128,11 @@ class TensorflowBackend(TensorflowBackendBase):
           raise NotImplementedError(
               'Pooling type {} does not support. Should be AVG, MAX'.format(
                   pooling_type))
-        y[shape] = f(window_vals[np.where(~np.isnan(window_vals))])
+
+        if count_include_pad == 0:
+          y[shape] = f(window_vals[np.where(~np.isnan(window_vals))])
+        else:
+          y[shape] = f(window_vals)
       return y.astype(np.float32)
 
     x = input_dict[node.inputs[0]]
@@ -136,17 +142,21 @@ class TensorflowBackend(TensorflowBackendBase):
     strides_shape = node.attrs.get("strides", [1] * spatial_size)
     pads = node.attrs.get("pads", [0] * spatial_size * 2)
     auto_pad = node.attrs.get("auto_pad", "")
+    count_include_pad = node.attrs.get("count_include_pad", 0)
 
-    # Only auto_pad in ("SAME_LOWER", "") will come here.
-    if auto_pad == "SAME_LOWER":
+    if auto_pad in ["SAME_UPPER", "SAME_LOWER"]:
       out_shape = _get_output_shape(auto_pad, x_shape[2:], kernel_shape,
                                     strides_shape)
       pad_shape = _get_pad_shape(auto_pad, x_shape[2:], kernel_shape,
                                  strides_shape, out_shape)
       for i in range(spatial_size):
-        pads[i + spatial_size] = pad_shape[i] // 2
-        pads[i] = pad_shape[i] - pads[i + spatial_size]
-    elif auto_pad == "":
+        if auto_pad == "SAME_LOWER":
+          pads[i + spatial_size] = pad_shape[i] // 2
+          pads[i] = pad_shape[i] - pads[i + spatial_size]
+        elif auto_pad == "SAME_UPPER":
+          pads[i] = pad_shape[i] // 2
+          pads[i + spatial_size] = pad_shape[i] - pads[i]
+    elif auto_pad in ["", "VALID"]:
       pad_shape = [
           pads[i] + pads[i + spatial_size] for i in range(spatial_size)
       ]
@@ -154,7 +164,8 @@ class TensorflowBackend(TensorflowBackendBase):
                                     kernel_shape, strides_shape)
 
     pooled = tf.py_func(py_pool, [
-        x, kernel_shape, strides_shape, pads, out_shape, pad_shape, pooling_type
+        x, kernel_shape, strides_shape, pads, out_shape, pad_shape,
+        count_include_pad, pooling_type
     ], tf.float32)
     pooled.set_shape(x_shape[0:2] + out_shape)
     return [pooled]
@@ -169,6 +180,7 @@ class TensorflowBackend(TensorflowBackendBase):
 
     kernel_shape = node.attrs["kernel_shape"]
     strides = node.attrs.get("strides", [1] * (x_rank - 2))
+    count_include_pad = node.attrs.get("count_include_pad", 0)
 
     # By default, do not pad
     pad = None
@@ -181,7 +193,7 @@ class TensorflowBackend(TensorflowBackendBase):
       elif node.attrs["auto_pad"] == "SAME_LOWER":
         pad = None
 
-    if pad is None:
+    if pad is None or count_include_pad == 1:
       return cls._compatibility_pool(node, input_dict, pooling_type)
 
     if support_cuda:
