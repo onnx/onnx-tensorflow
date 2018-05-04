@@ -310,9 +310,9 @@ class TensorflowBackend(TensorflowBackendBase):
       Attr pads is not used for input, but declares how much output is padded.
       Here, output means output from transposed conv which already pad output_padding if set.
       So the pseudo explanation for output should be:
-        output = conv_transpoe_output + output_padding - pads
-      And conv_transpoe_output shape should be:
-        conv_transpoe_output_shape[i] = strides[i] * (input_shape[i] - 1) + kernel_shape[i]
+        output = conv_transpose_output + output_padding - pads
+      And conv_transpose_output shape should be:
+        conv_transpose_output_shape[i] = strides[i] * (input_shape[i] - 1) + kernel_shape[i]
     """
     x = input_dict[node.inputs[0]]
     x_rank = len(x.get_shape())
@@ -343,8 +343,8 @@ class TensorflowBackend(TensorflowBackendBase):
               in_weights.get_shape().as_list())
 
     weights = tf.transpose(in_weights, perm)
-    dilations = node.attrs.get("dilations", None)
-    strides = node.attrs.get("strides", None)
+    dilations = node.attrs.get("dilations", [1] * spatial_size)
+    strides = node.attrs.get("strides", [1] * spatial_size)
 
     pads = node.attrs.get("pads", [0, 0] * spatial_size)
 
@@ -363,7 +363,7 @@ class TensorflowBackend(TensorflowBackendBase):
       xs = tf.split(x, num_or_size_splits=group, axis=-1)
 
     if transpose:
-      if dilations is not None and dilations != [1] * spatial_size:
+      if dilations != [1] * spatial_size:
         raise RuntimeError("Cannot set non-1 dilation for conv transpose.")
       convolved = []
       for (x, weight) in zip(xs, weight_groups):
@@ -375,11 +375,17 @@ class TensorflowBackend(TensorflowBackendBase):
         # calculate output shape
         output_shape = node.attrs.get("output_shape", None)
         if output_shape is None:
-          output_shape = [x_shape[storage_format.find("N")]] + [
+          conv_output_shape = [x_shape[storage_format.find("N")]] + [
               strides[i] * (x_spatial_shape[i] - 1) + weights_shape[i]
               for i in list(range(spatial_size))
           ]
-          output_shape.insert(compute_c_idx, weights_shape[-2])
+          conv_output_shape.insert(compute_c_idx, weights_shape[-2])
+        else:
+          conv_output_shape = [output_shape[0]] + [
+              s + pads[i] + pads[spatial_size + i]
+              for i, s in enumerate(output_shape[2:])
+          ]
+          conv_output_shape.insert(compute_c_idx, output_shape[1])
 
         # make strides to match input rank
         strides_full = [1] + strides
@@ -387,7 +393,8 @@ class TensorflowBackend(TensorflowBackendBase):
 
         # get corresponding function in tf
         if spatial_size == 1:
-          conv_func = tf.nn.conv1d_transpose
+          conv_func = tf.contrib.nn.conv1d_transpose
+          strides_full = strides[0]
         elif spatial_size == 2:
           conv_func = tf.nn.conv2d_transpose
         elif spatial_size == 3:
@@ -401,13 +408,13 @@ class TensorflowBackend(TensorflowBackendBase):
         conv_rs = conv_func(
             x,
             weights,
-            output_shape,
+            conv_output_shape,
             strides_full,
             padding="VALID",
             data_format=compute_format)
 
         # pad output first by output_padding attr
-        if "output_padding" in node.attrs:
+        if "output_padding" in node.attrs and output_shape is None:
           output_padding = [[0, 0]
                            ] + [[0, p] for p in node.attrs["output_padding"]]
           output_padding.insert(compute_c_idx, [0, 0])
