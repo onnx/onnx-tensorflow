@@ -12,20 +12,22 @@ Customize op can also be implemented in similar way.
     
     - inputs are same
     - tf's attributes is a subset of onnx's    
-    - attr doesn't exist in tf could be set by `DEFAULT_ONNX_ATTR_PER_OP`  
+    - attr doesn't exist in tf could be set by `DEFAULT_ONNX_ATTR_PER_OP` in `backend.py`  
     
     otherwise, op needs a specific handler.
 3.  Implement. All inputs and attrs could get from step 1.
     ```
     non-specific handler
     
-    - update ONNX_OP_TO_TF_OP
+    - update ONNX_OP_TO_TF_OP in common.py
     - if need, update DEFAULT_ONNX_ATTR_PER_OP
     ```
     ```
     specific handler
     
     - add handler to backend_v{version}
+
+    * version is the number of since version, which can get from operator's specification
     ```
 4.  Run `gen_opset.py` and `gen_doc.py`.
 5.  Add test case to `test_node.py`.
@@ -38,6 +40,8 @@ Customize op can also be implemented in similar way.
     ```
     - add handler to frontend_v{version}
     - add decorator register_onnx_op with onnx op name if it is an onnx op
+    
+    * version is the number of since version, which can get from operator's specification
     ```
 4.  Run `gen_opset.py` and `gen_doc.py`.
 5.  Add test case to `test_node.py`.
