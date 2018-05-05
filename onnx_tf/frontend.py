@@ -7,7 +7,9 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import importlib
+import inspect
 from itertools import chain
+import warnings
 
 import numpy as np
 import tensorflow as tf
@@ -125,7 +127,8 @@ class TensorflowFrontendBase(object):
                                      graph_def,
                                      output,
                                      opset=(("", 0),),
-                                     name="graph"):
+                                     name="graph",
+                                     ignore_unimplemented=False):
     """Converts a Tensorflow Graph Proto to an ONNX graph
 
     This function converts a Tensorflow Graph proto to an equivalent
@@ -136,6 +139,10 @@ class TensorflowFrontendBase(object):
       to be taken as output of the ONNX graph.
     :param opset: Opset, which should be ((str domain: int version number),).
     :param name: The name of the output ONNX Graph.
+    :param ignore_unimplemented: Convert to ONNX model and ignore all the operators
+      that are not currently supported by onnx-tensorflow.
+      This is an experimental feature. By enabling this feature,
+      the graph would not be guaranteed to match the ONNX specifications.
 
     :returns: The equivalent ONNX Graph Proto object.
     """
@@ -217,7 +224,7 @@ class TensorflowFrontendBase(object):
         handler_name = "handle_" + op_name_to_lower(op_name)
 
         # TODO per domain frontend_tf_opset_version?
-        versions = frontend_tf_opset_version[op_name_to_lower(op_name)]
+        versions = frontend_tf_opset_version.get(op_name_to_lower(op_name), [])
 
         opset_dict = {}
         onnx_domain = defs.ONNX_DOMAIN
@@ -232,27 +239,33 @@ class TensorflowFrontendBase(object):
               version >= 0
           ), "Opset should be an int less than or equal to {}, but {}: {}".format(
               defs.onnx_opset_version(), type(version), version)
-          defs.ONNX_DOMAIN = onnx_domain
+        defs.ONNX_DOMAIN = onnx_domain
 
         opset_ver = opset_dict[op_domain]
-        if opset_ver == 0:
-          version = max(versions)
-        else:
-          versions = sorted(versions + [opset_ver])
-          version = versions[
-              max([i for i, v in enumerate(versions) if v == opset_ver]) - 1]
 
-        camel_domain = "".join(w.title() for w in op_domain.split("."))
-        frontend_ver = "frontend_v{}".format(version)
-        frontend_class_name = "{}TensorflowFrontend".format(camel_domain)
-        frontend_module = cls.frontend_version_cache.setdefault(
-            frontend_ver,
-            importlib.import_module("onnx_tf.frontends." + frontend_ver))
-        if hasattr(frontend_module, frontend_class_name):
-          frontend = getattr(frontend_module, frontend_class_name)
-        else:
-          assert NotImplementedError, \
-            "{} for domain {} is not implemented".format(frontend_ver, op_domain)
+        frontend = cls
+        # Get corresponding frontend class with version
+        if versions:
+          if opset_ver == 0:
+            version = max(versions)
+          else:
+            versions = sorted(versions + [opset_ver])
+            version = versions[
+                max([i for i, v in enumerate(versions) if v == opset_ver]) - 1]
+
+          camel_domain = "".join(w.title() for w in op_domain.split("."))
+          frontend_ver = "frontend_v{}".format(version)
+          frontend_class_name = "{}TensorflowFrontend".format(camel_domain)
+          frontend_module = cls.frontend_version_cache.setdefault(
+              frontend_ver,
+              importlib.import_module("onnx_tf.frontends." + frontend_ver))
+          if hasattr(frontend_module, frontend_class_name):
+            frontend = getattr(frontend_module, frontend_class_name)
+          else:
+            cls._catch_exception(NotImplementedError
+                                 if not ignore_unimplemented else warnings.warn,
+                                 "{} for domain {} is not implemented".format(
+                                     frontend_ver, op_domain))
 
         # Check if specialized handler exists.
         if hasattr(frontend, handler_name):
@@ -266,12 +279,22 @@ class TensorflowFrontendBase(object):
             ops_proto.extend(node)
           else:
             ops_proto.append(node)
-        elif node.op in TF_OP_STR_TO_ONNX_OP.keys():
-          node = frontend.handle_trivial(
-              node, consts=consts, node_dict=dict(node_tup))
-          ops_proto.append(node)
+        # Deal with no handler (defined in common.py) or totally not implemented ops
         else:
-          raise NotImplementedError("{} op is not implemented.".format(node.op))
+          if node.op in TF_OP_STR_TO_ONNX_OP.keys():
+            onnx_op = TF_OP_STR_TO_ONNX_OP[node.op]
+          else:
+            cls._catch_exception(NotImplementedError
+                                 if not ignore_unimplemented else warnings.warn,
+                                 "{} op is not implemented.".format(node.op))
+            onnx_op = node.op
+
+          ops_proto.append(
+              frontend.handle_trivial(
+                  node,
+                  consts=consts,
+                  node_dict=dict(node_tup),
+                  onnx_op=onnx_op))
 
     output = TensorflowNode(output)
     # making output proto
@@ -342,7 +365,8 @@ class TensorflowFrontendBase(object):
                                      output,
                                      opset=0,
                                      producer_name="onnx-tensorflow",
-                                     graph_name="graph"):
+                                     graph_name="graph",
+                                     ignore_unimplemented=False):
     """Converts a Tensorflow Graph Proto to an ONNX model
 
     This function converts a Tensorflow Graph proto to an equivalent
@@ -356,6 +380,10 @@ class TensorflowFrontendBase(object):
       List or tuple items should be (str domain, int version number).
     :param producer_name: The name of the producer.
     :param graph_name: The name of the output ONNX Graph.
+    :param ignore_unimplemented: Convert to ONNX model and ignore all the operators
+      that are not currently supported by onnx-tensorflow.
+      This is an experimental feature. By enabling this feature,
+      the model would not be guaranteed to match the ONNX specifications.
 
     :returns: The equivalent ONNX Model Proto object.
     """
@@ -379,8 +407,8 @@ class TensorflowFrontendBase(object):
     opset_imports = [make_opsetid(item[0], item[1]) for item in opset]
 
     output_node = get_node_by_name(graph_def.node, output)
-    onnx_graph = cls.tensorflow_graph_to_onnx_graph(graph_def, output_node,
-                                                    opset, graph_name)
+    onnx_graph = cls.tensorflow_graph_to_onnx_graph(
+        graph_def, output_node, opset, graph_name, ignore_unimplemented)
     onnx_model = make_model(
         onnx_graph, producer_name=producer_name, opset_imports=opset_imports)
 
@@ -388,6 +416,10 @@ class TensorflowFrontendBase(object):
 
   @classmethod
   def handle_trivial(cls, node, **kwargs):
+    if "onnx_op" in kwargs:
+      onnx_op = kwargs["onnx_op"]
+    else:
+      onnx_op = TF_OP_STR_TO_ONNX_OP[node.op]
     # Remove tensorflow-specific attrs that are not
     # needed/allowed in ONNX.
     attr = cls.DEFAULT_TF_ATTR_PER_OP.get(node.op, {})
@@ -395,11 +427,7 @@ class TensorflowFrontendBase(object):
         filter(lambda pair: pair[0] not in TF_ATTR_TO_REMOVE,
                node.attr.items()))
     attr.update(filtered_attr)
-    return make_node(
-        TF_OP_STR_TO_ONNX_OP[node.op],
-        node.inputs, [node.name],
-        name=node.name,
-        **attr)
+    return make_node(onnx_op, node.inputs, [node.name], name=node.name, **attr)
 
   @classmethod
   def _bin_op(cls, node, onnx_op, axis=None):
@@ -460,6 +488,13 @@ class TensorflowFrontendBase(object):
         op, [node.inputs[0]], [node.name],
         axes=axes,
         keepdims=node.attr.get("keep_dims", 1))
+
+  @classmethod
+  def _catch_exception(cls, exception, message):
+    if inspect.isclass(exception) and issubclass(exception, Exception):
+      raise exception(message)
+    elif callable(exception):
+      exception(message)
 
   @staticmethod
   def register_onnx_op(onnx_op):
