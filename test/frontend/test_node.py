@@ -101,6 +101,8 @@ def create_test(test_data):
 # in the sense that numpy array are passed in via tf.placeholder
 # whereas python arrays are passed in as constants.
 test_cases = [
+("test_arg_max", tf.argmax, "ArgMax", [get_rnd([1, 2, 3, 4])], {"axis": -1}),
+("test_arg_min", tf.argmin, "ArgMin", [get_rnd([1, 2, 3, 4])], {"axis": -1}),
 # Use reverse to test ignore_unimplemented
 ("test_unimplemented", tf.reverse, "ReverseV2", [get_rnd([1, 2, 3, 4]), [3]], {}, {"ignore_unimplemented": True}),
 ("test_cast", tf.cast, "Cast", [get_rnd([10, 10]), tf.float16], {}),
