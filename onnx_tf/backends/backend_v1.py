@@ -812,7 +812,7 @@ class TensorflowBackend(TensorflowBackendBase):
   @classmethod
   def handle_reduce_l1(cls, node, input_dict):
     x = input_dict[node.inputs[0]]
-    axis = node.attrs["axes"]
+    axis = node.attrs.get("axes", list(range(len(x.get_shape().as_list()))))
     # https://github.com/onnx/onnx/issues/585
     if isinstance(axis, list):
       axis = [int(v) for v in axis]
@@ -820,9 +820,16 @@ class TensorflowBackend(TensorflowBackendBase):
     return [tf.norm(x, ord=1, axis=axis, keepdims=keepdims)]
 
   @classmethod
+  def handle_reduce_log_sum(cls, node, input_dict):
+    x = input_dict[node.inputs[0]]
+    axis = node.attrs.get("axes", list(range(len(x.get_shape().as_list()))))
+    keepdims = node.attrs.get("keepdims", 1) == 1
+    return [tf.log(tf.reduce_sum(x, axis=axis, keepdims=keepdims))]
+
+  @classmethod
   def handle_reduce_sum_square(cls, node, input_dict):
     x = input_dict[node.inputs[0]]
-    axis = node.attrs["axes"]
+    axis = node.attrs.get("axes", list(range(len(x.get_shape().as_list()))))
     keepdims = node.attrs.get("keepdims", 1) == 1
     return [tf.reduce_sum(tf.square(x), axis=axis, keepdims=keepdims)]
 
