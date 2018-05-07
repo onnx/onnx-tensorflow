@@ -633,17 +633,36 @@ class TensorflowBackend(TensorflowBackendBase):
   @classmethod
   def handle_l_s_t_m(cls, node, input_dict):
 
-    def w_initializer(node, input_dict, *args, **kwargs):
-      w = tf.transpose(input_dict[node.inputs[1]][0])
-      r = tf.transpose(input_dict[node.inputs[2]][0])
-      return tf.concat([w, r], 0)
+    def custom_getter(getter, name, node=None, input_dict=None, *args,
+                      **kwargs):
+      if name.split("/")[-1] == "kernel":
+        w = tf.transpose(input_dict[node.inputs[1]][0]) if len(
+            input_dict[node.inputs[1]].get_shape()) == 3 else tf.transpose(
+                input_dict[node.inputs[1]])
+        r = tf.transpose(input_dict[node.inputs[2]][0]) if len(
+            input_dict[node.inputs[2]].get_shape()) == 3 else tf.transpose(
+                input_dict[node.inputs[2]])
+        kernel = tf.concat([w, r], 0)
+        if len(kernel.get_shape()) == 1:
+          kernel = tf.expand_dims(kernel, 1)
+        return kernel
+      if name.split("/")[-1] == "bias":
+        return tf.add(*tf.split(tf.squeeze(input_dict[node.inputs[3]]), 2)
+                     ) if len(node.inputs) > 3 else getter(
+                         name, *args, **kwargs)
+      # Only use_peepholes is True,
+      # will try to get w_f_diag, w_i_diag, w_o_diag
+      if name.split("/")[-1] == "w_f_diag":
+        return tf.split(input_dict[node.inputs[7]], 3, axis=1)[0]
+      if name.split("/")[-1] == "w_i_diag":
+        return tf.split(input_dict[node.inputs[7]], 3, axis=1)[1]
+      if name.split("/")[-1] == "w_o_diag":
+        return tf.split(input_dict[node.inputs[7]], 3, axis=1)[2]
 
     hidden_size = node.attrs["hidden_size"]
     cell_kwargs = {}
 
     direction = node.attrs.get("direction", "forward")
-    output_sequence = bool(node.attrs.get('output_sequence', 0))
-    bias = input_dict[node.inputs[3]] if len(node.inputs) > 3 else 0.
 
     if "clip" in node.attrs:
       cell_kwargs["cell_clip"] = node.attrs["clip"]
@@ -666,41 +685,54 @@ class TensorflowBackend(TensorflowBackendBase):
         tf_activations.append(ONNX_OP_TO_TF_OP[activations[5]])
 
     cell_kwargs["activation"] = tf_activations[0]
-    lstm_cell = tf.nn.rnn_cell.LSTMCell(
-        hidden_size,
-        initializer=partial(w_initializer, node, input_dict),
-        **cell_kwargs)
-    cell = tf.nn.rnn_cell.MultiRNNCell([lstm_cell])
-    if direction == "bidirectional":
-      cell_kwargs["activation"] = tf_activations[1]
-      lstm_cell_bw = [tf.contrib.rnn.LSTMCell(hidden_size, **cell_kwargs)]
-      cell_bw = tf.contrib.rnn.MultiRNNCell([lstm_cell_bw])
+    cell_kwargs["use_peepholes"] = len(
+        node.inputs) == 8 and input_dict[node.inputs[7]] != 0
 
-    # TODO: handle data types
-    if direction == "forward":
-      output, state = tf.nn.dynamic_rnn(
-          cell, input_dict[node.inputs[0]], time_major=True, dtype=tf.float32)
-    elif direction == "bidirectional":
-      output, state = tf.nn.bidirectional_dynamic_rnn(
-          cell,
-          cell_bw,
-          input_dict[node.inputs[0]],
-          time_major=True,
-          dtype=tf.float32)
-    elif direction == "reverse":
+    with tf.variable_scope(
+        "LSTM",
+        custom_getter=partial(custom_getter, node=node, input_dict=input_dict)):
+      lstm_cell = tf.nn.rnn_cell.LSTMCell(hidden_size, **cell_kwargs)
+      cell = tf.nn.rnn_cell.MultiRNNCell([lstm_cell])
+      if direction == "bidirectional":
+        cell_kwargs["activation"] = tf_activations[1]
+        lstm_cell_bw = [tf.contrib.rnn.LSTMCell(hidden_size, **cell_kwargs)]
+        cell_bw = tf.contrib.rnn.MultiRNNCell([lstm_cell_bw])
 
-      def _reverse(input_, seq_dim):
-        return array_ops.reverse(input_, axis=[seq_dim])
+      initial_state = (tf.nn.rnn_cell.LSTMStateTuple(
+          input_dict[node.inputs[5]][0],
+          input_dict[node.inputs[6]][0]),) if len(
+              node.inputs) > 7 else cell.zero_state(
+                  input_dict[node.inputs[0]].get_shape().as_list()[1],
+                  dtype=tf.float32)
+      # TODO: handle data types
+      if direction == "forward":
+        output, state = tf.nn.dynamic_rnn(
+            cell,
+            input_dict[node.inputs[0]],
+            initial_state=initial_state,
+            time_major=True,
+            dtype=tf.float32)
+      elif direction == "bidirectional":
+        output, state = tf.nn.bidirectional_dynamic_rnn(
+            cell,
+            cell_bw,
+            input_dict[node.inputs[0]],
+            time_major=True,
+            dtype=tf.float32)
+      elif direction == "reverse":
 
-      time_dim = 0
-      inputs_reverse = _reverse(input_dict[node.inputs[0]], time_dim)
-      output, state = tf.nn.dynamic_rnn(
-          cell, inputs_reverse, time_major=True, dtype=tf.float32)
+        def _reverse(input_, seq_dim):
+          return array_ops.reverse(input_, axis=[seq_dim])
+
+        time_dim = 0
+        inputs_reverse = _reverse(input_dict[node.inputs[0]], time_dim)
+        output, state = tf.nn.dynamic_rnn(
+            cell, inputs_reverse, time_major=True, dtype=tf.float32)
 
     state = state[0]
     c, h = state
     states = [h, c]
-    outputs = [output]
+    outputs = [tf.squeeze(output)]
     outputs.extend(states)
     return outputs
 
