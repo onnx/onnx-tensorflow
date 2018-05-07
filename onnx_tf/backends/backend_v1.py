@@ -632,10 +632,18 @@ class TensorflowBackend(TensorflowBackendBase):
 
   @classmethod
   def handle_l_s_t_m(cls, node, input_dict):
+
+    def w_initializer(node, input_dict, *args, **kwargs):
+      w = tf.transpose(input_dict[node.inputs[1]][0])
+      r = tf.transpose(input_dict[node.inputs[2]][0])
+      return tf.concat([w, r], 0)
+
     hidden_size = node.attrs["hidden_size"]
     cell_kwargs = {}
 
     direction = node.attrs.get("direction", "forward")
+    output_sequence = bool(node.attrs.get('output_sequence', 0))
+    bias = input_dict[node.inputs[3]] if len(node.inputs) > 3 else 0.
 
     if "clip" in node.attrs:
       cell_kwargs["cell_clip"] = node.attrs["clip"]
@@ -658,8 +666,11 @@ class TensorflowBackend(TensorflowBackendBase):
         tf_activations.append(ONNX_OP_TO_TF_OP[activations[5]])
 
     cell_kwargs["activation"] = tf_activations[0]
-    lstm_cell = tf.contrib.rnn.LSTMCell(hidden_size, **cell_kwargs)
-    cell = tf.contrib.rnn.MultiRNNCell([lstm_cell])
+    lstm_cell = tf.nn.rnn_cell.LSTMCell(
+        hidden_size,
+        initializer=partial(w_initializer, node, input_dict),
+        **cell_kwargs)
+    cell = tf.nn.rnn_cell.MultiRNNCell([lstm_cell])
     if direction == "bidirectional":
       cell_kwargs["activation"] = tf_activations[1]
       lstm_cell_bw = [tf.contrib.rnn.LSTMCell(hidden_size, **cell_kwargs)]
