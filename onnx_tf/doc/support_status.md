@@ -81,7 +81,7 @@ ______
 |Reciprocal|1, 6|
 |ReduceL1|1|
 |ReduceL2|N/A|
-|ReduceLogSum|N/A|
+|ReduceLogSum|1|
 |ReduceLogSumExp|1|
 |ReduceMax|1|
 |ReduceMean|1|
