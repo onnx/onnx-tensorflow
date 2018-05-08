@@ -637,6 +637,7 @@ class TensorflowBackend(TensorflowBackendBase):
     def custom_getter(getter, name, node=None, input_dict=None, *args,
                       **kwargs):
       if name.split("/")[-1] == "kernel":
+        # onnx W[iofc], R[iofc]
         w_i, w_o, w_f, w_c = tf.split(tf.squeeze(input_dict[node.inputs[1]]), 4)
         r_i, r_o, r_f, r_c = tf.split(tf.squeeze(input_dict[node.inputs[2]]), 4)
         w = tf.transpose(tf.concat([w_i, w_c, w_f, w_o], 0))
@@ -645,6 +646,7 @@ class TensorflowBackend(TensorflowBackendBase):
         return kernel
       if name.split("/")[-1] == "bias":
         if len(node.inputs) >= 4:
+          # onnx Wb[iofc], Rb[iofc]
           w_b, r_b = tf.split(tf.squeeze(input_dict[node.inputs[3]]), 2)
           w_b_i, w_b_o, w_b_f, w_b_c = tf.split(w_b, 4)
           r_b_i, r_b_o, r_b_f, r_b_c = tf.split(r_b, 4)
@@ -654,12 +656,13 @@ class TensorflowBackend(TensorflowBackendBase):
         return getter(name, *args, **kwargs)
       # Only use_peepholes is True,
       # will try to get w_f_diag, w_i_diag, w_o_diag
+      # onnx P[iof]
       if name.split("/")[-1] == "w_f_diag":
-        return tf.split(input_dict[node.inputs[7]], 3, axis=1)[0]
-      if name.split("/")[-1] == "w_i_diag":
-        return tf.split(input_dict[node.inputs[7]], 3, axis=1)[1]
-      if name.split("/")[-1] == "w_o_diag":
         return tf.split(input_dict[node.inputs[7]], 3, axis=1)[2]
+      if name.split("/")[-1] == "w_i_diag":
+        return tf.split(input_dict[node.inputs[7]], 3, axis=1)[0]
+      if name.split("/")[-1] == "w_o_diag":
+        return tf.split(input_dict[node.inputs[7]], 3, axis=1)[1]
       return getter(name, *args, **kwargs)
 
     hidden_size = node.attrs["hidden_size"]
