@@ -21,6 +21,7 @@ import tensorflow as tf
 from tensorflow.python.ops import array_ops
 
 from onnx_tf.backend import TensorflowBackendBase
+from onnx_tf.common import get_unique_suffix
 from onnx_tf.common import (
     ONNX_OP_TO_TF_OP,
     ONNX_TYPE_TO_TF_TYPE,
@@ -636,20 +637,21 @@ class TensorflowBackend(TensorflowBackendBase):
     def custom_getter(getter, name, node=None, input_dict=None, *args,
                       **kwargs):
       if name.split("/")[-1] == "kernel":
-        w = tf.transpose(input_dict[node.inputs[1]][0]) if len(
-            input_dict[node.inputs[1]].get_shape()) == 3 else tf.transpose(
-                input_dict[node.inputs[1]])
-        r = tf.transpose(input_dict[node.inputs[2]][0]) if len(
-            input_dict[node.inputs[2]].get_shape()) == 3 else tf.transpose(
-                input_dict[node.inputs[2]])
+        w_i, w_o, w_f, w_c = tf.split(tf.squeeze(input_dict[node.inputs[1]]), 4)
+        r_i, r_o, r_f, r_c = tf.split(tf.squeeze(input_dict[node.inputs[2]]), 4)
+        w = tf.transpose(tf.concat([w_i, w_c, w_f, w_o], 0))
+        r = tf.transpose(tf.concat([r_i, r_c, r_f, r_o], 0))
         kernel = tf.concat([w, r], 0)
-        if len(kernel.get_shape()) == 1:
-          kernel = tf.expand_dims(kernel, 1)
         return kernel
       if name.split("/")[-1] == "bias":
-        return tf.add(*tf.split(tf.squeeze(input_dict[node.inputs[3]]), 2)
-                     ) if len(node.inputs) > 3 else getter(
-                         name, *args, **kwargs)
+        if len(node.inputs) >= 4:
+          w_b, r_b = tf.split(tf.squeeze(input_dict[node.inputs[3]]), 2)
+          w_b_i, w_b_o, w_b_f, w_b_c = tf.split(w_b, 4)
+          r_b_i, r_b_o, r_b_f, r_b_c = tf.split(r_b, 4)
+          w_b = tf.transpose(tf.concat([w_b_i, w_b_c, w_b_f, w_b_o], 0))
+          r_b = tf.transpose(tf.concat([r_b_i, r_b_c, r_b_f, r_b_o], 0))
+          return tf.add(w_b, r_b)
+        return getter(name, *args, **kwargs)
       # Only use_peepholes is True,
       # will try to get w_f_diag, w_i_diag, w_o_diag
       if name.split("/")[-1] == "w_f_diag":
@@ -658,6 +660,7 @@ class TensorflowBackend(TensorflowBackendBase):
         return tf.split(input_dict[node.inputs[7]], 3, axis=1)[1]
       if name.split("/")[-1] == "w_o_diag":
         return tf.split(input_dict[node.inputs[7]], 3, axis=1)[2]
+      return getter(name, *args, **kwargs)
 
     hidden_size = node.attrs["hidden_size"]
     cell_kwargs = {}
@@ -689,7 +692,7 @@ class TensorflowBackend(TensorflowBackendBase):
         node.inputs) == 8 and input_dict[node.inputs[7]] != 0
 
     with tf.variable_scope(
-        "LSTM",
+        "LSTM_" + get_unique_suffix(),
         custom_getter=partial(custom_getter, node=node, input_dict=input_dict)):
       lstm_cell = tf.nn.rnn_cell.LSTMCell(hidden_size, **cell_kwargs)
       cell = tf.nn.rnn_cell.MultiRNNCell([lstm_cell])
@@ -699,9 +702,9 @@ class TensorflowBackend(TensorflowBackendBase):
         cell_bw = tf.contrib.rnn.MultiRNNCell([lstm_cell_bw])
 
       initial_state = (tf.nn.rnn_cell.LSTMStateTuple(
-          input_dict[node.inputs[5]][0],
-          input_dict[node.inputs[6]][0]),) if len(
-              node.inputs) > 7 else cell.zero_state(
+          input_dict[node.inputs[6]][0],
+          input_dict[node.inputs[5]][0]),) if len(
+              node.inputs) >= 7 else cell.zero_state(
                   input_dict[node.inputs[0]].get_shape().as_list()[1],
                   dtype=tf.float32)
       # TODO: handle data types
@@ -731,8 +734,11 @@ class TensorflowBackend(TensorflowBackendBase):
 
     state = state[0]
     c, h = state
+    if len(c.get_shape()) == 2:
+      c = tf.expand_dims(c, 0)
+      h = tf.expand_dims(h, 0)
     states = [h, c]
-    outputs = [tf.squeeze(output)]
+    outputs = [output]
     outputs.extend(states)
     return outputs
 

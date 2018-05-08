@@ -39,7 +39,7 @@ class TensorflowRep(BackendRep):
             for key in self.predict_net.external_input
         }
 
-        sess.run(tf.global_variables_initializer(), feed_dict=feed_dict)
+        sess.run(tf.global_variables_initializer())
         external_output = [
             self.predict_net.tensor_dict[output]
             for output in self.predict_net.external_output
