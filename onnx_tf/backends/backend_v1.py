@@ -665,10 +665,16 @@ class TensorflowBackend(TensorflowBackendBase):
         return tf.split(input_dict[node.inputs[7]], 3, axis=1)[1]
       return getter(name, *args, **kwargs)
 
+    input_shape = input_dict[node.inputs[0]].get_shape().as_list()
+    input_size = len(node.inputs)
     hidden_size = node.attrs["hidden_size"]
-    cell_kwargs = {}
-
     direction = node.attrs.get("direction", "forward")
+    num_directions = 2 if direction == "bidirectional" else 1
+    sequence_length = input_dict[node.inputs[
+        4]] if input_size >= 5 else None or [input_shape[0]] * input_shape[1]
+    if node.attrs.get("output_sequence", 0) != 0:
+      raise NotImplementedError("output_sequence != 0 is not supported.")
+    cell_kwargs = {}
 
     if "clip" in node.attrs:
       cell_kwargs["cell_clip"] = node.attrs["clip"]
@@ -691,31 +697,39 @@ class TensorflowBackend(TensorflowBackendBase):
         tf_activations.append(ONNX_OP_TO_TF_OP[activations[5]])
 
     cell_kwargs["activation"] = tf_activations[0]
-    cell_kwargs["use_peepholes"] = len(
-        node.inputs) == 8 and input_dict[node.inputs[7]] != 0
+    cell_kwargs["use_peepholes"] = input_size == 8
 
+    # TODO check if reverse and bidirectional works
     with tf.variable_scope(
         "LSTM_" + get_unique_suffix(),
         custom_getter=partial(custom_getter, node=node, input_dict=input_dict)):
-      lstm_cell = tf.nn.rnn_cell.LSTMCell(hidden_size, **cell_kwargs)
-      cell = tf.nn.rnn_cell.MultiRNNCell([lstm_cell])
+
+      lstm_cell = [
+          tf.nn.rnn_cell.LSTMCell(hidden_size, forget_bias=0., **cell_kwargs)
+      ]
+      cell = tf.nn.rnn_cell.MultiRNNCell(lstm_cell)
+      initial_state = (tf.nn.rnn_cell.LSTMStateTuple(
+          input_dict[node.inputs[6]][0], input_dict[node.inputs[5]][0]),
+                      ) if input_size >= 7 else cell.zero_state(
+                          input_shape[1], dtype=tf.float32)
+
       if direction == "bidirectional":
         cell_kwargs["activation"] = tf_activations[1]
-        lstm_cell_bw = [tf.contrib.rnn.LSTMCell(hidden_size, **cell_kwargs)]
+        lstm_cell_bw = [
+            tf.contrib.rnn.LSTMCell(hidden_size, forget_bias=0., **cell_kwargs)
+        ]
         cell_bw = tf.contrib.rnn.MultiRNNCell([lstm_cell_bw])
+        initial_state_bw = (tf.nn.rnn_cell.LSTMStateTuple(
+            input_dict[node.inputs[6]][1], input_dict[node.inputs[5]][1]),
+                           ) if input_size >= 7 else cell.zero_state(
+                               input_shape[1], dtype=tf.float32)
 
-      initial_state = (tf.nn.rnn_cell.LSTMStateTuple(
-          input_dict[node.inputs[6]][0],
-          input_dict[node.inputs[5]][0]),) if len(
-              node.inputs) >= 7 else cell.zero_state(
-                  input_dict[node.inputs[0]].get_shape().as_list()[1],
-                  dtype=tf.float32)
-      # TODO: handle data types
       if direction == "forward":
         output, state = tf.nn.dynamic_rnn(
             cell,
             input_dict[node.inputs[0]],
             initial_state=initial_state,
+            sequence_length=sequence_length,
             time_major=True,
             dtype=tf.float32)
       elif direction == "bidirectional":
@@ -723,6 +737,9 @@ class TensorflowBackend(TensorflowBackendBase):
             cell,
             cell_bw,
             input_dict[node.inputs[0]],
+            initial_state_fw=initial_state,
+            initial_state_bw=initial_state_bw,
+            sequence_length=sequence_length,
             time_major=True,
             dtype=tf.float32)
       elif direction == "reverse":
@@ -734,16 +751,16 @@ class TensorflowBackend(TensorflowBackendBase):
         inputs_reverse = _reverse(input_dict[node.inputs[0]], time_dim)
         output, state = tf.nn.dynamic_rnn(
             cell, inputs_reverse, time_major=True, dtype=tf.float32)
+        output = _reverse(output, time_dim)
 
     state = state[0]
     c, h = state
-    if len(c.get_shape()) == 2:
+    if num_directions == 1:
       c = tf.expand_dims(c, 0)
       h = tf.expand_dims(h, 0)
-    states = [h, c]
-    outputs = [output]
-    outputs.extend(states)
-    return outputs
+      output = tf.expand_dims(output, 1)
+    # TODO post process of bidirectional
+    return [output, h, c]
 
   @classmethod
   def handle_leaky_relu(cls, node, input_dict):
