@@ -665,15 +665,27 @@ class TensorflowBackend(TensorflowBackendBase):
         return tf.split(input_dict[node.inputs[7]], 3, axis=1)[1]
       return getter(name, *args, **kwargs)
 
-    input_shape = input_dict[node.inputs[0]].get_shape().as_list()
+    x = input_dict[node.inputs[0]]
+    input_shape = x.get_shape().as_list()
     input_size = len(node.inputs)
     hidden_size = node.attrs["hidden_size"]
     direction = node.attrs.get("direction", "forward")
     num_directions = 2 if direction == "bidirectional" else 1
-    sequence_length = input_dict[node.inputs[
-        4]] if input_size >= 5 else None or [input_shape[0]] * input_shape[1]
+
     if node.attrs.get("output_sequence", 0) != 0:
       raise NotImplementedError("output_sequence != 0 is not supported.")
+
+    # TODO check if prev node is one of RNN
+    # deal with output from other cell
+    # which has shape [seq_length, num_directions, batch_size, hidden_size]
+    if len(input_shape) == 4 and input_shape[1] == 1:
+      x = tf.squeeze(x)
+      input_shape = x.get_shape().as_list()
+
+    sequence_length = input_dict[node.inputs[
+      4]] if input_size >= 5 and node.inputs[4] in input_dict else None or [
+      input_shape[0]
+    ] * input_shape[1]
 
     cell_kwargs = {}
 
@@ -736,7 +748,7 @@ class TensorflowBackend(TensorflowBackendBase):
       if direction == "forward":
         output, state = tf.nn.dynamic_rnn(
             cell,
-            input_dict[node.inputs[0]],
+            x,
             initial_state=initial_state,
             sequence_length=sequence_length,
             time_major=True,
@@ -745,7 +757,7 @@ class TensorflowBackend(TensorflowBackendBase):
         output, state = tf.nn.bidirectional_dynamic_rnn(
             cell,
             cell_bw,
-            input_dict[node.inputs[0]],
+            x,
             initial_state_fw=initial_state,
             initial_state_bw=initial_state_bw,
             sequence_length=sequence_length,
@@ -757,7 +769,7 @@ class TensorflowBackend(TensorflowBackendBase):
           return array_ops.reverse(input_, axis=[seq_dim])
 
         time_dim = 0
-        inputs_reverse = _reverse(input_dict[node.inputs[0]], time_dim)
+        inputs_reverse = _reverse(x, time_dim)
         output, state = tf.nn.dynamic_rnn(
             cell, inputs_reverse, time_major=True, dtype=tf.float32)
         output = _reverse(output, time_dim)
