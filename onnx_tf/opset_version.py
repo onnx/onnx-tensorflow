@@ -74,7 +74,7 @@ backend_opset_version = {
     'Reciprocal': [1, 6],
     'ReduceL1': [1],
     'ReduceL2': [],
-    'ReduceLogSum': [],
+    'ReduceLogSum': [1],
     'ReduceLogSumExp': [1],
     'ReduceMax': [1],
     'ReduceMean': [1],
