@@ -674,6 +674,7 @@ class TensorflowBackend(TensorflowBackendBase):
         4]] if input_size >= 5 else None or [input_shape[0]] * input_shape[1]
     if node.attrs.get("output_sequence", 0) != 0:
       raise NotImplementedError("output_sequence != 0 is not supported.")
+
     cell_kwargs = {}
 
     if "clip" in node.attrs:
@@ -682,27 +683,35 @@ class TensorflowBackend(TensorflowBackendBase):
     tf_activations = [tf.nn.tanh]
     if "activations" in node.attrs:
       activations = list(map(lambda x: x.lower(), node.attrs["activations"]))
-      if activations[0] != "sigmoid" or activations[1] != "tanh":
-        warnings.warn(
-            "Tensorflow uses sigmiod and tanh as first two activation functions."
-            "So activations attr will be set to sigmiod, tanh and {}.".format(
-                activations[2]))
-      tf_activations = [ONNX_OP_TO_TF_OP[activations[2]]]
+      if activations[0] != "sigmoid":
+        raise NotImplementedError(
+            "Tensorflow uses sigmiod as first activation function `f`.")
+      if activations[1] != activations[2]:
+        raise NotImplementedError(
+            "Tensorflow uses same activation functions for `gh`.")
+      if activations[1] not in ONNX_OP_TO_TF_OP:
+        raise NotImplementedError(
+            "Activation function {} is not support.".format(activations[1]))
+      tf_activations = [ONNX_OP_TO_TF_OP[activations[1]]]
       if direction == "bidirectional":
-        if activations[3] != "sigmoid" or activations[4] != "tanh":
-          warnings.warn(
-              "Tensorflow uses sigmiod and tanh as first two activation functions."
-              "So activations attr will be set to sigmiod, tanh and {}.".format(
-                  activations[4]))
-        tf_activations.append(ONNX_OP_TO_TF_OP[activations[5]])
-
-    cell_kwargs["activation"] = tf_activations[0]
-    cell_kwargs["use_peepholes"] = input_size == 8
+        if activations[3] != "sigmoid":
+          raise NotImplementedError(
+              "Tensorflow uses sigmiod as first activation function `f`.")
+        if activations[4] != activations[5]:
+          raise NotImplementedError(
+              "Tensorflow uses same activation functions for `gh`.")
+        if activations[4] not in ONNX_OP_TO_TF_OP:
+          raise NotImplementedError(
+              "Activation function {} is not support.".format(activations[4]))
+        tf_activations.append(ONNX_OP_TO_TF_OP[activations[4]])
 
     # TODO check if reverse and bidirectional works
     with tf.variable_scope(
         "LSTM_" + get_unique_suffix(),
         custom_getter=partial(custom_getter, node=node, input_dict=input_dict)):
+
+      cell_kwargs["activation"] = tf_activations[0]
+      cell_kwargs["use_peepholes"] = input_size == 8
 
       lstm_cell = [
           tf.nn.rnn_cell.LSTMCell(hidden_size, forget_bias=0., **cell_kwargs)
@@ -716,9 +725,9 @@ class TensorflowBackend(TensorflowBackendBase):
       if direction == "bidirectional":
         cell_kwargs["activation"] = tf_activations[1]
         lstm_cell_bw = [
-            tf.contrib.rnn.LSTMCell(hidden_size, forget_bias=0., **cell_kwargs)
+            tf.nn.rnn_cell.LSTMCell(hidden_size, forget_bias=0., **cell_kwargs)
         ]
-        cell_bw = tf.contrib.rnn.MultiRNNCell([lstm_cell_bw])
+        cell_bw = tf.nn.rnn_cell.MultiRNNCell([lstm_cell_bw])
         initial_state_bw = (tf.nn.rnn_cell.LSTMStateTuple(
             input_dict[node.inputs[6]][1], input_dict[node.inputs[5]][1]),
                            ) if input_size >= 7 else cell.zero_state(
