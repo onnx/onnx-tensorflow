@@ -683,16 +683,16 @@ class TensorflowBackend(TensorflowBackendBase):
       raise NotImplementedError("output_sequence != 0 is not supported.")
 
     # TODO check if prev node is one of RNN
-    # deal with output from other cell
+    # process input if it comes from other previous cell
     # which has shape [seq_length, num_directions, batch_size, hidden_size]
     if len(input_shape) == 4 and input_shape[1] == 1:
       x = tf.squeeze(x)
       input_shape = x.get_shape().as_list()
 
-    sequence_length = input_dict[node.inputs[
-      4]] if input_size >= 5 and node.inputs[4] in input_dict else None or [
-      input_shape[0]
-    ] * input_shape[1]
+    if input_size >= 5 and node.inputs[4] in input_dict:
+      sequence_length = input_dict[node.inputs[4]]
+    else:
+      sequence_length = [input_shape[0]] * input_shape[1]
 
     cell_kwargs = {}
 
@@ -710,7 +710,7 @@ class TensorflowBackend(TensorflowBackendBase):
             "Tensorflow uses same activation functions for `gh`.")
       if activations[1] not in ONNX_OP_TO_TF_OP:
         raise NotImplementedError(
-            "Activation function {} is not support.".format(activations[1]))
+            "Activation function {} is not supported.".format(activations[1]))
       tf_activations = [ONNX_OP_TO_TF_OP[activations[1]]]
       if direction == "bidirectional":
         if activations[3] != "sigmoid":
@@ -721,7 +721,7 @@ class TensorflowBackend(TensorflowBackendBase):
               "Tensorflow uses same activation functions for `gh`.")
         if activations[4] not in ONNX_OP_TO_TF_OP:
           raise NotImplementedError(
-              "Activation function {} is not support.".format(activations[4]))
+              "Activation function {} is not supported.".format(activations[4]))
         tf_activations.append(ONNX_OP_TO_TF_OP[activations[4]])
 
     # TODO check if reverse and bidirectional works
@@ -730,16 +730,19 @@ class TensorflowBackend(TensorflowBackendBase):
         custom_getter=partial(custom_getter, node=node, input_dict=input_dict)):
 
       cell_kwargs["activation"] = tf_activations[0]
-      cell_kwargs["use_peepholes"] = input_size == 8
+      cell_kwargs[
+          "use_peepholes"] = input_size == 8 and node.inputs[7] in input_dict
 
       lstm_cell = [
           tf.nn.rnn_cell.LSTMCell(hidden_size, forget_bias=0., **cell_kwargs)
       ]
       cell = tf.nn.rnn_cell.MultiRNNCell(lstm_cell)
-      initial_state = (tf.nn.rnn_cell.LSTMStateTuple(
-          input_dict[node.inputs[6]][0], input_dict[node.inputs[5]][0]),
-                      ) if input_size >= 7 else cell.zero_state(
-                          input_shape[1], dtype=tf.float32)
+
+      if input_size >= 7 and node.inputs[5] in input_dict and node.inputs[6] in input_dict:
+        initial_state = (tf.nn.rnn_cell.LSTMStateTuple(
+            input_dict[node.inputs[6]][0], input_dict[node.inputs[5]][0]),)
+      else:
+        initial_state = cell.zero_state(input_shape[1], dtype=tf.float32)
 
       if direction == "bidirectional":
         cell_kwargs["activation"] = tf_activations[1]
@@ -747,10 +750,13 @@ class TensorflowBackend(TensorflowBackendBase):
             tf.nn.rnn_cell.LSTMCell(hidden_size, forget_bias=0., **cell_kwargs)
         ]
         cell_bw = tf.nn.rnn_cell.MultiRNNCell([lstm_cell_bw])
-        initial_state_bw = (tf.nn.rnn_cell.LSTMStateTuple(
-            input_dict[node.inputs[6]][1], input_dict[node.inputs[5]][1]),
-                           ) if input_size >= 7 else cell.zero_state(
-                               input_shape[1], dtype=tf.float32)
+
+        if input_size >= 7 and node.inputs[5] in input_dict and node.inputs[6] in input_dict:
+          initial_state = (tf.nn.rnn_cell.LSTMStateTuple(
+              input_dict[node.inputs[6]][1], input_dict[node.inputs[5]][1]),)
+        else:
+          initial_state_bw = cell_bw.zero_state(
+              input_shape[1], dtype=tf.float32)
 
       if direction == "forward":
         output, state = tf.nn.dynamic_rnn(
@@ -778,16 +784,21 @@ class TensorflowBackend(TensorflowBackendBase):
         time_dim = 0
         inputs_reverse = _reverse(x, time_dim)
         output, state = tf.nn.dynamic_rnn(
-            cell, inputs_reverse, time_major=True, dtype=tf.float32)
+            cell,
+            inputs_reverse,
+            initial_state=initial_state,
+            sequence_length=sequence_length,
+            time_major=True,
+            dtype=tf.float32)
         output = _reverse(output, time_dim)
 
+    # TODO post process for bidirectional
     state = state[0]
     c, h = state
     if num_directions == 1:
       c = tf.expand_dims(c, 0)
       h = tf.expand_dims(h, 0)
       output = tf.expand_dims(output, 1)
-    # TODO post process of bidirectional
     return [output, h, c]
 
   @classmethod
