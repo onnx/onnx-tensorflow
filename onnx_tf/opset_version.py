@@ -66,7 +66,7 @@ backend_opset_version = {
     'Pad': [1, 2],
     'ParametricSoftplus': [],
     'Pow': [1],
-    'RNN': [],
+    'RNN': [1],
     'RandomNormal': [1],
     'RandomNormalLike': [1],
     'RandomUniform': [1],

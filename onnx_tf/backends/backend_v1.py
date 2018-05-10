@@ -793,6 +793,100 @@ class TensorflowBackend(TensorflowBackendBase):
     return [output, h, c]
 
   @classmethod
+  def handle_r_n_n(cls, node, input_dict):
+
+    def custom_getter(getter, name, node=None, input_dict=None, *args,
+                      **kwargs):
+      # TODO(fumihwh): deal with bidirectional
+      if name.split("/")[-1] == "kernel":
+        w = tf.transpose(tf.squeeze(input_dict[node.inputs[1]]))
+        r = tf.transpose(tf.squeeze(input_dict[node.inputs[2]]))
+        kernel = tf.concat([w, r], 0)
+        return kernel
+      if name.split("/")[-1] == "bias":
+        if len(node.inputs) >= 4:
+          w_b, r_b = tf.split(tf.squeeze(input_dict[node.inputs[3]]), 2)
+          w_b = tf.transpose(w_b)
+          r_b = tf.transpose(r_b)
+          return tf.add(w_b, r_b)
+        return getter(name, *args, **kwargs)
+      return getter(name, *args, **kwargs)
+
+    x = input_dict[node.inputs[0]]
+    input_shape = x.get_shape().as_list()
+    input_size = len(node.inputs)
+    hidden_size = node.attrs["hidden_size"]
+    direction = node.attrs.get("direction", "forward")
+    num_directions = 2 if direction == "bidirectional" else 1
+
+    if node.attrs.get("output_sequence", 0) != 0:
+      raise NotImplementedError("output_sequence != 0 is not supported.")
+
+    # TODO(fumihwh): check if prev node is one of RNN
+    # process input if it comes from other previous cell
+    # which has shape [seq_length, num_directions, batch_size, hidden_size]
+    if len(input_shape) == 4 and input_shape[1] == 1:
+      x = tf.squeeze(x)
+
+    sequence_length = None
+    if input_size >= 5 and node.inputs[4] in input_dict:
+      sequence_length = input_dict[node.inputs[4]]
+
+    cell_kwargs = {}
+
+    if "clip" in node.attrs:
+      raise NotImplementedError("Clip is not supported.")
+
+    tf_activations = [tf.nn.tanh]
+    if "activations" in node.attrs:
+      activations = list(map(lambda x: x.lower(), node.attrs["activations"]))
+      if activations[0] not in ONNX_OP_TO_TF_OP:
+        raise NotImplementedError(
+            "Activation function {} is not supported.".format(activations[0]))
+      tf_activations = [ONNX_OP_TO_TF_OP[activations[0]]]
+      if num_directions == 2:
+        if activations[1] not in ONNX_OP_TO_TF_OP:
+          raise NotImplementedError(
+              "Activation function {} is not supported.".format(activations[1]))
+        tf_activations.append(ONNX_OP_TO_TF_OP[activations[1]])
+
+    # TODO(fumihwh): check if reverse and bidirectional works
+    with tf.variable_scope(
+        "RNN_" + get_unique_suffix(),
+        custom_getter=partial(custom_getter, node=node, input_dict=input_dict)):
+
+      cell_kwargs["num_units"] = hidden_size
+      initial_state = None
+      initial_state_bw = None
+      if input_size == 6 and node.inputs[5] in input_dict:
+        initial_state = (input_dict[node.inputs[5]][0],)
+        if num_directions == 2:
+          initial_state_bw = (input_dict[node.inputs[5]][1],)
+
+      rnn_kwargs = {}
+      if num_directions == 1:
+        rnn_kwargs["initial_state"] = initial_state
+      elif num_directions == 2:
+        rnn_kwargs["initial_state_fw"] = initial_state
+        rnn_kwargs["initial_state_bw"] = initial_state_bw
+      rnn_kwargs["sequence_length"] = sequence_length
+      rnn_kwargs["time_major"] = True
+      rnn_kwargs["dtype"] = tf.float32
+
+      output, state = cls._rnn(x, tf.nn.rnn_cell.BasicRNNCell, cell_kwargs,
+                               rnn_kwargs, tf_activations, direction)
+
+    # TODO(fumihwh): post process for bidirectional
+    state = state[0]
+    h = state
+    if num_directions == 1:
+      h = tf.expand_dims(h, 0)
+      # TODO(fumihwh): fix test case
+      # output = tf.expand_dims(output, 1)
+    output = tf.squeeze(output)
+    return [output, h]
+
+  @classmethod
   def handle_leaky_relu(cls, node, input_dict):
     x = input_dict[node.inputs[0]]
     if not "alpha" in node.attrs.keys():
