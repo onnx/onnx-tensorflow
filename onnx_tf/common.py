@@ -42,6 +42,7 @@ ONNX_TYPE_TO_TF_TYPE = {
     TensorProto.DOUBLE: tf.float64,
     TensorProto.COMPLEX64: tf.complex64,
     TensorProto.COMPLEX128: tf.complex128,
+    TensorProto.STRING: tf.string,
     # TODO: uncomment this in the future
     # TensorProto.UINT32: tf.uint32,
     # TensorProto.UINT64: tf.uint64,
