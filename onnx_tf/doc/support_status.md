@@ -133,6 +133,7 @@ ______
 |conv2_d|1|
 |conv3_d|1|
 |equal|1|
+|fill|1|
 |fused_batch_norm|1, 6|
 |greater|1|
 |identity|1|

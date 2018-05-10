@@ -127,6 +127,15 @@ class TensorflowFrontend(TensorflowFrontendBase):
     return cls._conv(node, 3, **kwargs)
 
   @classmethod
+  @register_onnx_op("ConstantFill")
+  def handle_fill(cls, node, **kwargs):
+    value = float(np.asscalar(kwargs["consts"][node.inputs[1]]))
+    return helper.make_node(
+        "ConstantFill", [node.inputs[0]], [node.name],
+        input_as_shape=1,
+        value=value)
+
+  @classmethod
   @register_onnx_op("Pad")
   def handle_pad(cls, node, **kwargs):
     consts = kwargs["consts"]
