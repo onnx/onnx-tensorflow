@@ -639,6 +639,35 @@ class TensorflowBackend(TensorflowBackendBase):
     return [normed]
 
   @classmethod
+  def _rnn(cls, x, cell_class, cell_kwargs, rnn_kwargs, activations, direction):
+    cell_kwargs["activation"] = activations[0]
+
+    rnn_cell = [cell_class(**cell_kwargs)]
+    cell_fw = tf.nn.rnn_cell.MultiRNNCell(rnn_cell)
+
+    if direction == "bidirectional":
+      cell_kwargs["activation"] = activations[1]
+      rnn_cell_bw = [cell_class(**cell_kwargs)]
+      cell_bw = tf.nn.rnn_cell.MultiRNNCell([rnn_cell_bw])
+
+    if direction == "forward":
+      output, state = tf.nn.dynamic_rnn(cell_fw, x, **rnn_kwargs)
+    elif direction == "bidirectional":
+      output, state = tf.nn.bidirectional_dynamic_rnn(cell_fw, cell_bw, x,
+                                                      **rnn_kwargs)
+    elif direction == "reverse":
+
+      def _reverse(input_, seq_dim):
+        return array_ops.reverse(input_, axis=[seq_dim])
+
+      time_dim = 0
+      inputs_reverse = _reverse(x, time_dim)
+      output, state = tf.nn.dynamic_rnn(cell_fw, inputs_reverse, **rnn_kwargs)
+      output = _reverse(output, time_dim)
+
+    return output, state
+
+  @classmethod
   def handle_l_s_t_m(cls, node, input_dict):
 
     def custom_getter(getter, name, node=None, input_dict=None, *args,
@@ -687,12 +716,10 @@ class TensorflowBackend(TensorflowBackendBase):
     # which has shape [seq_length, num_directions, batch_size, hidden_size]
     if len(input_shape) == 4 and input_shape[1] == 1:
       x = tf.squeeze(x)
-      input_shape = x.get_shape().as_list()
 
+    sequence_length = None
     if input_size >= 5 and node.inputs[4] in input_dict:
       sequence_length = input_dict[node.inputs[4]]
-    else:
-      sequence_length = [input_shape[0]] * input_shape[1]
 
     cell_kwargs = {}
 
@@ -712,7 +739,7 @@ class TensorflowBackend(TensorflowBackendBase):
         raise NotImplementedError(
             "Activation function {} is not supported.".format(activations[1]))
       tf_activations = [ONNX_OP_TO_TF_OP[activations[1]]]
-      if direction == "bidirectional":
+      if num_directions == 2:
         if activations[3] != "sigmoid":
           raise NotImplementedError(
               "Tensorflow uses sigmiod as first activation function `f`.")
@@ -729,68 +756,31 @@ class TensorflowBackend(TensorflowBackendBase):
         "LSTM_" + get_unique_suffix(),
         custom_getter=partial(custom_getter, node=node, input_dict=input_dict)):
 
-      cell_kwargs["activation"] = tf_activations[0]
       cell_kwargs[
           "use_peepholes"] = input_size == 8 and node.inputs[7] in input_dict
-
-      lstm_cell = [
-          tf.nn.rnn_cell.LSTMCell(hidden_size, forget_bias=0., **cell_kwargs)
-      ]
-      cell = tf.nn.rnn_cell.MultiRNNCell(lstm_cell)
-
+      cell_kwargs["forget_bias"] = 0.
+      cell_kwargs["num_units"] = hidden_size
+      initial_state = None
+      initial_state_bw = None
       if input_size >= 7 and node.inputs[5] in input_dict and node.inputs[6] in input_dict:
         initial_state = (tf.nn.rnn_cell.LSTMStateTuple(
             input_dict[node.inputs[6]][0], input_dict[node.inputs[5]][0]),)
-      else:
-        initial_state = cell.zero_state(input_shape[1], dtype=tf.float32)
-
-      if direction == "bidirectional":
-        cell_kwargs["activation"] = tf_activations[1]
-        lstm_cell_bw = [
-            tf.nn.rnn_cell.LSTMCell(hidden_size, forget_bias=0., **cell_kwargs)
-        ]
-        cell_bw = tf.nn.rnn_cell.MultiRNNCell([lstm_cell_bw])
-
-        if input_size >= 7 and node.inputs[5] in input_dict and node.inputs[6] in input_dict:
-          initial_state = (tf.nn.rnn_cell.LSTMStateTuple(
+        if num_directions == 2:
+          initial_state_bw = initial_state = (tf.nn.rnn_cell.LSTMStateTuple(
               input_dict[node.inputs[6]][1], input_dict[node.inputs[5]][1]),)
-        else:
-          initial_state_bw = cell_bw.zero_state(
-              input_shape[1], dtype=tf.float32)
 
-      if direction == "forward":
-        output, state = tf.nn.dynamic_rnn(
-            cell,
-            x,
-            initial_state=initial_state,
-            sequence_length=sequence_length,
-            time_major=True,
-            dtype=tf.float32)
-      elif direction == "bidirectional":
-        output, state = tf.nn.bidirectional_dynamic_rnn(
-            cell,
-            cell_bw,
-            x,
-            initial_state_fw=initial_state,
-            initial_state_bw=initial_state_bw,
-            sequence_length=sequence_length,
-            time_major=True,
-            dtype=tf.float32)
-      elif direction == "reverse":
+      rnn_kwargs = {}
+      if num_directions == 1:
+        rnn_kwargs["initial_state"] = initial_state
+      elif num_directions == 2:
+        rnn_kwargs["initial_state_fw"] = initial_state
+        rnn_kwargs["initial_state_bw"] = initial_state_bw
+      rnn_kwargs["sequence_length"] = sequence_length
+      rnn_kwargs["time_major"] = True
+      rnn_kwargs["dtype"] = tf.float32
 
-        def _reverse(input_, seq_dim):
-          return array_ops.reverse(input_, axis=[seq_dim])
-
-        time_dim = 0
-        inputs_reverse = _reverse(x, time_dim)
-        output, state = tf.nn.dynamic_rnn(
-            cell,
-            inputs_reverse,
-            initial_state=initial_state,
-            sequence_length=sequence_length,
-            time_major=True,
-            dtype=tf.float32)
-        output = _reverse(output, time_dim)
+      output, state = cls._rnn(x, tf.nn.rnn_cell.LSTMCell, cell_kwargs,
+                               rnn_kwargs, tf_activations, direction)
 
     # TODO post process for bidirectional
     state = state[0]
