@@ -672,6 +672,7 @@ class TensorflowBackend(TensorflowBackendBase):
 
     def custom_getter(getter, name, node=None, input_dict=None, *args,
                       **kwargs):
+      # TODO(fumihwh): deal with bidirectional
       if name.split("/")[-1] == "kernel":
         # onnx W[iofc], R[iofc]
         w_i, w_o, w_f, w_c = tf.split(tf.squeeze(input_dict[node.inputs[1]]), 4)
@@ -711,7 +712,7 @@ class TensorflowBackend(TensorflowBackendBase):
     if node.attrs.get("output_sequence", 0) != 0:
       raise NotImplementedError("output_sequence != 0 is not supported.")
 
-    # TODO check if prev node is one of RNN
+    # TODO(fumihwh): check if prev node is one of RNN
     # process input if it comes from other previous cell
     # which has shape [seq_length, num_directions, batch_size, hidden_size]
     if len(input_shape) == 4 and input_shape[1] == 1:
@@ -751,7 +752,7 @@ class TensorflowBackend(TensorflowBackendBase):
               "Activation function {} is not supported.".format(activations[4]))
         tf_activations.append(ONNX_OP_TO_TF_OP[activations[4]])
 
-    # TODO check if reverse and bidirectional works
+    # TODO(fumihwh): check if reverse and bidirectional works
     with tf.variable_scope(
         "LSTM_" + get_unique_suffix(),
         custom_getter=partial(custom_getter, node=node, input_dict=input_dict)):
@@ -782,7 +783,7 @@ class TensorflowBackend(TensorflowBackendBase):
       output, state = cls._rnn(x, tf.nn.rnn_cell.LSTMCell, cell_kwargs,
                                rnn_kwargs, tf_activations, direction)
 
-    # TODO post process for bidirectional
+    # TODO(fumihwh): post process for bidirectional
     state = state[0]
     c, h = state
     if num_directions == 1:
