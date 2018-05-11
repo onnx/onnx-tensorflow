@@ -414,7 +414,7 @@ class TensorflowFrontendBase(object):
         with tf.Session(
             config=tf.ConfigProto(
                 graph_options=tf.GraphOptions(infer_shapes=True))) as sess:
-          tf.import_graph_def(graph_def, name="")
+          tf.import_graph_def(graph_def)
         graph_def = sess.graph_def
       output_node = get_node_by_name(graph_def.node, output)
 
