@@ -90,7 +90,7 @@ def create_test(test_data):
       if (test_option.get("call_only", False)):
         return
       for backend_o, tf_o in zip(backend_output, tf_output):
-        np.testing.assert_allclose(backend_o, tf_o)
+        np.testing.assert_allclose(backend_o, tf_o, rtol=1e-3, atol=1e-7)
 
   return do_test_expected
 
@@ -106,6 +106,11 @@ test_cases = [
 # Use reverse to test ignore_unimplemented
 ("test_unimplemented", tf.reverse, "ReverseV2", [get_rnd([1, 2, 3, 4]), [3]], {}, {"ignore_unimplemented": True}),
 ("test_cast", tf.cast, "Cast", [get_rnd([10, 10]), tf.float16], {}),
+("test_ceil", tf.ceil, "Ceil", [get_rnd([10, 10], -10, 10)], {}),
+("test_exp", tf.exp, "Exp", [get_rnd([10, 10])], {}),
+("test_floor", tf.floor, "Floor", [get_rnd([10, 10], -10, 10)], {}),
+("test_log", tf.log, "Log", [get_rnd([10, 10])], {}),
+("test_log_softmax", tf.nn.log_softmax, "LogSoftmax", [get_rnd([10, 10])], {}),
 ("test_relu", tf.nn.relu, "Relu", [get_rnd([10, 10])], {}),
 ("test_or", tf.logical_or, "LogicalOr", [get_rnd([10, 10], dtype=np.bool_), get_rnd([10, 10], dtype=np.bool_)], {}),
 ("test_pow", tf.pow, "Pow", [get_rnd([10, 10]), get_rnd([10, 10])], {}),
