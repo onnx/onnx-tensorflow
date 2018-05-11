@@ -178,14 +178,6 @@ class TensorflowFrontendBase(object):
     # process protos to match ONNX type constraints.
     data_type_cast_map = {}
 
-    # Add infer_shapes to GraphDef
-    with tf.Graph().as_default():
-      with tf.Session(
-          config=tf.ConfigProto(
-              graph_options=tf.GraphOptions(infer_shapes=True))) as sess:
-        tf.import_graph_def(graph_def, name="")
-      graph_def = sess.graph_def
-
     node_tup = [(node.name, TensorflowNode(node)) for node in graph_def.node]
 
     for name, node in node_tup:
@@ -415,6 +407,17 @@ class TensorflowFrontendBase(object):
     opset_imports = [make_opsetid(item[0], item[1]) for item in opset]
 
     output_node = get_node_by_name(graph_def.node, output)
+
+    if "_output_shapes" not in output_node.attr:
+      # Add infer_shapes to GraphDef
+      with tf.Graph().as_default():
+        with tf.Session(
+            config=tf.ConfigProto(
+                graph_options=tf.GraphOptions(infer_shapes=True))) as sess:
+          tf.import_graph_def(graph_def, name="")
+        graph_def = sess.graph_def
+      output_node = get_node_by_name(graph_def.node, output)
+
     onnx_graph = cls.tensorflow_graph_to_onnx_graph(
         graph_def, output_node, opset, graph_name, ignore_unimplemented)
     onnx_model = make_model(
