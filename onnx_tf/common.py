@@ -164,6 +164,16 @@ ONNX_OP_TO_TF_OP = {
     "transpose": tf.transpose,
 }
 
+EXPERIMENTAL_ONNX_OP_TO_TF_OP = {
+    "affine": tf.contrib.distributions.bijectors.AffineScalar,
+    "elu": tf.nn.elu,
+    "hard_sigmoid": tf.keras.backend.hard_sigmoid,
+    "leaky_relu": tf.nn.leaky_relu,
+    "softsign": tf.nn.softsign,
+    "softplus": tf.nn.softplus,
+    "thresholded_relu": tf.keras.layers.ThresholdedReLU,
+}
+
 TF_OP_TO_ONNX_OP = invert(ONNX_OP_TO_TF_OP)
 
 TF_OP_STR_TO_ONNX_OP = {
