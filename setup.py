@@ -2,8 +2,8 @@ from setuptools import setup
 
 setup(
     name='onnx-tf',
-    version='1.0',
-    description='Tensorflow backend for ONNX (Open Neural Network Exchange).',
+    version='1.1',
+    description='Tensorflow backend and frontend for ONNX (Open Neural Network Exchange).',
     install_requires=['onnx'],
     url='https://github.com/tjingrant',
     author='Arpith Jacob, Tian Jin, Gheorghe-Teodor Bercea',
