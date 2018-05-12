@@ -42,6 +42,7 @@ ONNX_TYPE_TO_TF_TYPE = {
     TensorProto.DOUBLE: tf.float64,
     TensorProto.COMPLEX64: tf.complex64,
     TensorProto.COMPLEX128: tf.complex128,
+    TensorProto.STRING: tf.string,
     # TODO: uncomment this in the future
     # TensorProto.UINT32: tf.uint32,
     # TensorProto.UINT64: tf.uint64,
@@ -172,14 +173,19 @@ TF_OP_STR_TO_ONNX_OP = {
     # these are temporarily added to
     # test other ops
     "Add": "Add",
+    "Ceil": "Ceil",
     "Equal": "Equal",
+    "Exp": "Exp",
+    "Floor": "Floor",
     "Greater": "Greater",
     "Identity": "Identity",
     "Less": "Less",
+    "Log": "Log",
     "LogicalAnd": "And",
     "LogicalNot": "Not",
     "LogicalOr": "Or",
     "LogicalXor": "Xor",
+    "LogSoftmax": "LogSoftmax",
     "MatMul": "MatMul",
     "Mul": "Mul",
     "Pow": "Pow",

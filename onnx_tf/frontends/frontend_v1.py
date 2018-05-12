@@ -23,6 +23,20 @@ class TensorflowFrontend(TensorflowFrontendBase):
   """
 
   @classmethod
+  @register_onnx_op("ArgMax")
+  def handle_arg_max(cls, node, **kwargs):
+    axis = np.asscalar(kwargs["consts"][node.inputs[1]])
+    return helper.make_node(
+        "ArgMax", [node.inputs[0]], [node.name], axis=axis, keepdims=0)
+
+  @classmethod
+  @register_onnx_op("ArgMin")
+  def handle_arg_min(cls, node, **kwargs):
+    axis = np.asscalar(kwargs["consts"][node.inputs[1]])
+    return helper.make_node(
+        "ArgMin", [node.inputs[0]], [node.name], axis=axis, keepdims=0)
+
+  @classmethod
   @register_onnx_op("AveragePool")
   def handle_avg_pool(cls, node, **kwargs):
     return cls._pool_op(node, "AveragePool", **kwargs)

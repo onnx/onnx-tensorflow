@@ -83,6 +83,12 @@ List or tuple items should be (str domain, int version number).
 `graph_name` : The name of the output ONNX Graph.
 
 
+`ignore_unimplemented` : Convert to ONNX model and ignore all the operators
+that are not currently supported by onnx-tensorflow.
+This is an experimental feature. By enabling this feature,
+the model would not be guaranteed to match the ONNX specifications.
+
+
 _returns_:
 
 The equivalent ONNX Model Proto object.
