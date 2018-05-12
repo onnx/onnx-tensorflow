@@ -26,6 +26,7 @@ from onnx_tf.common import (
     ONNX_OP_TO_TF_OP,
     ONNX_TYPE_TO_TF_TYPE,
 )
+from onnx_tf.common import EXPERIMENTAL_ONNX_OP_TO_TF_OP
 import onnx.numpy_helper
 import onnx.defs
 
@@ -668,23 +669,56 @@ class TensorflowBackend(TensorflowBackendBase):
     return output, state
 
   @classmethod
+  def _rnn_get_activation(cls, name, alpha, beta):
+    op_dict = ONNX_OP_TO_TF_OP.copy()
+    op_dict.update(EXPERIMENTAL_ONNX_OP_TO_TF_OP)
+    if name not in op_dict:
+      raise NotImplementedError(
+          "Activation function {} is not supported.".format(name))
+    activation = op_dict[name]
+    kwargs = {}
+    if name == "affine":
+      kwargs["scale"] = alpha
+      kwargs["shift"] = beta
+      activation = activation(**kwargs)
+    elif name == "elu":
+      assert alpha == 1, "TensorFlow does not support alpha, else 1."
+    elif name == "hard_sigmoid":
+      assert alpha == 0.2, "TensorFlow can only set default alpha 0.2."
+      assert beta == 0.5, "TensorFlow can only set default beta 0.5"
+    elif name == "leaky_relu":
+      kwargs["alpha"] = alpha or 0.01
+      activation = partial(activation, **kwargs)
+    elif name == "thresholded_relu":
+      kwargs["theta"] = alpha
+      activation = activation(**kwargs)
+    return activation
+
+  @classmethod
   def handle_l_s_t_m(cls, node, input_dict):
 
-    def custom_getter(getter, name, node=None, input_dict=None, *args,
-                      **kwargs):
+    def _custom_getter(getter,
+                       name,
+                       node=None,
+                       input_dict=None,
+                       *args,
+                       **kwargs):
       # TODO(fumihwh): deal with bidirectional
       if name.split("/")[-1] == "kernel":
         # onnx W[iofc], R[iofc]
-        w_i, w_o, w_f, w_c = tf.split(tf.squeeze(input_dict[node.inputs[1]]), 4)
-        r_i, r_o, r_f, r_c = tf.split(tf.squeeze(input_dict[node.inputs[2]]), 4)
-        w = tf.transpose(tf.concat([w_i, w_c, w_f, w_o], 0))
-        r = tf.transpose(tf.concat([r_i, r_c, r_f, r_o], 0))
-        kernel = tf.concat([w, r], 0)
+        w = input_dict[node.inputs[1]]
+        r = input_dict[node.inputs[2]]
+        w_i, w_o, w_f, w_c = tf.split(tf.squeeze(w), 4)
+        r_i, r_o, r_f, r_c = tf.split(tf.squeeze(r), 4)
+        new_w = tf.transpose(tf.concat([w_i, w_c, w_f, w_o], 0))
+        new_r = tf.transpose(tf.concat([r_i, r_c, r_f, r_o], 0))
+        kernel = tf.concat([new_w, new_r], 0)
         return kernel
       if name.split("/")[-1] == "bias":
         if len(node.inputs) >= 4:
           # onnx Wb[iofc], Rb[iofc]
-          w_b, r_b = tf.split(tf.squeeze(input_dict[node.inputs[3]]), 2)
+          b = input_dict[node.inputs[3]]
+          w_b, r_b = tf.split(tf.squeeze(b), 2)
           w_b_i, w_b_o, w_b_f, w_b_c = tf.split(w_b, 4)
           r_b_i, r_b_o, r_b_f, r_b_c = tf.split(r_b, 4)
           w_b = tf.transpose(tf.concat([w_b_i, w_b_c, w_b_f, w_b_o], 0))
@@ -694,12 +728,13 @@ class TensorflowBackend(TensorflowBackendBase):
       # Only use_peepholes is True,
       # will try to get w_f_diag, w_i_diag, w_o_diag
       # onnx P[iof]
+      p = input_dict[node.inputs[7]]
       if name.split("/")[-1] == "w_f_diag":
-        return tf.split(input_dict[node.inputs[7]], 3, axis=1)[2]
+        return tf.split(p, 3, axis=1)[2]
       if name.split("/")[-1] == "w_i_diag":
-        return tf.split(input_dict[node.inputs[7]], 3, axis=1)[0]
+        return tf.split(p, 3, axis=1)[0]
       if name.split("/")[-1] == "w_o_diag":
-        return tf.split(input_dict[node.inputs[7]], 3, axis=1)[1]
+        return tf.split(p, 3, axis=1)[1]
       return getter(name, *args, **kwargs)
 
     x = input_dict[node.inputs[0]]
@@ -730,16 +765,18 @@ class TensorflowBackend(TensorflowBackendBase):
     tf_activations = [tf.nn.tanh]
     if "activations" in node.attrs:
       activations = list(map(lambda x: x.lower(), node.attrs["activations"]))
+      activation_alpha = node.attrs.get("activation_alpha", None)
+      activation_beta = node.attrs.get("activation_beta", None)
       if activations[0] != "sigmoid":
         raise NotImplementedError(
             "Tensorflow uses sigmiod as first activation function `f`.")
       if activations[1] != activations[2]:
         raise NotImplementedError(
             "Tensorflow uses same activation functions for `gh`.")
-      if activations[1] not in ONNX_OP_TO_TF_OP:
-        raise NotImplementedError(
-            "Activation function {} is not supported.".format(activations[1]))
-      tf_activations = [ONNX_OP_TO_TF_OP[activations[1]]]
+      tf_activations = [
+          cls._rnn_get_activation(activations[1], activation_alpha[1],
+                                  activation_beta[1])
+      ]
       if num_directions == 2:
         if activations[3] != "sigmoid":
           raise NotImplementedError(
@@ -747,15 +784,15 @@ class TensorflowBackend(TensorflowBackendBase):
         if activations[4] != activations[5]:
           raise NotImplementedError(
               "Tensorflow uses same activation functions for `gh`.")
-        if activations[4] not in ONNX_OP_TO_TF_OP:
-          raise NotImplementedError(
-              "Activation function {} is not supported.".format(activations[4]))
-        tf_activations.append(ONNX_OP_TO_TF_OP[activations[4]])
+        tf_activations.append(
+            cls._rnn_get_activation(activations[4], activation_alpha[4],
+                                    activation_beta[4]))
 
     # TODO(fumihwh): check if reverse and bidirectional works
     with tf.variable_scope(
         "LSTM_" + get_unique_suffix(),
-        custom_getter=partial(custom_getter, node=node, input_dict=input_dict)):
+        custom_getter=partial(_custom_getter, node=node,
+                              input_dict=input_dict)):
 
       cell_kwargs[
           "use_peepholes"] = input_size == 8 and node.inputs[7] in input_dict
@@ -763,12 +800,15 @@ class TensorflowBackend(TensorflowBackendBase):
       cell_kwargs["num_units"] = hidden_size
       initial_state = None
       initial_state_bw = None
-      if input_size >= 7 and node.inputs[5] in input_dict and node.inputs[6] in input_dict:
-        initial_state = (tf.nn.rnn_cell.LSTMStateTuple(
-            input_dict[node.inputs[6]][0], input_dict[node.inputs[5]][0]),)
-        if num_directions == 2:
-          initial_state_bw = initial_state = (tf.nn.rnn_cell.LSTMStateTuple(
-              input_dict[node.inputs[6]][1], input_dict[node.inputs[5]][1]),)
+      if input_size >= 7:
+        initial_h = input_dict.get(node.inputs[5], None)
+        initial_c = input_dict.get(node.inputs[6], None)
+        if initial_h is not None and initial_c is not None:
+          initial_state = (tf.nn.rnn_cell.LSTMStateTuple(
+              initial_c[0], initial_h[0]),)
+          if num_directions == 2:
+            initial_state_bw = initial_state = (tf.nn.rnn_cell.LSTMStateTuple(
+                initial_c[1], initial_h[1]),)
 
       rnn_kwargs = {}
       if num_directions == 1:
