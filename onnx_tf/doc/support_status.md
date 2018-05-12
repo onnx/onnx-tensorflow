@@ -128,15 +128,20 @@ ______
 |avg_pool|1|
 |bias_add|1, 6|
 |cast|1|
+|ceil|1, 6|
 |concat_v2|1, 4|
 |conv1_d|1|
 |conv2_d|1|
 |conv3_d|1|
 |equal|1|
+|exp|1, 6|
+|floor|1, 6|
 |fused_batch_norm|1, 6|
 |greater|1|
 |identity|1|
 |less|1|
+|log|1, 6|
+|log_softmax|1|
 |logical_and|1, 6|
 |logical_not|1|
 |logical_or|1|
