@@ -675,16 +675,19 @@ class TensorflowBackend(TensorflowBackendBase):
       # TODO(fumihwh): deal with bidirectional
       if name.split("/")[-1] == "kernel":
         # onnx W[iofc], R[iofc]
-        w_i, w_o, w_f, w_c = tf.split(tf.squeeze(input_dict[node.inputs[1]]), 4)
-        r_i, r_o, r_f, r_c = tf.split(tf.squeeze(input_dict[node.inputs[2]]), 4)
-        w = tf.transpose(tf.concat([w_i, w_c, w_f, w_o], 0))
-        r = tf.transpose(tf.concat([r_i, r_c, r_f, r_o], 0))
-        kernel = tf.concat([w, r], 0)
+        w = input_dict[node.inputs[1]]
+        r = input_dict[node.inputs[2]]
+        w_i, w_o, w_f, w_c = tf.split(tf.squeeze(w), 4)
+        r_i, r_o, r_f, r_c = tf.split(tf.squeeze(r), 4)
+        new_w = tf.transpose(tf.concat([w_i, w_c, w_f, w_o], 0))
+        new_r = tf.transpose(tf.concat([r_i, r_c, r_f, r_o], 0))
+        kernel = tf.concat([new_w, new_r], 0)
         return kernel
       if name.split("/")[-1] == "bias":
         if len(node.inputs) >= 4:
           # onnx Wb[iofc], Rb[iofc]
-          w_b, r_b = tf.split(tf.squeeze(input_dict[node.inputs[3]]), 2)
+          b = input_dict[node.inputs[3]]
+          w_b, r_b = tf.split(tf.squeeze(b), 2)
           w_b_i, w_b_o, w_b_f, w_b_c = tf.split(w_b, 4)
           r_b_i, r_b_o, r_b_f, r_b_c = tf.split(r_b, 4)
           w_b = tf.transpose(tf.concat([w_b_i, w_b_c, w_b_f, w_b_o], 0))
@@ -694,12 +697,13 @@ class TensorflowBackend(TensorflowBackendBase):
       # Only use_peepholes is True,
       # will try to get w_f_diag, w_i_diag, w_o_diag
       # onnx P[iof]
+      p = input_dict[node.inputs[7]]
       if name.split("/")[-1] == "w_f_diag":
-        return tf.split(input_dict[node.inputs[7]], 3, axis=1)[2]
+        return tf.split(p, 3, axis=1)[2]
       if name.split("/")[-1] == "w_i_diag":
-        return tf.split(input_dict[node.inputs[7]], 3, axis=1)[0]
+        return tf.split(p, 3, axis=1)[0]
       if name.split("/")[-1] == "w_o_diag":
-        return tf.split(input_dict[node.inputs[7]], 3, axis=1)[1]
+        return tf.split(p, 3, axis=1)[1]
       return getter(name, *args, **kwargs)
 
     x = input_dict[node.inputs[0]]
@@ -763,12 +767,15 @@ class TensorflowBackend(TensorflowBackendBase):
       cell_kwargs["num_units"] = hidden_size
       initial_state = None
       initial_state_bw = None
-      if input_size >= 7 and node.inputs[5] in input_dict and node.inputs[6] in input_dict:
-        initial_state = (tf.nn.rnn_cell.LSTMStateTuple(
-            input_dict[node.inputs[6]][0], input_dict[node.inputs[5]][0]),)
-        if num_directions == 2:
-          initial_state_bw = initial_state = (tf.nn.rnn_cell.LSTMStateTuple(
-              input_dict[node.inputs[6]][1], input_dict[node.inputs[5]][1]),)
+      if input_size >= 7:
+        initial_h = input_dict.get(node.inputs[5], None)
+        initial_c = input_dict.get(node.inputs[6], None)
+        if initial_h is not None and initial_c is not None:
+          initial_state = (tf.nn.rnn_cell.LSTMStateTuple(
+              initial_c[0], initial_h[0]),)
+          if num_directions == 2:
+            initial_state_bw = initial_state = (tf.nn.rnn_cell.LSTMStateTuple(
+                initial_c[1], initial_h[1]),)
 
       rnn_kwargs = {}
       if num_directions == 1:
