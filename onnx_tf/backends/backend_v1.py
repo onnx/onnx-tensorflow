@@ -835,8 +835,12 @@ class TensorflowBackend(TensorflowBackendBase):
   @classmethod
   def handle_r_n_n(cls, node, input_dict):
 
-    def custom_getter(getter, name, node=None, input_dict=None, *args,
-                      **kwargs):
+    def _custom_getter(getter,
+                       name,
+                       node=None,
+                       input_dict=None,
+                       *args,
+                       **kwargs):
       # TODO(fumihwh): deal with bidirectional
       if name.split("/")[-1] == "kernel":
         w = tf.transpose(tf.squeeze(input_dict[node.inputs[1]]))
@@ -880,28 +884,32 @@ class TensorflowBackend(TensorflowBackendBase):
     tf_activations = [tf.nn.tanh]
     if "activations" in node.attrs:
       activations = list(map(lambda x: x.lower(), node.attrs["activations"]))
-      if activations[0] not in ONNX_OP_TO_TF_OP:
-        raise NotImplementedError(
-            "Activation function {} is not supported.".format(activations[0]))
-      tf_activations = [ONNX_OP_TO_TF_OP[activations[0]]]
+      activation_alpha = node.attrs.get("activation_alpha", None)
+      activation_beta = node.attrs.get("activation_beta", None)
+      tf_activations = [
+          cls._rnn_get_activation(activations[0], activation_alpha[0],
+                                  activation_beta[0])
+      ]
       if num_directions == 2:
-        if activations[1] not in ONNX_OP_TO_TF_OP:
-          raise NotImplementedError(
-              "Activation function {} is not supported.".format(activations[1]))
-        tf_activations.append(ONNX_OP_TO_TF_OP[activations[1]])
+        tf_activations.append(
+            cls._rnn_get_activation(activations[1], activation_alpha[1],
+                                    activation_beta[1]))
 
     # TODO(fumihwh): check if reverse and bidirectional works
     with tf.variable_scope(
         "RNN_" + get_unique_suffix(),
-        custom_getter=partial(custom_getter, node=node, input_dict=input_dict)):
+        custom_getter=partial(_custom_getter, node=node,
+                              input_dict=input_dict)):
 
       cell_kwargs["num_units"] = hidden_size
       initial_state = None
       initial_state_bw = None
-      if input_size == 6 and node.inputs[5] in input_dict:
-        initial_state = (input_dict[node.inputs[5]][0],)
-        if num_directions == 2:
-          initial_state_bw = (input_dict[node.inputs[5]][1],)
+      if input_size == 6:
+        initial_h = input_dict.get(node.inputs[5], None)
+        if initial_h is not None:
+          initial_state = (initial_h[0],)
+          if num_directions == 2:
+            initial_state_bw = (initial_h[1],)
 
       rnn_kwargs = {}
       if num_directions == 1:
@@ -921,9 +929,7 @@ class TensorflowBackend(TensorflowBackendBase):
     h = state
     if num_directions == 1:
       h = tf.expand_dims(h, 0)
-      # TODO(fumihwh): fix test case
-      # output = tf.expand_dims(output, 1)
-    output = tf.squeeze(output)
+      output = tf.expand_dims(output, 1)
     return [output, h]
 
   @classmethod
