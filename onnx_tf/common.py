@@ -164,6 +164,8 @@ ONNX_OP_TO_TF_OP = {
     "transpose": tf.transpose,
 }
 
+# TODO(fumihwh): promote some nn ops
+# Currently just used for RNNs activations mapping
 EXPERIMENTAL_ONNX_OP_TO_TF_OP = {
     "affine": tf.contrib.distributions.bijectors.AffineScalar,
     "elu": tf.nn.elu,
