@@ -539,6 +539,127 @@ class TensorflowBackend(TensorflowBackendBase):
     output_shape = tf.stack([split0, split1])
     return [tf.reshape(tensor, output_shape)]
 
+
+  @classmethod
+  def handle_g_r_u(cls, node, input_dict):
+
+    def _custom_getter(getter,
+                       name,
+                       node=None,
+                       input_dict=None,
+                       *args,
+                       **kwargs):
+      # TODO(fumihwh): deal with bidirectional
+      names = name.split("/")
+      if names[-1] == "kernel":
+        # onnx W[zrh], R[zrh]
+        w = input_dict[node.inputs[1]]
+        r = input_dict[node.inputs[2]]
+        w_z, w_r, w_h = tf.split(tf.squeeze(w), 3)
+        r_z, r_r, r_h = tf.split(tf.squeeze(r), 3)
+        if names[-2] == "gates":
+          new_w = tf.transpose(tf.concat([w_r, w_z], 0))
+          new_r = tf.transpose(tf.concat([r_r, r_z], 0))
+        elif names[-2] == "candidate":
+          new_w = tf.transpose(w_h)
+          new_r = tf.transpose(r_h)
+        kernel = tf.concat([new_w, new_r], 0)
+        return kernel
+      if names[-1] == "bias":
+        if len(node.inputs) >= 4:
+          # onnx Wb[zrh], Rb[zrh]
+          b = input_dict[node.inputs[3]]
+          w_b, r_b = tf.split(tf.squeeze(b), 2)
+          w_b_z, w_b_r, w_b_h = tf.split(w_b, 3)
+          r_b_z, r_b_r, r_b_h = tf.split(r_b, 3)
+          if names[-2] == "gates":
+            w_b = tf.transpose(tf.concat([w_b_r, w_b_z], 0))
+            r_b = tf.transpose(tf.concat([r_b_r, r_b_z], 0))
+          elif names[-2] == "candidate":
+            w_b = tf.transpose(w_b_h)
+            r_b = tf.transpose(r_b_h)
+          return tf.add(w_b, r_b)
+        return getter(name, *args, **kwargs)
+      return getter(name, *args, **kwargs)
+
+    x = input_dict[node.inputs[0]]
+    input_shape = x.get_shape().as_list()
+    input_size = len(node.inputs)
+    hidden_size = node.attrs["hidden_size"]
+    direction = node.attrs.get("direction", "forward")
+    num_directions = 2 if direction == "bidirectional" else 1
+
+    output_sequence = node.attrs.get("output_sequence", 0)
+
+    # TODO(fumihwh): check if prev node is one of RNN
+    # process input if it comes from other previous cell
+    # which has shape [seq_length, num_directions, batch_size, hidden_size]
+    if len(input_shape) == 4 and input_shape[1] == 1:
+      x = tf.squeeze(x)
+
+    sequence_length = None
+    if input_size >= 5 and node.inputs[4] in input_dict:
+      sequence_length = input_dict[node.inputs[4]]
+
+    cell_kwargs = {}
+
+    if "clip" in node.attrs:
+      raise NotImplementedError("clip is not supported.")
+
+    tf_activations = [tf.nn.tanh]
+    if "activations" in node.attrs:
+      activations = list(map(lambda x: x.lower(), node.attrs["activations"]))
+      activation_alpha = node.attrs.get("activation_alpha", None)
+      activation_beta = node.attrs.get("activation_beta", None)
+      tf_activations = [
+          cls._rnn_get_activation(activations[0], activation_alpha[0],
+                                  activation_beta[0])
+      ]
+      if num_directions == 2:
+        tf_activations.append(
+            cls._rnn_get_activation(activations[1], activation_alpha[1],
+                                    activation_beta[1]))
+
+    # TODO(fumihwh): check if reverse and bidirectional works
+    with tf.variable_scope(
+        "GRU_" + get_unique_suffix(),
+        custom_getter=partial(_custom_getter, node=node,
+                              input_dict=input_dict)):
+
+      cell_kwargs["num_units"] = hidden_size
+      if input_size < 4 or node.inputs[3] not in input_dict:
+        cell_kwargs["bias_initializer"] = tf.zeros_initializer
+      initial_state = None
+      initial_state_bw = None
+      if input_size == 6:
+        initial_h = input_dict.get(node.inputs[5], None)
+        if initial_h is not None:
+          initial_state = (initial_h[0],)
+          if num_directions == 2:
+            initial_state_bw = (initial_h[1],)
+
+      rnn_kwargs = {}
+      if num_directions == 1:
+        rnn_kwargs["initial_state"] = initial_state
+      elif num_directions == 2:
+        rnn_kwargs["initial_state_fw"] = initial_state
+        rnn_kwargs["initial_state_bw"] = initial_state_bw
+      rnn_kwargs["sequence_length"] = sequence_length
+      rnn_kwargs["time_major"] = True
+      rnn_kwargs["dtype"] = tf.float32
+
+      output, state = cls._rnn(x, tf.nn.rnn_cell.GRUCell, cell_kwargs,
+                               rnn_kwargs, tf_activations, direction)
+
+    # TODO(fumihwh): post process for bidirectional
+    state = state[0]
+    h = state
+    if num_directions == 1:
+      h = tf.expand_dims(h, 0)
+      output = tf.expand_dims(output, 1)
+
+    return [output, h] if output_sequence == 0 else [h]
+
   @classmethod
   def handle_gemm(cls, node, input_dict):
     x = input_dict[node.inputs[0]]
@@ -744,8 +865,7 @@ class TensorflowBackend(TensorflowBackendBase):
     direction = node.attrs.get("direction", "forward")
     num_directions = 2 if direction == "bidirectional" else 1
 
-    if node.attrs.get("output_sequence", 0) != 0:
-      raise NotImplementedError("output_sequence != 0 is not supported.")
+    output_sequence = node.attrs.get("output_sequence", 0)
 
     # TODO(fumihwh): check if prev node is one of RNN
     # process input if it comes from other previous cell
@@ -830,107 +950,8 @@ class TensorflowBackend(TensorflowBackendBase):
       c = tf.expand_dims(c, 0)
       h = tf.expand_dims(h, 0)
       output = tf.expand_dims(output, 1)
-    return [output, h, c]
 
-  @classmethod
-  def handle_r_n_n(cls, node, input_dict):
-
-    def _custom_getter(getter,
-                       name,
-                       node=None,
-                       input_dict=None,
-                       *args,
-                       **kwargs):
-      # TODO(fumihwh): deal with bidirectional
-      if name.split("/")[-1] == "kernel":
-        w = tf.transpose(tf.squeeze(input_dict[node.inputs[1]]))
-        r = tf.transpose(tf.squeeze(input_dict[node.inputs[2]]))
-        kernel = tf.concat([w, r], 0)
-        return kernel
-      if name.split("/")[-1] == "bias":
-        if len(node.inputs) >= 4:
-          w_b, r_b = tf.split(tf.squeeze(input_dict[node.inputs[3]]), 2)
-          w_b = tf.transpose(w_b)
-          r_b = tf.transpose(r_b)
-          return tf.add(w_b, r_b)
-        return getter(name, *args, **kwargs)
-      return getter(name, *args, **kwargs)
-
-    x = input_dict[node.inputs[0]]
-    input_shape = x.get_shape().as_list()
-    input_size = len(node.inputs)
-    hidden_size = node.attrs["hidden_size"]
-    direction = node.attrs.get("direction", "forward")
-    num_directions = 2 if direction == "bidirectional" else 1
-
-    if node.attrs.get("output_sequence", 0) != 0:
-      raise NotImplementedError("output_sequence != 0 is not supported.")
-
-    # TODO(fumihwh): check if prev node is one of RNN
-    # process input if it comes from other previous cell
-    # which has shape [seq_length, num_directions, batch_size, hidden_size]
-    if len(input_shape) == 4 and input_shape[1] == 1:
-      x = tf.squeeze(x)
-
-    sequence_length = None
-    if input_size >= 5 and node.inputs[4] in input_dict:
-      sequence_length = input_dict[node.inputs[4]]
-
-    cell_kwargs = {}
-
-    if "clip" in node.attrs:
-      raise NotImplementedError("Clip is not supported.")
-
-    tf_activations = [tf.nn.tanh]
-    if "activations" in node.attrs:
-      activations = list(map(lambda x: x.lower(), node.attrs["activations"]))
-      activation_alpha = node.attrs.get("activation_alpha", None)
-      activation_beta = node.attrs.get("activation_beta", None)
-      tf_activations = [
-          cls._rnn_get_activation(activations[0], activation_alpha[0],
-                                  activation_beta[0])
-      ]
-      if num_directions == 2:
-        tf_activations.append(
-            cls._rnn_get_activation(activations[1], activation_alpha[1],
-                                    activation_beta[1]))
-
-    # TODO(fumihwh): check if reverse and bidirectional works
-    with tf.variable_scope(
-        "RNN_" + get_unique_suffix(),
-        custom_getter=partial(_custom_getter, node=node,
-                              input_dict=input_dict)):
-
-      cell_kwargs["num_units"] = hidden_size
-      initial_state = None
-      initial_state_bw = None
-      if input_size == 6:
-        initial_h = input_dict.get(node.inputs[5], None)
-        if initial_h is not None:
-          initial_state = (initial_h[0],)
-          if num_directions == 2:
-            initial_state_bw = (initial_h[1],)
-
-      rnn_kwargs = {}
-      if num_directions == 1:
-        rnn_kwargs["initial_state"] = initial_state
-      elif num_directions == 2:
-        rnn_kwargs["initial_state_fw"] = initial_state
-        rnn_kwargs["initial_state_bw"] = initial_state_bw
-      rnn_kwargs["sequence_length"] = sequence_length
-      rnn_kwargs["time_major"] = True
-      rnn_kwargs["dtype"] = tf.float32
-
-      output, state = cls._rnn(x, tf.nn.rnn_cell.BasicRNNCell, cell_kwargs,
-                               rnn_kwargs, tf_activations, direction)
-
-    # TODO(fumihwh): post process for bidirectional
-    state = state[0]
-    h = state
-    if num_directions == 1:
-      h = tf.expand_dims(h, 0)
-      output = tf.expand_dims(output, 1)
-    return [output, h]
+    return [output, h, c] if output_sequence == 0 else [h, c]
 
   @classmethod
   def handle_leaky_relu(cls, node, input_dict):
@@ -1077,6 +1098,106 @@ class TensorflowBackend(TensorflowBackendBase):
     tensor = input_dict[node.inputs[0]]
     shape = tf.constant(node.attrs["shape"])
     return [tf.reshape(tensor, shape)]
+
+  @classmethod
+  def handle_r_n_n(cls, node, input_dict):
+
+    def _custom_getter(getter,
+                       name,
+                       node=None,
+                       input_dict=None,
+                       *args,
+                       **kwargs):
+      # TODO(fumihwh): deal with bidirectional
+      if name.split("/")[-1] == "kernel":
+        w = tf.transpose(tf.squeeze(input_dict[node.inputs[1]]))
+        r = tf.transpose(tf.squeeze(input_dict[node.inputs[2]]))
+        kernel = tf.concat([w, r], 0)
+        return kernel
+      if name.split("/")[-1] == "bias":
+        if len(node.inputs) >= 4:
+          w_b, r_b = tf.split(tf.squeeze(input_dict[node.inputs[3]]), 2)
+          w_b = tf.transpose(w_b)
+          r_b = tf.transpose(r_b)
+          return tf.add(w_b, r_b)
+        return getter(name, *args, **kwargs)
+      return getter(name, *args, **kwargs)
+
+    x = input_dict[node.inputs[0]]
+    input_shape = x.get_shape().as_list()
+    input_size = len(node.inputs)
+    hidden_size = node.attrs["hidden_size"]
+    direction = node.attrs.get("direction", "forward")
+    num_directions = 2 if direction == "bidirectional" else 1
+
+    output_sequence = node.attrs.get("output_sequence", 0)
+
+    # TODO(fumihwh): check if prev node is one of RNN
+    # process input if it comes from other previous cell
+    # which has shape [seq_length, num_directions, batch_size, hidden_size]
+    if len(input_shape) == 4 and input_shape[1] == 1:
+      x = tf.squeeze(x)
+
+    sequence_length = None
+    if input_size >= 5 and node.inputs[4] in input_dict:
+      sequence_length = input_dict[node.inputs[4]]
+
+    cell_kwargs = {}
+
+    if "clip" in node.attrs:
+      raise NotImplementedError("clip is not supported.")
+
+    tf_activations = [tf.nn.tanh]
+    if "activations" in node.attrs:
+      activations = list(map(lambda x: x.lower(), node.attrs["activations"]))
+      activation_alpha = node.attrs.get("activation_alpha", None)
+      activation_beta = node.attrs.get("activation_beta", None)
+      tf_activations = [
+          cls._rnn_get_activation(activations[0], activation_alpha[0],
+                                  activation_beta[0])
+      ]
+      if num_directions == 2:
+        tf_activations.append(
+            cls._rnn_get_activation(activations[1], activation_alpha[1],
+                                    activation_beta[1]))
+
+    # TODO(fumihwh): check if reverse and bidirectional works
+    with tf.variable_scope(
+        "RNN_" + get_unique_suffix(),
+        custom_getter=partial(_custom_getter, node=node,
+                              input_dict=input_dict)):
+
+      cell_kwargs["num_units"] = hidden_size
+      initial_state = None
+      initial_state_bw = None
+      if input_size == 6:
+        initial_h = input_dict.get(node.inputs[5], None)
+        if initial_h is not None:
+          initial_state = (initial_h[0],)
+          if num_directions == 2:
+            initial_state_bw = (initial_h[1],)
+
+      rnn_kwargs = {}
+      if num_directions == 1:
+        rnn_kwargs["initial_state"] = initial_state
+      elif num_directions == 2:
+        rnn_kwargs["initial_state_fw"] = initial_state
+        rnn_kwargs["initial_state_bw"] = initial_state_bw
+      rnn_kwargs["sequence_length"] = sequence_length
+      rnn_kwargs["time_major"] = True
+      rnn_kwargs["dtype"] = tf.float32
+
+      output, state = cls._rnn(x, tf.nn.rnn_cell.BasicRNNCell, cell_kwargs,
+                               rnn_kwargs, tf_activations, direction)
+
+    # TODO(fumihwh): post process for bidirectional
+    state = state[0]
+    h = state
+    if num_directions == 1:
+      h = tf.expand_dims(h, 0)
+      output = tf.expand_dims(output, 1)
+
+    return [output, h] if output_sequence == 0 else [h]
 
   @classmethod
   def handle_selu(cls, node, input_dict):
