@@ -63,6 +63,10 @@ class TensorflowBackend(TensorflowBackendBase):
 
   @classmethod
   def _compatibility_pool(cls, node, input_dict, pooling_type):
+    warnings.warn("Using the pooling op in compatibility mode."
+                  "This means your graph cannot be serialized."
+                  "Please configure your pooling operation to only use paddings that "
+                  "correspond to Tensorflow SAME or VALID padding.", UserWarning)
 
     def _get_pad_shape(auto_pad, input_spatial_shape, kernel_spatial_shape,
                        strides_spatial, output_spatial_shape):
@@ -169,11 +173,17 @@ class TensorflowBackend(TensorflowBackendBase):
 
     kernel_shape = node.attrs["kernel_shape"]
     strides = node.attrs.get("strides", [1] * (x_rank - 2))
+    pads = node.attrs.get("pads", None)
 
-    # By default, do not pad
-    pad = None
+    # Try to recover the tf padding mode:
+    pad = cls.get_tf_pad(x.get_shape().as_list(),
+                         kernel_shape,
+                         strides,
+                         pads)
 
-    if "auto_pad" in node.attrs:
+    # Fall back to auto_pad if pad is not specified or
+    # cannot be recovered.
+    if pad is None and "auto_pad" in node.attrs:
       if node.attrs["auto_pad"] == "SAME_UPPER":
         pad = "SAME"
       elif node.attrs["auto_pad"] == "VALID":
@@ -181,6 +191,9 @@ class TensorflowBackend(TensorflowBackendBase):
       elif node.attrs["auto_pad"] == "SAME_LOWER":
         pad = None
 
+    # Here, pad is None iff Tensorflow does not have a native implementation
+    # for this particular case, in which case we use compatibility pool and
+    # throw out a warning.
     if pad is None:
       return cls._compatibility_pool(node, input_dict, pooling_type)
 
