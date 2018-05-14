@@ -539,7 +539,6 @@ class TensorflowBackend(TensorflowBackendBase):
     output_shape = tf.stack([split0, split1])
     return [tf.reshape(tensor, output_shape)]
 
-
   @classmethod
   def handle_g_r_u(cls, node, input_dict):
 
@@ -547,14 +546,27 @@ class TensorflowBackend(TensorflowBackendBase):
                        name,
                        node=None,
                        input_dict=None,
+                       is_bidirectional=None,
                        *args,
                        **kwargs):
-      # TODO(fumihwh): deal with bidirectional
       names = name.split("/")
+      if is_bidirectional:
+        if "fw" in names:
+          index = 0
+        elif "bw" in names:
+          index = 1
+        else:
+          raise RuntimeError("Can not get {} for bidirectional. "
+                             "Either fw and bw is not in name scope.".format(
+                                 names[-1]))
       if names[-1] == "kernel":
         # onnx W[zrh], R[zrh]
-        w = input_dict[node.inputs[1]]
-        r = input_dict[node.inputs[2]]
+        if is_bidirectional:
+          w = tf.split(input_dict[node.inputs[1]], 2)[index]
+          r = tf.split(input_dict[node.inputs[2]], 2)[index]
+        else:
+          w = input_dict[node.inputs[1]]
+          r = input_dict[node.inputs[2]]
         w_z, w_r, w_h = tf.split(tf.squeeze(w), 3)
         r_z, r_r, r_h = tf.split(tf.squeeze(r), 3)
         if names[-2] == "gates":
@@ -568,7 +580,10 @@ class TensorflowBackend(TensorflowBackendBase):
       if names[-1] == "bias":
         if len(node.inputs) >= 4:
           # onnx Wb[zrh], Rb[zrh]
-          b = input_dict[node.inputs[3]]
+          if is_bidirectional:
+            b = tf.split(input_dict[node.inputs[3]], 2)[index]
+          else:
+            b = input_dict[node.inputs[3]]
           w_b, r_b = tf.split(tf.squeeze(b), 2)
           w_b_z, w_b_r, w_b_h = tf.split(w_b, 3)
           r_b_z, r_b_r, r_b_h = tf.split(r_b, 3)
@@ -623,8 +638,11 @@ class TensorflowBackend(TensorflowBackendBase):
     # TODO(fumihwh): check if reverse and bidirectional works
     with tf.variable_scope(
         "GRU_" + get_unique_suffix(),
-        custom_getter=partial(_custom_getter, node=node,
-                              input_dict=input_dict)):
+        custom_getter=partial(
+            _custom_getter,
+            node=node,
+            input_dict=input_dict,
+            is_bidirectional=num_directions == 2)):
 
       cell_kwargs["num_units"] = hidden_size
       if input_size < 4 or node.inputs[3] not in input_dict:
@@ -648,15 +666,24 @@ class TensorflowBackend(TensorflowBackendBase):
       rnn_kwargs["time_major"] = True
       rnn_kwargs["dtype"] = tf.float32
 
-      output, state = cls._rnn(x, tf.nn.rnn_cell.GRUCell, cell_kwargs,
-                               rnn_kwargs, tf_activations, direction)
+      outputs, states = cls._rnn(x, tf.nn.rnn_cell.GRUCell, cell_kwargs,
+                                 rnn_kwargs, tf_activations, direction)
 
-    # TODO(fumihwh): post process for bidirectional
-    state = state[0]
-    h = state
     if num_directions == 1:
-      h = tf.expand_dims(h, 0)
-      output = tf.expand_dims(output, 1)
+      state = states[0]
+      h = tf.expand_dims(state, 0)
+      output = tf.expand_dims(outputs, 1)
+    else:
+      state_fw = states[0][0]
+      state_bw = states[1][0]
+      output_fw = outputs[0]
+      output_bw = outputs[1]
+      h_fw = tf.expand_dims(state_fw, 0)
+      h_bw = tf.expand_dims(state_bw, 0)
+      h = tf.concat((h_fw, h_bw), axis=0)
+      output_fw = tf.expand_dims(output_fw, 1)
+      output_bw = tf.expand_dims(output_bw, 1)
+      output = tf.concat((output_fw, output_bw), axis=1)
 
     return [output, h] if output_sequence == 0 else [h]
 
@@ -784,10 +811,10 @@ class TensorflowBackend(TensorflowBackendBase):
 
       time_dim = 0
       inputs_reverse = _reverse(x, time_dim)
-      output, state = tf.nn.dynamic_rnn(cell_fw, inputs_reverse, **rnn_kwargs)
-      output = _reverse(output, time_dim)
+      outputs, states = tf.nn.dynamic_rnn(cell_fw, inputs_reverse, **rnn_kwargs)
+      outputs = _reverse(outputs, time_dim)
 
-    return output, state
+    return outputs, states
 
   @classmethod
   def _rnn_get_activation(cls, name, alpha, beta):
@@ -822,23 +849,41 @@ class TensorflowBackend(TensorflowBackendBase):
                        name,
                        node=None,
                        input_dict=None,
+                       is_bidirectional=None,
                        *args,
                        **kwargs):
-      # TODO(fumihwh): deal with bidirectional
-      if name.split("/")[-1] == "kernel":
+      names = name.split("/")
+      if is_bidirectional:
+        if "fw" in names:
+          index = 0
+        elif "bw" in names:
+          index = 1
+        else:
+          raise RuntimeError("Can not get {} for bidirectional. "
+                             "Either fw and bw is not in name scope.".format(
+                                 names[-1]))
+
+      if names[-1] == "kernel":
         # onnx W[iofc], R[iofc]
-        w = input_dict[node.inputs[1]]
-        r = input_dict[node.inputs[2]]
+        if is_bidirectional:
+          w = tf.split(input_dict[node.inputs[1]], 2)[index]
+          r = tf.split(input_dict[node.inputs[2]], 2)[index]
+        else:
+          w = input_dict[node.inputs[1]]
+          r = input_dict[node.inputs[2]]
         w_i, w_o, w_f, w_c = tf.split(tf.squeeze(w), 4)
         r_i, r_o, r_f, r_c = tf.split(tf.squeeze(r), 4)
         new_w = tf.transpose(tf.concat([w_i, w_c, w_f, w_o], 0))
         new_r = tf.transpose(tf.concat([r_i, r_c, r_f, r_o], 0))
         kernel = tf.concat([new_w, new_r], 0)
         return kernel
-      if name.split("/")[-1] == "bias":
+      if names[-1] == "bias":
         if len(node.inputs) >= 4:
           # onnx Wb[iofc], Rb[iofc]
-          b = input_dict[node.inputs[3]]
+          if is_bidirectional:
+            b = tf.split(input_dict[node.inputs[3]], 2)[index]
+          else:
+            b = input_dict[node.inputs[3]]
           w_b, r_b = tf.split(tf.squeeze(b), 2)
           w_b_i, w_b_o, w_b_f, w_b_c = tf.split(w_b, 4)
           r_b_i, r_b_o, r_b_f, r_b_c = tf.split(r_b, 4)
@@ -849,13 +894,17 @@ class TensorflowBackend(TensorflowBackendBase):
       # Only use_peepholes is True,
       # will try to get w_f_diag, w_i_diag, w_o_diag
       # onnx P[iof]
-      p = input_dict[node.inputs[7]]
-      if name.split("/")[-1] == "w_f_diag":
-        return tf.split(p, 3, axis=1)[2]
-      if name.split("/")[-1] == "w_i_diag":
-        return tf.split(p, 3, axis=1)[0]
-      if name.split("/")[-1] == "w_o_diag":
-        return tf.split(p, 3, axis=1)[1]
+      if name[-1] in ["w_f_diag", "w_i_diag", "w_o_diag"]:
+        if is_bidirectional:
+          p = tf.split(input_dict[node.inputs[7]], 2)[index]
+        else:
+          p = input_dict[node.inputs[7]]
+        if names[-1] == "w_f_diag":
+          return tf.split(p, 3, axis=1)[2]
+        if names[-1] == "w_i_diag":
+          return tf.split(p, 3, axis=1)[0]
+        if names[-1] == "w_o_diag":
+          return tf.split(p, 3, axis=1)[1]
       return getter(name, *args, **kwargs)
 
     x = input_dict[node.inputs[0]]
@@ -911,8 +960,11 @@ class TensorflowBackend(TensorflowBackendBase):
     # TODO(fumihwh): check if reverse and bidirectional works
     with tf.variable_scope(
         "LSTM_" + get_unique_suffix(),
-        custom_getter=partial(_custom_getter, node=node,
-                              input_dict=input_dict)):
+        custom_getter=partial(
+            _custom_getter,
+            node=node,
+            input_dict=input_dict,
+            is_bidirectional=num_directions == 2)):
 
       cell_kwargs[
           "use_peepholes"] = input_size == 8 and node.inputs[7] in input_dict
@@ -940,16 +992,28 @@ class TensorflowBackend(TensorflowBackendBase):
       rnn_kwargs["time_major"] = True
       rnn_kwargs["dtype"] = tf.float32
 
-      output, state = cls._rnn(x, tf.nn.rnn_cell.LSTMCell, cell_kwargs,
-                               rnn_kwargs, tf_activations, direction)
+      outputs, states = cls._rnn(x, tf.nn.rnn_cell.LSTMCell, cell_kwargs,
+                                 rnn_kwargs, tf_activations, direction)
 
-    # TODO(fumihwh): post process for bidirectional
-    state = state[0]
-    c, h = state
     if num_directions == 1:
-      c = tf.expand_dims(c, 0)
-      h = tf.expand_dims(h, 0)
-      output = tf.expand_dims(output, 1)
+      state = states[0]
+      c = tf.expand_dims(state[0], 0)
+      h = tf.expand_dims(state[1], 0)
+      output = tf.expand_dims(outputs, 1)
+    else:
+      state_fw = states[0][0]
+      state_bw = states[1][0]
+      output_fw = outputs[0]
+      output_bw = outputs[1]
+      c_fw = tf.expand_dims(state_fw[0], 0)
+      c_bw = tf.expand_dims(state_bw[0], 0)
+      c = tf.concat((c_fw, c_bw), axis=0)
+      h_fw = tf.expand_dims(state_fw[1], 0)
+      h_bw = tf.expand_dims(state_bw[1], 0)
+      h = tf.concat((h_fw, h_bw), axis=0)
+      output_fw = tf.expand_dims(output_fw, 1)
+      output_bw = tf.expand_dims(output_bw, 1)
+      output = tf.concat((output_fw, output_bw), axis=1)
 
     return [output, h, c] if output_sequence == 0 else [h, c]
 
@@ -1106,17 +1170,37 @@ class TensorflowBackend(TensorflowBackendBase):
                        name,
                        node=None,
                        input_dict=None,
+                       is_bidirectional=None,
                        *args,
                        **kwargs):
-      # TODO(fumihwh): deal with bidirectional
-      if name.split("/")[-1] == "kernel":
-        w = tf.transpose(tf.squeeze(input_dict[node.inputs[1]]))
-        r = tf.transpose(tf.squeeze(input_dict[node.inputs[2]]))
-        kernel = tf.concat([w, r], 0)
+      names = name.split("/")
+      if is_bidirectional:
+        if "fw" in names:
+          index = 0
+        elif "bw" in names:
+          index = 1
+        else:
+          raise RuntimeError("Can not get {} for bidirectional. "
+                             "Either fw and bw is not in name scope.".format(
+                                 names[-1]))
+      if names[-1] == "kernel":
+        if is_bidirectional:
+          w = tf.split(input_dict[node.inputs[1]], 2)[index]
+          r = tf.split(input_dict[node.inputs[2]], 2)[index]
+        else:
+          w = input_dict[node.inputs[1]]
+          r = input_dict[node.inputs[2]]
+        new_w = tf.transpose(tf.squeeze(w))
+        new_r = tf.transpose(tf.squeeze(r))
+        kernel = tf.concat([new_w, new_r], 0)
         return kernel
-      if name.split("/")[-1] == "bias":
+      if names[-1] == "bias":
         if len(node.inputs) >= 4:
-          w_b, r_b = tf.split(tf.squeeze(input_dict[node.inputs[3]]), 2)
+          if is_bidirectional:
+            b = tf.split(input_dict[node.inputs[3]], 2)[index]
+          else:
+            b = input_dict[node.inputs[3]]
+          w_b, r_b = tf.split(tf.squeeze(b), 2)
           w_b = tf.transpose(w_b)
           r_b = tf.transpose(r_b)
           return tf.add(w_b, r_b)
@@ -1164,8 +1248,11 @@ class TensorflowBackend(TensorflowBackendBase):
     # TODO(fumihwh): check if reverse and bidirectional works
     with tf.variable_scope(
         "RNN_" + get_unique_suffix(),
-        custom_getter=partial(_custom_getter, node=node,
-                              input_dict=input_dict)):
+        custom_getter=partial(
+            _custom_getter,
+            node=node,
+            input_dict=input_dict,
+            is_bidirectional=num_directions == 2)):
 
       cell_kwargs["num_units"] = hidden_size
       initial_state = None
@@ -1187,15 +1274,24 @@ class TensorflowBackend(TensorflowBackendBase):
       rnn_kwargs["time_major"] = True
       rnn_kwargs["dtype"] = tf.float32
 
-      output, state = cls._rnn(x, tf.nn.rnn_cell.BasicRNNCell, cell_kwargs,
-                               rnn_kwargs, tf_activations, direction)
+      outputs, states = cls._rnn(x, tf.nn.rnn_cell.BasicRNNCell, cell_kwargs,
+                                 rnn_kwargs, tf_activations, direction)
 
-    # TODO(fumihwh): post process for bidirectional
-    state = state[0]
-    h = state
     if num_directions == 1:
-      h = tf.expand_dims(h, 0)
-      output = tf.expand_dims(output, 1)
+      state = states[0]
+      h = tf.expand_dims(state, 0)
+      output = tf.expand_dims(outputs, 1)
+    else:
+      state_fw = states[0][0]
+      state_bw = states[1][0]
+      output_fw = outputs[0]
+      output_bw = outputs[1]
+      h_fw = tf.expand_dims(state_fw, 0)
+      h_bw = tf.expand_dims(state_bw, 0)
+      h = tf.concat((h_fw, h_bw), axis=0)
+      output_fw = tf.expand_dims(output_fw, 1)
+      output_bw = tf.expand_dims(output_bw, 1)
+      output = tf.concat((output_fw, output_bw), axis=1)
 
     return [output, h] if output_sequence == 0 else [h]
 
