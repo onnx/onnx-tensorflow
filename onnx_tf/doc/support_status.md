@@ -135,6 +135,7 @@ ______
 |conv3_d|1|
 |equal|1|
 |exp|1, 6|
+|fill|1|
 |floor|1, 6|
 |fused_batch_norm|1, 6|
 |greater|1|
