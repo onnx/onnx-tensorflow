@@ -103,15 +103,13 @@ def create_test(test_data):
 test_cases = [
 ("test_arg_max", tf.argmax, "ArgMax", [get_rnd([1, 2, 3, 4])], {"axis": -1}),
 ("test_arg_min", tf.argmin, "ArgMin", [get_rnd([1, 2, 3, 4])], {"axis": -1}),
-# Use reverse to test ignore_unimplemented
-("test_unimplemented", tf.reverse, "ReverseV2", [get_rnd([1, 2, 3, 4]), [3]], {}, {"ignore_unimplemented": True}),
 ("test_cast", tf.cast, "Cast", [get_rnd([10, 10]), tf.float16], {}),
 ("test_ceil", tf.ceil, "Ceil", [get_rnd([10, 10], -10, 10)], {}),
+("test_constant_fill", tf.fill, "Fill", [[1, 2, 3], 1], {}),
 ("test_exp", tf.exp, "Exp", [get_rnd([10, 10])], {}),
 ("test_floor", tf.floor, "Floor", [get_rnd([10, 10], -10, 10)], {}),
 ("test_log", tf.log, "Log", [get_rnd([10, 10])], {}),
 ("test_log_softmax", tf.nn.log_softmax, "LogSoftmax", [get_rnd([10, 10])], {}),
-("test_relu", tf.nn.relu, "Relu", [get_rnd([10, 10])], {}),
 ("test_or", tf.logical_or, "LogicalOr", [get_rnd([10, 10], dtype=np.bool_), get_rnd([10, 10], dtype=np.bool_)], {}),
 ("test_pow", tf.pow, "Pow", [get_rnd([10, 10]), get_rnd([10, 10])], {}),
 ("test_pad", tf.pad, "Pad", [get_rnd([2, 3]), [[1, 1,], [2, 2]]], {"mode": "constant"}),
@@ -123,6 +121,7 @@ test_cases = [
 ("test_reduce_min", tf.reduce_min, "Min", [get_rnd([10, 10])], {"keep_dims": True}),
 ("test_reduce_prod", tf.reduce_prod, "Prod", [get_rnd([10, 10])], {"keep_dims": True}),
 ("test_reduce_sum", tf.reduce_sum, "Sum", [get_rnd([10, 10])], {"keep_dims": True}),
+("test_relu", tf.nn.relu, "Relu", [get_rnd([10, 10])], {}),
 ("test_reshape", tf.reshape, "Reshape", [get_rnd([10, 10]), [4, 25]], {}),
 ("test_sigmoid", tf.sigmoid, "Sigmoid", [get_rnd([10, 10])], {}),
 ("test_split", tf.split, "split", [get_rnd([10, 10]), [2, 3, 5]], {}),
@@ -131,6 +130,8 @@ test_cases = [
 ("test_subtract", tf.subtract, "Sub", [get_rnd([10, 10]), get_rnd([10, 10])], {}),
 ("test_tanh", tf.tanh, "Tanh", [get_rnd([10, 10])], {}),
 ("test_tile", tf.tile, "Tile", [get_rnd([1, 2, 3, 4]), np.random.randint(1, 10, (4,), dtype=np.int32)], {}),
+# Use reverse to test ignore_unimplemented
+("test_unimplemented", tf.reverse, "ReverseV2", [get_rnd([1, 2, 3, 4]), [3]], {}, {"ignore_unimplemented": True}),
 ("test_xor", tf.logical_xor, "LogicalXor", [get_rnd([10, 10], dtype=np.bool_), get_rnd([10, 10], dtype=np.bool_)], {}),
 ("test_transpose", tf.transpose, "transpose", [get_rnd([2, 10])], {"perm":[1, 0]}),
 ("test_concat", tf.concat, "concat", [[get_rnd([1, 10]),get_rnd([10, 10]),get_rnd([20, 10])], 0], {})
