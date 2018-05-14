@@ -624,16 +624,22 @@ class TensorflowBackend(TensorflowBackendBase):
     tf_activations = [tf.nn.tanh]
     if "activations" in node.attrs:
       activations = list(map(lambda x: x.lower(), node.attrs["activations"]))
-      activation_alpha = node.attrs.get("activation_alpha", None)
-      activation_beta = node.attrs.get("activation_beta", None)
+      activation_alpha = node.attrs.get("activation_alpha", [None] * 4)
+      activation_beta = node.attrs.get("activation_beta", [None] * 4)
+      if activations[0] != "sigmoid":
+        raise NotImplementedError(
+            "Tensorflow uses sigmiod as first activation function `f`.")
       tf_activations = [
-          cls._rnn_get_activation(activations[0], activation_alpha[0],
-                                  activation_beta[0])
+          cls._rnn_get_activation(activations[1], activation_alpha[1],
+                                  activation_beta[1])
       ]
       if num_directions == 2:
+        if activations[2] != "sigmoid":
+          raise NotImplementedError(
+              "Tensorflow uses sigmiod as first activation function `f`.")
         tf_activations.append(
-            cls._rnn_get_activation(activations[1], activation_alpha[1],
-                                    activation_beta[1]))
+            cls._rnn_get_activation(activations[3], activation_alpha[3],
+                                    activation_beta[3]))
 
     # TODO(fumihwh): check if reverse and bidirectional works
     with tf.variable_scope(
@@ -803,7 +809,7 @@ class TensorflowBackend(TensorflowBackendBase):
       outputs, states = tf.nn.dynamic_rnn(cell_fw, x, **rnn_kwargs)
     elif direction == "bidirectional":
       outputs, states = tf.nn.bidirectional_dynamic_rnn(cell_fw, cell_bw, x,
-                                                      **rnn_kwargs)
+                                                        **rnn_kwargs)
     elif direction == "reverse":
 
       def _reverse(input_, seq_dim):
@@ -934,8 +940,8 @@ class TensorflowBackend(TensorflowBackendBase):
     tf_activations = [tf.nn.tanh]
     if "activations" in node.attrs:
       activations = list(map(lambda x: x.lower(), node.attrs["activations"]))
-      activation_alpha = node.attrs.get("activation_alpha", None)
-      activation_beta = node.attrs.get("activation_beta", None)
+      activation_alpha = node.attrs.get("activation_alpha", [None] * 6)
+      activation_beta = node.attrs.get("activation_beta", [None] * 6)
       if activations[0] != "sigmoid":
         raise NotImplementedError(
             "Tensorflow uses sigmiod as first activation function `f`.")
@@ -1234,8 +1240,8 @@ class TensorflowBackend(TensorflowBackendBase):
     tf_activations = [tf.nn.tanh]
     if "activations" in node.attrs:
       activations = list(map(lambda x: x.lower(), node.attrs["activations"]))
-      activation_alpha = node.attrs.get("activation_alpha", None)
-      activation_beta = node.attrs.get("activation_beta", None)
+      activation_alpha = node.attrs.get("activation_alpha", [None] * 2)
+      activation_beta = node.attrs.get("activation_beta", [None] * 2)
       tf_activations = [
           cls._rnn_get_activation(activations[0], activation_alpha[0],
                                   activation_beta[0])
