@@ -800,9 +800,9 @@ class TensorflowBackend(TensorflowBackendBase):
       cell_bw = tf.nn.rnn_cell.MultiRNNCell([rnn_cell_bw])
 
     if direction == "forward":
-      output, state = tf.nn.dynamic_rnn(cell_fw, x, **rnn_kwargs)
+      outputs, states = tf.nn.dynamic_rnn(cell_fw, x, **rnn_kwargs)
     elif direction == "bidirectional":
-      output, state = tf.nn.bidirectional_dynamic_rnn(cell_fw, cell_bw, x,
+      outputs, states = tf.nn.bidirectional_dynamic_rnn(cell_fw, cell_bw, x,
                                                       **rnn_kwargs)
     elif direction == "reverse":
 
@@ -894,7 +894,7 @@ class TensorflowBackend(TensorflowBackendBase):
       # Only use_peepholes is True,
       # will try to get w_f_diag, w_i_diag, w_o_diag
       # onnx P[iof]
-      if name[-1] in ["w_f_diag", "w_i_diag", "w_o_diag"]:
+      if names[-1] in ["w_f_diag", "w_i_diag", "w_o_diag"]:
         if is_bidirectional:
           p = tf.split(input_dict[node.inputs[7]], 2)[index]
         else:
