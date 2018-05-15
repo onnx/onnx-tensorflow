@@ -18,7 +18,7 @@ Please do not expect us to have PyTorch, Caffe2 installed.
 
 If a model exported from PyTorch and Caffe2 is having trouble in ONNX-TF, use the next section to attach the model.
 
-**ONNX Model File**
+**ONNX model file**
 
 If applicable, attach the onnx model file in question using Gist, DropBox or Google Drive.
 
