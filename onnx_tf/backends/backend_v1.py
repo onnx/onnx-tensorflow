@@ -180,6 +180,8 @@ class TensorflowBackend(TensorflowBackendBase):
 
     kernel_shape = node.attrs["kernel_shape"]
     strides = node.attrs.get("strides", [1] * (x_rank - 2))
+
+    # opset version 7
     count_include_pad = node.attrs.get("count_include_pad", 0)
 
     # By default, do not pad

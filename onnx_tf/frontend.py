@@ -476,7 +476,8 @@ class TensorflowFrontendBase(object):
         onnx_op, [node.inputs[0]], [node.name],
         pads=pads,
         kernel_shape=kernel_shape,
-        strides=strides)
+        strides=strides,
+        **kwargs.get("external_node_kwargs", {}))
 
   @classmethod
   def _cal_pads(cls, auto_pad, spatial_dim, input_shape, output_shape, strides,
