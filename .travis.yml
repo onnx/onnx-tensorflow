@@ -23,3 +23,5 @@ cache:
 env:
   global:
     - PB_VERSION=2.6.1
+    - ONNX_BRANCH=master
+    - ONNX_BRANCH=rel-1.1.2
