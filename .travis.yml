@@ -21,6 +21,5 @@ cache:
     - $HOME/.ccache
 
 env:
-  - PB_VERSION=3.5.0
-  - ONNX_BRANCH=master
-  - ONNX_BRANCH=rel-1.1.2
+  - PB_VERSION=3.5.0 ONNX_BRANCH=master
+  - PB_VERSION=3.5.0 ONNX_BRANCH=rel-1.1.2
