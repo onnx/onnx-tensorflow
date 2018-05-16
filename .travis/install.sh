@@ -9,7 +9,7 @@ mkdir -p $pb_dir
 wget -qO- "https://github.com/google/protobuf/releases/download/v$PB_VERSION/protobuf-$PB_VERSION.tar.gz" | tar -xvz -C "$pb_dir" --strip-components 1
 ccache -z
 cd "$pb_dir" && ./configure && make && make check && sudo make install && sudo ldconfig
-cd "$pb_dir/python" && python setup.py install
+cd "$pb_dir/python" && python setup.py build && python setup.py install
 ccache -s
 
 # install onnx.
