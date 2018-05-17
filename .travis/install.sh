@@ -2,6 +2,7 @@
 
 scripts_dir=$(dirname $(readlink -e "${BASH_SOURCE[0]}"))
 source "$scripts_dir/common"
+source "$scripts_dir/setup.sh"
 
 # Install protobuf.
 pb_dir="$build_cache_dir/pb"
