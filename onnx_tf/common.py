@@ -129,7 +129,7 @@ ONNX_ATTR_TO_REMOVE_PER_OP = {}
 
 TF_ATTR_TO_REMOVE = [
     "_output_shapes", "T", "seed2", "Tidx", "_class", "Tshape", "Tpaddings",
-    "data_format", "transpose_a", "transpose_b"
+    "data_format", "transpose_a", "transpose_b", "out_type"
 ]
 
 ONNX_OP_TO_TF_OP = {
