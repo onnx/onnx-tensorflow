@@ -15,7 +15,17 @@ ccache -s
 onnx_dir="$workdir/onnx"
 mkdir -p $onnx_dir
 cd "$onnx_dir" && git clone --recursive git://github.com/onnx/onnx.git
+
 # Checkout the version specified.
-cd onnx && git checkout $ONNX_BRANCH
+cd onnx
+if [ "$ONNX_BUILD_FROM" = "MASTER" ]
+then
+  git checkout master
+else
+  ONNX_BRANCH=rel-$(cat $TRAVIS_BUILD_DIR/ONNX_VERSION_NUMBER)
+  echo "Using ONNX branch:"
+  echo $ONNX_BRANCH
+  git checkout $ONNX_BRANCH
+fi
 # Install onnx.
 pip install -e .
