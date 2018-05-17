@@ -309,7 +309,7 @@ class TensorflowFrontendBase(object):
           make_tensor_value_info(output_name, output_onnx_type,
                                  output.attr["_output_shapes"][i]))
 
-    inputs = list(chain.from_iterable(map(lambda p: list(p.input), ops_proto)))
+    inputs = list(chain.from_iterable(map(lambda p: p.input, ops_proto)))
     outputs = list(map(lambda p: p.name, output_proto))
     in_out = inputs + outputs
 
