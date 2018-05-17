@@ -415,7 +415,7 @@ class TensorflowFrontendBase(object):
         (int, list,
          tuple)), "opset is expected to int, list or tuple, but {}.".format(
              type(opset))
-    if isinstance(opset, int):
+    if isinstance(opset, (int, long)):
       if opset == 0:
         opset = defs.onnx_opset_version()
       opset = [("", opset)]
