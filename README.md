@@ -36,11 +36,10 @@ print(output["Y"])
 The result is `[ 0.   0.1]`
 
 ## Development Install:
-- Install ONNX
-- Install Tensorflow>=1.5.0
-- Run `git clone git@github.com:onnx/onnx-tensorflow.git && cd onnx-tensorflow`
-- Run `pip install -e .`
-- Development follows conventions [here](https://github.com/onnx/onnx-caffe2/blob/master/onnx_caffe2/backend.py)
+- Install ONNX master branch from source.
+- Install Tensorflow>=1.5.0.
+- Run `git clone git@github.com:onnx/onnx-tensorflow.git && cd onnx-tensorflow`.
+- Run `pip install -e .`.
 
 ## Folder Structure:
 - __onnx_tf__ main source code file.
