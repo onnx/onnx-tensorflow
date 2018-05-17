@@ -9,5 +9,5 @@ onnx_tf_dir="$PWD"
 pip install -e $onnx_tf_dir
 
 python --version
-python -m unittest discover test/backend/
-python -m unittest discover test/frontend/
+
+python -m unittest discover test

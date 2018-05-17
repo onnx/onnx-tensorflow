@@ -309,22 +309,37 @@ class TensorflowFrontendBase(object):
           make_tensor_value_info(output_name, output_onnx_type,
                                  output.attr["_output_shapes"][i]))
 
-    inputs = list(chain.from_iterable(map(lambda p: list(p.input), ops_proto)))
+    inputs = list(chain.from_iterable(map(lambda p: p.input, ops_proto)))
+    outputs = list(map(lambda p: p.name, output_proto))
+    in_out = inputs + outputs
 
-    # Remove proto in inputs_proto and consts_proto if proto is not used as input in ONNX
-    inputs_proto = list(filter(lambda x: x.name in inputs, inputs_proto))
-    consts_proto = list(filter(lambda x: x.name in inputs, consts_proto))
+    # Remove proto in inputs_proto and consts_proto
+    # if proto is not used as input or an output in ONNX
+    inputs_proto = list(filter(lambda x: x.name in in_out, inputs_proto))
+    consts_proto = list(filter(lambda x: x.name in in_out, consts_proto))
 
     inputs_proto = cls._data_type_caster(inputs_proto, data_type_cast_map)
     consts_proto = cls._data_type_caster(consts_proto, data_type_cast_map)
 
-    return make_graph(
-        ops_proto,
-        name,
-        inputs_proto,
-        output_proto,
-        initializer=consts_proto,
-        value_info=value_info_proto)
+    # TODO: currently no onnx release support value_info, thus ensuring
+    # backward compatibility via try catch routine. Switch to excplicit
+    # onnx version checking when value_info is supported in upcoming
+    # onnx release.
+    try:
+      return make_graph(
+          ops_proto,
+          name,
+          inputs_proto,
+          output_proto,
+          initializer=consts_proto,
+          value_info=value_info_proto)
+    except TypeError:
+      return make_graph(
+          ops_proto,
+          name,
+          inputs_proto,
+          output_proto,
+          initializer=consts_proto)
 
   @classmethod
   def _data_type_caster(cls, protos, data_type_cast_map):
