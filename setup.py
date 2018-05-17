@@ -6,7 +6,7 @@ TOP_DIR = os.path.realpath(os.path.dirname(__file__))
 with open(os.path.join(TOP_DIR, 'VERSION_NUMBER')) as version_file:
     version = version_file.read().strip()
 
-if os.environ['TRAVIS'] == 1:
+if os.getenv('TRAVIS'):
     # On travis, we install from source, therefore no need to specify version.
     onnx_dep = "onnx"
 else:
