@@ -38,10 +38,11 @@ from onnx.helper import (
     make_opsetid,
 )
 from onnx.helper import mapping
-from onnx.defs import get_schema
 
 from onnx_tf.handlers.frontend import *  # noqa
+from onnx_tf.handlers.frontend_handler import FrontendHandler
 from onnx_tf.handlers.frontend_handler import get_all_handlers
+from onnx_tf._common import exception
 
 
 class TensorflowNode(object):
@@ -231,61 +232,27 @@ class TensorflowFrontendBase(object):
         versions = frontend_tf_opset_version.get(op_name_to_lower(op_name), [])
 
         opset_dict = {}
-        onnx_domain = defs.ONNX_DOMAIN
         for domain, version in opset:
           if domain == "ai.onnx":
             domain = ""
           opset_dict[domain] = version
-          defs.ONNX_DOMAIN = domain
           assert isinstance(
-              version, int
-          ) and (version <= defs.onnx_opset_version()) and (
-              version >= 0
-          ), "Opset should be an int less than or equal to {}, but {}: {}".format(
-              defs.onnx_opset_version(), type(version), version)
-        defs.ONNX_DOMAIN = onnx_domain
+              version,
+              int) and (version <= defs.C.schema_version_map()[domain][1]) and (
+                  version >= defs.C.schema_version_map()[domain][0]
+              ), "Opset should be an int in ({}, {}), but {}: {}".format(
+                  defs.C.schema_version_map()[domain][0],
+                  defs.C.schema_version_map()[domain][1], type(version),
+                  version)
 
         opset_ver = opset_dict[op_domain]
         handlers = get_all_handlers()
         handler = handlers.get(op_name, None)
+
         if handler:
-          since_version = get_schema(
-            handler.get_onnx_op(), max_inclusive_version=opset_ver).since_version
-          if since_version in handler.get_versions():
-            node = handler.handle(node, since_version, consts=consts)
-            ops_proto.append(node)
-        # raise NotImplementedError
-        continue
-
-        frontend = cls
-        # Get corresponding frontend class with version
-        if versions:
-          if opset_ver == 0:
-            version = max(versions)
-          else:
-            versions = sorted(versions + [opset_ver])
-            version = versions[
-                max([i for i, v in enumerate(versions) if v == opset_ver]) - 1]
-
-          camel_domain = "".join(w.title() for w in op_domain.split("."))
-          frontend_ver = "frontend_v{}".format(version)
-          frontend_class_name = "{}TensorflowFrontend".format(camel_domain)
-          frontend_module = cls.frontend_version_cache.setdefault(
-              frontend_ver,
-              importlib.import_module("onnx_tf.frontends." + frontend_ver))
-          if hasattr(frontend_module, frontend_class_name):
-            frontend = getattr(frontend_module, frontend_class_name)
-          else:
-            cls._catch_exception(NotImplementedError
-                                 if not ignore_unimplemented else warnings.warn,
-                                 "{} for domain {} is not implemented".format(
-                                     frontend_ver, op_domain))
-
-        # Check if specialized handler exists.
-        if hasattr(frontend, handler_name):
-          method_to_call = getattr(frontend, handler_name)
-          node = method_to_call(
+          node = handler.handle(
               node,
+              opset_ver,
               consts=consts,
               node_dict=dict(node_tup),
               data_type_cast_map=data_type_cast_map)
@@ -293,22 +260,9 @@ class TensorflowFrontendBase(object):
             ops_proto.extend(node)
           else:
             ops_proto.append(node)
-        # Deal with no handler (defined in common.py) or totally not implemented ops
         else:
-          if node.op in TF_OP_STR_TO_ONNX_OP.keys():
-            onnx_op = TF_OP_STR_TO_ONNX_OP[node.op]
-          else:
-            cls._catch_exception(NotImplementedError
-                                 if not ignore_unimplemented else warnings.warn,
-                                 "{} op is not implemented.".format(node.op))
-            onnx_op = node.op
-
-          ops_proto.append(
-              frontend.handle_trivial(
-                  node,
-                  consts=consts,
-                  node_dict=dict(node_tup),
-                  onnx_op=onnx_op))
+          exception.OP_NOT_IMPL_EXCEPT(node.op)
+          ops_proto.append(FrontendHandler.make_node(node, should_check=False))
 
     output = TensorflowNode(output)
     # making output proto
@@ -432,6 +386,7 @@ class TensorflowFrontendBase(object):
         graph_def = sess.graph_def
       output_node = get_node_by_name(graph_def.node, output)
 
+    exception.USE_WARNING = ignore_unimplemented
     onnx_graph = cls.tensorflow_graph_to_onnx_graph(
         graph_def, output_node, opset, graph_name, ignore_unimplemented)
     onnx_model = make_model(

@@ -13,4 +13,4 @@ class Transpose(FrontendHandler):
           kwargs['node_dict'][node.inputs[0]].attr['_output_shapes'][0])
       perm = list(reversed(range(input_rank)))
 
-    return cls.make_node(node, [node.inputs[0]], [node.name], 1, perm=perm)
+    return cls.make_node(node, [node.inputs[0]], version=1, perm=perm)

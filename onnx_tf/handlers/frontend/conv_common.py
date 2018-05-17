@@ -28,13 +28,12 @@ class ConvCommon(FrontendHandler):
     unique_suffix = get_unique_suffix()
     transpose_node = cls.make_node(
         node, [node.inputs[1]], [node.inputs[1] + "_T_" + unique_suffix],
-        1,
+        version=1,
         perm=[d + 1, d] + list(range(d)),
         name=node.inputs[1] + "_T_" + unique_suffix)
     conv_node = cls.make_node(
         node, [node.inputs[0], node.inputs[1] + "_T_" + unique_suffix],
-        [node.name],
-        1,
+        version=1,
         pads=pads,
         kernel_shape=kernel_shape,
         strides=strides,

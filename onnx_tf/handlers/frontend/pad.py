@@ -21,11 +21,7 @@ class Pad(FrontendHandler):
     mode = node.attr.get("mode", "constant")
     pads = np.transpose(consts[node.inputs[1]]).flatten()
     return cls.make_node(
-        node, [node.inputs[0]], [node.name],
-        1,
-        paddings=pads,
-        mode=mode,
-        value=0.0)
+        node, [node.inputs[0]], version=1, paddings=pads, mode=mode, value=0.0)
 
   @classmethod
   def version_2(cls, node, **kwargs):
@@ -33,4 +29,4 @@ class Pad(FrontendHandler):
     mode = node.attr.get("mode", "constant")
     pads = np.transpose(consts[node.inputs[1]]).flatten()
     return cls.make_node(
-        node, [node.inputs[0]], [node.name], 2, pads=pads, mode=mode, value=0.0)
+        node, [node.inputs[0]], version=2, pads=pads, mode=mode, value=0.0)

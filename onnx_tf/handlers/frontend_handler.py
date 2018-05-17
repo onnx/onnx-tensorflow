@@ -4,6 +4,7 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import onnx
+from onnx import defs
 from onnx import helper
 from onnx import checker
 
@@ -14,7 +15,10 @@ class FrontendHandler(object):
 
   @classmethod
   def handle(cls, node, version, **kwargs):
-    ver_handle = getattr(cls, "version_" + str(version), None)
+    since_version = defs.get_schema(
+        cls.get_onnx_op(), domain="",
+        max_inclusive_version=version).since_version
+    ver_handle = getattr(cls, "version_" + str(since_version), None)
     if ver_handle:
       cls.param_check(node, version, **kwargs)
       return ver_handle(node, **kwargs)
@@ -35,18 +39,25 @@ class FrontendHandler(object):
   @classmethod
   def make_node(cls,
                 node,
-                inputs,
-                outputs,
-                version,
+                inputs=None,
+                outputs=None,
+                version=None,
                 should_check=True,
                 **kwargs):
+    inputs = inputs if inputs is not None else node.inputs
+    outputs = outputs if outputs is not None else [
+        node.name + ":{}".format(i) if i > 0 else node.name
+        for i in range(len(node.attr["_output_shapes"]))
+    ]
     node = helper.make_node(
         cls.get_onnx_op(), inputs, outputs, name=node.name, **kwargs)
     if should_check:
+      if version is None:
+        raise RuntimeError("version can not be None.")
       ctx = checker.C.CheckerContext()
       ctx.ir_version = onnx.IR_VERSION
       ctx.opset_imports = {"": version}
-      checker.check_node(node)
+      checker.check_node(node, ctx=ctx)
     return node
 
   @classmethod

@@ -23,8 +23,8 @@ class PoolCommon(FrontendHandler):
     pads = ConvCommon.cal_pads(auto_pad, len(spatial_indices), input_shape,
                                output_shape, strides, kernel_shape)
     return cls.make_node(
-        node, [node.inputs[0]], [node.name],
-        version,
+        node, [node.inputs[0]],
+        version=version,
         pads=pads,
         kernel_shape=kernel_shape,
         strides=strides)

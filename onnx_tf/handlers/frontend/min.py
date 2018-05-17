@@ -1,7 +1,7 @@
 from .math_common import ReductionCommon
 
 
-class Mean(ReductionCommon):
+class Min(ReductionCommon):
   _ONNX_OP = "ReduceMin"
 
   @classmethod

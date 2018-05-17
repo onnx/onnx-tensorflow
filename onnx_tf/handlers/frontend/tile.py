@@ -9,4 +9,4 @@ class Tile(FrontendHandler):
   def version_1(cls, node, **kwargs):
     data_type_cast_map = kwargs["data_type_cast_map"]
     data_type_cast_map[node.inputs[1]] = TensorProto.INT64
-    return cls.make_node(node, node.inputs, [node.name], 1)
+    return cls.make_node(node, version=1)

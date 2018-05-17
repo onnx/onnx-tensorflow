@@ -7,8 +7,8 @@ class RandomStandardNormal(FrontendHandler):
   @classmethod
   def version_1(cls, node, **kwargs):
     return cls.make_node(
-        node, [], [node.name],
-        1,
+        node, [],
+        version=1,
         dtype=node.attr["dtype"],
         seed=node.attr["seed"],
         mean=0.0,

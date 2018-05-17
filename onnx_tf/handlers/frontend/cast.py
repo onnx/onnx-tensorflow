@@ -11,4 +11,4 @@ class Cast(FrontendHandler):
   def version_1(cls, node, **kwargs):
     dst_t = mapping.NP_TYPE_TO_TENSOR_TYPE[np.dtype(
         tf.as_dtype(node.attr["DstT"]).as_numpy_dtype)]
-    return cls.make_node(node, [node.inputs[0]], [node.name], 1, to=dst_t)
+    return cls.make_node(node, [node.inputs[0]], version=1, to=dst_t)
