@@ -239,7 +239,7 @@ class TensorflowFrontendBase(object):
           opset_dict[domain] = version
           defs.ONNX_DOMAIN = domain
           assert isinstance(
-              version, int
+              version, (int, long)
           ) and (version <= defs.onnx_opset_version()) and (
               version >= 0
           ), "Opset should be an int less than or equal to {}, but {}: {}".format(
