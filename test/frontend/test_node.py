@@ -7,8 +7,8 @@ import unittest
 import numpy as np
 import tensorflow as tf
 
-from onnx_tf.frontend import convert_graph
-from onnx import helper
+from onnx_tf.frontend import tensorflow_graph_to_onnx_model
+from onnx import checker
 
 # for testing
 from onnx_tf.backend import prepare
@@ -67,12 +67,12 @@ def create_test(test_data):
     test_op = tf_op(*tf_param_list, **attrs)
     tf_graph = tf.get_default_graph().as_graph_def(add_shapes=True)
     # Construct onnx graph, run with backend.
-    output_node = get_node_by_name(tf_graph.node, output_name)
-    onnx_graph = convert_graph(tf_graph,
-                               output_node,
-                               ignore_unimplemented=test_option.get("ignore_unimplemented", False))
-    onnx_model = helper.make_model(onnx_graph)
+    onnx_model = tensorflow_graph_to_onnx_model(
+        tf_graph,
+        output_name,
+        ignore_unimplemented=test_option.get("ignore_unimplemented", False))
     if not test_option.get("ignore_unimplemented", False):
+      checker.check_model(onnx_model)
       backend_rep = prepare(onnx_model)
       backend_output = []
       backend_rep_outputs = backend_rep.run(onnx_feed_dict)
@@ -123,6 +123,7 @@ test_cases = [
 ("test_reduce_sum", tf.reduce_sum, "Sum", [get_rnd([10, 10])], {"keep_dims": True}),
 ("test_relu", tf.nn.relu, "Relu", [get_rnd([10, 10])], {}),
 ("test_reshape", tf.reshape, "Reshape", [get_rnd([10, 10]), [4, 25]], {}),
+("test_shape", tf.shape, "Shape", [get_rnd([1, 2, 3, 4])], {}),
 ("test_sigmoid", tf.sigmoid, "Sigmoid", [get_rnd([10, 10])], {}),
 ("test_split", tf.split, "split", [get_rnd([10, 10]), [2, 3, 5]], {}),
 ("test_sqrt", tf.sqrt, "Sqrt", [get_rnd([10, 10])], {}),
