@@ -412,7 +412,7 @@ class TensorflowFrontendBase(object):
 
     assert isinstance(
         opset,
-        (int, list,
+        (int, long, list,
          tuple)), "opset is expected to int, list or tuple, but {}.".format(
              type(opset))
     if isinstance(opset, (int, long)):
