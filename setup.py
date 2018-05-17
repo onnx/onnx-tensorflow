@@ -13,7 +13,7 @@ else:
     # For user, we install the onnx release known to work with our release.
     with open(os.path.join(TOP_DIR, 'ONNX_VERSION_NUMBER')) as onnx_version_file:
         onnx_version = onnx_version_file.read().strip()
-        onnx_dep = "onnx==" + onnx_version
+        onnx_dep = "onnx>=" + onnx_version
 
 setup(
     name='onnx-tf',
