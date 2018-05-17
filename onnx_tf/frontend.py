@@ -286,13 +286,25 @@ class TensorflowFrontendBase(object):
     inputs_proto = cls._data_type_caster(inputs_proto, data_type_cast_map)
     consts_proto = cls._data_type_caster(consts_proto, data_type_cast_map)
 
-    return make_graph(
-        ops_proto,
-        name,
-        inputs_proto,
-        output_proto,
-        initializer=consts_proto,
-        value_info=value_info_proto)
+    # TODO: currently no onnx release support value_info, thus ensuring
+    # backward compatibility via try catch routine. Switch to excplicit
+    # onnx version checking when value_info is supported in upcoming
+    # onnx release.
+    try:
+      return make_graph(
+          ops_proto,
+          name,
+          inputs_proto,
+          output_proto,
+          initializer=consts_proto,
+          value_info=value_info_proto)
+    except TypeError:
+      return make_graph(
+          ops_proto,
+          name,
+          inputs_proto,
+          output_proto,
+          initializer=consts_proto)
 
   @classmethod
   def _data_type_caster(cls, protos, data_type_cast_map):
