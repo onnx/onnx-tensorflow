@@ -8,15 +8,19 @@
 ## Tutorials:
 [Running an ONNX model using Tensorflow](https://github.com/onnx/tutorials/blob/master/tutorials/OnnxTensorflowImport.ipynb)
 
+[Exporting a Tensorflow Model to ONNX](https://github.com/onnx/tutorials/blob/master/tutorials/OnnxTensorflowExport.ipynb)
+
 ## To install:
-Firstly install [ONNX](https://github.com/onnx/onnx) which cannot be installed by pip unless protoc is available.
+ONNX-TF requires ONNX (Open Neural Network Exchange) as an external dependency, for any issues related to ONNX installation, we refer our users to [ONNX project repository](https://github.com/onnx/onnx) for documentation and help. Notably, please ensure that protoc is available if you plan to install ONNX via pip.
 
-Secondly install Tensorflow>=1.5.0.
+The specific ONNX release version that we support in the master branch of ONNX-TF can be found [here](https://github.com/onnx/onnx-tensorflow/blob/master/ONNX_VERSION_NUMBER). This information about ONNX version requirement is automatically encoded in `setup.py`, therefore users needn't worry about ONNX version requirement when installing ONNX-TF.
 
-Then, run `pip install onnx-tf`
+To install the latest version of ONNX-TF via pip, run `pip install onnx-tf`.
+
+Because users often have their own preferences for which variant of Tensorflow to install (i.e., a GPU version instead of a CPU version), we do not explicitly require tensorflow in the installation script. It is therefore users' responsibility to ensure that the proper variant of Tensorflow is available to ONNX-TF. Moreoever, we require Tensorflow version >= 1.5.0.
 
 ## To test:
-For backend, run `python -m unittest discover test/backend`.
+For backend, run `python -m unittest discover test`.
 
 ## Example:
 In this example, we will define and run a Relu node and print the result.
