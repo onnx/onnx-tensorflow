@@ -1,0 +1,82 @@
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
+
+import onnx
+from onnx import helper
+from onnx import checker
+
+
+class FrontendHandler(object):
+  _TF_OP = []
+  _ONNX_OP = ""
+
+  @classmethod
+  def handle(cls, node, version, **kwargs):
+    ver_handle = getattr(cls, "version_" + str(version), None)
+    if ver_handle:
+      cls.param_check(node, version, **kwargs)
+      return ver_handle(node, **kwargs)
+    raise NotImplementedError
+
+  @classmethod
+  def param_check(cls, node, version, **kwargs):
+    pass
+
+  @classmethod
+  def get_onnx_op(cls):
+    return cls._ONNX_OP or cls.__name__
+
+  @classmethod
+  def get_tf_op(cls):
+    return cls._TF_OP or [cls.__name__]
+
+  @classmethod
+  def make_node(cls,
+                node,
+                inputs,
+                outputs,
+                version,
+                should_check=True,
+                **kwargs):
+    node = helper.make_node(
+        cls.get_onnx_op(), inputs, outputs, name=node.name, **kwargs)
+    if should_check:
+      ctx = checker.C.CheckerContext()
+      ctx.ir_version = onnx.IR_VERSION
+      ctx.opset_imports = {"": version}
+      checker.check_node(node)
+    return node
+
+  @classmethod
+  def get_versions(cls):
+    versions = []
+    for name in dir(cls):
+      if name.startswith("version_"):
+        versions.append(int(name.replace("version_", "")))
+    return versions
+
+
+def __get_all_subclasses(clazz):
+  return set(clazz.__subclasses__()).union(
+      [s for c in clazz.__subclasses__() for s in __get_all_subclasses(c)])
+
+
+def get_all_handlers():
+  handlers = {}
+  for handler in __get_all_subclasses(FrontendHandler):
+    for tf_op in handler.get_tf_op():
+      handlers[tf_op] = handler
+  return handlers
+
+
+def get_coverage():
+  tf_coverage = {}
+  onnx_coverage = {}
+  for handler in __get_all_subclasses(FrontendHandler):
+    versions = handler.get_versions()
+    for tf_op in handler.get_tf_op():
+      tf_coverage[tf_op] = versions
+    onnx_coverage[handler.get_onnx_op()] = versions
+  return onnx_coverage, tf_coverage

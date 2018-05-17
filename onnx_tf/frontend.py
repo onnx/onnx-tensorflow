@@ -38,6 +38,10 @@ from onnx.helper import (
     make_opsetid,
 )
 from onnx.helper import mapping
+from onnx.defs import get_schema
+
+from onnx_tf.handlers.frontend import *  # noqa
+from onnx_tf.handlers.frontend_handler import get_all_handlers
 
 
 class TensorflowNode(object):
@@ -242,6 +246,16 @@ class TensorflowFrontendBase(object):
         defs.ONNX_DOMAIN = onnx_domain
 
         opset_ver = opset_dict[op_domain]
+        handlers = get_all_handlers()
+        handler = handlers.get(op_name, None)
+        if handler:
+          since_version = get_schema(
+            handler.get_onnx_op(), max_inclusive_version=opset_ver).since_version
+          if since_version in handler.get_versions():
+            node = handler.handle(node, since_version, consts=consts)
+            ops_proto.append(node)
+        # raise NotImplementedError
+        continue
 
         frontend = cls
         # Get corresponding frontend class with version
