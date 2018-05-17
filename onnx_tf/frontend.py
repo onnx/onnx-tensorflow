@@ -9,12 +9,17 @@ from __future__ import unicode_literals
 import importlib
 import inspect
 from itertools import chain
+import sys
 import warnings
 
 import numpy as np
 import tensorflow as tf
 from tensorflow.python.framework.tensor_util import MakeNdarray
 from tensorflow.core.framework.attr_value_pb2 import AttrValue
+
+# Define long type for Python 3:
+if sys.version_info > (3,):
+  long = int
 
 from onnx_tf.common import (
     TF_TYPE_TO_ONNX_TYPE,
