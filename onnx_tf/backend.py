@@ -27,7 +27,8 @@ from onnx_tf.opset_version import backend_opset_version
 from onnx_tf.common import (ONNX_OP_TO_TF_OP, ONNX_ATTR_TO_TF_ATTR,
                             ONNX_ATTR_TO_TF_ATTR_PER_OP,
                             ONNX_ATTR_TO_REMOVE_PER_OP, ONNX_TYPE_TO_TF_TYPE,
-                            TF_TYPE_ENUM, op_name_to_lower)
+                            TF_TYPE_ENUM, op_name_to_lower,
+                            PAD_TF_INCOMPATIBLE)
 from onnx.backend.base import (
     Backend,
     Device,
@@ -174,6 +175,7 @@ class TensorflowBackendBase(Backend):
   # spatial dims only.
   @classmethod
   def get_tf_pad(cls, input_shape, kernel_shape, strides, pads):
+    assert pads is not None
     num_dim = int(len(input_shape))
     num_sp_dim = int(len(kernel_shape))
 
@@ -196,7 +198,7 @@ class TensorflowBackendBase(Backend):
     if is_same_padding:
       return "SAME"
 
-    return None
+    return PAD_TF_INCOMPATIBLE
 
   @classmethod
   def get_padding_as_op(cls, x, pads):
@@ -315,6 +317,7 @@ class TensorflowBackendBase(Backend):
       input_dict = dict(input_dict_items)
 
       for node in graph_def.node:
+        print(node)
         node = OnnxNode(node)
 
         output_ops = cls._onnx_node_to_tensorflow_op(

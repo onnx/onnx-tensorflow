@@ -24,6 +24,7 @@ from onnx_tf.backend import TensorflowBackendBase
 from onnx_tf.common import (
     ONNX_OP_TO_TF_OP,
     ONNX_TYPE_TO_TF_TYPE,
+    PAD_TF_INCOMPATIBLE,
 )
 import onnx.numpy_helper
 import onnx.defs
@@ -173,28 +174,31 @@ class TensorflowBackend(TensorflowBackendBase):
 
     kernel_shape = node.attrs["kernel_shape"]
     strides = node.attrs.get("strides", [1] * (x_rank - 2))
-    pads = node.attrs.get("pads", None)
+    pad = node.attrs.get("pads", None)
 
-    # Try to recover the tf padding mode:
-    pad = cls.get_tf_pad(x.get_shape().as_list(),
-                         kernel_shape,
-                         strides,
-                         pads)
+    # If padding is specified, try to recover it from explicit padding
+    # specification to tensorflow padding mode:
+    if pad is not None:
+      pad = cls.get_tf_pad(x.get_shape().as_list(),
+                           kernel_shape,
+                           strides,
+                           pad)
 
-    # Fall back to auto_pad if pad is not specified or
-    # cannot be recovered.
+    # We consult auto_pad if pad is not specified and auto_pad
+    # is available.
     if pad is None and "auto_pad" in node.attrs:
       if node.attrs["auto_pad"] == "SAME_UPPER":
         pad = "SAME"
       elif node.attrs["auto_pad"] == "VALID":
         pad = "VALID"
       elif node.attrs["auto_pad"] == "SAME_LOWER":
-        pad = None
+        pad = PAD_TF_INCOMPATIBLE
 
-    # Here, pad is None iff Tensorflow does not have a native implementation
-    # for this particular case, in which case we use compatibility pool and
-    # throw out a warning.
-    if pad is None:
+    # Neither pad nor auto_pad is specified, assume no padding.
+    if pad is None and "auto_pad" not in node.attrs:
+      pad = "VALID"
+
+    if pad is PAD_TF_INCOMPATIBLE:
       return cls._compatibility_pool(node, input_dict, pooling_type)
 
     if support_cuda:
