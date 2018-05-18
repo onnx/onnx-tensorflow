@@ -24,6 +24,7 @@ from onnx_tf.backend import TensorflowBackendBase
 from onnx_tf.common import (
     ONNX_OP_TO_TF_OP,
     ONNX_TYPE_TO_TF_TYPE,
+    PAD_TF_INCOMPATIBLE,
 )
 import onnx.numpy_helper
 import onnx.defs
@@ -63,6 +64,10 @@ class TensorflowBackend(TensorflowBackendBase):
 
   @classmethod
   def _compatibility_pool(cls, node, input_dict, pooling_type):
+    warnings.warn("Using the pooling op in compatibility mode."
+                  "This means your graph cannot be serialized."
+                  "Please configure your pooling operation to only use paddings that "
+                  "correspond to Tensorflow SAME or VALID padding.", UserWarning)
 
     def _get_pad_shape(auto_pad, input_spatial_shape, kernel_spatial_shape,
                        strides_spatial, output_spatial_shape):
@@ -169,19 +174,31 @@ class TensorflowBackend(TensorflowBackendBase):
 
     kernel_shape = node.attrs["kernel_shape"]
     strides = node.attrs.get("strides", [1] * (x_rank - 2))
+    pad = node.attrs.get("pads", None)
 
-    # By default, do not pad
-    pad = None
+    # If padding is specified, try to recover it from explicit padding
+    # specification to tensorflow padding mode:
+    if pad is not None:
+      pad = cls.get_tf_pad(x.get_shape().as_list(),
+                           kernel_shape,
+                           strides,
+                           pad)
 
-    if "auto_pad" in node.attrs:
+    # We consult auto_pad if pad is not specified and auto_pad
+    # is available.
+    if pad is None and "auto_pad" in node.attrs:
       if node.attrs["auto_pad"] == "SAME_UPPER":
         pad = "SAME"
       elif node.attrs["auto_pad"] == "VALID":
         pad = "VALID"
       elif node.attrs["auto_pad"] == "SAME_LOWER":
-        pad = None
+        pad = PAD_TF_INCOMPATIBLE
 
-    if pad is None:
+    # Neither pad nor auto_pad is specified, assume no padding.
+    if pad is None and "auto_pad" not in node.attrs:
+      pad = "VALID"
+
+    if pad is PAD_TF_INCOMPATIBLE:
       return cls._compatibility_pool(node, input_dict, pooling_type)
 
     if support_cuda:
