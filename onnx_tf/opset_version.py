@@ -56,7 +56,7 @@ backend_opset_version = {
     'LpPool': [],
     'MatMul': [1],
     'Max': [1, 6],
-    'MaxPool': [1, 7],
+    'MaxPool': [1],
     'MaxRoiPool': [],
     'Mean': [1, 6],
     'MeanVarianceNormalization': [],

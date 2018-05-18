@@ -63,7 +63,7 @@ ______
 |LpPool|N/A|
 |MatMul|1|
 |Max|1, 6|
-|MaxPool|1, 7|
+|MaxPool|1|
 |MaxRoiPool|N/A|
 |Mean|1, 6|
 |MeanVarianceNormalization|N/A|
