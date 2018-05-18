@@ -7,12 +7,19 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import importlib
+import inspect
 from itertools import chain
+import sys
+import warnings
 
 import numpy as np
 import tensorflow as tf
 from tensorflow.python.framework.tensor_util import MakeNdarray
 from tensorflow.core.framework.attr_value_pb2 import AttrValue
+
+# Define long type for Python 3:
+if sys.version_info > (3,):
+  long = int
 
 from onnx_tf.common import (
     TF_TYPE_TO_ONNX_TYPE,
@@ -25,6 +32,8 @@ from onnx_tf.common import (
 )
 from onnx_tf.opset_version import frontend_tf_opset_version
 from onnx import defs
+from onnx import TensorProto
+from onnx import ValueInfoProto
 from onnx.helper import (
     make_tensor_value_info,
     make_tensor,
@@ -33,7 +42,7 @@ from onnx.helper import (
     make_node,
     make_opsetid,
 )
-from onnx.onnx_pb2 import GraphProto, TensorProto, AttributeProto
+from onnx.helper import mapping
 
 
 class TensorflowNode(object):
@@ -123,7 +132,8 @@ class TensorflowFrontendBase(object):
                                      graph_def,
                                      output,
                                      opset=(("", 0),),
-                                     name="graph"):
+                                     name="graph",
+                                     ignore_unimplemented=False):
     """Converts a Tensorflow Graph Proto to an ONNX graph
 
     This function converts a Tensorflow Graph proto to an equivalent
@@ -134,6 +144,10 @@ class TensorflowFrontendBase(object):
       to be taken as output of the ONNX graph.
     :param opset: Opset, which should be ((str domain: int version number),).
     :param name: The name of the output ONNX Graph.
+    :param ignore_unimplemented: Convert to ONNX model and ignore all the operators
+      that are not currently supported by onnx-tensorflow.
+      This is an experimental feature. By enabling this feature,
+      the graph would not be guaranteed to match the ONNX specifications.
 
     :returns: The equivalent ONNX Graph Proto object.
     """
@@ -164,6 +178,10 @@ class TensorflowFrontendBase(object):
     # This list holds the protobuf objects of type ValueInfoProto
     # representing the all nodes' outputs to the converted ONNX graph.
     value_info_proto = []
+
+    # A map holds nodes name and new data type. Will be used to
+    # process protos to match ONNX type constraints.
+    data_type_cast_map = {}
 
     node_tup = [(node.name, TensorflowNode(node)) for node in graph_def.node]
 
@@ -211,7 +229,7 @@ class TensorflowFrontendBase(object):
         handler_name = "handle_" + op_name_to_lower(op_name)
 
         # TODO per domain frontend_tf_opset_version?
-        versions = frontend_tf_opset_version[op_name_to_lower(op_name)]
+        versions = frontend_tf_opset_version.get(op_name_to_lower(op_name), [])
 
         opset_dict = {}
         onnx_domain = defs.ONNX_DOMAIN
@@ -221,47 +239,67 @@ class TensorflowFrontendBase(object):
           opset_dict[domain] = version
           defs.ONNX_DOMAIN = domain
           assert isinstance(
-              version, int
+              version, (int, long)
           ) and (version <= defs.onnx_opset_version()) and (
               version >= 0
           ), "Opset should be an int less than or equal to {}, but {}: {}".format(
               defs.onnx_opset_version(), type(version), version)
-          defs.ONNX_DOMAIN = onnx_domain
+        defs.ONNX_DOMAIN = onnx_domain
 
         opset_ver = opset_dict[op_domain]
-        if opset_ver == 0:
-          version = max(versions)
-        else:
-          versions = sorted(versions + [opset_ver])
-          version = versions[
-              max([i for i, v in enumerate(versions) if v == opset_ver]) - 1]
 
-        camel_domain = "".join(w.title() for w in op_domain.split("."))
-        frontend_ver = "frontend_v{}".format(version)
-        frontend_class_name = "{}TensorflowFrontend".format(camel_domain)
-        frontend_module = cls.frontend_version_cache.setdefault(
-            frontend_ver,
-            importlib.import_module("onnx_tf.frontends." + frontend_ver))
-        if hasattr(frontend_module, frontend_class_name):
-          frontend = getattr(frontend_module, frontend_class_name)
-        else:
-          assert NotImplementedError, \
-            "{} for domain {} is not implemented".format(frontend_ver, op_domain)
+        frontend = cls
+        # Get corresponding frontend class with version
+        if versions:
+          if opset_ver == 0:
+            version = max(versions)
+          else:
+            versions = sorted(versions + [opset_ver])
+            version = versions[
+                max([i for i, v in enumerate(versions) if v == opset_ver]) - 1]
+
+          camel_domain = "".join(w.title() for w in op_domain.split("."))
+          frontend_ver = "frontend_v{}".format(version)
+          frontend_class_name = "{}TensorflowFrontend".format(camel_domain)
+          frontend_module = cls.frontend_version_cache.setdefault(
+              frontend_ver,
+              importlib.import_module("onnx_tf.frontends." + frontend_ver))
+          if hasattr(frontend_module, frontend_class_name):
+            frontend = getattr(frontend_module, frontend_class_name)
+          else:
+            cls._catch_exception(NotImplementedError
+                                 if not ignore_unimplemented else warnings.warn,
+                                 "{} for domain {} is not implemented".format(
+                                     frontend_ver, op_domain))
 
         # Check if specialized handler exists.
         if hasattr(frontend, handler_name):
           method_to_call = getattr(frontend, handler_name)
-          node = method_to_call(node, consts=consts, node_dict=dict(node_tup))
+          node = method_to_call(
+              node,
+              consts=consts,
+              node_dict=dict(node_tup),
+              data_type_cast_map=data_type_cast_map)
           if isinstance(node, list):
             ops_proto.extend(node)
           else:
             ops_proto.append(node)
-        elif node.op in TF_OP_STR_TO_ONNX_OP.keys():
-          node = frontend.handle_trivial(
-              node, consts=consts, node_dict=dict(node_tup))
-          ops_proto.append(node)
+        # Deal with no handler (defined in common.py) or totally not implemented ops
         else:
-          raise NotImplementedError("{} op is not implemented.".format(node.op))
+          if node.op in TF_OP_STR_TO_ONNX_OP.keys():
+            onnx_op = TF_OP_STR_TO_ONNX_OP[node.op]
+          else:
+            cls._catch_exception(NotImplementedError
+                                 if not ignore_unimplemented else warnings.warn,
+                                 "{} op is not implemented.".format(node.op))
+            onnx_op = node.op
+
+          ops_proto.append(
+              frontend.handle_trivial(
+                  node,
+                  consts=consts,
+                  node_dict=dict(node_tup),
+                  onnx_op=onnx_op))
 
     output = TensorflowNode(output)
     # making output proto
@@ -276,19 +314,70 @@ class TensorflowFrontendBase(object):
           make_tensor_value_info(output_name, output_onnx_type,
                                  output.attr["_output_shapes"][i]))
 
-    inputs = list(chain.from_iterable(map(lambda p: list(p.input), ops_proto)))
+    inputs = list(chain.from_iterable(map(lambda p: p.input, ops_proto)))
+    outputs = list(map(lambda p: p.name, output_proto))
+    in_out = inputs + outputs
 
-    # Remove proto in inputs_proto and consts_proto if proto is not used as input in ONNX
-    inputs_proto = list(filter(lambda x: x.name in inputs, inputs_proto))
-    consts_proto = list(filter(lambda x: x.name in inputs, consts_proto))
+    # Remove proto in inputs_proto and consts_proto
+    # if proto is not used as input or an output in ONNX
+    inputs_proto = list(filter(lambda x: x.name in in_out, inputs_proto))
+    consts_proto = list(filter(lambda x: x.name in in_out, consts_proto))
 
-    return make_graph(
-        ops_proto,
-        name,
-        inputs_proto,
-        output_proto,
-        initializer=consts_proto,
-        value_info=value_info_proto)
+    inputs_proto = cls._data_type_caster(inputs_proto, data_type_cast_map)
+    consts_proto = cls._data_type_caster(consts_proto, data_type_cast_map)
+
+    # TODO: currently no onnx release support value_info, thus ensuring
+    # backward compatibility via try catch routine. Switch to excplicit
+    # onnx version checking when value_info is supported in upcoming
+    # onnx release.
+    try:
+      return make_graph(
+          ops_proto,
+          name,
+          inputs_proto,
+          output_proto,
+          initializer=consts_proto,
+          value_info=value_info_proto)
+    except TypeError:
+      return make_graph(
+          ops_proto,
+          name,
+          inputs_proto,
+          output_proto,
+          initializer=consts_proto)
+
+  @classmethod
+  def _data_type_caster(cls, protos, data_type_cast_map):
+    """Cast to a new data type if node name is in data_type_cast_map.
+    Be used to process protos to match ONNX type constraints.
+
+    :param protos: Target protos.
+      TensorProto for inputs and ValueInfoProto for consts.
+    :param data_type_cast_map: A {node.name: new_data_type} dict.
+    :return: Processed protos.
+    """
+    if not data_type_cast_map:
+      return protos
+    result = []
+    for proto in protos:
+      new_proto = proto
+      if proto.name in data_type_cast_map:
+        new_data_type = data_type_cast_map[proto.name]
+        if type(proto) == TensorProto and proto.data_type != new_data_type:
+          field = mapping.STORAGE_TENSOR_TYPE_TO_FIELD[
+              mapping.TENSOR_TYPE_TO_STORAGE_TENSOR_TYPE[proto.data_type]]
+          vals = getattr(proto, field)
+          new_proto = make_tensor(
+              name=proto.name,
+              data_type=new_data_type,
+              dims=proto.dims,
+              vals=vals)
+        elif type(
+            proto
+        ) == ValueInfoProto and proto.type.tensor_type.elem_type != new_data_type:
+          new_proto.type.tensor_type.elem_type = new_data_type
+      result.append(new_proto)
+    return result
 
   @classmethod
   def tensorflow_graph_to_onnx_model(cls,
@@ -296,7 +385,8 @@ class TensorflowFrontendBase(object):
                                      output,
                                      opset=0,
                                      producer_name="onnx-tensorflow",
-                                     graph_name="graph"):
+                                     graph_name="graph",
+                                     ignore_unimplemented=False):
     """Converts a Tensorflow Graph Proto to an ONNX model
 
     This function converts a Tensorflow Graph proto to an equivalent
@@ -310,6 +400,10 @@ class TensorflowFrontendBase(object):
       List or tuple items should be (str domain, int version number).
     :param producer_name: The name of the producer.
     :param graph_name: The name of the output ONNX Graph.
+    :param ignore_unimplemented: Convert to ONNX model and ignore all the operators
+      that are not currently supported by onnx-tensorflow.
+      This is an experimental feature. By enabling this feature,
+      the model would not be guaranteed to match the ONNX specifications.
 
     :returns: The equivalent ONNX Model Proto object.
     """
@@ -323,18 +417,29 @@ class TensorflowFrontendBase(object):
 
     assert isinstance(
         opset,
-        (int, list,
+        (int, long, list,
          tuple)), "opset is expected to int, list or tuple, but {}.".format(
              type(opset))
-    if isinstance(opset, int):
+    if isinstance(opset, (int, long)):
       if opset == 0:
         opset = defs.onnx_opset_version()
       opset = [("", opset)]
     opset_imports = [make_opsetid(item[0], item[1]) for item in opset]
 
     output_node = get_node_by_name(graph_def.node, output)
-    onnx_graph = cls.tensorflow_graph_to_onnx_graph(graph_def, output_node,
-                                                    opset, graph_name)
+
+    if "_output_shapes" not in output_node.attr:
+      # Add infer_shapes to GraphDef
+      with tf.Graph().as_default():
+        with tf.Session(
+            config=tf.ConfigProto(
+                graph_options=tf.GraphOptions(infer_shapes=True))) as sess:
+          tf.import_graph_def(graph_def, name="")
+        graph_def = sess.graph_def
+      output_node = get_node_by_name(graph_def.node, output)
+
+    onnx_graph = cls.tensorflow_graph_to_onnx_graph(
+        graph_def, output_node, opset, graph_name, ignore_unimplemented)
     onnx_model = make_model(
         onnx_graph, producer_name=producer_name, opset_imports=opset_imports)
 
@@ -342,6 +447,10 @@ class TensorflowFrontendBase(object):
 
   @classmethod
   def handle_trivial(cls, node, **kwargs):
+    if "onnx_op" in kwargs:
+      onnx_op = kwargs["onnx_op"]
+    else:
+      onnx_op = TF_OP_STR_TO_ONNX_OP[node.op]
     # Remove tensorflow-specific attrs that are not
     # needed/allowed in ONNX.
     attr = cls.DEFAULT_TF_ATTR_PER_OP.get(node.op, {})
@@ -349,11 +458,7 @@ class TensorflowFrontendBase(object):
         filter(lambda pair: pair[0] not in TF_ATTR_TO_REMOVE,
                node.attr.items()))
     attr.update(filtered_attr)
-    return make_node(
-        TF_OP_STR_TO_ONNX_OP[node.op],
-        node.inputs, [node.name],
-        name=node.name,
-        **attr)
+    return make_node(onnx_op, node.inputs, [node.name], name=node.name, **attr)
 
   @classmethod
   def _bin_op(cls, node, onnx_op, axis=None):
@@ -387,11 +492,16 @@ class TensorflowFrontendBase(object):
             spatial_indices))
     pads = cls._cal_pads(auto_pad, len(spatial_indices), input_shape,
                          output_shape, strides, kernel_shape)
+
+    node_kwargs = {}
+    if "count_include_pad" in kwargs:
+      node_kwargs["count_include_pad"] = kwargs["count_include_pad"]
     return make_node(
         onnx_op, [node.inputs[0]], [node.name],
         pads=pads,
         kernel_shape=kernel_shape,
-        strides=strides)
+        strides=strides,
+        **node_kwargs)
 
   @classmethod
   def _cal_pads(cls, auto_pad, spatial_dim, input_shape, output_shape, strides,
@@ -414,6 +524,13 @@ class TensorflowFrontendBase(object):
         op, [node.inputs[0]], [node.name],
         axes=axes,
         keepdims=node.attr.get("keep_dims", 1))
+
+  @classmethod
+  def _catch_exception(cls, exception, message):
+    if inspect.isclass(exception) and issubclass(exception, Exception):
+      raise exception(message)
+    elif callable(exception):
+      exception(message)
 
   @staticmethod
   def register_onnx_op(onnx_op):

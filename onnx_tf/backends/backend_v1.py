@@ -24,6 +24,7 @@ from onnx_tf.backend import TensorflowBackendBase
 from onnx_tf.common import (
     ONNX_OP_TO_TF_OP,
     ONNX_TYPE_TO_TF_TYPE,
+    PAD_TF_INCOMPATIBLE,
 )
 from onnx_tf.custom_lstm import OnnxLSTMCell, extract_onnx_lstm_weights
 
@@ -64,7 +65,8 @@ class TensorflowBackend(TensorflowBackendBase):
     return [tf.argmin(data, axis=axis)]
 
   @classmethod
-  def _compatibility_pool(cls, node, input_dict, pooling_type):
+  def _pool_get_shapes(cls, auto_pad, x_shape, kernel_shape, strides,
+                       spatial_size, pads):
 
     def _get_pad_shape(auto_pad, input_spatial_shape, kernel_spatial_shape,
                        strides_spatial, output_spatial_shape):
@@ -93,15 +95,45 @@ class TensorflowBackend(TensorflowBackendBase):
                   / float(strides_spatial[i])))
       return out_shape
 
-    def py_pool(x, kernel_shape, strides_shape, pads, out_shape, pad_shape,
-                pooling_type):
+    if auto_pad in ["SAME_UPPER", "SAME_LOWER"]:
+      out_shape = _get_output_shape(auto_pad, x_shape[2:], kernel_shape,
+                                    strides)
+      pad_shape = _get_pad_shape(auto_pad, x_shape[2:], kernel_shape, strides,
+                                 out_shape)
+      for i in range(spatial_size):
+        if auto_pad == "SAME_LOWER":
+          pads[i + spatial_size] = pad_shape[i] // 2
+          pads[i] = pad_shape[i] - pads[i + spatial_size]
+        elif auto_pad == "SAME_UPPER":
+          pads[i] = pad_shape[i] // 2
+          pads[i + spatial_size] = pad_shape[i] - pads[i]
+    elif auto_pad in ["", "VALID"]:
+      pad_shape = [
+          pads[i] + pads[i + spatial_size] for i in range(spatial_size)
+      ]
+      out_shape = _get_output_shape(auto_pad, np.add(x_shape[2:], pad_shape),
+                                    kernel_shape, strides)
+    return out_shape, pad_shape, pads
+
+  @classmethod
+  def _compatibility_pool(cls, node, input_dict, pooling_type):
+    warnings.warn(
+        "Using the pooling op in compatibility mode."
+        "This means your graph cannot be serialized."
+        "Please configure your pooling operation to only use paddings that "
+        "correspond to Tensorflow SAME or VALID padding.", UserWarning)
+
+    def py_pool(x, kernel_shape, strides, pads, out_shape, pad_shape,
+                count_include_pad, pooling_type):
       pooling_type = pooling_type.decode('UTF-8')
       x_shape = np.shape(x)
       spatial_size = len(x_shape[2:])
       pad_attr = [(0, 0), (0, 0)] + [
           (pads[i], pads[i + spatial_size]) for i in range(spatial_size)
       ]
-      padded = np.pad(x, pad_attr, mode="constant", constant_values=np.nan)
+      constant_values = np.nan if count_include_pad == 0 else 0
+      padded = np.pad(
+          x, pad_attr, mode="constant", constant_values=constant_values)
 
       y = np.zeros([x_shape[0], x_shape[1]] + list(out_shape))
 
@@ -109,14 +141,14 @@ class TensorflowBackend(TensorflowBackendBase):
           range(x_shape[0]), range(x_shape[1]), *[
               range(
                   int((x_shape[i + 2] + pad_shape[i] - kernel_shape[i]
-                      ) / strides_shape[i] + 1)) for i in range(spatial_size)
+                      ) / strides[i] + 1)) for i in range(spatial_size)
           ]):
         window = padded[shape[0], shape[1]]
         window_vals = np.array([
             window[i] for i in list(
                 itertools.product(*[
-                    range(strides_shape[i] * shape[i + 2],
-                          strides_shape[i] * shape[i + 2] + kernel_shape[i])
+                    range(strides[i] * shape[i + 2],
+                          strides[i] * shape[i + 2] + kernel_shape[i])
                     for i in range(spatial_size)
                 ]))
         ])
@@ -128,35 +160,28 @@ class TensorflowBackend(TensorflowBackendBase):
           raise NotImplementedError(
               'Pooling type {} does not support. Should be AVG, MAX'.format(
                   pooling_type))
-        y[shape] = f(window_vals[np.where(~np.isnan(window_vals))])
+
+        if count_include_pad == 0:
+          y[shape] = f(window_vals[np.where(~np.isnan(window_vals))])
+        else:
+          y[shape] = f(window_vals)
       return y.astype(np.float32)
 
     x = input_dict[node.inputs[0]]
     x_shape = x.shape.as_list()
     spatial_size = len(x_shape[2:])
     kernel_shape = node.attrs["kernel_shape"]
-    strides_shape = node.attrs.get("strides", [1] * spatial_size)
+    strides = node.attrs.get("strides", [1] * spatial_size)
     pads = node.attrs.get("pads", [0] * spatial_size * 2)
     auto_pad = node.attrs.get("auto_pad", "")
+    count_include_pad = node.attrs.get("count_include_pad", 0)
 
-    # Only auto_pad in ("SAME_LOWER", "") will come here.
-    if auto_pad == "SAME_LOWER":
-      out_shape = _get_output_shape(auto_pad, x_shape[2:], kernel_shape,
-                                    strides_shape)
-      pad_shape = _get_pad_shape(auto_pad, x_shape[2:], kernel_shape,
-                                 strides_shape, out_shape)
-      for i in range(spatial_size):
-        pads[i + spatial_size] = pad_shape[i] // 2
-        pads[i] = pad_shape[i] - pads[i + spatial_size]
-    elif auto_pad == "":
-      pad_shape = [
-          pads[i] + pads[i + spatial_size] for i in range(spatial_size)
-      ]
-      out_shape = _get_output_shape(auto_pad, np.add(x_shape[2:], pad_shape),
-                                    kernel_shape, strides_shape)
+    out_shape, pad_shape, pads = cls._pool_get_shapes(
+        auto_pad, x_shape, kernel_shape, strides, spatial_size, pads)
 
     pooled = tf.py_func(py_pool, [
-        x, kernel_shape, strides_shape, pads, out_shape, pad_shape, pooling_type
+        x, kernel_shape, strides, pads, out_shape, pad_shape, count_include_pad,
+        pooling_type
     ], tf.float32)
     pooled.set_shape(x_shape[0:2] + out_shape)
     return [pooled]
@@ -171,19 +196,28 @@ class TensorflowBackend(TensorflowBackendBase):
 
     kernel_shape = node.attrs["kernel_shape"]
     strides = node.attrs.get("strides", [1] * (x_rank - 2))
+    pad = node.attrs.get("pads", None)
 
-    # By default, do not pad
-    pad = None
+    # If padding is specified, try to recover it from explicit padding
+    # specification to tensorflow padding mode:
+    if pad is not None:
+      pad = cls.get_tf_pad(x.get_shape().as_list(), kernel_shape, strides, pad)
 
-    if "auto_pad" in node.attrs:
+    # We consult auto_pad if pad is not specified and auto_pad
+    # is available.
+    if pad is None and "auto_pad" in node.attrs:
       if node.attrs["auto_pad"] == "SAME_UPPER":
         pad = "SAME"
       elif node.attrs["auto_pad"] == "VALID":
         pad = "VALID"
       elif node.attrs["auto_pad"] == "SAME_LOWER":
-        pad = None
+        pad = PAD_TF_INCOMPATIBLE
 
-    if pad is None:
+    # Neither pad nor auto_pad is specified, assume no padding.
+    if pad is None and "auto_pad" not in node.attrs:
+      pad = "VALID"
+
+    if pad is PAD_TF_INCOMPATIBLE:
       return cls._compatibility_pool(node, input_dict, pooling_type)
 
     if support_cuda:
@@ -298,23 +332,39 @@ class TensorflowBackend(TensorflowBackendBase):
     if "extra_shape" in node.attrs:
       shape = tf.concat([shape, node.attrs["extra_shape"]], 0)
 
-    return [
-        tf.cast(tf.fill(shape, node.attrs["value"]), dtype=node.attrs["dtype"])
-    ]
+    value = node.attrs.get("value", 0.)
+
+    if "dtype" in node.attrs:
+      return [tf.cast(tf.fill(shape, value), dtype=node.attrs["dtype"])]
+
+    return [tf.fill(shape, value)]
 
   @classmethod
   def _conv(cls, node, input_dict, transpose=False):
+    """ Convolution method for both conv and transposed conv
+    For transposed conv,
+      Attr pads is not used for input, but declares how much output is padded.
+      Here, output means output from transposed conv which already pad output_padding if set.
+      So the pseudo explanation for output should be:
+        output = conv_transpose_output + output_padding - pads
+      And conv_transpose_output shape should be:
+        conv_transpose_output_shape[i] = strides[i] * (input_shape[i] - 1) + kernel_shape[i]
+    """
     x = input_dict[node.inputs[0]]
     x_rank = len(x.get_shape())
+    x_shape = x.get_shape().as_list()
+    spatial_size = x_rank - 2
 
     support_cuda = cls.supports_device("CUDA")
     storage_format, compute_format = cls.get_data_format(x_rank, support_cuda)
+    compute_c_idx = compute_format.find("C")
+    spatial_format = "".join([d for d in compute_format if d not in ["N", "C"]])
 
     in_weights = input_dict[node.inputs[1]]
     weights_rank = len(in_weights.get_shape())
     if transpose:
-      # Translate weights from (C x M x KH x KW) to (KH x KW X C X M)
-      perm = list(range(2, weights_rank)) + [0, 1]
+      # Translate weights from (C x M x KH x KW) to (KH x KW X M X C)
+      perm = list(range(2, weights_rank)) + [1, 0]
     else:
       # Translate weights from (M x C x KH x KW) to (KH x KW X C X M)
       perm = list(range(2, weights_rank)) + [1, 0]
@@ -329,24 +379,96 @@ class TensorflowBackend(TensorflowBackendBase):
               in_weights.get_shape().as_list())
 
     weights = tf.transpose(in_weights, perm)
-    dilations = node.attrs.get("dilations", None)
-    strides = node.attrs.get("strides", None)
+    dilations = node.attrs.get("dilations", [1] * spatial_size)
+    strides = node.attrs.get("strides", [1] * spatial_size)
 
-    if "pads" in node.attrs.keys():
-      x = cls.get_padding_as_op(x, node.attrs["pads"])
+    pads = node.attrs.get("pads", [0, 0] * spatial_size)
 
-    if "group" in node.attrs:
+    if not transpose:
+      x = cls.get_padding_as_op(x, pads)
 
-      weight_groups = tf.split(
-          weights, num_or_size_splits=node.attrs["group"], axis=-1)
+    group = node.attrs.get("group", 1)
 
-      if support_cuda:
-        xs = tf.split(x, num_or_size_splits=node.attrs["group"], axis=1)
-      else:
-        x = tf.transpose(
-            x, perm=cls.get_perm_from_formats(storage_format, compute_format))
-        xs = tf.split(x, num_or_size_splits=node.attrs["group"], axis=-1)
+    weight_groups = tf.split(weights, num_or_size_splits=group, axis=-1)
 
+    if support_cuda:
+      xs = tf.split(x, num_or_size_splits=group, axis=1)
+    else:
+      x = tf.transpose(
+          x, perm=cls.get_perm_from_formats(storage_format, compute_format))
+      xs = tf.split(x, num_or_size_splits=group, axis=-1)
+
+    if transpose:
+      if dilations != [1] * spatial_size:
+        raise RuntimeError("Cannot set non-1 dilation for conv transpose.")
+      convolved = []
+      for (x, weight) in zip(xs, weight_groups):
+        x_spatial_shape = [
+            x_shape[storage_format.find(d)] for d in spatial_format
+        ]
+        weights_shape = weights.get_shape().as_list()
+
+        # calculate output shape
+        output_shape = node.attrs.get("output_shape", None)
+        if output_shape is None:
+          conv_output_shape = [x_shape[storage_format.find("N")]] + [
+              strides[i] * (x_spatial_shape[i] - 1) + weights_shape[i]
+              for i in list(range(spatial_size))
+          ]
+          conv_output_shape.insert(compute_c_idx, weights_shape[-2])
+        else:
+          conv_output_shape = [output_shape[0]] + [
+              s + pads[i] + pads[spatial_size + i]
+              for i, s in enumerate(output_shape[2:])
+          ]
+          conv_output_shape.insert(compute_c_idx, output_shape[1])
+
+        # make strides to match input rank
+        strides_full = [1] + strides
+        strides_full.insert(compute_c_idx, 1)
+
+        # get corresponding function in tf
+        if spatial_size == 1:
+          conv_func = tf.contrib.nn.conv1d_transpose
+          strides_full = strides[0]
+        elif spatial_size == 2:
+          conv_func = tf.nn.conv2d_transpose
+        elif spatial_size == 3:
+          conv_func = tf.nn.conv3d_transpose
+        else:
+          raise NotImplementedError(
+              "Transposed convolution for {}d is not implemented in Tensorflow".
+              format(spatial_size))
+
+        # use raw input x to do transposed conv
+        conv_rs = conv_func(
+            x,
+            weights,
+            conv_output_shape,
+            strides_full,
+            padding="VALID",
+            data_format=compute_format)
+
+        # pad output first by output_padding attr
+        if "output_padding" in node.attrs and output_shape is None:
+          output_padding = [[0, 0]
+                           ] + [[0, p] for p in node.attrs["output_padding"]]
+          output_padding.insert(compute_c_idx, [0, 0])
+          conv_rs = tf.pad(conv_rs, output_padding)
+
+        # remove pads set in pads attr
+        conv_rs_shape = conv_rs.get_shape().as_list()
+        begin = [0] + pads[:spatial_size]
+        begin.insert(compute_c_idx, 0)
+        size = [
+            s if d in ["N", "C"] else s - pads[spatial_format.find(d)] -
+            pads[spatial_format.find(d) + spatial_size]
+            for d, s in zip(compute_format, conv_rs_shape)
+        ]
+        conv_rs = tf.slice(conv_rs, begin=begin, size=size)
+
+        convolved.append(conv_rs)
+    else:
       convolved = [
           tf.nn.convolution(
               x,
@@ -358,60 +480,30 @@ class TensorflowBackend(TensorflowBackendBase):
           for (x, weight) in zip(xs, weight_groups)
       ]
 
-      if len(node.inputs) == 2:
-        if support_cuda:
-          output = tf.concat(convolved, axis=1)
-        else:
-          output = tf.concat(convolved, axis=-1)
-          output = tf.transpose(
-              output,
-              perm=cls.get_perm_from_formats(compute_format, storage_format))
-      else:
-        bias = input_dict[node.inputs[2]]
-
-        if support_cuda:
-          output = tf.concat(convolved, axis=1)
-          output = tf.nn.bias_add(output, bias, data_format=compute_format)
-        else:
-          output = tf.concat(convolved, axis=-1)
-          output = tf.nn.bias_add(output, bias, data_format=compute_format)
-          output = tf.transpose(
-              output,
-              perm=cls.get_perm_from_formats(compute_format, storage_format))
-
-      return [output]
-
-    if not support_cuda:
-      x = tf.transpose(
-          x, perm=cls.get_perm_from_formats(storage_format, compute_format))
-
-    convolved = tf.nn.convolution(
-        x,
-        weights,
-        "VALID",
-        strides=strides,
-        dilation_rate=dilations,
-        data_format=compute_format)
-
-    if not support_cuda:
-      convolved = tf.transpose(
-          convolved,
-          perm=cls.get_perm_from_formats(compute_format, storage_format))
-
     if len(node.inputs) == 2:
-      return [convolved]
-    else:
-      bias = input_dict[node.inputs[2]]
-      if not support_cuda:
-        convolved = tf.transpose(
-            convolved,
-            perm=cls.get_perm_from_formats(storage_format, compute_format))
-      output = tf.nn.bias_add(convolved, bias, data_format=compute_format)
-      if not support_cuda:
+      if support_cuda:
+        output = tf.concat(convolved, axis=1)
+      else:
+        output = tf.concat(convolved, axis=-1)
         output = tf.transpose(
             output,
             perm=cls.get_perm_from_formats(compute_format, storage_format))
-      return [output]
+    else:
+      bias = input_dict[node.inputs[2]]
+      bias = cls._explicit_broadcast(
+          bias, broadcast_dim=compute_c_idx, total_num_dim=x_rank)
+
+      if support_cuda:
+        output = tf.concat(convolved, axis=1)
+        output = tf.add(output, bias)
+      else:
+        output = tf.concat(convolved, axis=-1)
+        output = tf.add(output, bias)
+        output = tf.transpose(
+            output,
+            perm=cls.get_perm_from_formats(compute_format, storage_format))
+
+    return [output]
 
   @classmethod
   def handle_conv(cls, node, input_dict):
@@ -770,7 +862,7 @@ class TensorflowBackend(TensorflowBackendBase):
   @classmethod
   def handle_reduce_l1(cls, node, input_dict):
     x = input_dict[node.inputs[0]]
-    axis = node.attrs["axes"]
+    axis = node.attrs.get("axes", list(range(len(x.get_shape().as_list()))))
     # https://github.com/onnx/onnx/issues/585
     if isinstance(axis, list):
       axis = [int(v) for v in axis]
@@ -778,9 +870,16 @@ class TensorflowBackend(TensorflowBackendBase):
     return [tf.norm(x, ord=1, axis=axis, keepdims=keepdims)]
 
   @classmethod
+  def handle_reduce_log_sum(cls, node, input_dict):
+    x = input_dict[node.inputs[0]]
+    axis = node.attrs.get("axes", list(range(len(x.get_shape().as_list()))))
+    keepdims = node.attrs.get("keepdims", 1) == 1
+    return [tf.log(tf.reduce_sum(x, axis=axis, keepdims=keepdims))]
+
+  @classmethod
   def handle_reduce_sum_square(cls, node, input_dict):
     x = input_dict[node.inputs[0]]
-    axis = node.attrs["axes"]
+    axis = node.attrs.get("axes", list(range(len(x.get_shape().as_list()))))
     keepdims = node.attrs.get("keepdims", 1) == 1
     return [tf.reduce_sum(tf.square(x), axis=axis, keepdims=keepdims)]
 
@@ -820,8 +919,9 @@ class TensorflowBackend(TensorflowBackendBase):
 
     for i in range(slice_len):
       ends[i] = full_sizes[axes[i]] + ends[i] if ends[i] < 0 else ends[i]
-      ends[i] = np.min([full_sizes[axes[i]], ends[i]])
-      starts[i] = np.min([full_sizes[axes[i]], starts[i]])
+      if full_sizes[axes[i]] is not None:
+        ends[i] = np.min([full_sizes[axes[i]], ends[i]])
+        starts[i] = np.min([full_sizes[axes[i]], starts[i]])
       full_begin[axes[i]] = starts[i]
       full_sizes[axes[i]] = ends[i] - starts[i]
 
@@ -894,10 +994,7 @@ class TensorflowBackend(TensorflowBackendBase):
   @classmethod
   def handle_tile(cls, node, input_dict):
     x = input_dict[node.inputs[0]]
-    axis = input_dict[node.inputs[1]]
-    tiles = input_dict[node.inputs[2]]
-    multiples = tf.Variable([1] * len(x.shape))
-    multiples = multiples[axis].assign(tiles)
+    multiples = input_dict[node.inputs[1]]
     return [tf.tile(x, multiples=multiples)]
 
   @classmethod
