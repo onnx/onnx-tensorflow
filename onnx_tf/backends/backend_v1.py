@@ -63,7 +63,7 @@ class TensorflowBackend(TensorflowBackendBase):
     return [tf.argmin(data, axis=axis)]
 
   @classmethod
-  def _pool_get_shapes(cls, auto_pad, x_shape, kernel_shape, strides_shape,
+  def _pool_get_shapes(cls, auto_pad, x_shape, kernel_shape, strides,
                        spatial_size, pads):
 
     def _get_pad_shape(auto_pad, input_spatial_shape, kernel_spatial_shape,
@@ -95,9 +95,9 @@ class TensorflowBackend(TensorflowBackendBase):
 
     if auto_pad in ["SAME_UPPER", "SAME_LOWER"]:
       out_shape = _get_output_shape(auto_pad, x_shape[2:], kernel_shape,
-                                    strides_shape)
-      pad_shape = _get_pad_shape(auto_pad, x_shape[2:], kernel_shape,
-                                 strides_shape, out_shape)
+                                    strides)
+      pad_shape = _get_pad_shape(auto_pad, x_shape[2:], kernel_shape, strides,
+                                 out_shape)
       for i in range(spatial_size):
         if auto_pad == "SAME_LOWER":
           pads[i + spatial_size] = pad_shape[i] // 2
@@ -110,7 +110,7 @@ class TensorflowBackend(TensorflowBackendBase):
           pads[i] + pads[i + spatial_size] for i in range(spatial_size)
       ]
       out_shape = _get_output_shape(auto_pad, np.add(x_shape[2:], pad_shape),
-                                    kernel_shape, strides_shape)
+                                    kernel_shape, strides)
     return out_shape, pad_shape, pads
 
   @classmethod
@@ -121,7 +121,7 @@ class TensorflowBackend(TensorflowBackendBase):
         "Please configure your pooling operation to only use paddings that "
         "correspond to Tensorflow SAME or VALID padding.", UserWarning)
 
-    def py_pool(x, kernel_shape, strides_shape, pads, out_shape, pad_shape,
+    def py_pool(x, kernel_shape, strides, pads, out_shape, pad_shape,
                 count_include_pad, pooling_type):
       pooling_type = pooling_type.decode('UTF-8')
       x_shape = np.shape(x)
@@ -139,14 +139,14 @@ class TensorflowBackend(TensorflowBackendBase):
           range(x_shape[0]), range(x_shape[1]), *[
               range(
                   int((x_shape[i + 2] + pad_shape[i] - kernel_shape[i]
-                      ) / strides_shape[i] + 1)) for i in range(spatial_size)
+                      ) / strides[i] + 1)) for i in range(spatial_size)
           ]):
         window = padded[shape[0], shape[1]]
         window_vals = np.array([
             window[i] for i in list(
                 itertools.product(*[
-                    range(strides_shape[i] * shape[i + 2],
-                          strides_shape[i] * shape[i + 2] + kernel_shape[i])
+                    range(strides[i] * shape[i + 2],
+                          strides[i] * shape[i + 2] + kernel_shape[i])
                     for i in range(spatial_size)
                 ]))
         ])
@@ -169,17 +169,17 @@ class TensorflowBackend(TensorflowBackendBase):
     x_shape = x.shape.as_list()
     spatial_size = len(x_shape[2:])
     kernel_shape = node.attrs["kernel_shape"]
-    strides_shape = node.attrs.get("strides", [1] * spatial_size)
+    strides = node.attrs.get("strides", [1] * spatial_size)
     pads = node.attrs.get("pads", [0] * spatial_size * 2)
     auto_pad = node.attrs.get("auto_pad", "")
     count_include_pad = node.attrs.get("count_include_pad", 0)
 
     out_shape, pad_shape, pads = cls._pool_get_shapes(
-        auto_pad, x_shape, kernel_shape, strides_shape, spatial_size, pads)
+        auto_pad, x_shape, kernel_shape, strides, spatial_size, pads)
 
     pooled = tf.py_func(py_pool, [
-        x, kernel_shape, strides_shape, pads, out_shape, pad_shape,
-        count_include_pad, pooling_type
+        x, kernel_shape, strides, pads, out_shape, pad_shape, count_include_pad,
+        pooling_type
     ], tf.float32)
     pooled.set_shape(x_shape[0:2] + out_shape)
     return [pooled]
@@ -188,8 +188,6 @@ class TensorflowBackend(TensorflowBackendBase):
   def _pool(cls, node, input_dict, pool_func, pooling_type):
     x = input_dict[node.inputs[0]]
     x_rank = len(x.get_shape())
-    spatial_size = x_rank - 2
-    strides_shape = node.attrs.get("strides", [1] * spatial_size)
 
     support_cuda = cls.supports_device("CUDA")
     storage_format, compute_format = cls.get_data_format(x_rank, support_cuda)
@@ -225,7 +223,7 @@ class TensorflowBackend(TensorflowBackendBase):
           x,
           kernel_shape,
           padding=pad,
-          strides=strides_shape,
+          strides=strides,
           data_format=compute_format)
     else:
       x = tf.transpose(
@@ -234,7 +232,7 @@ class TensorflowBackend(TensorflowBackendBase):
           x,
           kernel_shape,
           padding=pad,
-          strides=strides_shape,
+          strides=strides,
           data_format=compute_format)
       pooled = tf.transpose(
           pooled,
