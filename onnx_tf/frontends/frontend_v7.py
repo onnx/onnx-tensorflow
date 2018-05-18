@@ -18,11 +18,9 @@ class TensorflowFrontend(TensorflowFrontendBase):
   @classmethod
   @register_onnx_op("AveragePool")
   def handle_avg_pool(cls, node, **kwargs):
-    kwargs.update({"external_node_kwargs": {"count_include_pad": 0}})
-    return cls._pool_op(node, "AveragePool", **kwargs)
+    return cls._pool_op(node, "AveragePool", count_include_pad=0, **kwargs)
 
   @classmethod
   @register_onnx_op("MaxPool")
   def handle_max_pool(cls, node, **kwargs):
-    kwargs.update({"external_node_kwargs": {"count_include_pad": 0}})
-    return cls._pool_op(node, "MaxPool", **kwargs)
+    return cls._pool_op(node, "MaxPool", count_include_pad=0, **kwargs)

@@ -492,12 +492,16 @@ class TensorflowFrontendBase(object):
             spatial_indices))
     pads = cls._cal_pads(auto_pad, len(spatial_indices), input_shape,
                          output_shape, strides, kernel_shape)
+
+    node_kwargs = {}
+    if "count_include_pad" in kwargs:
+      node_kwargs["count_include_pad"] = kwargs["count_include_pad"]
     return make_node(
         onnx_op, [node.inputs[0]], [node.name],
         pads=pads,
         kernel_shape=kernel_shape,
         strides=strides,
-        **kwargs.get("external_node_kwargs", {}))
+        **node_kwargs)
 
   @classmethod
   def _cal_pads(cls, auto_pad, spatial_dim, input_shape, output_shape, strides,
