@@ -225,6 +225,13 @@ class TensorflowFrontend(TensorflowFrontendBase):
         "Reshape", [node.inputs[0]], [node.name], shape=shape)
 
   @classmethod
+  @register_onnx_op("SpaceToDepth")
+  def handle_space_to_depth(cls, node, **kwargs):
+    blocksize = node.attr["block_size"]
+    return helper.make_node(
+        "SpaceToDepth", [node.inputs[0]], [node.name], blocksize=blocksize)
+
+  @classmethod
   @register_onnx_op("Split")
   def handle_split_v(cls, node, **kwargs):
     consts = kwargs["consts"]

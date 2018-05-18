@@ -172,6 +172,7 @@ ______
 |shape|1|
 |sigmoid|1, 6|
 |softmax|1|
+|space_to_depth|1|
 |split_v|1, 2|
 |sqrt|1, 6|
 |squeeze|1|
