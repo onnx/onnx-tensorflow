@@ -66,8 +66,8 @@ class TensorflowBackend(TensorflowBackendBase):
   def _pool_get_shapes(cls, auto_pad, x_shape, kernel_shape, strides_shape,
                        spatial_size, pads):
 
-    def _pool_get_pad_shape(auto_pad, input_spatial_shape, kernel_spatial_shape,
-                            strides_spatial, output_spatial_shape):
+    def _get_pad_shape(auto_pad, input_spatial_shape, kernel_spatial_shape,
+                       strides_spatial, output_spatial_shape):
       pad_shape = [0] * len(input_spatial_shape)
       if auto_pad in ("SAME_UPPER", "SAME_LOWER"):
         for i in range(len(input_spatial_shape)):
@@ -77,8 +77,8 @@ class TensorflowBackend(TensorflowBackendBase):
         pass
       return pad_shape
 
-    def _pool_get_output_shape(auto_pad, input_spatial_shape,
-                               kernel_spatial_shape, strides_spatial):
+    def _get_output_shape(auto_pad, input_spatial_shape, kernel_spatial_shape,
+                          strides_spatial):
       out_shape = [0] * len(input_spatial_shape)
       if auto_pad in ("SAME_UPPER", "SAME_LOWER"):
         for i in range(len(input_spatial_shape)):
@@ -94,10 +94,10 @@ class TensorflowBackend(TensorflowBackendBase):
       return out_shape
 
     if auto_pad in ["SAME_UPPER", "SAME_LOWER"]:
-      out_shape = _pool_get_output_shape(auto_pad, x_shape[2:], kernel_shape,
-                                         strides_shape)
-      pad_shape = _pool_get_pad_shape(auto_pad, x_shape[2:], kernel_shape,
-                                      strides_shape, out_shape)
+      out_shape = _get_output_shape(auto_pad, x_shape[2:], kernel_shape,
+                                    strides_shape)
+      pad_shape = _get_pad_shape(auto_pad, x_shape[2:], kernel_shape,
+                                 strides_shape, out_shape)
       for i in range(spatial_size):
         if auto_pad == "SAME_LOWER":
           pads[i + spatial_size] = pad_shape[i] // 2
@@ -109,8 +109,8 @@ class TensorflowBackend(TensorflowBackendBase):
       pad_shape = [
           pads[i] + pads[i + spatial_size] for i in range(spatial_size)
       ]
-      out_shape = _pool_get_output_shape(auto_pad, np.add(
-          x_shape[2:], pad_shape), kernel_shape, strides_shape)
+      out_shape = _get_output_shape(auto_pad, np.add(x_shape[2:], pad_shape),
+                                    kernel_shape, strides_shape)
     return out_shape, pad_shape, pads
 
   @classmethod
