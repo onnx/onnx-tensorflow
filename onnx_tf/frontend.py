@@ -38,9 +38,8 @@ from onnx.helper import (
 )
 from onnx.helper import mapping
 
-from onnx_tf.handlers.frontend import *  # noqa
 from onnx_tf.handlers.frontend_handler import FrontendHandler
-from onnx_tf.handlers.frontend_handler import get_all_handlers
+from onnx_tf.common.handler_helper import get_all_frontend_handlers
 from onnx_tf.common import exception
 from onnx_tf.common import data_type
 
@@ -50,8 +49,8 @@ class TensorflowNode(object):
   attr_translator = {
     "_output_shapes": lambda self, x: list(map(lambda shape: get_tf_shape_as_list(shape.dim), x.list.shape)),
     "shape": lambda self, x: get_tf_shape_as_list(x.shape.dim),
-    "T": lambda self, x: data_type.tf2onnx(x),
-    "dtype": lambda self, x: data_type.tf2onnx(x),
+    "T": lambda self, x: data_type.tf2onnx(x.type),
+    "dtype": lambda self, x: data_type.tf2onnx(x.type),
     "value": lambda self, x: MakeNdarray(x.tensor),
     "seed2": lambda self, x: float(x.i),
     "seed": lambda self, x: float(x.i),
@@ -109,6 +108,8 @@ class TensorflowFrontendBase(object):
 
     :returns: The equivalent ONNX Graph Proto object.
     """
+
+    handlers = get_all_frontend_handlers()
 
     # This list holds the protobuf objects of type ValueInfoProto
     # representing the input to the converted ONNX graph.
@@ -198,7 +199,6 @@ class TensorflowFrontendBase(object):
                   version)
 
         opset_ver = opset_dict[op_domain]
-        handlers = get_all_handlers()
         handler = handlers.get(op_name, None)
 
         if handler:

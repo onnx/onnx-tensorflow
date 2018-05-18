@@ -69,27 +69,3 @@ class FrontendHandler(object):
       if name.startswith("version_"):
         versions.append(int(name.replace("version_", "")))
     return versions
-
-
-def __get_all_subclasses(clazz):
-  return set(clazz.__subclasses__()).union(
-      [s for c in clazz.__subclasses__() for s in __get_all_subclasses(c)])
-
-
-def get_all_handlers():
-  handlers = {}
-  for handler in __get_all_subclasses(FrontendHandler):
-    for tf_op in handler.get_tf_op():
-      handlers[tf_op] = handler
-  return handlers
-
-
-def get_coverage():
-  tf_coverage = {}
-  onnx_coverage = {}
-  for handler in __get_all_subclasses(FrontendHandler):
-    versions = handler.get_versions()
-    for tf_op in handler.get_tf_op():
-      tf_coverage[tf_op] = versions
-    onnx_coverage[handler.get_onnx_op()] = versions
-  return onnx_coverage, tf_coverage

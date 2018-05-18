@@ -2,7 +2,7 @@ from .conv_common import ConvCommon
 
 
 class Convolution(ConvCommon):
-  _TF_OP = ["Conv1d", "Conv2d", "Conv3d"]
+  _TF_OP = ["Conv1D", "Conv2D", "Conv3D"]
   _ONNX_OP = "Conv"
 
   @classmethod
