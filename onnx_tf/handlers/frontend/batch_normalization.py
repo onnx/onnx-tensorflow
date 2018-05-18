@@ -1,9 +1,8 @@
 from onnx_tf.handlers.frontend_handler import FrontendHandler
 
 
-class BatchNorm(FrontendHandler):
+class BatchNormalization(FrontendHandler):
   _TF_OP = ["BatchNorm", "FusedBatchNorm"]
-  _ONNX_OP = "BatchNormalization"
 
   @classmethod
   def version_1(cls, node, **kwargs):

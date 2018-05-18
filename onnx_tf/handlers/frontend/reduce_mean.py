@@ -1,8 +1,8 @@
 from .math_common import ReductionCommon
 
 
-class Prod(ReductionCommon):
-  _ONNX_OP = "ReduceProd"
+class ReduceMean(ReductionCommon):
+  _TF_OP = ["Mean"]
 
   @classmethod
   def version_1(cls, node, **kwargs):

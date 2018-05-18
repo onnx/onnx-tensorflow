@@ -1,8 +1,8 @@
 from .math_common import ReductionCommon
 
 
-class Min(ReductionCommon):
-  _ONNX_OP = "ReduceMin"
+class ReduceMax(ReductionCommon):
+  _TF_OP = ["Max"]
 
   @classmethod
   def version_1(cls, node, **kwargs):

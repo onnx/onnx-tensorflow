@@ -22,15 +22,10 @@ if sys.version_info > (3,):
   long = int
 
 from onnx_tf.common import (
-    TF_TYPE_TO_ONNX_TYPE,
-    TF_OP_STR_TO_ONNX_OP,
     TF_ATTR_TO_ONNX_ATTR,
-    TF_ATTR_TO_REMOVE,
     get_attribute_value,
     get_tf_shape_as_list,
-    op_name_to_lower,
 )
-from onnx_tf.opset_version import frontend_tf_opset_version
 from onnx import defs
 from onnx import TensorProto
 from onnx import ValueInfoProto
@@ -39,7 +34,6 @@ from onnx.helper import (
     make_tensor,
     make_graph,
     make_model,
-    make_node,
     make_opsetid,
 )
 from onnx.helper import mapping
@@ -47,22 +41,22 @@ from onnx.helper import mapping
 from onnx_tf.handlers.frontend import *  # noqa
 from onnx_tf.handlers.frontend_handler import FrontendHandler
 from onnx_tf.handlers.frontend_handler import get_all_handlers
-from onnx_tf._common import exception
+from onnx_tf.common import exception
+from onnx_tf.common import data_type
 
 
 class TensorflowNode(object):
-
   # Keyed by old attribute names.
   attr_translator = {
-      "_output_shapes": lambda self, x: list(map(lambda shape: get_tf_shape_as_list(shape.dim), x.list.shape)),
-      "shape": lambda self, x: get_tf_shape_as_list(x.shape.dim),
-      "T": lambda self, x: self.type_converter(x),
-      "dtype": lambda self, x: self.type_converter(x),
-      "value": lambda self, x: MakeNdarray(x.tensor),
-      "seed2": lambda self, x: float(x.i),
-      "seed": lambda self, x: float(x.i),
-      "keep_dims": lambda self, x: int(x.b),
-      "squeeze_dims": lambda self, x: list(x.list.i),
+    "_output_shapes": lambda self, x: list(map(lambda shape: get_tf_shape_as_list(shape.dim), x.list.shape)),
+    "shape": lambda self, x: get_tf_shape_as_list(x.shape.dim),
+    "T": lambda self, x: data_type.tf2onnx(x),
+    "dtype": lambda self, x: data_type.tf2onnx(x),
+    "value": lambda self, x: MakeNdarray(x.tensor),
+    "seed2": lambda self, x: float(x.i),
+    "seed": lambda self, x: float(x.i),
+    "keep_dims": lambda self, x: int(x.b),
+    "squeeze_dims": lambda self, x: list(x.list.i),
   }
 
   def __init__(self, node_proto):
@@ -86,51 +80,10 @@ class TensorflowNode(object):
       if isinstance(self.attr[new_key], AttrValue):
         self.attr[new_key] = get_attribute_value(self.attr[new_key])
 
-  def type_converter(self, x):
-    return TF_TYPE_TO_ONNX_TYPE[tf.as_dtype(x.type)]
-
 
 class TensorflowFrontendBase(object):
   """ Tensorflow Frontend for ONNX
   """
-
-  DEFAULT_TF_ATTR_PER_OP = {
-      "Add": {
-          "broadcast": 1
-      },
-      "Equal": {
-          "broadcast": 1
-      },
-      "Greater": {
-          "broadcast": 1
-      },
-      "Less": {
-          "broadcast": 1
-      },
-      "Mul": {
-          "broadcast": 1
-      },
-      "Pow": {
-          "broadcast": 1
-      },
-      "RealDiv": {
-          "broadcast": 1
-      },
-      "Sub": {
-          "broadcast": 1
-      },
-      "LogicalAnd": {
-          "broadcast": 1
-      },
-      "LogicalOr": {
-          "broadcast": 1
-      },
-      "LogicalXor": {
-          "broadcast": 1
-      },
-  }
-
-  frontend_version_cache = {}
 
   @classmethod
   def tensorflow_graph_to_onnx_graph(cls,
@@ -230,11 +183,6 @@ class TensorflowFrontendBase(object):
         op_domain = "" if len(splitted_op_name) == 1 else ".".join(
             splitted_op_name[:-1])
         op_name = splitted_op_name[-1]
-
-        handler_name = "handle_" + op_name_to_lower(op_name)
-
-        # TODO per domain frontend_tf_opset_version?
-        versions = frontend_tf_opset_version.get(op_name_to_lower(op_name), [])
 
         opset_dict = {}
         for domain, version in opset:
@@ -408,117 +356,6 @@ class TensorflowFrontendBase(object):
         onnx_graph, producer_name=producer_name, opset_imports=opset_imports)
 
     return onnx_model
-
-  @classmethod
-  def handle_trivial(cls, node, **kwargs):
-    if "onnx_op" in kwargs:
-      onnx_op = kwargs["onnx_op"]
-    else:
-      onnx_op = TF_OP_STR_TO_ONNX_OP[node.op]
-    # Remove tensorflow-specific attrs that are not
-    # needed/allowed in ONNX.
-    attr = cls.DEFAULT_TF_ATTR_PER_OP.get(node.op, {})
-    filtered_attr = dict(
-        filter(lambda pair: pair[0] not in TF_ATTR_TO_REMOVE,
-               node.attr.items()))
-    attr.update(filtered_attr)
-    return make_node(onnx_op, node.inputs, [node.name], name=node.name, **attr)
-
-  @classmethod
-  def _bin_op(cls, node, onnx_op, axis=None):
-    node.attr["broadcast"] = 1
-    if axis is not None:
-      return make_node(
-          onnx_op,
-          node.inputs, [node.name],
-          name=node.name,
-          broadcast=1,
-          axis=axis)
-    else:
-      return make_node(
-          onnx_op, node.inputs, [node.name], name=node.name, broadcast=1)
-
-  @classmethod
-  def _pool_op(cls, node, onnx_op, **kwargs):
-    auto_pad = node.attr["padding"].decode("UTF-8")
-    auto_pad = "SAME_UPPER" if auto_pad == "SAME" else auto_pad
-    data_format = node.attr["data_format"].decode("UTF-8")
-    spatial_indices = [
-        i for i in range(len(data_format)) if data_format[i] not in ["N", "C"]
-    ]
-    strides = list(map(lambda i: node.attr["strides"][i], spatial_indices))
-    kernel_shape = list(map(lambda i: node.attr["ksize"][i], spatial_indices))
-    node_dict = kwargs["node_dict"]
-    output_shape = list(
-        map(lambda i: node.attr["_output_shapes"][0][i], spatial_indices))
-    input_shape = list(
-        map(lambda i: node_dict[node.inputs[0]].attr["_output_shapes"][0][i],
-            spatial_indices))
-    pads = cls._cal_pads(auto_pad, len(spatial_indices), input_shape,
-                         output_shape, strides, kernel_shape)
-    return make_node(
-        onnx_op, [node.inputs[0]], [node.name],
-        pads=pads,
-        kernel_shape=kernel_shape,
-        strides=strides)
-
-  @classmethod
-  def _cal_pads(cls, auto_pad, spatial_dim, input_shape, output_shape, strides,
-                kernel_shape):
-    pads = [0] * spatial_dim * 2
-    if auto_pad == "SAME_UPPER":
-      for i in range(spatial_dim):
-        pad_shape = (
-            output_shape[i] - 1) * strides[i] + kernel_shape[i] - input_shape[i]
-        pads[i] = pad_shape // 2
-        pads[i + spatial_dim] = pad_shape - pad_shape // 2
-    return pads
-
-  @classmethod
-  def _reduce_op(cls, op, node, **kwargs):
-    consts = kwargs["consts"]
-    assert node.inputs[1] in consts.keys()
-    axes = consts[node.inputs[1]]
-    return make_node(
-        op, [node.inputs[0]], [node.name],
-        axes=axes,
-        keepdims=node.attr.get("keep_dims", 1))
-
-  @classmethod
-  def _catch_exception(cls, exception, message):
-    if inspect.isclass(exception) and issubclass(exception, Exception):
-      raise exception(message)
-    elif callable(exception):
-      exception(message)
-
-  @staticmethod
-  def register_onnx_op(onnx_op):
-    """ Decorator for registering handler to onnx.
-
-    Use this to make an ONNX_TO_HANDLER dict for mapping onnx_op and tf_op.
-    Usage:
-    ```
-      @classmethod
-      @register_onnx_op("Conv")
-      def hander_conv2_d(cls, *args, **kwargs):
-        pass
-    ```
-    Pass corresponding onnx op name to decorator.
-
-    :param onnx_op: ONNX operator name.
-    """
-
-    def decorator(func):
-      frontend_ver = func.__module__.split(".")[-1]
-      onnx_to_handler = getattr(TensorflowFrontendBase, "ONNX_TO_HANDLER", {})
-      onnx_to_handler_ver = onnx_to_handler.setdefault(frontend_ver, {})
-      tf_op = "_".join([x for x in func.__name__.split("_")[1:]])
-      tf_ops = onnx_to_handler_ver.setdefault(onnx_op, [])
-      tf_ops.append(tf_op)
-      setattr(TensorflowFrontendBase, "ONNX_TO_HANDLER", onnx_to_handler)
-      return func
-
-    return decorator
 
 
 convert_graph = TensorflowFrontendBase.tensorflow_graph_to_onnx_graph

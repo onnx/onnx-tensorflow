@@ -1,8 +1,9 @@
 from .conv_common import ConvCommon
 
 
-class Conv(ConvCommon):
+class Convolution(ConvCommon):
   _TF_OP = ["Conv1d", "Conv2d", "Conv3d"]
+  _ONNX_OP = "Conv"
 
   @classmethod
   def version_1(cls, node, **kwargs):

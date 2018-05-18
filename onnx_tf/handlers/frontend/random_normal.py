@@ -1,7 +1,8 @@
 from onnx_tf.handlers.frontend_handler import FrontendHandler
 
 
-class RandomStandardNormal(FrontendHandler):
+class RandomNormal(FrontendHandler):
+  _TF_OP = ["RandomStandardNormal"]
   _ONNX_OP = "RandomNormal"
 
   @classmethod

@@ -1,8 +1,8 @@
 from .math_common import ReductionCommon
 
 
-class Sum(ReductionCommon):
-  _ONNX_OP = "ReduceSum"
+class ReduceMin(ReductionCommon):
+  _TF_OP = ["Min"]
 
   @classmethod
   def version_1(cls, node, **kwargs):

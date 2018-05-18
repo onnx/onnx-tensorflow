@@ -1,8 +1,9 @@
 from .math_common import ReductionCommon
 
 
-class Max(ReductionCommon):
-  _ONNX_OP = "ReduceMax"
+class ReduceSum(ReductionCommon):
+  _TF_OP = ["Sum"]
+  _ONNX_OP = "ReduceSum"
 
   @classmethod
   def version_1(cls, node, **kwargs):

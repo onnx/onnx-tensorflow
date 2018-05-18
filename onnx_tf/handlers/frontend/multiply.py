@@ -1,7 +1,9 @@
 from .math_common import ArithmeticCommon
 
 
-class Sub(ArithmeticCommon):
+class Multiply(ArithmeticCommon):
+  _TF_OP = ["Mul"]
+  _ONNX_OP = "Mul"
 
   @classmethod
   def version_1(cls, node, **kwargs):

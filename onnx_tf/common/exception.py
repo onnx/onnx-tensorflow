@@ -24,11 +24,14 @@ class OpNotImplementedException(CustomException):
     self._error = NotImplementedError
     self._message = "{} is not implemented."
 
-  def __call__(self, op):
-    super(OpNotImplementedException, self).__call__(op)
+  def __call__(self, op, version=None):
+    super(OpNotImplementedException, self).__call__(op, version)
 
-  def get_message(self, op):
-    self._message.format(op)
+  def get_message(self, op, version=None):
+    insert_message = op
+    if version is not None:
+      insert_message = "{} with version of {}".format(op, version)
+    self._message.format(insert_message)
 
 
 class OpNotSupportedException(CustomException):

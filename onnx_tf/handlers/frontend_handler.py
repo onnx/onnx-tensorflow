@@ -8,6 +8,8 @@ from onnx import defs
 from onnx import helper
 from onnx import checker
 
+from onnx_tf.common import exception
+
 
 class FrontendHandler(object):
   _TF_OP = []
@@ -18,11 +20,11 @@ class FrontendHandler(object):
     since_version = defs.get_schema(
         cls.get_onnx_op(), domain="",
         max_inclusive_version=version).since_version
-    ver_handle = getattr(cls, "version_" + str(since_version), None)
+    ver_handle = getattr(cls, "version_{}".format(since_version), None)
     if ver_handle:
       cls.param_check(node, version, **kwargs)
       return ver_handle(node, **kwargs)
-    raise NotImplementedError
+    exception.OP_NOT_IMPL_EXCEPT(node.op, since_version)
 
   @classmethod
   def param_check(cls, node, version, **kwargs):
