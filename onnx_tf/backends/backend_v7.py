@@ -18,7 +18,3 @@ class TensorflowBackend(TensorflowBackendBase):
   @classmethod
   def handle_average_pool(cls, node, input_dict):
     return TensorflowBackendV1.handle_average_pool(node, input_dict)
-
-  @classmethod
-  def handle_max_pool(cls, node, input_dict):
-    return TensorflowBackendV1.handle_max_pool(node, input_dict)
