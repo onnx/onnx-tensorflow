@@ -199,7 +199,7 @@ class TensorflowFrontendBase(object):
                   version)
 
         opset_ver = opset_dict[op_domain]
-        handler = handlers.get(op_name, None)
+        handler = handlers[op_domain].get(op_name, None)
 
         if handler:
           node = handler.handle(
@@ -213,7 +213,7 @@ class TensorflowFrontendBase(object):
           else:
             ops_proto.append(node)
         else:
-          exception.OP_NOT_IMPL_EXCEPT(node.op)
+          exception.OP_UNIMPLEMENTED_EXCEPT(node.op)
           ops_proto.append(FrontendHandler.make_node(node, should_check=False))
 
     output = TensorflowNode(output)
@@ -349,7 +349,7 @@ class TensorflowFrontendBase(object):
         graph_def = sess.graph_def
       output_node = get_node_by_name(graph_def.node, output)
 
-    exception.USE_WARNING = ignore_unimplemented
+    exception.IGNORE_UNIMPLEMENTED = ignore_unimplemented
     onnx_graph = cls.tensorflow_graph_to_onnx_graph(
         graph_def, output_node, opset, graph_name, ignore_unimplemented)
     onnx_model = make_model(

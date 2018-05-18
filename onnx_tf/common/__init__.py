@@ -263,6 +263,7 @@ def get_list_value(attr):
 def get_unique_suffix():
   return str(uuid.uuid4())[:8]
 
+
 # Constant string used to indicate that requested padding
 # is not natively supported in Tensorflow.
 PAD_TF_INCOMPATIBLE = "PAD_TF_INCOMPATIBLE"

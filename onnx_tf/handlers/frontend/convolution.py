@@ -1,3 +1,4 @@
+from onnx_tf.common import exception
 from .conv_common import ConvCommon
 
 
@@ -7,12 +8,12 @@ class Convolution(ConvCommon):
 
   @classmethod
   def version_1(cls, node, **kwargs):
-    if node.op == "Conv1d":
+    if node.op == "Conv1D":
       d = 1
-    elif node.op == "Conv2d":
+    elif node.op == "Conv2D":
       d = 2
-    elif node.op == "Conv3d":
+    elif node.op == "Conv3D":
       d = 3
     else:
-      raise RuntimeError("{} is not supported.".format(node.op))
+      exception.OP_UNSUPPORTED_EXCEPT(node.op, "Tensorflow")
     return cls.conv_op(node, 1, d=d, **kwargs)

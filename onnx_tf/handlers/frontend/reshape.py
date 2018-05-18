@@ -1,3 +1,4 @@
+from onnx_tf.common import exception
 from onnx_tf.handlers.frontend_handler import FrontendHandler
 
 
@@ -7,7 +8,7 @@ class Reshape(FrontendHandler):
   def param_check(cls, node, version, **kwargs):
     if version == 1:
       if node.inputs[1] not in kwargs["consts"]:
-        raise RuntimeError("shape of Reshape is not found in graph consts.")
+        exception.CONST_NOT_FOUND_EXCEPT(node.inputs[1], node.op)
 
   @classmethod
   def version_1(cls, node, **kwargs):

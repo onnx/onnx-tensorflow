@@ -888,8 +888,8 @@ class TensorflowBackend(TensorflowBackendBase):
       return [tf.nn.selu(input_dict[node.inputs[0]])]
 
     x = input_dict[node.inputs[0]]
-    alpha = node.attrs["alpha"] if "alpha" in node.attrs else 1.6732
-    gamma = node.attrs["gamma"] if "gamma" in node.attrs else 1.0507
+    alpha = node.attrs["alpha"] if "alpha" in node.attrs else 1.67326319217681884765625
+    gamma = node.attrs["gamma"] if "gamma" in node.attrs else 1.05070102214813232421875
 
     return [
         tf.clip_by_value(x, 0, tf.reduce_max(x)) * gamma +

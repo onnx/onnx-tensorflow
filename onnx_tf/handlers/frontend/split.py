@@ -1,3 +1,4 @@
+from onnx_tf.common import exception
 from onnx_tf.handlers.frontend_handler import FrontendHandler
 
 
@@ -8,22 +9,17 @@ class Split(FrontendHandler):
   def param_check(cls, node, version, **kwargs):
     if version == 2:
       if node.inputs[1] not in kwargs["consts"]:
-        raise RuntimeError(
-            "num_or_size_splits of SplitV is not found in graph consts.")
+        exception.CONST_NOT_FOUND_EXCEPT(node.inputs[1], node.op)
     if node.inputs[2] not in kwargs["consts"]:
-      raise RuntimeError("axis of SplitV is not found in graph consts.")
+      exception.CONST_NOT_FOUND_EXCEPT(node.inputs[2], node.op)
 
   @classmethod
   def version_1(cls, node, **kwargs):
     consts = kwargs["consts"]
     axis = int(consts[node.inputs[2]])
-    output_names = [
-        node.name + ":{}".format(i) if i > 0 else node.name
-        for i in range(node.attr["num_split"])
-    ]
     return cls.make_node(
         node, [node.inputs[0], node.inputs[1]],
-        output_names,
+        cls.get_outputs_names(node, num=node.attr["num_split"]),
         version=1,
         axis=axis)
 
@@ -32,9 +28,9 @@ class Split(FrontendHandler):
     consts = kwargs["consts"]
     split = consts[node.inputs[1]]
     axis = int(consts[node.inputs[2]])
-    output_names = [
-        node.name + ":{}".format(i) if i > 0 else node.name
-        for i in range(node.attr["num_split"])
-    ]
     return cls.make_node(
-        node, [node.inputs[0]], output_names, version=2, split=split, axis=axis)
+        node, [node.inputs[0]],
+        cls.get_outputs_names(node, num=node.attr["num_split"]),
+        version=2,
+        split=split,
+        axis=axis)

@@ -34,7 +34,6 @@ ______
 |Elu|1, 6|
 |Equal|1|
 |Exp|1, 6|
-|FC|N/A|
 |Flatten|1|
 |Floor|1, 6|
 |GRU|N/A|
@@ -128,55 +127,65 @@ ______
 
 | Tensorflow Op        | Supported ONNX Version  |
 | -------------- |:------------------:|
-|add|1, 6|
-|arg_max|1|
-|arg_min|1|
-|avg_pool|1, 7|
-|bias_add|1, 6|
-|cast|1|
-|ceil|1, 6|
-|concat_v2|1, 4|
-|conv1_d|1|
-|conv2_d|1|
-|conv3_d|1|
-|equal|1|
-|exp|1, 6|
-|fill|1|
-|floor|1, 6|
-|fused_batch_norm|1, 6|
-|greater|1|
-|identity|1|
-|less|1|
-|log|1, 6|
-|log_softmax|1|
-|logical_and|1, 6|
-|logical_not|1|
-|logical_or|1|
-|logical_xor|1|
-|mat_mul|1|
-|max|1|
-|max_pool|1, 7|
-|maximum|1|
-|mean|1|
-|min|1|
-|mul|1, 6|
-|pad|1, 2|
-|pow|1|
-|prod|1|
-|random_standard_normal|1|
-|random_uniform|1|
-|real_div|1, 6|
-|reciprocal|1, 6|
-|relu|1, 6|
-|reshape|1, 5|
-|shape|1|
-|sigmoid|1, 6|
-|softmax|1|
-|split_v|1, 2|
-|sqrt|1, 6|
-|squeeze|1|
-|sub|1, 6|
-|sum|1|
-|tanh|1, 6|
-|tile|1|
-|transpose|1|
+|Abs|1, 6|
+|Acos|7|
+|Add|1, 6|
+|AddN|1, 6|
+|ArgMax|1|
+|ArgMin|1|
+|Asin|7|
+|Atan|7|
+|AvgPool|1, 7|
+|BatchNorm|1, 6|
+|BiasAdd|1, 6|
+|Cast|1|
+|Ceil|1, 6|
+|ConcatV2|1, 4|
+|Conv1D|1|
+|Conv2D|1|
+|Conv3D|1|
+|Cos|7|
+|Exp|1, 6|
+|ExpandDims|1|
+|Fill|1|
+|Floor|1, 6|
+|FusedBatchNorm|1, 6|
+|Log|1, 6|
+|LogSoftmax|1|
+|LogicalAnd|1|
+|LogicalNot|1|
+|LogicalOr|1|
+|LogicalXor|1|
+|Max|1|
+|MaxPool|1|
+|Maximun|1, 6|
+|Mean|1|
+|Min|1|
+|Minimum|1, 6|
+|Mul|1, 6|
+|Neg|1, 6|
+|Pad|1, 2|
+|Pow|1|
+|Prod|1|
+|RandomStandardNormal|1|
+|RandomUniform|1|
+|RealDiv|1, 6|
+|Reciprocal|1, 6|
+|Relu|1, 6|
+|Reshape|1, 5|
+|Selu|1, 6|
+|Sigmoid|1, 6|
+|Sin|7|
+|Softmax|1|
+|Softplus|1|
+|Softsign|1|
+|SplitV|1, 2|
+|Sqrt|1, 6|
+|Squeeze|1|
+|Sub|1, 6|
+|Sum|1|
+|Tan|7|
+|Tanh|1, 6|
+|Tile|1|
+|TopKV2|1|
+|Transpose|1|

@@ -20,8 +20,9 @@ def get_all_frontend_handlers():
   handlers = {}
   for handler in __get_all_subclasses(
       FrontendHandler, except_regex=r'.*Common$'):
+    domain = getattr(handler, "DOMAIN")
     for tf_op in handler.get_tf_op():
-      handlers[tf_op] = handler
+      handlers.setdefault(domain, {})[tf_op] = handler
   return handlers
 
 
@@ -31,7 +32,8 @@ def get_frontend_coverage():
   for handler in __get_all_subclasses(
       FrontendHandler, except_regex=r'.*Common$'):
     versions = handler.get_versions()
+    domain = getattr(handler, "DOMAIN")
     for tf_op in handler.get_tf_op():
-      tf_coverage[tf_op] = versions
-    onnx_coverage[handler.get_onnx_op()] = versions
+      tf_coverage.setdefault(domain, {})[tf_op] = versions
+    onnx_coverage.setdefault(domain, {})[handler.get_onnx_op()] = versions
   return onnx_coverage, tf_coverage

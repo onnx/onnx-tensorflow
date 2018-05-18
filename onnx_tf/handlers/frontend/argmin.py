@@ -1,5 +1,6 @@
 import numpy as np
 
+from onnx_tf.common import exception
 from onnx_tf.handlers.frontend_handler import FrontendHandler
 
 
@@ -8,7 +9,7 @@ class ArgMin(FrontendHandler):
   @classmethod
   def param_check(cls, node, version, **kwargs):
     if node.inputs[1] not in kwargs["consts"]:
-      raise RuntimeError("axis of ArgMin is not found in graph consts.")
+      exception.CONST_NOT_FOUND_EXCEPT(node.inputs[1], node.op)
 
   @classmethod
   def version_1(cls, node, **kwargs):

@@ -1,8 +1,9 @@
 from .math_common import BasicMathCommon
 
 
-class Maximun(BasicMathCommon):
-  _ONNX_OP = "Max"
+class Negative(BasicMathCommon):
+  _TF_OP = ["Neg"]
+  _ONNX_OP = "Neg"
 
   @classmethod
   def version_1(cls, node, **kwargs):

@@ -42,7 +42,7 @@ def main():
     version += 1
 
   frontend_onnx_coverage, frontend_tf_coverage = get_frontend_coverage()
-  frontend_opset_dict.update(frontend_onnx_coverage)
+  frontend_opset_dict.update(frontend_onnx_coverage.get("", {}))
 
   with open('opset_version.py', 'w') as version_file:
     pp = pprint.PrettyPrinter(indent=4)
@@ -50,8 +50,8 @@ def main():
                        pp.pformat(backend_opset_dict)[1:-1] + "\n}\n\n")
     version_file.write("frontend_opset_version = {\n " +
                        pp.pformat(frontend_opset_dict)[1:-1] + "\n}\n\n")
-    version_file.write("frontend_tf_opset_version = {\n " +
-                       pp.pformat(frontend_tf_coverage)[1:-1] + "\n}\n")
+    version_file.write("frontend_tf_opset_version = {\n " + pp.pformat(
+        frontend_tf_coverage.get("", {}))[1:-1] + "\n}\n")
 
 
 if __name__ == '__main__':

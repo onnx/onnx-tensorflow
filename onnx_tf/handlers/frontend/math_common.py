@@ -1,3 +1,4 @@
+from onnx_tf.common import exception
 from onnx_tf.handlers.frontend_handler import FrontendHandler
 
 
@@ -24,8 +25,7 @@ class ReductionCommon(FrontendHandler):
   @classmethod
   def param_check(cls, node, version, **kwargs):
     if node.inputs[1] not in kwargs["consts"]:
-      raise RuntimeError("axis of {} is not found in graph consts.".format(
-          node.op))
+      exception.CONST_NOT_FOUND_EXCEPT(node.inputs[1], node.op)
 
   @classmethod
   def reduction_op(cls, node, version, **kwargs):
