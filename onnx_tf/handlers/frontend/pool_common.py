@@ -5,6 +5,14 @@ from .conv_common import ConvCommon
 class PoolCommon(FrontendHandler):
 
   @classmethod
+  def param_check(cls, node, version, **kwargs):
+    if "count_include_pad" in kwargs:
+      if cls.get_onnx_op() != "AveragePool":
+        raise RuntimeError("count_include_pad is only for AveragePool.")
+      if version < 7:
+        raise RuntimeError("count_include_pad is added since version 7.")
+
+  @classmethod
   def pool_op(cls, node, version, **kwargs):
     auto_pad = node.attr["padding"].decode("UTF-8")
     auto_pad = "SAME_UPPER" if auto_pad == "SAME" else auto_pad
@@ -22,9 +30,14 @@ class PoolCommon(FrontendHandler):
             spatial_indices))
     pads = ConvCommon.cal_pads(auto_pad, len(spatial_indices), input_shape,
                                output_shape, strides, kernel_shape)
+
+    node_kwargs = {}
+    if "count_include_pad" in kwargs:
+      node_kwargs["count_include_pad"] = kwargs["count_include_pad"]
     return cls.make_node(
         node, [node.inputs[0]],
         version=version,
         pads=pads,
         kernel_shape=kernel_shape,
-        strides=strides)
+        strides=strides,
+        **node_kwargs)
