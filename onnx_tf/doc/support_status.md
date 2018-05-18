@@ -34,7 +34,6 @@ ______
 |Elu|1, 6|
 |Equal|1|
 |Exp|1, 6|
-|FC|N/A|
 |Flatten|1|
 |Floor|1, 6|
 |GRU|N/A|
@@ -155,7 +154,7 @@ ______
 |logical_xor|1|
 |mat_mul|1|
 |max|1|
-|max_pool|1, 7|
+|max_pool|1|
 |maximum|1|
 |mean|1|
 |min|1|
