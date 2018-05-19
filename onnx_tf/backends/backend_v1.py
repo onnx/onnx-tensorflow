@@ -844,7 +844,20 @@ class TensorflowBackend(TensorflowBackendBase):
   def handle_reshape(cls, node, input_dict):
     tensor = input_dict[node.inputs[0]]
     shape = tf.constant(node.attrs["shape"])
-    return [tf.reshape(tensor, shape)]
+    input_shape = tf.shape(tensor)
+
+    # Extract indicies of the shape paramter where
+    # a copy from the original dimension size is needed.
+    copy_indices = tf.squeeze(tf.where(tf.equal(shape, tf.constant(0))), -1)
+
+    indices_gathered = tf.gather(input_shape, copy_indices)
+    indices_scattered = tf.sparse_to_dense(copy_indices,
+                                           tf.cast(tf.shape(shape), tf.int64),
+                                           indices_gathered)
+
+    # Perform the copy wherever requested (wherever dim_size == 0)
+    copied_shape = shape + indices_scattered
+    return [tf.reshape(tensor, copied_shape)]
 
   @classmethod
   def handle_selu(cls, node, input_dict):

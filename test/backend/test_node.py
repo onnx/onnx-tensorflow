@@ -648,6 +648,13 @@ class TestNode(unittest.TestCase):
     output = run_node(node_def, [x, y])
     np.testing.assert_almost_equal(output["Z"], x.reshape([10, 10]))
 
+  def test_reshape_with_copy(self):
+    node_def = helper.make_node("Reshape", ["X", "Y"], ["Z"])
+    x = self._get_rnd([10, 20*30])
+    y = [0, 20, 30]
+    output = run_node(node_def, [x, y])
+    np.testing.assert_almost_equal(output["Z"], x.reshape([10, 20, 30]))
+
   def test_selu(self):
     node_def = helper.make_node("Selu", ["X"], ["Y"])
     x = self._get_rnd([1000])
@@ -766,7 +773,6 @@ class TestNode(unittest.TestCase):
     x = self._get_rnd([1000]).reshape([10, 10, 10])
     output = run_node(node_def, [x])
     np.testing.assert_almost_equal(output["Y"], np.transpose(x, (0, 2, 1)))
-
 
 if __name__ == '__main__':
   unittest.main()
