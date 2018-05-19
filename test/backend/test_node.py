@@ -646,7 +646,7 @@ class TestNode(unittest.TestCase):
     x = self._get_rnd(100)
     shape = [10, 10]
     if defs.onnx_opset_version() < 5:
-      node_def = helper.make_node("Reshape", ["X"], shape=shape)
+      node_def = helper.make_node("Reshape", ["X"], ["Z"], shape=shape)
       output = run_node(node_def, [x])
     else:
       node_def = helper.make_node("Reshape", ["X", "Y"], ["Z"])
@@ -658,7 +658,7 @@ class TestNode(unittest.TestCase):
     x = self._get_rnd([10, 20*30])
     shape = [0, 20, 30]
     if defs.onnx_opset_version() < 5:
-      node_def = helper.make_node("Reshape", ["X"], shape=shape)
+      node_def = helper.make_node("Reshape", ["X"], ["Z"], shape=shape)
       output = run_node(node_def, [x])
     else:
       node_def = helper.make_node("Reshape", ["X", "Y"], ["Z"])
