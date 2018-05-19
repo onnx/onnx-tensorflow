@@ -20,11 +20,12 @@ class TensorflowBackend(TensorflowBackendBase):
   def handle_reshape(cls, node, input_dict):
     tensor = input_dict[node.inputs[0]]
     shape = input_dict[node.inputs[1]]
-    input_shape = tf.shape(tensor)
+    input_shape = tf.shape(tensor, out_type=tf.int32)
 
     # Extract indicies of the shape paramter where
     # a copy from the original dimension size is needed.
-    copy_indices = tf.squeeze(tf.where(tf.equal(shape, tf.constant(0))), -1)
+    copy_indices = tf.squeeze(tf.where(tf.equal(shape,
+                                                tf.constant(0, dtype=tf.int32))), -1)
 
     indices_gathered = tf.gather(input_shape, copy_indices)
     indices_scattered = tf.sparse_to_dense(copy_indices,
