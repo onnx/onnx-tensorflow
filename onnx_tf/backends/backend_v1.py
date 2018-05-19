@@ -24,6 +24,7 @@ from onnx_tf.backend import TensorflowBackendBase
 from onnx_tf.common import (
     ONNX_OP_TO_TF_OP,
     ONNX_TYPE_TO_TF_TYPE,
+    PAD_TF_INCOMPATIBLE,
 )
 import onnx.numpy_helper
 import onnx.defs
@@ -62,7 +63,8 @@ class TensorflowBackend(TensorflowBackendBase):
     return [tf.argmin(data, axis=axis)]
 
   @classmethod
-  def _compatibility_pool(cls, node, input_dict, pooling_type):
+  def _pool_get_shapes(cls, auto_pad, x_shape, kernel_shape, strides,
+                       spatial_size, pads):
 
     def _get_pad_shape(auto_pad, input_spatial_shape, kernel_spatial_shape,
                        strides_spatial, output_spatial_shape):
@@ -91,15 +93,45 @@ class TensorflowBackend(TensorflowBackendBase):
                   / float(strides_spatial[i])))
       return out_shape
 
-    def py_pool(x, kernel_shape, strides_shape, pads, out_shape, pad_shape,
-                pooling_type):
+    if auto_pad in ["SAME_UPPER", "SAME_LOWER"]:
+      out_shape = _get_output_shape(auto_pad, x_shape[2:], kernel_shape,
+                                    strides)
+      pad_shape = _get_pad_shape(auto_pad, x_shape[2:], kernel_shape, strides,
+                                 out_shape)
+      for i in range(spatial_size):
+        if auto_pad == "SAME_LOWER":
+          pads[i + spatial_size] = pad_shape[i] // 2
+          pads[i] = pad_shape[i] - pads[i + spatial_size]
+        elif auto_pad == "SAME_UPPER":
+          pads[i] = pad_shape[i] // 2
+          pads[i + spatial_size] = pad_shape[i] - pads[i]
+    elif auto_pad in ["", "VALID"]:
+      pad_shape = [
+          pads[i] + pads[i + spatial_size] for i in range(spatial_size)
+      ]
+      out_shape = _get_output_shape(auto_pad, np.add(x_shape[2:], pad_shape),
+                                    kernel_shape, strides)
+    return out_shape, pad_shape, pads
+
+  @classmethod
+  def _compatibility_pool(cls, node, input_dict, pooling_type):
+    warnings.warn(
+        "Using the pooling op in compatibility mode."
+        "This means your graph cannot be serialized."
+        "Please configure your pooling operation to only use paddings that "
+        "correspond to Tensorflow SAME or VALID padding.", UserWarning)
+
+    def py_pool(x, kernel_shape, strides, pads, out_shape, pad_shape,
+                count_include_pad, pooling_type):
       pooling_type = pooling_type.decode('UTF-8')
       x_shape = np.shape(x)
       spatial_size = len(x_shape[2:])
       pad_attr = [(0, 0), (0, 0)] + [
           (pads[i], pads[i + spatial_size]) for i in range(spatial_size)
       ]
-      padded = np.pad(x, pad_attr, mode="constant", constant_values=np.nan)
+      constant_values = np.nan if count_include_pad == 0 else 0
+      padded = np.pad(
+          x, pad_attr, mode="constant", constant_values=constant_values)
 
       y = np.zeros([x_shape[0], x_shape[1]] + list(out_shape))
 
@@ -107,14 +139,14 @@ class TensorflowBackend(TensorflowBackendBase):
           range(x_shape[0]), range(x_shape[1]), *[
               range(
                   int((x_shape[i + 2] + pad_shape[i] - kernel_shape[i]
-                      ) / strides_shape[i] + 1)) for i in range(spatial_size)
+                      ) / strides[i] + 1)) for i in range(spatial_size)
           ]):
         window = padded[shape[0], shape[1]]
         window_vals = np.array([
             window[i] for i in list(
                 itertools.product(*[
-                    range(strides_shape[i] * shape[i + 2],
-                          strides_shape[i] * shape[i + 2] + kernel_shape[i])
+                    range(strides[i] * shape[i + 2],
+                          strides[i] * shape[i + 2] + kernel_shape[i])
                     for i in range(spatial_size)
                 ]))
         ])
@@ -126,35 +158,28 @@ class TensorflowBackend(TensorflowBackendBase):
           raise NotImplementedError(
               'Pooling type {} does not support. Should be AVG, MAX'.format(
                   pooling_type))
-        y[shape] = f(window_vals[np.where(~np.isnan(window_vals))])
+
+        if count_include_pad == 0:
+          y[shape] = f(window_vals[np.where(~np.isnan(window_vals))])
+        else:
+          y[shape] = f(window_vals)
       return y.astype(np.float32)
 
     x = input_dict[node.inputs[0]]
     x_shape = x.shape.as_list()
     spatial_size = len(x_shape[2:])
     kernel_shape = node.attrs["kernel_shape"]
-    strides_shape = node.attrs.get("strides", [1] * spatial_size)
+    strides = node.attrs.get("strides", [1] * spatial_size)
     pads = node.attrs.get("pads", [0] * spatial_size * 2)
     auto_pad = node.attrs.get("auto_pad", "")
+    count_include_pad = node.attrs.get("count_include_pad", 0)
 
-    # Only auto_pad in ("SAME_LOWER", "") will come here.
-    if auto_pad == "SAME_LOWER":
-      out_shape = _get_output_shape(auto_pad, x_shape[2:], kernel_shape,
-                                    strides_shape)
-      pad_shape = _get_pad_shape(auto_pad, x_shape[2:], kernel_shape,
-                                 strides_shape, out_shape)
-      for i in range(spatial_size):
-        pads[i + spatial_size] = pad_shape[i] // 2
-        pads[i] = pad_shape[i] - pads[i + spatial_size]
-    elif auto_pad == "":
-      pad_shape = [
-          pads[i] + pads[i + spatial_size] for i in range(spatial_size)
-      ]
-      out_shape = _get_output_shape(auto_pad, np.add(x_shape[2:], pad_shape),
-                                    kernel_shape, strides_shape)
+    out_shape, pad_shape, pads = cls._pool_get_shapes(
+        auto_pad, x_shape, kernel_shape, strides, spatial_size, pads)
 
     pooled = tf.py_func(py_pool, [
-        x, kernel_shape, strides_shape, pads, out_shape, pad_shape, pooling_type
+        x, kernel_shape, strides, pads, out_shape, pad_shape, count_include_pad,
+        pooling_type
     ], tf.float32)
     pooled.set_shape(x_shape[0:2] + out_shape)
     return [pooled]
@@ -169,19 +194,28 @@ class TensorflowBackend(TensorflowBackendBase):
 
     kernel_shape = node.attrs["kernel_shape"]
     strides = node.attrs.get("strides", [1] * (x_rank - 2))
+    pad = node.attrs.get("pads", None)
 
-    # By default, do not pad
-    pad = None
+    # If padding is specified, try to recover it from explicit padding
+    # specification to tensorflow padding mode:
+    if pad is not None:
+      pad = cls.get_tf_pad(x.get_shape().as_list(), kernel_shape, strides, pad)
 
-    if "auto_pad" in node.attrs:
+    # We consult auto_pad if pad is not specified and auto_pad
+    # is available.
+    if pad is None and "auto_pad" in node.attrs:
       if node.attrs["auto_pad"] == "SAME_UPPER":
         pad = "SAME"
       elif node.attrs["auto_pad"] == "VALID":
         pad = "VALID"
       elif node.attrs["auto_pad"] == "SAME_LOWER":
-        pad = None
+        pad = PAD_TF_INCOMPATIBLE
 
-    if pad is None:
+    # Neither pad nor auto_pad is specified, assume no padding.
+    if pad is None and "auto_pad" not in node.attrs:
+      pad = "VALID"
+
+    if pad is PAD_TF_INCOMPATIBLE:
       return cls._compatibility_pool(node, input_dict, pooling_type)
 
     if support_cuda:

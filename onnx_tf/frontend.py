@@ -9,12 +9,17 @@ from __future__ import unicode_literals
 import importlib
 import inspect
 from itertools import chain
+import sys
 import warnings
 
 import numpy as np
 import tensorflow as tf
 from tensorflow.python.framework.tensor_util import MakeNdarray
 from tensorflow.core.framework.attr_value_pb2 import AttrValue
+
+# Define long type for Python 3:
+if sys.version_info > (3,):
+  long = int
 
 from onnx_tf.common import (
     TF_TYPE_TO_ONNX_TYPE,
@@ -234,7 +239,7 @@ class TensorflowFrontendBase(object):
           opset_dict[domain] = version
           defs.ONNX_DOMAIN = domain
           assert isinstance(
-              version, int
+              version, (int, long)
           ) and (version <= defs.onnx_opset_version()) and (
               version >= 0
           ), "Opset should be an int less than or equal to {}, but {}: {}".format(
@@ -412,10 +417,10 @@ class TensorflowFrontendBase(object):
 
     assert isinstance(
         opset,
-        (int, list,
+        (int, long, list,
          tuple)), "opset is expected to int, list or tuple, but {}.".format(
              type(opset))
-    if isinstance(opset, int):
+    if isinstance(opset, (int, long)):
       if opset == 0:
         opset = defs.onnx_opset_version()
       opset = [("", opset)]
@@ -487,11 +492,16 @@ class TensorflowFrontendBase(object):
             spatial_indices))
     pads = cls._cal_pads(auto_pad, len(spatial_indices), input_shape,
                          output_shape, strides, kernel_shape)
+
+    node_kwargs = {}
+    if "count_include_pad" in kwargs:
+      node_kwargs["count_include_pad"] = kwargs["count_include_pad"]
     return make_node(
         onnx_op, [node.inputs[0]], [node.name],
         pads=pads,
         kernel_shape=kernel_shape,
-        strides=strides)
+        strides=strides,
+        **node_kwargs)
 
   @classmethod
   def _cal_pads(cls, auto_pad, spatial_dim, input_shape, output_shape, strides,

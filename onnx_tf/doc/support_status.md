@@ -8,12 +8,15 @@ ______
 | -------------- |:------------------:|
 |ATen|N/A|
 |Abs|1, 6|
+|Acos|N/A|
 |Add|1, 6|
 |Affine|N/A|
 |And|1|
 |ArgMax|1|
 |ArgMin|1|
-|AveragePool|1|
+|Asin|N/A|
+|Atan|N/A|
+|AveragePool|1, 7|
 |BatchNormalization|1, 6|
 |Cast|1|
 |Ceil|1, 6|
@@ -23,6 +26,7 @@ ______
 |ConstantFill|1|
 |Conv|1|
 |ConvTranspose|1|
+|Cos|N/A|
 |Crop|N/A|
 |DepthToSpace|1|
 |Div|1, 6|
@@ -30,7 +34,6 @@ ______
 |Elu|1, 6|
 |Equal|1|
 |Exp|1, 6|
-|FC|N/A|
 |Flatten|1|
 |Floor|1, 6|
 |GRU|N/A|
@@ -96,6 +99,7 @@ ______
 |Selu|1, 6|
 |Shape|1|
 |Sigmoid|1, 6|
+|Sin|N/A|
 |Size|1|
 |Slice|1|
 |Softmax|1|
@@ -107,6 +111,7 @@ ______
 |Squeeze|1|
 |Sub|1, 6|
 |Sum|1, 6|
+|Tan|N/A|
 |Tanh|1, 6|
 |ThresholdedRelu|1|
 |Tile|1|
@@ -125,7 +130,7 @@ ______
 |add|1, 6|
 |arg_max|1|
 |arg_min|1|
-|avg_pool|1|
+|avg_pool|1, 7|
 |bias_add|1, 6|
 |cast|1|
 |ceil|1, 6|
