@@ -248,7 +248,7 @@ class TensorflowBackend(TensorflowBackendBase):
     else:
       if pads != [0] * spatial_size * 2:
         x = cls.get_padding_as_op(x, pads)
-        pad = "VALID"
+      pad = "VALID"
 
     if support_cuda:
       pooled = pool_func(
