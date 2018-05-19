@@ -7,8 +7,8 @@ import unittest
 import numpy as np
 import tensorflow as tf
 
-from onnx_tf.frontend import convert_graph
-from onnx import helper
+from onnx_tf.frontend import tensorflow_graph_to_onnx_model
+from onnx import checker
 
 # for testing
 from onnx_tf.backend import prepare
@@ -67,12 +67,12 @@ def create_test(test_data):
     test_op = tf_op(*tf_param_list, **attrs)
     tf_graph = tf.get_default_graph().as_graph_def(add_shapes=True)
     # Construct onnx graph, run with backend.
-    output_node = get_node_by_name(tf_graph.node, output_name)
-    onnx_graph = convert_graph(tf_graph,
-                               output_node,
-                               ignore_unimplemented=test_option.get("ignore_unimplemented", False))
-    onnx_model = helper.make_model(onnx_graph)
+    onnx_model = tensorflow_graph_to_onnx_model(
+        tf_graph,
+        output_name,
+        ignore_unimplemented=test_option.get("ignore_unimplemented", False))
     if not test_option.get("ignore_unimplemented", False):
+      checker.check_model(onnx_model)
       backend_rep = prepare(onnx_model)
       backend_output = []
       backend_rep_outputs = backend_rep.run(onnx_feed_dict)
@@ -90,7 +90,7 @@ def create_test(test_data):
       if (test_option.get("call_only", False)):
         return
       for backend_o, tf_o in zip(backend_output, tf_output):
-        np.testing.assert_allclose(backend_o, tf_o)
+        np.testing.assert_allclose(backend_o, tf_o, rtol=1e-3, atol=1e-7)
 
   return do_test_expected
 
@@ -103,10 +103,13 @@ def create_test(test_data):
 test_cases = [
 ("test_arg_max", tf.argmax, "ArgMax", [get_rnd([1, 2, 3, 4])], {"axis": -1}),
 ("test_arg_min", tf.argmin, "ArgMin", [get_rnd([1, 2, 3, 4])], {"axis": -1}),
-# Use reverse to test ignore_unimplemented
-("test_unimplemented", tf.reverse, "ReverseV2", [get_rnd([1, 2, 3, 4]), [3]], {}, {"ignore_unimplemented": True}),
 ("test_cast", tf.cast, "Cast", [get_rnd([10, 10]), tf.float16], {}),
-("test_relu", tf.nn.relu, "Relu", [get_rnd([10, 10])], {}),
+("test_ceil", tf.ceil, "Ceil", [get_rnd([10, 10], -10, 10)], {}),
+("test_constant_fill", tf.fill, "Fill", [[1, 2, 3], 1], {}),
+("test_exp", tf.exp, "Exp", [get_rnd([10, 10])], {}),
+("test_floor", tf.floor, "Floor", [get_rnd([10, 10], -10, 10)], {}),
+("test_log", tf.log, "Log", [get_rnd([10, 10])], {}),
+("test_log_softmax", tf.nn.log_softmax, "LogSoftmax", [get_rnd([10, 10])], {}),
 ("test_or", tf.logical_or, "LogicalOr", [get_rnd([10, 10], dtype=np.bool_), get_rnd([10, 10], dtype=np.bool_)], {}),
 ("test_pow", tf.pow, "Pow", [get_rnd([10, 10]), get_rnd([10, 10])], {}),
 ("test_pad", tf.pad, "Pad", [get_rnd([2, 3]), [[1, 1,], [2, 2]]], {"mode": "constant"}),
@@ -118,7 +121,9 @@ test_cases = [
 ("test_reduce_min", tf.reduce_min, "Min", [get_rnd([10, 10])], {"keep_dims": True}),
 ("test_reduce_prod", tf.reduce_prod, "Prod", [get_rnd([10, 10])], {"keep_dims": True}),
 ("test_reduce_sum", tf.reduce_sum, "Sum", [get_rnd([10, 10])], {"keep_dims": True}),
+("test_relu", tf.nn.relu, "Relu", [get_rnd([10, 10])], {}),
 ("test_reshape", tf.reshape, "Reshape", [get_rnd([10, 10]), [4, 25]], {}),
+("test_shape", tf.shape, "Shape", [get_rnd([1, 2, 3, 4])], {}),
 ("test_sigmoid", tf.sigmoid, "Sigmoid", [get_rnd([10, 10])], {}),
 ("test_split", tf.split, "split", [get_rnd([10, 10]), [2, 3, 5]], {}),
 ("test_sqrt", tf.sqrt, "Sqrt", [get_rnd([10, 10])], {}),
@@ -126,6 +131,8 @@ test_cases = [
 ("test_subtract", tf.subtract, "Sub", [get_rnd([10, 10]), get_rnd([10, 10])], {}),
 ("test_tanh", tf.tanh, "Tanh", [get_rnd([10, 10])], {}),
 ("test_tile", tf.tile, "Tile", [get_rnd([1, 2, 3, 4]), np.random.randint(1, 10, (4,), dtype=np.int32)], {}),
+# Use reverse to test ignore_unimplemented
+("test_unimplemented", tf.reverse, "ReverseV2", [get_rnd([1, 2, 3, 4]), [3]], {}, {"ignore_unimplemented": True}),
 ("test_xor", tf.logical_xor, "LogicalXor", [get_rnd([10, 10], dtype=np.bool_), get_rnd([10, 10], dtype=np.bool_)], {}),
 ("test_transpose", tf.transpose, "transpose", [get_rnd([2, 10])], {"perm":[1, 0]}),
 ("test_concat", tf.concat, "concat", [[get_rnd([1, 10]),get_rnd([10, 10]),get_rnd([20, 10])], 0], {})

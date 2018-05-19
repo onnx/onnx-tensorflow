@@ -26,7 +26,6 @@ class TensorflowFrontend(TensorflowFrontendBase):
   @register_onnx_op("ArgMax")
   def handle_arg_max(cls, node, **kwargs):
     axis = np.asscalar(kwargs["consts"][node.inputs[1]])
-    kwargs["data_type_cast_map"][node.name] = TensorProto.INT64
     return helper.make_node(
         "ArgMax", [node.inputs[0]], [node.name], axis=axis, keepdims=0)
 
@@ -34,7 +33,6 @@ class TensorflowFrontend(TensorflowFrontendBase):
   @register_onnx_op("ArgMin")
   def handle_arg_min(cls, node, **kwargs):
     axis = np.asscalar(kwargs["consts"][node.inputs[1]])
-    kwargs["data_type_cast_map"][node.name] = TensorProto.INT64
     return helper.make_node(
         "ArgMin", [node.inputs[0]], [node.name], axis=axis, keepdims=0)
 
@@ -125,6 +123,15 @@ class TensorflowFrontend(TensorflowFrontendBase):
   @register_onnx_op("Conv")
   def handle_conv3_d(cls, node, **kwargs):
     return cls._conv(node, 3, **kwargs)
+
+  @classmethod
+  @register_onnx_op("ConstantFill")
+  def handle_fill(cls, node, **kwargs):
+    value = float(np.asscalar(kwargs["consts"][node.inputs[1]]))
+    return helper.make_node(
+        "ConstantFill", [node.inputs[0]], [node.name],
+        input_as_shape=1,
+        value=value)
 
   @classmethod
   @register_onnx_op("Pad")

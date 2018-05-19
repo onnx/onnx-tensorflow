@@ -9,12 +9,17 @@ from __future__ import unicode_literals
 import importlib
 import inspect
 from itertools import chain
+import sys
 import warnings
 
 import numpy as np
 import tensorflow as tf
 from tensorflow.python.framework.tensor_util import MakeNdarray
 from tensorflow.core.framework.attr_value_pb2 import AttrValue
+
+# Define long type for Python 3:
+if sys.version_info > (3,):
+  long = int
 
 from onnx_tf.common import (
     TF_TYPE_TO_ONNX_TYPE,
@@ -234,7 +239,7 @@ class TensorflowFrontendBase(object):
           opset_dict[domain] = version
           defs.ONNX_DOMAIN = domain
           assert isinstance(
-              version, int
+              version, (int, long)
           ) and (version <= defs.onnx_opset_version()) and (
               version >= 0
           ), "Opset should be an int less than or equal to {}, but {}: {}".format(
@@ -309,22 +314,37 @@ class TensorflowFrontendBase(object):
           make_tensor_value_info(output_name, output_onnx_type,
                                  output.attr["_output_shapes"][i]))
 
-    inputs = list(chain.from_iterable(map(lambda p: list(p.input), ops_proto)))
+    inputs = list(chain.from_iterable(map(lambda p: p.input, ops_proto)))
+    outputs = list(map(lambda p: p.name, output_proto))
+    in_out = inputs + outputs
 
-    # Remove proto in inputs_proto and consts_proto if proto is not used as input in ONNX
-    inputs_proto = list(filter(lambda x: x.name in inputs, inputs_proto))
-    consts_proto = list(filter(lambda x: x.name in inputs, consts_proto))
+    # Remove proto in inputs_proto and consts_proto
+    # if proto is not used as input or an output in ONNX
+    inputs_proto = list(filter(lambda x: x.name in in_out, inputs_proto))
+    consts_proto = list(filter(lambda x: x.name in in_out, consts_proto))
 
     inputs_proto = cls._data_type_caster(inputs_proto, data_type_cast_map)
     consts_proto = cls._data_type_caster(consts_proto, data_type_cast_map)
 
-    return make_graph(
-        ops_proto,
-        name,
-        inputs_proto,
-        output_proto,
-        initializer=consts_proto,
-        value_info=value_info_proto)
+    # TODO: currently no onnx release support value_info, thus ensuring
+    # backward compatibility via try catch routine. Switch to excplicit
+    # onnx version checking when value_info is supported in upcoming
+    # onnx release.
+    try:
+      return make_graph(
+          ops_proto,
+          name,
+          inputs_proto,
+          output_proto,
+          initializer=consts_proto,
+          value_info=value_info_proto)
+    except TypeError:
+      return make_graph(
+          ops_proto,
+          name,
+          inputs_proto,
+          output_proto,
+          initializer=consts_proto)
 
   @classmethod
   def _data_type_caster(cls, protos, data_type_cast_map):
@@ -397,16 +417,27 @@ class TensorflowFrontendBase(object):
 
     assert isinstance(
         opset,
-        (int, list,
+        (int, long, list,
          tuple)), "opset is expected to int, list or tuple, but {}.".format(
              type(opset))
-    if isinstance(opset, int):
+    if isinstance(opset, (int, long)):
       if opset == 0:
         opset = defs.onnx_opset_version()
       opset = [("", opset)]
     opset_imports = [make_opsetid(item[0], item[1]) for item in opset]
 
     output_node = get_node_by_name(graph_def.node, output)
+
+    if "_output_shapes" not in output_node.attr:
+      # Add infer_shapes to GraphDef
+      with tf.Graph().as_default():
+        with tf.Session(
+            config=tf.ConfigProto(
+                graph_options=tf.GraphOptions(infer_shapes=True))) as sess:
+          tf.import_graph_def(graph_def, name="")
+        graph_def = sess.graph_def
+      output_node = get_node_by_name(graph_def.node, output)
+
     onnx_graph = cls.tensorflow_graph_to_onnx_graph(
         graph_def, output_node, opset, graph_name, ignore_unimplemented)
     onnx_model = make_model(
@@ -461,11 +492,16 @@ class TensorflowFrontendBase(object):
             spatial_indices))
     pads = cls._cal_pads(auto_pad, len(spatial_indices), input_shape,
                          output_shape, strides, kernel_shape)
+
+    node_kwargs = {}
+    if "count_include_pad" in kwargs:
+      node_kwargs["count_include_pad"] = kwargs["count_include_pad"]
     return make_node(
         onnx_op, [node.inputs[0]], [node.name],
         pads=pads,
         kernel_shape=kernel_shape,
-        strides=strides)
+        strides=strides,
+        **node_kwargs)
 
   @classmethod
   def _cal_pads(cls, auto_pad, spatial_dim, input_shape, output_shape, strides,

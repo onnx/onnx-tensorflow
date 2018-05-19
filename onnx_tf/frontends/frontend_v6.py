@@ -31,6 +31,21 @@ class TensorflowFrontend(TensorflowFrontendBase):
     return TensorflowFrontendV1.handle_bias_add(node, **kwargs)
 
   @classmethod
+  @register_onnx_op("Ceil")
+  def handle_ceil(cls, node, **kwargs):
+    return TensorflowFrontendV1.handle_trivial(node, **kwargs)
+
+  @classmethod
+  @register_onnx_op("Exp")
+  def handle_exp(cls, node, **kwargs):
+    return TensorflowFrontendV1.handle_trivial(node, **kwargs)
+
+  @classmethod
+  @register_onnx_op("Floor")
+  def handle_floor(cls, node, **kwargs):
+    return TensorflowFrontendV1.handle_trivial(node, **kwargs)
+
+  @classmethod
   @register_onnx_op("BatchNormalization")
   def handle_fused_batch_norm(cls, node, **kwargs):
     return helper.make_node(
@@ -38,6 +53,11 @@ class TensorflowFrontend(TensorflowFrontendBase):
         node.inputs, [node.name],
         epsilon=node.attr.get("epsilon", 1e-5),
         is_test=node.attr.get("is_training", 0))
+
+  @classmethod
+  @register_onnx_op("Log")
+  def handle_log(cls, node, **kwargs):
+    return TensorflowFrontendV1.handle_trivial(node, **kwargs)
 
   @classmethod
   @register_onnx_op("And")

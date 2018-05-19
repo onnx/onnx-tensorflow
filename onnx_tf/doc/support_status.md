@@ -16,7 +16,7 @@ ______
 |ArgMin|1|
 |Asin|N/A|
 |Atan|N/A|
-|AveragePool|1|
+|AveragePool|1, 7|
 |BatchNormalization|1, 6|
 |Cast|1|
 |Ceil|1, 6|
@@ -34,7 +34,6 @@ ______
 |Elu|1, 6|
 |Equal|1|
 |Exp|1, 6|
-|FC|N/A|
 |Flatten|1|
 |Floor|1, 6|
 |GRU|1, 3|
@@ -131,18 +130,24 @@ ______
 |add|1, 6|
 |arg_max|1|
 |arg_min|1|
-|avg_pool|1|
+|avg_pool|1, 7|
 |bias_add|1, 6|
 |cast|1|
+|ceil|1, 6|
 |concat_v2|1, 4|
 |conv1_d|1|
 |conv2_d|1|
 |conv3_d|1|
 |equal|1|
+|exp|1, 6|
+|fill|1|
+|floor|1, 6|
 |fused_batch_norm|1, 6|
 |greater|1|
 |identity|1|
 |less|1|
+|log|1, 6|
+|log_softmax|1|
 |logical_and|1, 6|
 |logical_not|1|
 |logical_or|1|

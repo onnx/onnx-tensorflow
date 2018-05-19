@@ -42,6 +42,7 @@ ONNX_TYPE_TO_TF_TYPE = {
     TensorProto.DOUBLE: tf.float64,
     TensorProto.COMPLEX64: tf.complex64,
     TensorProto.COMPLEX128: tf.complex128,
+    TensorProto.STRING: tf.string,
     # TODO: uncomment this in the future
     # TensorProto.UINT32: tf.uint32,
     # TensorProto.UINT64: tf.uint64,
@@ -128,7 +129,7 @@ ONNX_ATTR_TO_REMOVE_PER_OP = {}
 
 TF_ATTR_TO_REMOVE = [
     "_output_shapes", "T", "seed2", "Tidx", "_class", "Tshape", "Tpaddings",
-    "data_format", "transpose_a", "transpose_b"
+    "data_format", "transpose_a", "transpose_b", "out_type"
 ]
 
 ONNX_OP_TO_TF_OP = {
@@ -184,14 +185,19 @@ TF_OP_STR_TO_ONNX_OP = {
     # these are temporarily added to
     # test other ops
     "Add": "Add",
+    "Ceil": "Ceil",
     "Equal": "Equal",
+    "Exp": "Exp",
+    "Floor": "Floor",
     "Greater": "Greater",
     "Identity": "Identity",
     "Less": "Less",
+    "Log": "Log",
     "LogicalAnd": "And",
     "LogicalNot": "Not",
     "LogicalOr": "Or",
     "LogicalXor": "Xor",
+    "LogSoftmax": "LogSoftmax",
     "MatMul": "MatMul",
     "Mul": "Mul",
     "Pow": "Pow",
@@ -268,3 +274,7 @@ def get_list_value(attr):
 
 def get_unique_suffix():
   return str(uuid.uuid4())[:8]
+
+# Constant string used to indicate that requested padding
+# is not natively supported in Tensorflow.
+PAD_TF_INCOMPATIBLE = "PAD_TF_INCOMPATIBLE"
