@@ -209,35 +209,46 @@ class TensorflowBackend(TensorflowBackendBase):
     x = input_dict[node.inputs[0]]
     x_rank = len(x.get_shape())
     x_shape = x.get_shape().as_list()
+    spatial_size = x_rank - 2
 
     support_cuda = cls.supports_device("CUDA")
     storage_format, compute_format = cls.get_data_format(x_rank, support_cuda)
 
     kernel_shape = node.attrs["kernel_shape"]
-    strides = node.attrs.get("strides", [1] * (x_rank - 2))
-    pad = node.attrs.get("pads", None)
+    strides = node.attrs.get("strides", [1] * spatial_size)
+    pads = node.attrs.get("pads", None)
+    pad = PAD_TF_INCOMPATIBLE
+    count_include_pad = node.attrs.get("count_include_pad", 0)
 
     # If padding is specified, try to recover it from explicit padding
     # specification to tensorflow padding mode:
-    if pad is not None:
-      pad = cls.get_tf_pad(x_shape[2:], kernel_shape, strides, pad)
-
-    # We consult auto_pad if pad is not specified and auto_pad
-    # is available.
-    if pad is None and "auto_pad" in node.attrs:
-      if node.attrs["auto_pad"] == "SAME_UPPER":
-        pad = "SAME"
-      elif node.attrs["auto_pad"] == "VALID":
+    if pads is not None:
+      pad = cls.get_tf_pad(x_shape[2:], kernel_shape, strides, pads)
+    else:
+      # Neither pad nor auto_pad is specified, assume no padding.
+      if "auto_pad" not in node.attrs:
         pad = "VALID"
-      elif node.attrs["auto_pad"] == "SAME_LOWER":
-        pad = PAD_TF_INCOMPATIBLE
+      # We consult auto_pad if pad is not specified and auto_pad
+      # is available.
+      else:
+        if node.attrs["auto_pad"] == "SAME_UPPER":
+          pad = "SAME"
+        elif node.attrs["auto_pad"] == "VALID":
+          pad = "VALID"
+        elif node.attrs["auto_pad"] == "SAME_LOWER":
+          pad = PAD_TF_INCOMPATIBLE
+        if count_include_pad == 1:
+          _, pads = cls._pool_get_shapes(node.attrs["auto_pad"], x_shape[2:],
+                                         kernel_shape, strides,
+                                         [0] * spatial_size * 2)
 
-    # Neither pad nor auto_pad is specified, assume no padding.
-    if pad is None and "auto_pad" not in node.attrs:
-      pad = "VALID"
-
-    if pad is PAD_TF_INCOMPATIBLE:
-      return cls._compatibility_pool(node, input_dict, pooling_type)
+    if count_include_pad == 0:
+      if pad is PAD_TF_INCOMPATIBLE:
+        return cls._compatibility_pool(node, input_dict, pooling_type)
+    else:
+      if pads != [0] * spatial_size * 2:
+        x = cls.get_padding_as_op(x, pads)
+        pad = "VALID"
 
     if support_cuda:
       pooled = pool_func(
