@@ -8,10 +8,8 @@ class Selu(FrontendHandler):
 
   @classmethod
   def version_1(cls, node, **kwargs):
-    return cls.make_node(
-        node, version=1, gamma=cls._scale, alpha=cls._alpha)
+    return cls.make_node(node, version=1, gamma=cls._scale, alpha=cls._alpha)
 
   @classmethod
   def version_6(cls, node, **kwargs):
-    return cls.make_node(
-        node, version=6, gamma=cls._scale, alpha=cls._alpha)
+    return cls.make_node(node, version=6, gamma=cls._scale, alpha=cls._alpha)
