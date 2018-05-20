@@ -3,6 +3,8 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
+import warnings
+
 import onnx
 from onnx import defs
 from onnx import helper
@@ -27,6 +29,9 @@ class FrontendHandler(object):
       since_version = defs.get_schema(
           cls.get_onnx_op(), domain=cls.DOMAIN,
           max_inclusive_version=version).since_version
+    else:
+      warnings.warn("Unknown op {} in domain `{}`.".format(
+          cls.get_onnx_op(), cls.DOMAIN or "ai.onnx"))
     ver_handle = getattr(cls, "version_{}".format(since_version), None)
     if ver_handle:
       cls.param_check(node, version, **kwargs)

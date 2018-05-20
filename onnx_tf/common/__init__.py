@@ -48,24 +48,6 @@ ONNX_TYPE_TO_TF_TYPE = {
     # TensorProto.UINT64: tf.uint64,
 }
 
-STR_TO_TF_TYPE = {
-    "float": tf.float32,
-    "uint8": tf.uint8,
-    "int8": tf.int8,
-    "uint16": tf.uint16,
-    "int16": tf.int16,
-    "int32": tf.int32,
-    "int64": tf.int64,
-    "bool": tf.bool,
-    "float16": tf.float16,
-    "double": tf.float64,
-    "complex64": tf.complex64,
-    "complex128": tf.complex128,
-    # TODO: uncomment this in the future
-    # "uint32": tf.uint32,
-    # "uint64": tf.uint64,
-}
-
 TF_TYPE_ENUM = [
     "undefined",
     tf.float32,
@@ -85,8 +67,6 @@ TF_TYPE_ENUM = [
     # tf.uint32,
     # tf.uint64,
 ]
-
-TF_TYPE_TO_ONNX_TYPE = invert(ONNX_TYPE_TO_TF_TYPE)
 
 ONNX_ATTR_TO_TF_ATTR = {
     "scale": "stddev",
@@ -164,43 +144,6 @@ ONNX_OP_TO_TF_OP = {
     "tanh": tf.tanh,
     "transpose": tf.transpose,
 }
-
-TF_OP_TO_ONNX_OP = invert(ONNX_OP_TO_TF_OP)
-
-TF_OP_STR_TO_ONNX_OP = {
-    # TODO:
-    # handle Mul, Add, Sub,
-    # these are temporarily added to
-    # test other ops
-    "Add": "Add",
-    "Ceil": "Ceil",
-    "Equal": "Equal",
-    "Exp": "Exp",
-    "Floor": "Floor",
-    "Greater": "Greater",
-    "Identity": "Identity",
-    "Less": "Less",
-    "Log": "Log",
-    "LogicalAnd": "And",
-    "LogicalNot": "Not",
-    "LogicalOr": "Or",
-    "LogicalXor": "Xor",
-    "LogSoftmax": "LogSoftmax",
-    "MatMul": "MatMul",
-    "Mul": "Mul",
-    "Pow": "Pow",
-    "RealDiv": "Div",
-    "Reciprocal": "Reciprocal",
-    "Relu": "Relu",
-    "Shape": "Shape",
-    "Sigmoid": "Sigmoid",
-    "Softmax": "Softmax",
-    "Sub": "Sub",
-    "Sqrt": "Sqrt",
-    "Tanh": "Tanh",
-}
-
-ONNX_OP_TO_TF_OP_STR = invert(TF_OP_STR_TO_ONNX_OP)
 
 
 def get_tf_shape_as_list(tf_shape_dim):

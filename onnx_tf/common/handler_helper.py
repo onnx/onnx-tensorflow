@@ -1,5 +1,6 @@
 import re
 
+from . import op_name_to_lower
 from onnx_tf.handlers.frontend import *  # noqa
 from onnx_tf.handlers.frontend_handler import FrontendHandler
 
@@ -34,6 +35,6 @@ def get_frontend_coverage():
     versions = handler.get_versions()
     domain = getattr(handler, "DOMAIN")
     for tf_op in handler.get_tf_op():
-      tf_coverage.setdefault(domain, {})[tf_op] = versions
+      tf_coverage.setdefault(domain, {})[op_name_to_lower(tf_op)] = versions
     onnx_coverage.setdefault(domain, {})[handler.get_onnx_op()] = versions
   return onnx_coverage, tf_coverage
