@@ -35,8 +35,9 @@ from onnx.backend.base import (
     DeviceType,
     namedtupledict,
 )
-import onnx.defs
-import onnx.numpy_helper
+
+from onnx import defs
+from onnx import numpy_helper
 
 
 # TODO: allow more flexible placement
@@ -355,7 +356,7 @@ class TensorflowBackendBase(Backend):
 
     def tensor2list(onnx_tensor):
       # Use the onnx.numpy_helper because the data may be raw
-      return onnx.numpy_helper.to_array(onnx_tensor).flatten().tolist()
+      return numpy_helper.to_array(onnx_tensor).flatten().tolist()
 
     input_dict = [(tp.name,
                    tf.constant(
@@ -385,6 +386,10 @@ class TensorflowBackendBase(Backend):
     versions = backend_opset_version[node.op_type]
 
     if opset == 0:
+      # use the maximum opset version available that is
+      # smaller or equal to the version supported by
+      # the onnx package.
+      versions = filter(lambda v: v <= defs.onnx_opset_version(), versions)
       version = max(versions)
     else:
       versions = sorted(versions + [opset])
