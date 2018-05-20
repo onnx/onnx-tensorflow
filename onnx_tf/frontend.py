@@ -212,14 +212,14 @@ class OnnxGraph(object):
 
   # Remove proto in inputs_proto and consts_proto
   # if proto is not used as input or an output in ONNX
-  def clean_graph(self):
+  def _clean_graph(self):
     in_out = self.all_node_inputs + self.outputs
     self._inputs_proto = list(
         filter(lambda x: x.name in in_out, self.inputs_proto))
     self._consts_proto = list(
         filter(lambda x: x.name in in_out, self.consts_proto))
 
-  def fix_data_type(self):
+  def _fix_data_type(self):
     self.inputs_proto = self._data_type_caster(self.inputs_proto,
                                                self.data_type_cast_map)
     self.consts_proto = self._data_type_caster(self.consts_proto,
@@ -258,9 +258,9 @@ class OnnxGraph(object):
       result.append(new_proto)
     return result
 
-  def make_graph(self):
-    self.clean_graph()
-    self.fix_data_type()
+  def make_graph_proto(self):
+    self._clean_graph()
+    self._fix_data_type()
 
     if sys.version_info > (3,):
       params = list(inspect.signature(make_graph).parameters.keys())
@@ -333,6 +333,7 @@ class TensorflowFrontendBase(object):
 
         handler = handlers[node.domain].get(node.op, None)
 
+        node_proto = None
         if handler:
           node_proto = handler.handle(
               node,
@@ -342,6 +343,7 @@ class TensorflowFrontendBase(object):
               data_type_cast_map=onnx_graph.data_type_cast_map)
         else:
           exception.OP_UNIMPLEMENTED_EXCEPT(node.op)
+        if node_proto is None:
           node_proto = FrontendHandler.make_node(node, should_check=False)
         onnx_graph.add_node_proto(node_proto)
 
@@ -352,7 +354,7 @@ class TensorflowFrontendBase(object):
     # https://github.com/tensorflow/tensorflow/issues/14769
     onnx_graph.add_output_proto(output)
 
-    return onnx_graph.make_graph()
+    return onnx_graph.make_graph_proto()
 
   @classmethod
   def tensorflow_graph_to_onnx_model(cls,

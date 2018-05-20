@@ -25,7 +25,10 @@ class FrontendHandler(object):
   @classmethod
   def handle(cls, node, version, **kwargs):
     since_version = 1
-    if defs.has(cls.get_onnx_op(), domain=cls.DOMAIN):
+    # TODO(fumihwh): Use defs.has(cls.get_onnx_op(), domain=cls.DOMAIN)
+    schema_version_map = defs.C.schema_version_map()
+    if cls.DOMAIN in schema_version_map and cls.get_onnx_op(
+    ) in schema_version_map[cls.DOMAIN]:
       since_version = defs.get_schema(
           cls.get_onnx_op(), domain=cls.DOMAIN,
           max_inclusive_version=version).since_version
@@ -36,7 +39,8 @@ class FrontendHandler(object):
     if ver_handle:
       cls.param_check(node, version, **kwargs)
       return ver_handle(node, **kwargs)
-    exception.OP_UNIMPLEMENTED_EXCEPT(node.op, since_version)
+    exception.OP_UNIMPLEMENTED_EXCEPT(node.op)
+    return None
 
   @classmethod
   def make_node(cls,
@@ -70,15 +74,14 @@ class FrontendHandler(object):
   @classmethod
   def get_versions(cls):
     versions = []
-    for name in dir(cls):
-      if name.startswith("version_"):
-        versions.append(int(name.replace("version_", "")))
+    for method_name in dir(cls):
+      if method_name.startswith("version_"):
+        versions.append(int(method_name.replace("version_", "")))
     return versions
 
   @classmethod
   def get_outputs_names(cls, node, num=None):
-    if num is None:
-      num = len(node.attr["_output_shapes"])
+    num = num or len(node.attr["_output_shapes"])
     return [
         node.name + ":{}".format(i) if i > 0 else node.name for i in range(num)
     ]
