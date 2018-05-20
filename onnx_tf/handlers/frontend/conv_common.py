@@ -1,5 +1,5 @@
-from onnx_tf.handlers.frontend_handler import FrontendHandler
 from onnx_tf.common import get_unique_suffix
+from onnx_tf.handlers.frontend_handler import FrontendHandler
 
 
 class ConvCommon(FrontendHandler):

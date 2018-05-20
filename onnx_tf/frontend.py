@@ -24,12 +24,12 @@ import tensorflow as tf
 from tensorflow.python.framework.tensor_util import MakeNdarray
 from tensorflow.core.framework.attr_value_pb2 import AttrValue
 
-from onnx_tf.handlers.frontend_handler import FrontendHandler
 from onnx_tf.common import exception
 from onnx_tf.common import data_type
 from onnx_tf.common import get_attribute_value
 from onnx_tf.common import get_tf_shape_as_list
 from onnx_tf.common.handler_helper import get_all_frontend_handlers
+from onnx_tf.handlers.frontend_handler import FrontendHandler
 
 # Define long type for Python 3:
 if sys.version_info > (3,):

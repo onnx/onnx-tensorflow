@@ -3,6 +3,7 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
+from functools import partial
 import warnings
 
 import onnx
@@ -38,6 +39,7 @@ class FrontendHandler(object):
     ver_handle = getattr(cls, "version_{}".format(since_version), None)
     if ver_handle:
       cls.param_check(node, version, **kwargs)
+      cls.make_node = partial(cls.make_node, version=version)
       return ver_handle(node, **kwargs)
     exception.OP_UNIMPLEMENTED_EXCEPT(node.op)
     return None
@@ -47,13 +49,19 @@ class FrontendHandler(object):
                 node,
                 inputs=None,
                 outputs=None,
-                version=None,
+                onnx_op=None,
+                name=None,
+                version=None,  # preset by `handle`
                 should_check=True,
                 **kwargs):
     inputs = inputs if inputs is not None else node.inputs
     outputs = outputs if outputs is not None else cls.get_outputs_names(node)
     node = helper.make_node(
-        cls.get_onnx_op(), inputs, outputs, name=node.name, **kwargs)
+        onnx_op or cls.get_onnx_op(),
+        inputs,
+        outputs,
+        name=name or node.name,
+        **kwargs)
     if should_check:
       if version is None:
         raise RuntimeError("version can not be None.")

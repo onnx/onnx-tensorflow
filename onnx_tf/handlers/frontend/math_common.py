@@ -1,4 +1,5 @@
 from onnx_tf.common import exception
+from onnx_tf.common import get_broadcast_axis
 from onnx_tf.handlers.frontend_handler import FrontendHandler
 
 
@@ -13,7 +14,7 @@ class ArithmeticCommon(FrontendHandler):
 
   @classmethod
   def arithmetic_op(cls, node, version, **kwargs):
-    axis = kwargs.get("axis", None)
+    axis = kwargs.get("axis", get_broadcast_axis(*node.inputs[0:2]))
     ex_kwargs = {}
     if axis is not None:
       ex_kwargs["axis"] = axis
