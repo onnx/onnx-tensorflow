@@ -1,5 +1,5 @@
 from onnx_tf.common import exception
-from onnx_tf.common import get_broadcast_axis
+from onnx_tf.common.broadcast import get_broadcast_axis
 from onnx_tf.handlers.frontend_handler import FrontendHandler
 
 
