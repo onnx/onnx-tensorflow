@@ -11,6 +11,7 @@ from onnx_tf.backend import supports_device
 from onnx import helper
 from onnx import TensorProto
 
+from onnx import defs
 
 class TestNode(unittest.TestCase):
   """ Tests for nodes
@@ -642,11 +643,28 @@ class TestNode(unittest.TestCase):
     np.testing.assert_almost_equal(output["Z"], np.power(x, y))
 
   def test_reshape(self):
-    node_def = helper.make_node("Reshape", ["X", "Y"], ["Z"])
     x = self._get_rnd(100)
-    y = [10, 10]
-    output = run_node(node_def, [x, y])
+    shape = [10, 10]
+    if defs.onnx_opset_version() < 5:
+      node_def = helper.make_node("Reshape", ["X"], ["Z"], shape=shape)
+      output = run_node(node_def, [x])
+    else:
+      node_def = helper.make_node("Reshape", ["X", "Y"], ["Z"])
+      output = run_node(node_def, [x, shape])
+
     np.testing.assert_almost_equal(output["Z"], x.reshape([10, 10]))
+
+  def test_reshape_with_copy(self):
+    x = self._get_rnd([10, 20*30])
+    shape = [0, 20, 30]
+    if defs.onnx_opset_version() < 5:
+      node_def = helper.make_node("Reshape", ["X"], ["Z"], shape=shape)
+      output = run_node(node_def, [x])
+    else:
+      node_def = helper.make_node("Reshape", ["X", "Y"], ["Z"])
+      output = run_node(node_def, [x, shape])
+
+    np.testing.assert_almost_equal(output["Z"], x.reshape([10, 20, 30]))
 
   def test_selu(self):
     node_def = helper.make_node("Selu", ["X"], ["Y"])
@@ -766,7 +784,6 @@ class TestNode(unittest.TestCase):
     x = self._get_rnd([1000]).reshape([10, 10, 10])
     output = run_node(node_def, [x])
     np.testing.assert_almost_equal(output["Y"], np.transpose(x, (0, 2, 1)))
-
 
 if __name__ == '__main__':
   unittest.main()
