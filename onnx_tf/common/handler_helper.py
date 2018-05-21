@@ -29,12 +29,7 @@ def get_all_frontend_handlers(opset_dict):
     handler.VERSION = version
 
     since_version = 1
-    # TODO(fumihwh): Use defs.has(cls.get_onnx_op(), domain=cls.DOMAIN)
-    schemas = list(
-      filter(
-        lambda schema: handler.DOMAIN == schema.domain and handler.get_onnx_op() == schema.name,
-        defs.get_all_schemas()))
-    if schemas:
+    if defs.has(handler.get_onnx_op(), domain=handler.DOMAIN):
       since_version = defs.get_schema(
           handler.get_onnx_op(),
           domain=handler.DOMAIN,
