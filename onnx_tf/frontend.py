@@ -42,7 +42,6 @@ class TensorflowNode(object):
     self.name = node_proto.name
     self.inputs = list(node_proto.input)
     self.attr = {}
-    self.domain = ""
 
     for key, val in node_proto.attr.items():
       new_val = val
