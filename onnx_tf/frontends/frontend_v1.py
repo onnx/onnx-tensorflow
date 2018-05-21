@@ -12,6 +12,7 @@ from onnx import helper
 from onnx import TensorProto
 from onnx_tf.common import as_dtype
 from onnx_tf.common import get_unique_suffix
+from onnx_tf.common import get_perm_from_formats
 from onnx_tf.common import TF_TYPE_TO_ONNX_TYPE
 from onnx_tf.frontend import TensorflowFrontendBase
 
@@ -237,11 +238,11 @@ class TensorflowFrontend(TensorflowFrontendBase):
       transpose_unique_suffix = get_unique_suffix()
       space_to_depth_unique_suffix = get_unique_suffix()
       transpose_name = node.inputs[0] + "_T_" + transpose_unique_suffix
-      space_to_depth_name = node.inputs[0] + "_STD_" + space_to_depth_unique_suffix
+      space_to_depth_name = node.inputs[0] + "_T_STD_" + space_to_depth_unique_suffix
       before_transpose_node = helper.make_node(
           "Transpose",
           [node.inputs[0]], [transpose_name],
-          perm=[0, 3, 1, 2])
+          perm=get_perm_from_formats("NHWC", "NCHW"))
       space_to_depth_node = helper.make_node(
           "SpaceToDepth",
           [transpose_name], [space_to_depth_name], blocksize=blocksize)
@@ -249,7 +250,7 @@ class TensorflowFrontend(TensorflowFrontendBase):
       after_transpose_node = helper.make_node(
           "Transpose",
           [space_to_depth_name], [node.name],
-          perm=[0, 2, 3, 1])
+          perm=get_perm_from_formats("NCHW", "NHWC"))
 
       return [before_transpose_node, space_to_depth_node, after_transpose_node]
 
