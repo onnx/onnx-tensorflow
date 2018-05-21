@@ -228,8 +228,34 @@ class TensorflowFrontend(TensorflowFrontendBase):
   @register_onnx_op("SpaceToDepth")
   def handle_space_to_depth(cls, node, **kwargs):
     blocksize = node.attr["block_size"]
-    return helper.make_node(
-        "SpaceToDepth", [node.inputs[0]], [node.name], blocksize=blocksize)
+    data_format = node.attr.get("data_format", "NHWC").decode()
+
+    assert data_format in ["NHWC", "NCHW"], \
+      ("data format {} should be in ['NCHW', 'NHWC'].".format(data_format))
+
+    if data_format == "NHWC":
+      transpose_unique_suffix = get_unique_suffix()
+      space_to_depth_unique_suffix = get_unique_suffix()
+      transpose_name = node.inputs[0] + "_T_" + transpose_unique_suffix
+      space_to_depth_name = node.inputs[0] + "_STD_" + space_to_depth_unique_suffix
+      before_transpose_node = helper.make_node(
+          "Transpose",
+          [node.inputs[0]], [transpose_name],
+          perm=[0, 3, 1, 2])
+      space_to_depth_node = helper.make_node(
+          "SpaceToDepth",
+          [transpose_name], [space_to_depth_name], blocksize=blocksize)
+
+      after_transpose_node = helper.make_node(
+          "Transpose",
+          [space_to_depth_name], [node.name],
+          perm=[0, 2, 3, 1])
+
+      return [before_transpose_node, space_to_depth_node, after_transpose_node]
+
+    if data_format == "NCHW":
+      return helper.make_node(
+          "SpaceToDepth", [node.inputs[0]], [node.name], blocksize=blocksize)
 
   @classmethod
   @register_onnx_op("Split")
