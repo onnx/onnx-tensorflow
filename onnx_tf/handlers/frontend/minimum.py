@@ -2,7 +2,7 @@ from .math_common import BasicMathCommon
 
 
 class Minimum(BasicMathCommon):
-  _ONNX_OP = "Min"
+  ONNX_OP = "Min"
 
   @classmethod
   def version_1(cls, node, **kwargs):

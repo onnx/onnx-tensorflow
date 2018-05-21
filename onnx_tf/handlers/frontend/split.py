@@ -3,7 +3,7 @@ from onnx_tf.handlers.frontend_handler import FrontendHandler
 
 
 class Split(FrontendHandler):
-  _TF_OP = ["SplitV"]
+  TF_OP = ["SplitV"]
 
   @classmethod
   def param_check(cls, node, version, **kwargs):
@@ -20,7 +20,6 @@ class Split(FrontendHandler):
     return cls.make_node(
         node, [node.inputs[0], node.inputs[1]],
         cls.get_outputs_names(node, num=node.attr["num_split"]),
-        version=1,
         axis=axis)
 
   @classmethod
@@ -31,6 +30,5 @@ class Split(FrontendHandler):
     return cls.make_node(
         node, [node.inputs[0]],
         cls.get_outputs_names(node, num=node.attr["num_split"]),
-        version=2,
         split=split,
         axis=axis)

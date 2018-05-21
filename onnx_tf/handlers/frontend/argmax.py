@@ -15,4 +15,4 @@ class ArgMax(FrontendHandler):
   def version_1(cls, node, **kwargs):
     axis = np.asscalar(kwargs["consts"][node.inputs[1]])
     return cls.make_node(
-        node, [node.inputs[0]], version=1, axis=axis, keepdims=0)
+        node, [node.inputs[0]], axis=axis, keepdims=0)

@@ -3,8 +3,8 @@ from onnx_tf.handlers.frontend_handler import FrontendHandler
 
 
 class Matmul(FrontendHandler):
-  _TF_OP = ["MatMul"]
-  _ONNX_OP = "MatMul"
+  TF_OP = ["MatMul"]
+  ONNX_OP = "MatMul"
 
   @classmethod
   def version_1(cls, node, **kwargs):

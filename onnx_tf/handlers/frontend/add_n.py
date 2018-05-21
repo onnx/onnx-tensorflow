@@ -2,7 +2,7 @@ from .math_common import BasicMathCommon
 
 
 class AddN(BasicMathCommon):
-  _ONNX_OP = "Sum"
+  ONNX_OP = "Sum"
 
   @classmethod
   def version_1(cls, node, **kwargs):

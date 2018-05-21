@@ -7,7 +7,7 @@ class BasicMathCommon(FrontendHandler):
 
   @classmethod
   def basic_math_op(cls, node, version, **kwargs):
-    return cls.make_node(node, version=version)
+    return cls.make_node(node)
 
 
 class ArithmeticCommon(FrontendHandler):
@@ -18,7 +18,7 @@ class ArithmeticCommon(FrontendHandler):
     ex_kwargs = {}
     if axis is not None:
       ex_kwargs["axis"] = axis
-    return cls.make_node(node, version=version, broadcast=1, **ex_kwargs)
+    return cls.make_node(node, broadcast=1, **ex_kwargs)
 
 
 class ReductionCommon(FrontendHandler):
@@ -34,6 +34,5 @@ class ReductionCommon(FrontendHandler):
     axes = consts[node.inputs[1]]
     return cls.make_node(
         node, [node.inputs[0]],
-        version=version,
         axes=axes,
         keepdims=node.attr.get("keep_dims", 1))

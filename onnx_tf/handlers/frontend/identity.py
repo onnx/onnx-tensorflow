@@ -5,4 +5,4 @@ class Identity(FrontendHandler):
 
   @classmethod
   def version_1(cls, node, **kwargs):
-    return cls.make_node(node, version=1)
+    return cls.make_node(node)

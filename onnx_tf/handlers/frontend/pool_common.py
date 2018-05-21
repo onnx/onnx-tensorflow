@@ -36,7 +36,6 @@ class PoolCommon(FrontendHandler):
       node_kwargs["count_include_pad"] = kwargs["count_include_pad"]
     return cls.make_node(
         node, [node.inputs[0]],
-        version=version,
         pads=pads,
         kernel_shape=kernel_shape,
         strides=strides,

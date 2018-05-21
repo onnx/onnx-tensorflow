@@ -2,7 +2,7 @@ from .math_common import ReductionCommon
 
 
 class ReduceMean(ReductionCommon):
-  _TF_OP = ["Mean"]
+  TF_OP = ["Mean"]
 
   @classmethod
   def version_1(cls, node, **kwargs):

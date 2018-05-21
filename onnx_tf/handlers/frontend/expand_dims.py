@@ -3,7 +3,7 @@ from onnx_tf.handlers.frontend_handler import FrontendHandler
 
 
 class ExpandDims(FrontendHandler):
-  _ONNX_OP = "Unsqueeze"
+  ONNX_OP = "Unsqueeze"
 
   @classmethod
   def param_check(cls, node, version, **kwargs):
@@ -14,4 +14,4 @@ class ExpandDims(FrontendHandler):
   def version_1(cls, node, **kwargs):
     consts = kwargs["consts"]
     axes = [int(consts[node.inputs[1]])]
-    return cls.make_node(node, [node.inputs[0]], version=1, axes=axes)
+    return cls.make_node(node, [node.inputs[0]], axes=axes)

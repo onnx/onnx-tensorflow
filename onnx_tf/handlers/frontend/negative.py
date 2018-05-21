@@ -2,8 +2,8 @@ from .math_common import BasicMathCommon
 
 
 class Negative(BasicMathCommon):
-  _TF_OP = ["Neg"]
-  _ONNX_OP = "Neg"
+  TF_OP = ["Neg"]
+  ONNX_OP = "Neg"
 
   @classmethod
   def version_1(cls, node, **kwargs):

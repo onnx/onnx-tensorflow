@@ -2,14 +2,13 @@ from onnx_tf.handlers.frontend_handler import FrontendHandler
 
 
 class RandomNormal(FrontendHandler):
-  _TF_OP = ["RandomStandardNormal"]
-  _ONNX_OP = "RandomNormal"
+  TF_OP = ["RandomStandardNormal"]
+  ONNX_OP = "RandomNormal"
 
   @classmethod
   def version_1(cls, node, **kwargs):
     return cls.make_node(
         node, [],
-        version=1,
         dtype=node.attr["dtype"],
         seed=node.attr["seed"],
         mean=0.0,

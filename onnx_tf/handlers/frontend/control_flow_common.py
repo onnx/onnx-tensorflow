@@ -12,7 +12,7 @@ class LogicalCommon(FrontendHandler):
       axis = get_broadcast_axis(*node.inputs[0:2])
       if axis is not None:
         ex_kwargs["axis"] = axis
-    return cls.make_node(node, version=version, **ex_kwargs)
+    return cls.make_node(node, **ex_kwargs)
 
 
 class ComparisonCommon(FrontendHandler):
@@ -25,4 +25,4 @@ class ComparisonCommon(FrontendHandler):
       axis = get_broadcast_axis(*node.inputs[0:2])
       if axis is not None:
         ex_kwargs["axis"] = axis
-    return cls.make_node(node, version=version, **ex_kwargs)
+    return cls.make_node(node, **ex_kwargs)

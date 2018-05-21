@@ -14,8 +14,8 @@ class Reshape(FrontendHandler):
   def version_1(cls, node, **kwargs):
     consts = kwargs["consts"]
     shape = consts[node.inputs[1]]
-    return cls.make_node(node, [node.inputs[0]], version=1, shape=shape)
+    return cls.make_node(node, [node.inputs[0]], shape=shape)
 
   @classmethod
   def version_5(cls, node, **kwargs):
-    return cls.make_node(node, [node.inputs[0], node.inputs[1]], version=5)
+    return cls.make_node(node, [node.inputs[0], node.inputs[1]])

@@ -305,7 +305,7 @@ class TensorflowFrontendBase(object):
 
     :returns: The equivalent ONNX Graph Proto object.
     """
-
+    onnx_graph = OnnxGraph(name)
     exception.IGNORE_UNIMPLEMENTED = ignore_unimplemented
 
     opset_dict = {}
@@ -314,12 +314,9 @@ class TensorflowFrontendBase(object):
         domain = ""
       opset_dict[domain] = version
 
-    handlers = get_all_frontend_handlers()
+    handlers = get_all_frontend_handlers(opset_dict)
 
     node_tup = [(node.name, TensorflowNode(node)) for node in graph_def.node]
-
-    onnx_graph = OnnxGraph(name)
-
     for name, node in node_tup:
 
       if node.op == "Placeholder":
@@ -330,9 +327,7 @@ class TensorflowFrontendBase(object):
         onnx_graph.add_input_proto(node)
       else:
         onnx_graph.add_value_info_proto(node)
-
         handler = handlers[node.domain].get(node.op, None)
-
         node_proto = None
         if handler:
           node_proto = handler.handle(

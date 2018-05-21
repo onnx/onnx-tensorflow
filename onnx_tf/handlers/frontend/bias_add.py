@@ -2,7 +2,7 @@ from .math_common import ArithmeticCommon
 
 
 class BiasAdd(ArithmeticCommon):
-  _ONNX_OP = "Add"
+  ONNX_OP = "Add"
 
   @classmethod
   def version_1(cls, node, **kwargs):

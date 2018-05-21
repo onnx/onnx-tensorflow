@@ -2,7 +2,7 @@ from .math_common import ArithmeticCommon
 
 
 class Div(ArithmeticCommon):
-  _TF_OP = ["RealDiv"]
+  TF_OP = ["RealDiv"]
 
   @classmethod
   def version_1(cls, node, **kwargs):

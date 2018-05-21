@@ -5,7 +5,7 @@ from onnx_tf.handlers.frontend_handler import FrontendHandler
 
 
 class Fill(FrontendHandler):
-  _ONNX_OP = "ConstantFill"
+  ONNX_OP = "ConstantFill"
 
   @classmethod
   def param_check(cls, node, version, **kwargs):
@@ -16,4 +16,4 @@ class Fill(FrontendHandler):
   def version_1(cls, node, **kwargs):
     value = float(np.asscalar(kwargs["consts"][node.inputs[1]]))
     return cls.make_node(
-        node, [node.inputs[0]], version=1, input_as_shape=1, value=value)
+        node, [node.inputs[0]], input_as_shape=1, value=value)

@@ -2,7 +2,7 @@ from .math_common import ReductionCommon
 
 
 class ReduceMin(ReductionCommon):
-  _TF_OP = ["Min"]
+  TF_OP = ["Min"]
 
   @classmethod
   def version_1(cls, node, **kwargs):

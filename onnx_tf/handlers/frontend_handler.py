@@ -3,7 +3,6 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-from functools import partial
 import warnings
 
 import onnx
@@ -12,12 +11,10 @@ from onnx import helper
 from onnx import checker
 
 from onnx_tf.common import exception
+from .handler import Handler
 
 
-class FrontendHandler(object):
-  _TF_OP = []
-  _ONNX_OP = None
-  DOMAIN = ""
+class FrontendHandler(Handler):
 
   @classmethod
   def param_check(cls, node, version, **kwargs):
@@ -34,12 +31,15 @@ class FrontendHandler(object):
           cls.get_onnx_op(), domain=cls.DOMAIN,
           max_inclusive_version=version).since_version
     else:
-      warnings.warn("Unknown op {} in domain `{}`.".format(
-          cls.get_onnx_op(), cls.DOMAIN or "ai.onnx"))
+      warnings.warn("Unknown op {} in domain `{}`. "
+                    "If you call make_node method in your handler, "
+                    "please set should_check flag to False.".format(
+                        cls.get_onnx_op(), cls.DOMAIN or "ai.onnx"))
+    cls.SINCE_VERSION = since_version
+
     ver_handle = getattr(cls, "version_{}".format(since_version), None)
     if ver_handle:
       cls.param_check(node, version, **kwargs)
-      cls.make_node = partial(cls.make_node, version=version)
       return ver_handle(node, **kwargs)
     exception.OP_UNIMPLEMENTED_EXCEPT(node.op)
     return None
@@ -51,20 +51,21 @@ class FrontendHandler(object):
                 outputs=None,
                 onnx_op=None,
                 name=None,
-                version=None,  # preset by `handle`
+                version=0,
                 should_check=True,
                 **kwargs):
     inputs = inputs if inputs is not None else node.inputs
     outputs = outputs if outputs is not None else cls.get_outputs_names(node)
     node = helper.make_node(
-        onnx_op or cls.get_onnx_op(),
+        onnx_op if onnx_op is not None else cls.get_onnx_op(),
         inputs,
         outputs,
-        name=name or node.name,
+        name=name if name is not None else node.name,
         **kwargs)
     if should_check:
-      if version is None:
-        raise RuntimeError("version can not be None.")
+      version = version or cls.VERSION
+      if version == 0:
+        raise RuntimeError("version can not be 0.")
       ctx = checker.C.CheckerContext()
       ctx.ir_version = onnx.IR_VERSION
       ctx.opset_imports = {cls.DOMAIN: version}
@@ -73,11 +74,11 @@ class FrontendHandler(object):
 
   @classmethod
   def get_onnx_op(cls):
-    return cls._ONNX_OP or cls.__name__
+    return cls.ONNX_OP or cls.__name__
 
   @classmethod
   def get_tf_op(cls):
-    return cls._TF_OP or [cls.__name__]
+    return cls.TF_OP or [cls.__name__]
 
   @classmethod
   def get_versions(cls):

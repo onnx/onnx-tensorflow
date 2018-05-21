@@ -7,7 +7,6 @@ class RandomUniform(FrontendHandler):
   def version_1(cls, node, **kwargs):
     return cls.make_node(
         node, [],
-        version=1,
         dtype=node.attr["dtype"],
         seed=node.attr["seed"],
         high=1.0,

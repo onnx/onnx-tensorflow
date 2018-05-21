@@ -146,17 +146,22 @@ ______
 |conv2_d|1|
 |conv3_d|1|
 |cos|7|
+|equal|1|
 |exp|1, 6|
 |expand_dims|1|
 |fill|1|
 |floor|1, 6|
 |fused_batch_norm|1, 6|
+|greater|1|
+|identity|1|
+|less|1|
 |log|1, 6|
 |log_softmax|1|
 |logical_and|1|
 |logical_not|1|
 |logical_or|1|
 |logical_xor|1|
+|mat_mul|1|
 |max|1|
 |max_pool|1|
 |maximun|1, 6|
@@ -175,6 +180,7 @@ ______
 |relu|1, 6|
 |reshape|1, 5|
 |selu|1, 6|
+|shape|1|
 |sigmoid|1, 6|
 |sin|7|
 |softmax|1|

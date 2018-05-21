@@ -2,7 +2,7 @@ from .math_common import ReductionCommon
 
 
 class ReduceMax(ReductionCommon):
-  _TF_OP = ["Max"]
+  TF_OP = ["Max"]
 
   @classmethod
   def version_1(cls, node, **kwargs):

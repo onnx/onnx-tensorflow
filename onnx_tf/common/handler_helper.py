@@ -17,11 +17,13 @@ def __get_all_subclasses(clazz, except_regex=None):
   return all_subclasses
 
 
-def get_all_frontend_handlers():
+def get_all_frontend_handlers(opset_dict):
   handlers = {}
   for handler in __get_all_subclasses(
       FrontendHandler, except_regex=r'.*Common$'):
     domain = getattr(handler, "DOMAIN")
+    version = opset_dict[domain]
+    handler.VERSION = version
     for tf_op in handler.get_tf_op():
       handlers.setdefault(domain, {})[tf_op] = handler
   return handlers
