@@ -14,7 +14,9 @@ class ArithmeticCommon(FrontendHandler):
 
   @classmethod
   def arithmetic_op(cls, node, version, **kwargs):
-    axis = kwargs.get("axis", get_broadcast_axis(*node.inputs[0:2]))
+    node_dict = kwargs["node_dict"]
+    axis = kwargs.get(
+        "axis", get_broadcast_axis(*[node_dict[x] for x in node.inputs[0:2]]))
     ex_kwargs = {}
     if axis is not None:
       ex_kwargs["axis"] = axis

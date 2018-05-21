@@ -9,7 +9,8 @@ class LogicalCommon(FrontendHandler):
     ex_kwargs = {}
     if broadcast == 1:
       ex_kwargs["broadcast"] = 1
-      axis = get_broadcast_axis(*node.inputs[0:2])
+      node_dict = kwargs["node_dict"]
+      axis = get_broadcast_axis(*[node_dict[x] for x in node.inputs[0:2]])
       if axis is not None:
         ex_kwargs["axis"] = axis
     return cls.make_node(node, **ex_kwargs)
@@ -22,7 +23,8 @@ class ComparisonCommon(FrontendHandler):
     ex_kwargs = {}
     if broadcast == 1:
       ex_kwargs["broadcast"] = 1
-      axis = get_broadcast_axis(*node.inputs[0:2])
+      node_dict = kwargs["node_dict"]
+      axis = get_broadcast_axis(*[node_dict[x] for x in node.inputs[0:2]])
       if axis is not None:
         ex_kwargs["axis"] = axis
     return cls.make_node(node, **ex_kwargs)
