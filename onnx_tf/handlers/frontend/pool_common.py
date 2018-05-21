@@ -5,15 +5,15 @@ from .conv_common import ConvCommon
 class PoolCommon(FrontendHandler):
 
   @classmethod
-  def param_check(cls, node, version, **kwargs):
+  def param_check(cls, node, **kwargs):
     if "count_include_pad" in kwargs:
       if cls.get_onnx_op() != "AveragePool":
         raise RuntimeError("count_include_pad is only for AveragePool.")
-      if version < 7:
+      if cls.SINCE_VERSION < 7:
         raise RuntimeError("count_include_pad is added since version 7.")
 
   @classmethod
-  def pool_op(cls, node, version, **kwargs):
+  def pool_op(cls, node, **kwargs):
     auto_pad = node.attr["padding"].decode("UTF-8")
     auto_pad = "SAME_UPPER" if auto_pad == "SAME" else auto_pad
     data_format = node.attr["data_format"].decode("UTF-8")

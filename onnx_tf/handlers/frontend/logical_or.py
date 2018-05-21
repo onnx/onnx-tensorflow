@@ -6,4 +6,4 @@ class LogicalOr(LogicalCommon):
 
   @classmethod
   def version_1(cls, node, **kwargs):
-    return cls.logical_op(node, 1)
+    return cls.logical_op(node, **kwargs)

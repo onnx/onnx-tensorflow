@@ -3,10 +3,7 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-import warnings
-
 import onnx
-from onnx import defs
 from onnx import helper
 from onnx import checker
 
@@ -17,29 +14,14 @@ from .handler import Handler
 class FrontendHandler(Handler):
 
   @classmethod
-  def param_check(cls, node, version, **kwargs):
+  def param_check(cls, node, **kwargs):
     pass
 
   @classmethod
-  def handle(cls, node, version, **kwargs):
-    since_version = 1
-    # TODO(fumihwh): Use defs.has(cls.get_onnx_op(), domain=cls.DOMAIN)
-    schema_version_map = defs.C.schema_version_map()
-    if cls.DOMAIN in schema_version_map and cls.get_onnx_op(
-    ) in schema_version_map[cls.DOMAIN]:
-      since_version = defs.get_schema(
-          cls.get_onnx_op(), domain=cls.DOMAIN,
-          max_inclusive_version=version).since_version
-    else:
-      warnings.warn("Unknown op {} in domain `{}`. "
-                    "If you call make_node method in your handler, "
-                    "please set should_check flag to False.".format(
-                        cls.get_onnx_op(), cls.DOMAIN or "ai.onnx"))
-    cls.SINCE_VERSION = since_version
-
-    ver_handle = getattr(cls, "version_{}".format(since_version), None)
+  def handle(cls, node, **kwargs):
+    ver_handle = getattr(cls, "version_{}".format(cls.SINCE_VERSION), None)
     if ver_handle:
-      cls.param_check(node, version, **kwargs)
+      cls.param_check(node, **kwargs)
       return ver_handle(node, **kwargs)
     exception.OP_UNIMPLEMENTED_EXCEPT(node.op)
     return None

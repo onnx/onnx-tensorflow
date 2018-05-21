@@ -6,8 +6,8 @@ class AvgPool(PoolCommon):
 
   @classmethod
   def version_1(cls, node, **kwargs):
-    return cls.pool_op(node, 1, **kwargs)
+    return cls.pool_op(node, **kwargs)
 
   @classmethod
   def version_7(cls, node, **kwargs):
-    return cls.pool_op(node, 7, **kwargs)
+    return cls.pool_op(node, **kwargs)

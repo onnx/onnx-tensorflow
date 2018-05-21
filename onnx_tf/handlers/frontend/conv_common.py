@@ -5,7 +5,7 @@ from onnx_tf.handlers.frontend_handler import FrontendHandler
 class ConvCommon(FrontendHandler):
 
   @classmethod
-  def conv_op(cls, node, version, d=2, **kwargs):
+  def conv_op(cls, node, d=2, **kwargs):
     auto_pad = node.attr["padding"].decode("UTF-8")
     auto_pad = "SAME_UPPER" if auto_pad == "SAME" else auto_pad
     data_format = node.attr["data_format"].decode("UTF-8")

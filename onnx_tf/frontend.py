@@ -21,13 +21,11 @@ from onnx.helper import make_tensor
 from onnx.helper import make_tensor_value_info
 from onnx.helper import mapping
 import tensorflow as tf
-from tensorflow.python.framework.tensor_util import MakeNdarray
 from tensorflow.core.framework.attr_value_pb2 import AttrValue
 
+from onnx_tf.common import attr_translator
 from onnx_tf.common import exception
-from onnx_tf.common import data_type
 from onnx_tf.common import get_attribute_value
-from onnx_tf.common import get_tf_shape_as_list
 from onnx_tf.common.handler_helper import get_all_frontend_handlers
 from onnx_tf.handlers.frontend_handler import FrontendHandler
 
@@ -37,18 +35,6 @@ if sys.version_info > (3,):
 
 
 class TensorflowNode(object):
-  # Keyed by old attribute names.
-  attr_translator = {
-    "_output_shapes": lambda x: list(map(lambda shape: get_tf_shape_as_list(shape.dim), x.list.shape)),
-    "shape": lambda x: get_tf_shape_as_list(x.shape.dim),
-    "T": lambda x: data_type.tf2onnx(x.type),
-    "dtype": lambda x: data_type.tf2onnx(x.type),
-    "value": lambda x: MakeNdarray(x.tensor),
-    "seed2": lambda x: float(x.i),
-    "seed": lambda x: float(x.i),
-    "keep_dims": lambda x: int(x.b),
-    "squeeze_dims": lambda x: list(x.list.i),
-  }
 
   def __init__(self, node_proto):
     # storing a reference to the original protobuf object
@@ -61,8 +47,8 @@ class TensorflowNode(object):
     for key, val in node_proto.attr.items():
       new_val = val
 
-      if key in self.attr_translator.keys():
-        new_val = self.attr_translator[key](val)
+      if key in attr_translator:
+        new_val = attr_translator[key](val)
 
       if isinstance(new_val, AttrValue):
         new_val = get_attribute_value(new_val)
@@ -332,7 +318,6 @@ class TensorflowFrontendBase(object):
         if handler:
           node_proto = handler.handle(
               node,
-              opset_dict[node.domain],
               consts=onnx_graph.consts,
               node_dict=dict(node_tup),
               data_type_cast_map=onnx_graph.data_type_cast_map)

@@ -5,4 +5,4 @@ class Atan(BasicMathCommon):
 
   @classmethod
   def version_7(cls, node, **kwargs):
-    return cls.basic_math_op(node, 7)
+    return cls.basic_math_op(node, **kwargs)

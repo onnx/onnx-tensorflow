@@ -6,7 +6,7 @@ class Concat(FrontendHandler):
   TF_OP = ["ConcatV2"]
 
   @classmethod
-  def param_check(cls, node, version, **kwargs):
+  def param_check(cls, node, **kwargs):
     if node.inputs[-1] not in kwargs["consts"]:
       exception.CONST_NOT_FOUND_EXCEPT(node.inputs[-1], node.op)
 

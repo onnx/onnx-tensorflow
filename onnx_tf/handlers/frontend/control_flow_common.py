@@ -5,7 +5,7 @@ from onnx_tf.handlers.frontend_handler import FrontendHandler
 class LogicalCommon(FrontendHandler):
 
   @classmethod
-  def logical_op(cls, node, version, broadcast=1, **kwargs):
+  def logical_op(cls, node, broadcast=1, **kwargs):
     ex_kwargs = {}
     if broadcast == 1:
       ex_kwargs["broadcast"] = 1
@@ -19,7 +19,7 @@ class LogicalCommon(FrontendHandler):
 class ComparisonCommon(FrontendHandler):
 
   @classmethod
-  def comparison_op(cls, node, version, broadcast=1, **kwargs):
+  def comparison_op(cls, node, broadcast=1, **kwargs):
     ex_kwargs = {}
     if broadcast == 1:
       ex_kwargs["broadcast"] = 1

@@ -13,8 +13,9 @@ def explicit_broadcast(tensor, broadcast_dim):
 
 # Until version 6
 def get_broadcast_axis(x, y):
-  x_shape = x.get_shape().as_list()
-  y_shape = y.get_shape().as_list()
+  # TODO(fumihwh): if works with input from prev-node has multiple outputs?
+  x_shape = x.attr["_output_shapes"][0]
+  y_shape = y.attr["_output_shapes"][0]
   y_dim = len(y_shape)
   if x_shape == y_shape:
     return None

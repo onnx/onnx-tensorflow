@@ -6,8 +6,8 @@ class Split(FrontendHandler):
   TF_OP = ["SplitV"]
 
   @classmethod
-  def param_check(cls, node, version, **kwargs):
-    if version == 2:
+  def param_check(cls, node, **kwargs):
+    if cls.SINCE_VERSION == 2:
       if node.inputs[1] not in kwargs["consts"]:
         exception.CONST_NOT_FOUND_EXCEPT(node.inputs[1], node.op)
     if node.inputs[2] not in kwargs["consts"]:

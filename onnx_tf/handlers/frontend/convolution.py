@@ -16,4 +16,4 @@ class Convolution(ConvCommon):
       d = 3
     else:
       exception.OP_UNSUPPORTED_EXCEPT(node.op, "Tensorflow")
-    return cls.conv_op(node, 1, d=d, **kwargs)
+    return cls.conv_op(node, d=d, **kwargs)

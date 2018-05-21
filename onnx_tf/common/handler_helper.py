@@ -1,4 +1,7 @@
 import re
+import warnings
+
+from onnx import defs
 
 from . import op_name_to_lower
 from onnx_tf.handlers.frontend import *  # noqa
@@ -24,6 +27,25 @@ def get_all_frontend_handlers(opset_dict):
     domain = getattr(handler, "DOMAIN")
     version = opset_dict[domain]
     handler.VERSION = version
+
+    since_version = 1
+    # TODO(fumihwh): Use defs.has(cls.get_onnx_op(), domain=cls.DOMAIN)
+    schemas = list(
+      filter(
+        lambda schema: handler.DOMAIN == schema.domain and handler.get_onnx_op() == schema.name,
+        defs.get_all_schemas()))
+    if schemas:
+      since_version = defs.get_schema(
+          handler.get_onnx_op(),
+          domain=handler.DOMAIN,
+          max_inclusive_version=version).since_version
+    else:
+      warnings.warn("Unknown op {} in domain `{}`. "
+                    "If you call make_node method in your handler, "
+                    "please set should_check flag to False.".format(
+                        handler.get_onnx_op(), handler.DOMAIN or "ai.onnx"))
+    handler.SINCE_VERSION = since_version
+
     for tf_op in handler.get_tf_op():
       handlers.setdefault(domain, {})[tf_op] = handler
   return handlers

@@ -5,4 +5,4 @@ class Pow(BasicMathCommon):
 
   @classmethod
   def version_1(cls, node, **kwargs):
-    return cls.basic_math_op(node, 1)
+    return cls.basic_math_op(node, **kwargs)

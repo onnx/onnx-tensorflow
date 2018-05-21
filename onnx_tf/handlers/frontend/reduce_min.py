@@ -6,4 +6,4 @@ class ReduceMin(ReductionCommon):
 
   @classmethod
   def version_1(cls, node, **kwargs):
-    return cls.reduction_op(node, 1, **kwargs)
+    return cls.reduction_op(node, **kwargs)

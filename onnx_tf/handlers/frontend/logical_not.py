@@ -6,4 +6,4 @@ class LogicalNot(LogicalCommon):
 
   @classmethod
   def version_1(cls, node, **kwargs):
-    return cls.logical_op(node, 1, broadcast=0)
+    return cls.logical_op(node, broadcast=0, **kwargs)

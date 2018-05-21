@@ -5,4 +5,4 @@ class Equal(ComparisonCommon):
 
   @classmethod
   def version_1(cls, node, **kwargs):
-    return cls.comparison_op(node, 1)
+    return cls.comparison_op(node, **kwargs)

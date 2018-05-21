@@ -6,9 +6,11 @@ from __future__ import unicode_literals
 import re
 import uuid
 
-import numpy as np
 from onnx import TensorProto
 import tensorflow as tf
+from tensorflow.python.framework.tensor_util import MakeNdarray
+
+from onnx_tf.common import data_type
 
 # Using the following two functions to prevent shooting ourselves
 # in the foot with non-invertible maps.
@@ -201,6 +203,20 @@ def get_list_value(attr):
     return attr.func
   else:
     raise ValueError("Unsupported Tensorflow attribute: {}".format(attr))
+
+
+# Keyed by old attribute names.
+attr_translator = {
+    "_output_shapes": lambda x: list(map(lambda shape: get_tf_shape_as_list(shape.dim), x.list.shape)),
+    "shape": lambda x: get_tf_shape_as_list(x.shape.dim),
+    "T": lambda x: data_type.tf2onnx(x.type),
+    "dtype": lambda x: data_type.tf2onnx(x.type),
+    "value": lambda x: MakeNdarray(x.tensor),
+    "seed2": lambda x: float(x.i),
+    "seed": lambda x: float(x.i),
+    "keep_dims": lambda x: int(x.b),
+    "squeeze_dims": lambda x: list(x.list.i),
+}
 
 
 def get_unique_suffix():
