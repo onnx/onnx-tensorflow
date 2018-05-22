@@ -473,10 +473,6 @@ class TensorflowBackendBase(Backend):
     return storage_format, compute_format
 
   @classmethod
-  def get_perm_from_formats(cls, _from, _to):
-    return list(map(lambda x: _from.find(x), _to))
-
-  @classmethod
   def supports_device(cls, device):
     if device == "CUDA":
       local_device_protos = device_lib.list_local_devices()

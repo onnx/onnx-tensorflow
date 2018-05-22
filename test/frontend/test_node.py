@@ -131,6 +131,7 @@ test_cases = [
 ("test_softmax", tf.nn.softmax, "Softmax", [get_rnd([10, 10])], {}),
 ("test_softplus", tf.nn.softplus, "Softplus", [get_rnd([10, 10])], {}),
 ("test_softsign", tf.nn.softsign, "Softsign", [get_rnd([10, 10])], {}),
+("test_space_to_depth", tf.space_to_depth, "SpaceToDepth", [get_rnd([2, 8, 8, 5])], {"block_size": 2}),
 ("test_split", tf.split, "split", [get_rnd([10, 10]), [2, 3, 5]], {}),
 ("test_sqrt", tf.sqrt, "Sqrt", [get_rnd([10, 10])], {}),
 ("test_squeeze", tf.squeeze, "Squeeze", [get_rnd([1, 1, 10, 10])], {"axis":[0, 1]}),

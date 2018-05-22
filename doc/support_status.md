@@ -186,6 +186,7 @@ ______
 |softmax|1|
 |softplus|1|
 |softsign|1|
+|space_to_depth|1|
 |split_v|1, 2|
 |sqrt|1, 6|
 |squeeze|1|

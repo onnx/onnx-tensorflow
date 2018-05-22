@@ -25,6 +25,7 @@ from onnx_tf.common import (
     ONNX_OP_TO_TF_OP,
     ONNX_TYPE_TO_TF_TYPE,
     PAD_TF_INCOMPATIBLE,
+    get_perm_from_formats,
 )
 import onnx.numpy_helper
 import onnx.defs
@@ -227,7 +228,7 @@ class TensorflowBackend(TensorflowBackendBase):
           data_format=compute_format)
     else:
       x = tf.transpose(
-          x, perm=cls.get_perm_from_formats(storage_format, compute_format))
+          x, perm=get_perm_from_formats(storage_format, compute_format))
       pooled = pool_func(
           x,
           kernel_shape,
@@ -236,7 +237,7 @@ class TensorflowBackend(TensorflowBackendBase):
           data_format=compute_format)
       pooled = tf.transpose(
           pooled,
-          perm=cls.get_perm_from_formats(compute_format, storage_format))
+          perm=get_perm_from_formats(compute_format, storage_format))
 
     return [pooled]
 
@@ -393,7 +394,7 @@ class TensorflowBackend(TensorflowBackendBase):
       xs = tf.split(x, num_or_size_splits=group, axis=1)
     else:
       x = tf.transpose(
-          x, perm=cls.get_perm_from_formats(storage_format, compute_format))
+          x, perm=get_perm_from_formats(storage_format, compute_format))
       xs = tf.split(x, num_or_size_splits=group, axis=-1)
 
     if transpose:
@@ -485,7 +486,7 @@ class TensorflowBackend(TensorflowBackendBase):
         output = tf.concat(convolved, axis=-1)
         output = tf.transpose(
             output,
-            perm=cls.get_perm_from_formats(compute_format, storage_format))
+            perm=get_perm_from_formats(compute_format, storage_format))
     else:
       bias = input_dict[node.inputs[2]]
       bias = cls._explicit_broadcast(
@@ -499,7 +500,7 @@ class TensorflowBackend(TensorflowBackendBase):
         output = tf.add(output, bias)
         output = tf.transpose(
             output,
-            perm=cls.get_perm_from_formats(compute_format, storage_format))
+            perm=get_perm_from_formats(compute_format, storage_format))
 
     return [output]
 
@@ -522,11 +523,11 @@ class TensorflowBackend(TensorflowBackendBase):
           x, block_size=node.attrs["blocksize"], data_format=compute_format)
     else:
       x = tf.transpose(
-          x, perm=cls.get_perm_from_formats(storage_format, compute_format))
+          x, perm=get_perm_from_formats(storage_format, compute_format))
       y = tf.depth_to_space(
           x, block_size=node.attrs["blocksize"], data_format=compute_format)
       y = tf.transpose(
-          y, perm=cls.get_perm_from_formats(compute_format, storage_format))
+          y, perm=get_perm_from_formats(compute_format, storage_format))
     return [y]
 
   @classmethod
@@ -966,11 +967,11 @@ class TensorflowBackend(TensorflowBackendBase):
           x, block_size=node.attrs["blocksize"], data_format=compute_format)
     else:
       x = tf.transpose(
-          x, perm=cls.get_perm_from_formats(storage_format, compute_format))
+          x, perm=get_perm_from_formats(storage_format, compute_format))
       y = tf.space_to_depth(
           x, block_size=node.attrs["blocksize"], data_format=compute_format)
       y = tf.transpose(
-          y, perm=cls.get_perm_from_formats(compute_format, storage_format))
+          y, perm=get_perm_from_formats(compute_format, storage_format))
     return [y]
 
   @classmethod
@@ -1055,9 +1056,9 @@ class TensorflowBackend(TensorflowBackendBase):
           tf.transpose(
               tf.image.resize_images(
                   tf.transpose(
-                      x, perm=cls.get_perm_from_formats(storage_format,
-                                                        "NHWC")), size, method),
-              perm=cls.get_perm_from_formats("NHWC", storage_format))
+                      x, perm=get_perm_from_formats(storage_format,
+                                                    "NHWC")), size, method),
+              perm=get_perm_from_formats("NHWC", storage_format))
       ]
 
   @classmethod
