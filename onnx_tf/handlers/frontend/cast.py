@@ -3,11 +3,13 @@ from onnx import mapping
 import tensorflow as tf
 
 from onnx_tf.handlers.frontend_handler import FrontendHandler
+from onnx_tf.handlers.frontend_handler import version
 
 
 class Cast(FrontendHandler):
 
   @classmethod
+  @version(1)
   def version_1(cls, node, **kwargs):
     dst_t = mapping.NP_TYPE_TO_TENSOR_TYPE[np.dtype(
         tf.as_dtype(node.attr["DstT"]).as_numpy_dtype)]

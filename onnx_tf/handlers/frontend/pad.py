@@ -2,6 +2,7 @@ import numpy as np
 
 from onnx_tf.common import exception
 from onnx_tf.handlers.frontend_handler import FrontendHandler
+from onnx_tf.handlers.frontend_handler import version
 
 
 class Pad(FrontendHandler):
@@ -17,6 +18,7 @@ class Pad(FrontendHandler):
           "Mode {} of Pad is not supported in ONNX.".format(mode))
 
   @classmethod
+  @version(1)
   def version_1(cls, node, **kwargs):
     consts = kwargs["consts"]
     mode = node.attr.get("mode", "constant")
@@ -25,6 +27,7 @@ class Pad(FrontendHandler):
         node, [node.inputs[0]], paddings=pads, mode=mode, value=0.0)
 
   @classmethod
+  @version(2)
   def version_2(cls, node, **kwargs):
     consts = kwargs["consts"]
     mode = node.attr.get("mode", "constant")

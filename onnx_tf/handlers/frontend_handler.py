@@ -13,16 +13,19 @@ from .handler import Handler
 
 class FrontendHandler(Handler):
 
+  _cls_ver_handle = {}
+  _cls_versions = {}
+
   @classmethod
   def param_check(cls, node, **kwargs):
     pass
 
   @classmethod
   def handle(cls, node, **kwargs):
-    ver_handle = getattr(cls, "version_{}".format(cls.SINCE_VERSION), None)
+    ver_handle = cls.get_ver_handle(cls.SINCE_VERSION)
     if ver_handle:
       cls.param_check(node, **kwargs)
-      return ver_handle(node, **kwargs)
+      return ver_handle(cls, node, **kwargs)
     exception.OP_UNIMPLEMENTED_EXCEPT(node.op)
     return None
 
@@ -63,16 +66,11 @@ class FrontendHandler(Handler):
     return cls.TF_OP or [cls.__name__]
 
   @classmethod
-  def get_versions(cls):
-    versions = []
-    for method_name in dir(cls):
-      if method_name.startswith("version_"):
-        versions.append(int(method_name.replace("version_", "")))
-    return versions
-
-  @classmethod
   def get_outputs_names(cls, node, num=None):
     num = num or len(node.attr["_output_shapes"])
     return [
         node.name + ":{}".format(i) if i > 0 else node.name for i in range(num)
     ]
+
+
+version = FrontendHandler.version

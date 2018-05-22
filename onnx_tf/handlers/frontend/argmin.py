@@ -2,6 +2,7 @@ import numpy as np
 
 from onnx_tf.common import exception
 from onnx_tf.handlers.frontend_handler import FrontendHandler
+from onnx_tf.handlers.frontend_handler import version
 
 
 class ArgMin(FrontendHandler):
@@ -12,6 +13,7 @@ class ArgMin(FrontendHandler):
       exception.CONST_NOT_FOUND_EXCEPT(node.inputs[1], node.op)
 
   @classmethod
+  @version(1)
   def version_1(cls, node, **kwargs):
     axis = np.asscalar(kwargs["consts"][node.inputs[1]])
     return cls.make_node(

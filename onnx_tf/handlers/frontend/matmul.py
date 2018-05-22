@@ -1,5 +1,6 @@
 from onnx_tf.common import get_unique_suffix
 from onnx_tf.handlers.frontend_handler import FrontendHandler
+from onnx_tf.handlers.frontend_handler import version
 
 
 class Matmul(FrontendHandler):
@@ -7,6 +8,7 @@ class Matmul(FrontendHandler):
   ONNX_OP = "MatMul"
 
   @classmethod
+  @version(1)
   def version_1(cls, node, **kwargs):
     transpose_a = node.attr.get("transpose_a", False)
     transpose_b = node.attr.get("transpose_b", False)

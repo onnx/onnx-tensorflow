@@ -1,4 +1,5 @@
 from onnx_tf.handlers.frontend_handler import FrontendHandler
+from onnx_tf.handlers.frontend_handler import version
 
 
 class Selu(FrontendHandler):
@@ -7,9 +8,11 @@ class Selu(FrontendHandler):
   _alpha = _scale_alpha / _scale  # 1.6732632423543774
 
   @classmethod
+  @version(1)
   def version_1(cls, node, **kwargs):
     return cls.make_node(node, gamma=cls._scale, alpha=cls._alpha)
 
   @classmethod
+  @version(6)
   def version_6(cls, node, **kwargs):
     return cls.make_node(node, gamma=cls._scale, alpha=cls._alpha)

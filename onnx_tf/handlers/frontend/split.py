@@ -1,5 +1,6 @@
 from onnx_tf.common import exception
 from onnx_tf.handlers.frontend_handler import FrontendHandler
+from onnx_tf.handlers.frontend_handler import version
 
 
 class Split(FrontendHandler):
@@ -14,6 +15,7 @@ class Split(FrontendHandler):
       exception.CONST_NOT_FOUND_EXCEPT(node.inputs[2], node.op)
 
   @classmethod
+  @version(1)
   def version_1(cls, node, **kwargs):
     consts = kwargs["consts"]
     axis = int(consts[node.inputs[2]])
@@ -23,6 +25,7 @@ class Split(FrontendHandler):
         axis=axis)
 
   @classmethod
+  @version(2)
   def version_2(cls, node, **kwargs):
     consts = kwargs["consts"]
     split = consts[node.inputs[1]]
