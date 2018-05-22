@@ -23,8 +23,9 @@ def get_all_frontend_handlers(opset_dict):
           max_inclusive_version=version).since_version
     else:
       warnings.warn("Unknown op {} in domain `{}`. "
-                    "If you call make_node method in your handler, "
-                    "please set should_check flag to False.".format(
+                    "Can't check specification by ONNX. "
+                    "Please set should_check flag to False "
+                    "when call make_node method in handler.".format(
                         handler.get_onnx_op(), handler.DOMAIN or "ai.onnx"))
     handler.SINCE_VERSION = since_version
 
