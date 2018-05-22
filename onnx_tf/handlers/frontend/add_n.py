@@ -1,7 +1,8 @@
-from .math_common import BasicMathCommon
+from onnx_tf.handlers.frontend_handler import FrontendHandler
+from .math_mixin import BasicMathMixin
 
 
-class AddN(BasicMathCommon):
+class AddN(BasicMathMixin, FrontendHandler):
   ONNX_OP = "Sum"
 
   @classmethod

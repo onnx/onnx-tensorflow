@@ -1,7 +1,8 @@
-from .math_common import ReductionCommon
+from onnx_tf.handlers.frontend_handler import FrontendHandler
+from .math_mixin import ReductionMixin
 
 
-class ReduceMean(ReductionCommon):
+class ReduceMean(ReductionMixin, FrontendHandler):
   TF_OP = ["Mean"]
 
   @classmethod

@@ -1,7 +1,8 @@
-from .pool_common import PoolCommon
+from onnx_tf.handlers.frontend_handler import FrontendHandler
+from .pool_mixin import PoolMixin
 
 
-class MaxPool(PoolCommon):
+class MaxPool(PoolMixin, FrontendHandler):
 
   @classmethod
   def version_1(cls, node, **kwargs):

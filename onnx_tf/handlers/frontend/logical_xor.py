@@ -1,7 +1,8 @@
-from .control_flow_common import LogicalCommon
+from onnx_tf.handlers.frontend_handler import FrontendHandler
+from .control_flow_mixin import LogicalMixin
 
 
-class LogicalXor(LogicalCommon):
+class LogicalXor(LogicalMixin, FrontendHandler):
   ONNX_OP = "Xor"
 
   @classmethod

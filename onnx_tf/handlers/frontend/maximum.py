@@ -1,7 +1,8 @@
-from .math_common import BasicMathCommon
+from onnx_tf.handlers.frontend_handler import FrontendHandler
+from .math_mixin import BasicMathMixin
 
 
-class Maximun(BasicMathCommon):
+class Maximun(BasicMathMixin, FrontendHandler):
   ONNX_OP = "Max"
 
   @classmethod

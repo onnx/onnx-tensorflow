@@ -1,7 +1,8 @@
-from .control_flow_common import ComparisonCommon
+from onnx_tf.handlers.frontend_handler import FrontendHandler
+from .control_flow_mixin import ComparisonMixin
 
 
-class Greater(ComparisonCommon):
+class Greater(ComparisonMixin, FrontendHandler):
 
   @classmethod
   def version_1(cls, node, **kwargs):

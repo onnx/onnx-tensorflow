@@ -1,7 +1,8 @@
-from .math_common import BasicMathCommon
+from onnx_tf.handlers.frontend_handler import FrontendHandler
+from .math_mixin import BasicMathMixin
 
 
-class Negative(BasicMathCommon):
+class Negative(BasicMathMixin, FrontendHandler):
   TF_OP = ["Neg"]
   ONNX_OP = "Neg"
 

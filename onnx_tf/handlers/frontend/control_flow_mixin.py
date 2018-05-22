@@ -1,8 +1,7 @@
 from onnx_tf.common.broadcast import get_broadcast_axis
-from onnx_tf.handlers.frontend_handler import FrontendHandler
 
 
-class LogicalCommon(FrontendHandler):
+class LogicalMixin(object):
 
   @classmethod
   def logical_op(cls, node, broadcast=1, **kwargs):
@@ -16,7 +15,7 @@ class LogicalCommon(FrontendHandler):
     return cls.make_node(node, **ex_kwargs)
 
 
-class ComparisonCommon(FrontendHandler):
+class ComparisonMixin(object):
 
   @classmethod
   def comparison_op(cls, node, broadcast=1, **kwargs):

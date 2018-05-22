@@ -1,7 +1,8 @@
-from .math_common import BasicMathCommon
+from onnx_tf.handlers.frontend_handler import FrontendHandler
+from .math_mixin import BasicMathMixin
 
 
-class Minimum(BasicMathCommon):
+class Minimum(BasicMathMixin, FrontendHandler):
   ONNX_OP = "Min"
 
   @classmethod

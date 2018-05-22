@@ -1,8 +1,7 @@
 from onnx_tf.common import get_unique_suffix
-from onnx_tf.handlers.frontend_handler import FrontendHandler
 
 
-class ConvCommon(FrontendHandler):
+class ConvMixin(object):
 
   @classmethod
   def conv_op(cls, node, d=2, **kwargs):

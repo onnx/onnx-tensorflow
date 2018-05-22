@@ -1,8 +1,9 @@
 from onnx_tf.common import exception
-from .conv_common import ConvCommon
+from onnx_tf.handlers.frontend_handler import FrontendHandler
+from .conv_mixin import ConvMixin
 
 
-class Convolution(ConvCommon):
+class Convolution(ConvMixin, FrontendHandler):
   TF_OP = ["Conv1D", "Conv2D", "Conv3D"]
   ONNX_OP = "Conv"
 

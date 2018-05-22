@@ -1,7 +1,8 @@
-from .math_common import ReductionCommon
+from onnx_tf.handlers.frontend_handler import FrontendHandler
+from .math_mixin import ReductionMixin
 
 
-class ReduceSum(ReductionCommon):
+class ReduceSum(ReductionMixin, FrontendHandler):
   TF_OP = ["Sum"]
   ONNX_OP = "ReduceSum"
 

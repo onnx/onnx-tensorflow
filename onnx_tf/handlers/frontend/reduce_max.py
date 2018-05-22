@@ -1,7 +1,8 @@
-from .math_common import ReductionCommon
+from onnx_tf.handlers.frontend_handler import FrontendHandler
+from .math_mixin import ReductionMixin
 
 
-class ReduceMax(ReductionCommon):
+class ReduceMax(ReductionMixin, FrontendHandler):
   TF_OP = ["Max"]
 
   @classmethod

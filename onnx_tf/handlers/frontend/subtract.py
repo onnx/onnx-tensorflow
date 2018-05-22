@@ -1,7 +1,8 @@
-from .math_common import ArithmeticCommon
+from onnx_tf.handlers.frontend_handler import FrontendHandler
+from .math_mixin import ArithmeticMixin
 
 
-class Subtract(ArithmeticCommon):
+class Subtract(ArithmeticMixin, FrontendHandler):
   TF_OP = ["Sub"]
   ONNX_OP = "Sub"
 

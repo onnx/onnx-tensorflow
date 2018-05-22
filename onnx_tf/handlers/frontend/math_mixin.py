@@ -1,16 +1,15 @@
 from onnx_tf.common import exception
 from onnx_tf.common.broadcast import get_broadcast_axis
-from onnx_tf.handlers.frontend_handler import FrontendHandler
 
 
-class BasicMathCommon(FrontendHandler):
+class BasicMathMixin(object):
 
   @classmethod
   def basic_math_op(cls, node, **kwargs):
     return cls.make_node(node)
 
 
-class ArithmeticCommon(FrontendHandler):
+class ArithmeticMixin(object):
 
   @classmethod
   def arithmetic_op(cls, node, **kwargs):
@@ -23,7 +22,7 @@ class ArithmeticCommon(FrontendHandler):
     return cls.make_node(node, broadcast=1, **ex_kwargs)
 
 
-class ReductionCommon(FrontendHandler):
+class ReductionMixin(object):
 
   @classmethod
   def param_check(cls, node, **kwargs):

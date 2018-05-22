@@ -1,7 +1,8 @@
-from .pool_common import PoolCommon
+from onnx_tf.handlers.frontend_handler import FrontendHandler
+from .pool_mixin import PoolMixin
 
 
-class AvgPool(PoolCommon):
+class AvgPool(PoolMixin, FrontendHandler):
   ONNX_OP = "AveragePool"
 
   @classmethod

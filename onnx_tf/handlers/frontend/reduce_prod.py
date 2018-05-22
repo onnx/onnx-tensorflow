@@ -1,7 +1,8 @@
-from .math_common import ReductionCommon
+from onnx_tf.handlers.frontend_handler import FrontendHandler
+from .math_mixin import ReductionMixin
 
 
-class ReduceProd(ReductionCommon):
+class ReduceProd(ReductionMixin, FrontendHandler):
   TF_OP = ["Prod"]
 
   @classmethod

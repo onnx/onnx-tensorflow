@@ -1,8 +1,7 @@
-from onnx_tf.handlers.frontend_handler import FrontendHandler
-from .conv_common import ConvCommon
+from .conv_mixin import ConvMixin
 
 
-class PoolCommon(FrontendHandler):
+class PoolMixin(object):
 
   @classmethod
   def param_check(cls, node, **kwargs):
@@ -28,8 +27,8 @@ class PoolCommon(FrontendHandler):
     input_shape = list(
         map(lambda i: node_dict[node.inputs[0]].attr["_output_shapes"][0][i],
             spatial_indices))
-    pads = ConvCommon.cal_pads(auto_pad, len(spatial_indices), input_shape,
-                               output_shape, strides, kernel_shape)
+    pads = ConvMixin.cal_pads(auto_pad, len(spatial_indices), input_shape,
+                              output_shape, strides, kernel_shape)
 
     node_kwargs = {}
     if "count_include_pad" in kwargs:

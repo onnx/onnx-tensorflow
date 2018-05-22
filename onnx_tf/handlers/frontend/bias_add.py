@@ -1,7 +1,8 @@
-from .math_common import ArithmeticCommon
+from onnx_tf.handlers.frontend_handler import FrontendHandler
+from .math_mixin import ArithmeticMixin
 
 
-class BiasAdd(ArithmeticCommon):
+class BiasAdd(ArithmeticMixin, FrontendHandler):
   ONNX_OP = "Add"
 
   @classmethod

@@ -1,7 +1,8 @@
-from .math_common import ArithmeticCommon
+from onnx_tf.handlers.frontend_handler import FrontendHandler
+from .math_mixin import ArithmeticMixin
 
 
-class Multiply(ArithmeticCommon):
+class Multiply(ArithmeticMixin, FrontendHandler):
   TF_OP = ["Mul"]
   ONNX_OP = "Mul"
 
