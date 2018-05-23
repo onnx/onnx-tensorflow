@@ -27,8 +27,7 @@ from onnx_tf.opset_version import backend_opset_version
 from onnx_tf.common import (ONNX_OP_TO_TF_OP, ONNX_ATTR_TO_TF_ATTR,
                             ONNX_ATTR_TO_TF_ATTR_PER_OP,
                             ONNX_ATTR_TO_REMOVE_PER_OP, ONNX_TYPE_TO_TF_TYPE,
-                            TF_TYPE_ENUM, op_name_to_lower,
-                            PAD_TF_INCOMPATIBLE)
+                            TF_TYPE_ENUM, op_name_to_lower, PAD_TF_INCOMPATIBLE)
 from onnx.backend.base import (
     Backend,
     Device,

@@ -4,16 +4,16 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-from onnx_tf.third_party import get_info
+import os
 
 import onnx_tf.backend
-import onnx_tf.frontend
-
 import onnx_tf.backend_rep
+import onnx_tf.frontend
+from onnx_tf.third_party import get_info
 import opset_version
 
 
-def main():
+def main(docs_dir):
   gen_doc_for = {
       'onnx_tf.backend': [
           onnx_tf.backend.prepare,
@@ -26,7 +26,7 @@ def main():
       ]
   }
 
-  with open('./doc/API.md', 'w') as doc_file:
+  with open(os.path.join(docs_dir, 'API.md'), 'w') as doc_file:
     doc_file.write('ONNX-Tensorflow API\n')
     doc_file.write('======\n\n')
 
@@ -48,7 +48,7 @@ def main():
         doc_file.write('_returns_:\n\n')
         doc_file.write(doc_parsed['returns'] + '\n\n')
 
-  with open('./doc/support_status.md', 'w') as status_file:
+  with open(os.path.join(docs_dir, 'support_status.md'), 'w') as status_file:
     status_file.write('ONNX-Tensorflow Support Status\n')
     status_file.write('======\n\n')
 
@@ -76,4 +76,6 @@ def main():
 
 
 if __name__ == '__main__':
-  main()
+  base_dir = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
+  docs_dir = os.path.join(base_dir, 'doc')
+  main(docs_dir)

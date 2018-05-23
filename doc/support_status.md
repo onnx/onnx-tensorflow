@@ -69,6 +69,7 @@ ______
 |MeanVarianceNormalization|N/A|
 |Min|1, 6|
 |Mul|1, 6|
+|Multinomial|N/A|
 |Neg|1, 6|
 |Not|1|
 |Or|1|
@@ -127,10 +128,16 @@ ______
 
 | Tensorflow Op        | Supported ONNX Version  |
 | -------------- |:------------------:|
+|abs|1, 6|
+|acos|7|
 |add|1, 6|
+|add_n|1, 6|
 |arg_max|1|
 |arg_min|1|
+|asin|7|
+|atan|7|
 |avg_pool|1, 7|
+|batch_norm|1, 6|
 |bias_add|1, 6|
 |cast|1|
 |ceil|1, 6|
@@ -138,8 +145,10 @@ ______
 |conv1_d|1|
 |conv2_d|1|
 |conv3_d|1|
+|cos|7|
 |equal|1|
 |exp|1, 6|
+|expand_dims|1|
 |fill|1|
 |floor|1, 6|
 |fused_batch_norm|1, 6|
@@ -148,17 +157,19 @@ ______
 |less|1|
 |log|1, 6|
 |log_softmax|1|
-|logical_and|1, 6|
+|logical_and|1|
 |logical_not|1|
 |logical_or|1|
 |logical_xor|1|
 |mat_mul|1|
 |max|1|
 |max_pool|1|
-|maximum|1|
+|maximum|1, 6|
 |mean|1|
 |min|1|
+|minimum|1, 6|
 |mul|1, 6|
+|neg|1, 6|
 |pad|1, 2|
 |pow|1|
 |prod|1|
@@ -168,15 +179,21 @@ ______
 |reciprocal|1, 6|
 |relu|1, 6|
 |reshape|1, 5|
+|selu|1, 6|
 |shape|1|
 |sigmoid|1, 6|
+|sin|7|
 |softmax|1|
+|softplus|1|
+|softsign|1|
 |space_to_depth|1|
 |split_v|1, 2|
 |sqrt|1, 6|
 |squeeze|1|
 |sub|1, 6|
 |sum|1|
+|tan|7|
 |tanh|1, 6|
 |tile|1|
+|top_k_v2|1|
 |transpose|1|

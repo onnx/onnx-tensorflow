@@ -35,13 +35,16 @@ Customize op can also be implemented in similar way.
 ### Frontend
 
 1.  Find specification from [onnx/Operators](https://github.com/onnx/onnx/blob/master/docs/Operators.md).
-2.  A specific handler is needed in frontend in most cases.
-3.  Implement.
+2.  Implement. A specific handler is always needed in frontend.
+    Please read doc of `Handler` and `FrontendHandler` first and reference other handler classes.
     ```
-    - add handler to frontend_v{version}
-    - add decorator register_onnx_op with onnx op name if it is an onnx op
+    - create a new handler class file under handlers/frontend 
+    or add a new version method under op handler class 
+    depends on if you want to add a new op or deal with a new version
+    - if need, implement args_check method
+    - add decorator @onnx_op and @tf_op if add a new op handler class
     
     * version is the number of since version, which can get from operator's specification
     ```
-4.  Run `gen_opset.py` and `gen_doc.py`.
-5.  Add test case to `test_node.py`.
+3.  Run `gen_opset.py` and `gen_doc.py`.
+4.  Add test case to `test_node.py`.
