@@ -1,5 +1,4 @@
 from onnx_tf.common import exception
-from onnx_tf.handlers.frontend_handler import version
 from onnx_tf.handlers.frontend_handler import FrontendHandler
 
 
@@ -12,14 +11,12 @@ class Concat(FrontendHandler):
       exception.CONST_NOT_FOUND_EXCEPT(node.inputs[-1], node.op)
 
   @classmethod
-  @version(1)
   def version_1(cls, node, **kwargs):
     consts = kwargs["consts"]
     axis = int(consts[node.inputs[-1]])
     return cls.make_node(node, node.inputs[0:-1], axis=axis)
 
   @classmethod
-  @version(4)
   def version_4(cls, node, **kwargs):
     consts = kwargs["consts"]
     axis = int(consts[node.inputs[-1]])

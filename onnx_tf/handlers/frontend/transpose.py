@@ -1,11 +1,9 @@
 from onnx_tf.handlers.frontend_handler import FrontendHandler
-from onnx_tf.handlers.frontend_handler import version
 
 
 class Transpose(FrontendHandler):
 
   @classmethod
-  @version(1)
   def version_1(cls, node, **kwargs):
     consts = kwargs["consts"]
     if node.inputs[1] in consts:

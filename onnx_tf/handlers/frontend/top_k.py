@@ -1,6 +1,5 @@
 from onnx_tf.common import exception
 from onnx_tf.handlers.frontend_handler import FrontendHandler
-from onnx_tf.handlers.frontend_handler import version
 
 
 class TopK(FrontendHandler):
@@ -12,7 +11,6 @@ class TopK(FrontendHandler):
       exception.CONST_NOT_FOUND_EXCEPT(node.inputs[1], node.op)
 
   @classmethod
-  @version(1)
   def version_1(cls, node, **kwargs):
     consts = kwargs["consts"]
     k = int(consts[node.inputs[1]])

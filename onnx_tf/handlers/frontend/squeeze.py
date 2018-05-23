@@ -1,11 +1,9 @@
 from onnx_tf.handlers.frontend_handler import FrontendHandler
-from onnx_tf.handlers.frontend_handler import version
 
 
 class Squeeze(FrontendHandler):
 
   @classmethod
-  @version(1)
   def version_1(cls, node, **kwargs):
     node_dict = kwargs["node_dict"]
     axes = node.attr.get("axis")
