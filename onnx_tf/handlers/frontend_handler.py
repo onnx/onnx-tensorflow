@@ -15,9 +15,9 @@ from .handler import Handler
 class FrontendHandler(Handler):
   """ This class is base frontend handler class.
   All frontend operator handler class MUST inherit this class.
-  In frontend, operator handler class’s name should be pascal case of file name
+  In frontend, operator handler class's name should be pascal case of file name
   which should be snake case.
-  It is best to use tf functions’ names. e.g. tf.nn.avg_pool
+  It is best to use tf functions' names. e.g. tf.nn.avg_pool
   If there is a multiple mapping, e.g. tf.nn.conv1d, tf.nn.conv2d, tf.nn.conv3d,
   try find common one first. In this case, tf.nn.convolution.
   Finally, use ONNX name if above does not work.
