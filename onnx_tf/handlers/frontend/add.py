@@ -1,7 +1,11 @@
 from onnx_tf.handlers.frontend_handler import FrontendHandler
+from onnx_tf.handlers.handler import onnx_op
+from onnx_tf.handlers.handler import tf_op
 from .math_mixin import ArithmeticMixin
 
 
+@onnx_op("Add")
+@tf_op("Add")
 class Add(ArithmeticMixin, FrontendHandler):
 
   @classmethod

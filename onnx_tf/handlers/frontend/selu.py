@@ -1,6 +1,10 @@
 from onnx_tf.handlers.frontend_handler import FrontendHandler
+from onnx_tf.handlers.handler import onnx_op
+from onnx_tf.handlers.handler import tf_op
 
 
+@onnx_op("Selu")
+@tf_op("Selu")
 class Selu(FrontendHandler):
   _scale = 1.0507009873554804934193349852946
   _scale_alpha = 1.7580993408473768599402175208123

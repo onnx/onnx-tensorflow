@@ -4,9 +4,9 @@ from .conv_mixin import ConvMixin
 class PoolMixin(object):
 
   @classmethod
-  def param_check(cls, node, **kwargs):
+  def args_check(cls, node, **kwargs):
     if "count_include_pad" in kwargs:
-      if cls.get_onnx_op() != "AveragePool":
+      if cls.ONNX_OP != "AveragePool":
         raise RuntimeError("count_include_pad is only for AveragePool.")
       if cls.SINCE_VERSION < 7:
         raise RuntimeError("count_include_pad is added since version 7.")

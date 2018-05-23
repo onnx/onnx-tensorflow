@@ -25,7 +25,7 @@ class ArithmeticMixin(object):
 class ReductionMixin(object):
 
   @classmethod
-  def param_check(cls, node, **kwargs):
+  def args_check(cls, node, **kwargs):
     if node.inputs[1] not in kwargs["consts"]:
       exception.CONST_NOT_FOUND_EXCEPT(node.inputs[1], node.op)
 

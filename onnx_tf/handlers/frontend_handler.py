@@ -3,28 +3,16 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
+import warnings
+
 import onnx
 from onnx import helper
 from onnx import checker
 
-from onnx_tf.common import exception
 from .handler import Handler
 
 
 class FrontendHandler(Handler):
-
-  @classmethod
-  def param_check(cls, node, **kwargs):
-    pass
-
-  @classmethod
-  def handle(cls, node, **kwargs):
-    ver_handle = getattr(cls, "version_{}".format(cls.SINCE_VERSION), None)
-    if ver_handle:
-      cls.param_check(node, **kwargs)
-      return ver_handle(node, **kwargs)
-    exception.OP_UNIMPLEMENTED_EXCEPT(node.op)
-    return None
 
   @classmethod
   def make_node(cls,
@@ -39,7 +27,7 @@ class FrontendHandler(Handler):
     inputs = inputs if inputs is not None else node.inputs
     outputs = outputs if outputs is not None else cls.get_outputs_names(node)
     node = helper.make_node(
-        onnx_op if onnx_op is not None else cls.get_onnx_op(),
+        onnx_op if onnx_op is not None else cls.ONNX_OP,
         inputs,
         outputs,
         name=name if name is not None else node.name,
@@ -47,32 +35,11 @@ class FrontendHandler(Handler):
     if should_check:
       version = version or cls.VERSION
       if version == 0:
-        raise RuntimeError("version can not be 0.")
+        raise ValueError("version can not be 0.")
       ctx = checker.C.CheckerContext()
       ctx.ir_version = onnx.IR_VERSION
       ctx.opset_imports = {cls.DOMAIN: version}
       checker.check_node(node, ctx=ctx)
+    else:
+      warnings.warn("Skipped check for {}.".format(node.op_type))
     return node
-
-  @classmethod
-  def get_onnx_op(cls):
-    return cls.ONNX_OP or cls.__name__
-
-  @classmethod
-  def get_tf_op(cls):
-    return cls.TF_OP or [cls.__name__]
-
-  @classmethod
-  def get_versions(cls):
-    versions = []
-    for method_name in dir(cls):
-      if method_name.startswith("version_"):
-        versions.append(int(method_name.replace("version_", "")))
-    return versions
-
-  @classmethod
-  def get_outputs_names(cls, node, num=None):
-    num = num or len(node.attr["_output_shapes"])
-    return [
-        node.name + ":{}".format(i) if i > 0 else node.name for i in range(num)
-    ]

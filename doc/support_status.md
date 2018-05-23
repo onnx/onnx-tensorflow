@@ -164,7 +164,7 @@ ______
 |mat_mul|1|
 |max|1|
 |max_pool|1|
-|maximun|1, 6|
+|maximum|1, 6|
 |mean|1|
 |min|1|
 |minimum|1, 6|

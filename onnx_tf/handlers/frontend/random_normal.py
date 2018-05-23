@@ -1,9 +1,11 @@
 from onnx_tf.handlers.frontend_handler import FrontendHandler
+from onnx_tf.handlers.handler import onnx_op
+from onnx_tf.handlers.handler import tf_op
 
 
+@onnx_op("RandomNormal")
+@tf_op("RandomStandardNormal")
 class RandomNormal(FrontendHandler):
-  TF_OP = ["RandomStandardNormal"]
-  ONNX_OP = "RandomNormal"
 
   @classmethod
   def version_1(cls, node, **kwargs):

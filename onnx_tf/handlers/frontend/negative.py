@@ -1,10 +1,12 @@
 from onnx_tf.handlers.frontend_handler import FrontendHandler
+from onnx_tf.handlers.handler import onnx_op
+from onnx_tf.handlers.handler import tf_op
 from .math_mixin import BasicMathMixin
 
 
+@onnx_op("Neg")
+@tf_op("Neg")
 class Negative(BasicMathMixin, FrontendHandler):
-  TF_OP = ["Neg"]
-  ONNX_OP = "Neg"
 
   @classmethod
   def version_1(cls, node, **kwargs):

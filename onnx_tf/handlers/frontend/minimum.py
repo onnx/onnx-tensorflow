@@ -1,9 +1,12 @@
 from onnx_tf.handlers.frontend_handler import FrontendHandler
+from onnx_tf.handlers.handler import onnx_op
+from onnx_tf.handlers.handler import tf_op
 from .math_mixin import BasicMathMixin
 
 
+@onnx_op("Min")
+@tf_op("Minimum")
 class Minimum(BasicMathMixin, FrontendHandler):
-  ONNX_OP = "Min"
 
   @classmethod
   def version_1(cls, node, **kwargs):

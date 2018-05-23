@@ -1,35 +1,36 @@
-import re
 import warnings
 
 from onnx import defs
 
-from . import op_name_to_lower
+from onnx_tf.common import exception
 from onnx_tf.handlers.frontend import *  # noqa
 from onnx_tf.handlers.frontend_handler import FrontendHandler
+from . import op_name_to_lower
 
 
 def get_all_frontend_handlers(opset_dict):
   handlers = {}
   for handler in FrontendHandler.__subclasses__():
-    domain = getattr(handler, "DOMAIN")
+    handler.check()
+
+    domain = handler.DOMAIN
     version = opset_dict[domain]
     handler.VERSION = version
 
     since_version = 1
-    if defs.has(handler.get_onnx_op(), domain=handler.DOMAIN):
+    if defs.has(handler.ONNX_OP, domain=handler.DOMAIN):
       since_version = defs.get_schema(
-          handler.get_onnx_op(),
-          domain=handler.DOMAIN,
+          handler.ONNX_OP, domain=handler.DOMAIN,
           max_inclusive_version=version).since_version
     else:
       warnings.warn("Unknown op {} in domain `{}`. "
                     "Can't check specification by ONNX. "
                     "Please set should_check flag to False "
                     "when call make_node method in handler.".format(
-                        handler.get_onnx_op(), handler.DOMAIN or "ai.onnx"))
+                        handler.ONNX_OP, handler.DOMAIN or "ai.onnx"))
     handler.SINCE_VERSION = since_version
 
-    for tf_op in handler.get_tf_op():
+    for tf_op in handler.TF_OP:
       handlers.setdefault(domain, {})[tf_op] = handler
   return handlers
 
@@ -38,9 +39,11 @@ def get_frontend_coverage():
   tf_coverage = {}
   onnx_coverage = {}
   for handler in FrontendHandler.__subclasses__():
+    handler.check()
+
     versions = handler.get_versions()
-    domain = getattr(handler, "DOMAIN")
-    for tf_op in handler.get_tf_op():
+    domain = handler.DOMAIN
+    for tf_op in handler.TF_OP:
       tf_coverage.setdefault(domain, {})[op_name_to_lower(tf_op)] = versions
-    onnx_coverage.setdefault(domain, {})[handler.get_onnx_op()] = versions
+    onnx_coverage.setdefault(domain, {})[handler.ONNX_OP] = versions
   return onnx_coverage, tf_coverage

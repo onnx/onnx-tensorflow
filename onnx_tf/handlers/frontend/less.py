@@ -1,7 +1,11 @@
 from onnx_tf.handlers.frontend_handler import FrontendHandler
+from onnx_tf.handlers.handler import onnx_op
+from onnx_tf.handlers.handler import tf_op
 from .control_flow_mixin import ComparisonMixin
 
 
+@onnx_op("Less")
+@tf_op("Less")
 class Less(ComparisonMixin, FrontendHandler):
 
   @classmethod

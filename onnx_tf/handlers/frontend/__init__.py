@@ -1,8 +1,7 @@
 import os
-import glob
+import pkgutil
 
-modules = glob.glob(os.path.dirname(__file__) + "/*.py")
 __all__ = [
-    os.path.basename(f)[:-3] for f in modules if os.path.isfile(f) and
-    not f.endswith('__init__.py') and not f.endswith('_common.py')
+    modname for _, modname, _ in pkgutil.walk_packages(
+        path=[os.path.split(__file__)[0]])
 ]

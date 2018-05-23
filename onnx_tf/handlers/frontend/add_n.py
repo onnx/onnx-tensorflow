@@ -1,9 +1,12 @@
 from onnx_tf.handlers.frontend_handler import FrontendHandler
+from onnx_tf.handlers.handler import onnx_op
+from onnx_tf.handlers.handler import tf_op
 from .math_mixin import BasicMathMixin
 
 
+@onnx_op("Sum")
+@tf_op("AddN")
 class AddN(BasicMathMixin, FrontendHandler):
-  ONNX_OP = "Sum"
 
   @classmethod
   def version_1(cls, node, **kwargs):

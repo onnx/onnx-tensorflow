@@ -1,6 +1,10 @@
 from onnx_tf.handlers.frontend_handler import FrontendHandler
+from onnx_tf.handlers.handler import onnx_op
+from onnx_tf.handlers.handler import tf_op
 
 
+@onnx_op("Sigmoid")
+@tf_op("Sigmoid")
 class Sigmoid(FrontendHandler):
 
   @classmethod
