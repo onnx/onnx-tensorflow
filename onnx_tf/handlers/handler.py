@@ -4,12 +4,16 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import inspect
-import warnings
 
 from onnx_tf.common import exception
 
 
 class Handler(object):
+  """ This class is base handler class.
+  Base backend and frontend base handler class inherit this class.
+
+  All operator handler MUST put decorator @onnx_op and @tf_op to register corresponding op.
+  """
 
   ONNX_OP = None
   TF_OP = []
@@ -33,10 +37,24 @@ class Handler(object):
 
   @classmethod
   def args_check(cls, node, **kwargs):
+    """ Check args. e.g. if shape info is in graph.
+    Raise exception if failed.
+
+    :param node: NodeProto for backend or TensorflowNode for frontend.
+    :param kwargs: Other args.
+    """
     pass
 
   @classmethod
   def handle(cls, node, **kwargs):
+    """ Main method in handler. It will find corresponding versioned handle method,
+    whose name format is `version_%d`. So prefix `version_` is reserved in onnx-tensorflow.
+    DON'T use it for other purpose.
+
+    :param node: NodeProto for backend or TensorflowNode for frontend.
+    :param kwargs: Other args.
+    :return: NodeProto for frontend or TensorflowNode for backend.
+    """
     ver_handle = getattr(cls, "version_{}".format(cls.SINCE_VERSION), None)
     if ver_handle:
       cls.args_check(node, **kwargs)
@@ -46,25 +64,15 @@ class Handler(object):
 
   @classmethod
   def get_versions(cls):
+    """ Get all support versions.
+
+    :return: Version list.
+    """
     versions = []
     for k, v in inspect.getmembers(cls, inspect.ismethod):
       if k.startswith("version_"):
         versions.append(int(k.replace("version_", "")))
     return versions
-
-  @classmethod
-  def get_outputs_names(cls, node, num=None):
-    if num is None:
-      if "_output_shapes" in node.attr:
-        num = len(node.attr["_output_shapes"])
-      else:
-        num = 1
-        warnings.warn("_output_shapes is not in node.attr. "
-                      "The num of output is set to 1 for commonly. "
-                      "It will cause problem with case of multiple outputs.")
-    return [
-        node.name + ":{}".format(i) if i > 0 else node.name for i in range(num)
-    ]
 
   @staticmethod
   def onnx_op(op):

@@ -2,13 +2,18 @@ import warnings
 
 from onnx import defs
 
-from onnx_tf.common import exception
 from onnx_tf.handlers.frontend import *  # noqa
 from onnx_tf.handlers.frontend_handler import FrontendHandler
 from . import op_name_to_lower
 
 
 def get_all_frontend_handlers(opset_dict):
+  """ Get a dict of all frontend handler classes.
+  e.g. {'domain': {'Abs': Abs handler class}, ...}, }.
+
+  :param opset_dict: A dict of opset. e.g. {'domain': version, ...}
+  :return: Dict.
+  """
   handlers = {}
   for handler in FrontendHandler.__subclasses__():
     handler.check()
@@ -36,6 +41,11 @@ def get_all_frontend_handlers(opset_dict):
 
 
 def get_frontend_coverage():
+  """ Get frontend coverage. For document.
+
+  :return: onnx_coverage: e.g. {'domain': {'ONNX_OP': [versions], ...}, ...}
+  tf_coverage: e.g. {'domain': {'TF_OP': [versions], ...}, ...}
+  """
   tf_coverage = {}
   onnx_coverage = {}
   for handler in FrontendHandler.__subclasses__():

@@ -61,6 +61,9 @@ class TensorflowNode(object):
 
 
 class OnnxGraph(object):
+  """ A helper class for making ONNX graph.
+  This class holds all information ONNX graph needs.
+  """
 
   def __init__(self, name):
     self._name = name
