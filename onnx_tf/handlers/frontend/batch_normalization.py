@@ -21,3 +21,9 @@ class BatchNormalization(FrontendHandler):
         node,
         epsilon=node.attr.get("epsilon", 1e-5),
         is_test=node.attr.get("is_training", 0))
+
+  @classmethod
+  def version_7(cls, node, **kwargs):
+    return cls.make_node(
+        node,
+        epsilon=node.attr.get("epsilon", 1e-5))
