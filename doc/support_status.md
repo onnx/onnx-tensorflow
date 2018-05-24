@@ -138,7 +138,7 @@ ______
 |atan|7|
 |avg_pool|1, 7|
 |batch_norm|1, 6, 7|
-|bias_add|1, 6|
+|bias_add|1, 6, 7|
 |cast|1|
 |ceil|1, 6|
 |concat_v2|1, 4|

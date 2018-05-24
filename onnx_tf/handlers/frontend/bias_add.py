@@ -21,3 +21,7 @@ class BiasAdd(ArithmeticMixin, FrontendHandler):
     channel_first = data_format[1] == "C"
     axis = 1 if channel_first else -1
     return cls.arithmetic_op(node, axis=axis, **kwargs)
+
+  @classmethod
+  def version_7(cls, node, **kwargs):
+    return cls.arithmetic_op(node, **kwargs)
