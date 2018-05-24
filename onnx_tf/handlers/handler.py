@@ -59,7 +59,7 @@ class Handler(object):
     if ver_handle:
       cls.args_check(node, **kwargs)
       return ver_handle(node, **kwargs)
-    exception.OP_UNIMPLEMENTED_EXCEPT(node.op)
+    exception.OP_UNIMPLEMENTED_EXCEPT(node.op, cls.SINCE_VERSION)
     return None
 
   @classmethod

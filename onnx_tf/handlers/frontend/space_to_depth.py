@@ -12,8 +12,6 @@ class SpaceToDepth(FrontendHandler):
 
   @classmethod
   def args_check(cls, node, **kwargs):
-    if node.inputs[1] not in kwargs["consts"]:
-      exception.CONST_NOT_FOUND_EXCEPT(node.inputs[1], node.op)
     data_format = node.attr.get("data_format", "NHWC").decode()
     if data_format not in ["NHWC", "NCHW"]:
       exception.OP_UNSUPPORTED_EXCEPT("{} with data_format {}".format(
@@ -32,13 +30,16 @@ class SpaceToDepth(FrontendHandler):
       before_transpose_node = cls.make_node(
           node, [node.inputs[0]], [transpose_name],
           perm=get_perm_from_formats(data_format, "NCHW"),
-          name="Transpose")
+          onnx_op="Transpose",
+          name=transpose_name)
       space_to_depth_node = cls.make_node(
-          node, [transpose_name], [space_to_depth_name], blocksize=blocksize)
+          node, [transpose_name], [space_to_depth_name],
+          blocksize=blocksize,
+          name=space_to_depth_name)
       after_transpose_node = cls.make_node(
           node, [space_to_depth_name],
           perm=get_perm_from_formats("NCHW", data_format),
-          name="Transpose")
+          onnx_op="Transpose")
       return [before_transpose_node, space_to_depth_node, after_transpose_node]
 
     return cls.make_node(node, [node.inputs[0]], blocksize=blocksize)
