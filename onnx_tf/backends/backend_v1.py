@@ -26,6 +26,7 @@ from onnx_tf.common import (
     ONNX_OP_TO_TF_OP,
     ONNX_TYPE_TO_TF_TYPE,
     PAD_TF_INCOMPATIBLE,
+    get_perm_from_formats,
 )
 from onnx_tf.common import EXPERIMENTAL_ONNX_OP_TO_TF_OP
 import onnx.numpy_helper
@@ -229,7 +230,7 @@ class TensorflowBackend(TensorflowBackendBase):
           data_format=compute_format)
     else:
       x = tf.transpose(
-          x, perm=cls.get_perm_from_formats(storage_format, compute_format))
+          x, perm=get_perm_from_formats(storage_format, compute_format))
       pooled = pool_func(
           x,
           kernel_shape,
@@ -238,7 +239,7 @@ class TensorflowBackend(TensorflowBackendBase):
           data_format=compute_format)
       pooled = tf.transpose(
           pooled,
-          perm=cls.get_perm_from_formats(compute_format, storage_format))
+          perm=get_perm_from_formats(compute_format, storage_format))
 
     return [pooled]
 
@@ -395,7 +396,7 @@ class TensorflowBackend(TensorflowBackendBase):
       xs = tf.split(x, num_or_size_splits=group, axis=1)
     else:
       x = tf.transpose(
-          x, perm=cls.get_perm_from_formats(storage_format, compute_format))
+          x, perm=get_perm_from_formats(storage_format, compute_format))
       xs = tf.split(x, num_or_size_splits=group, axis=-1)
 
     if transpose:
@@ -487,7 +488,7 @@ class TensorflowBackend(TensorflowBackendBase):
         output = tf.concat(convolved, axis=-1)
         output = tf.transpose(
             output,
-            perm=cls.get_perm_from_formats(compute_format, storage_format))
+            perm=get_perm_from_formats(compute_format, storage_format))
     else:
       bias = input_dict[node.inputs[2]]
       bias = cls._explicit_broadcast(
@@ -501,7 +502,7 @@ class TensorflowBackend(TensorflowBackendBase):
         output = tf.add(output, bias)
         output = tf.transpose(
             output,
-            perm=cls.get_perm_from_formats(compute_format, storage_format))
+            perm=get_perm_from_formats(compute_format, storage_format))
 
     return [output]
 
@@ -524,11 +525,11 @@ class TensorflowBackend(TensorflowBackendBase):
           x, block_size=node.attrs["blocksize"], data_format=compute_format)
     else:
       x = tf.transpose(
-          x, perm=cls.get_perm_from_formats(storage_format, compute_format))
+          x, perm=get_perm_from_formats(storage_format, compute_format))
       y = tf.depth_to_space(
           x, block_size=node.attrs["blocksize"], data_format=compute_format)
       y = tf.transpose(
-          y, perm=cls.get_perm_from_formats(compute_format, storage_format))
+          y, perm=get_perm_from_formats(compute_format, storage_format))
     return [y]
 
   @classmethod
@@ -1200,8 +1201,22 @@ class TensorflowBackend(TensorflowBackendBase):
   @classmethod
   def handle_reshape(cls, node, input_dict):
     tensor = input_dict[node.inputs[0]]
-    shape = tf.constant(node.attrs["shape"])
-    return [tf.reshape(tensor, shape)]
+    shape = tf.constant(node.attrs["shape"], dtype=tf.int64)
+    input_shape = tf.shape(tensor, out_type=tf.int64)
+
+    # Extract indicies of the shape paramter where
+    # a copy from the original dimension size is needed.
+    copy_indices = tf.squeeze(tf.where(tf.equal(shape,
+                                                tf.constant(0, dtype=tf.int64))), -1)
+
+    indices_gathered = tf.gather(input_shape, copy_indices)
+    indices_scattered = tf.sparse_to_dense(copy_indices,
+                                           tf.cast(tf.shape(shape), tf.int64),
+                                           indices_gathered)
+
+    # Perform the copy wherever requested (wherever dim_size == 0)
+    copied_shape = shape + indices_scattered
+    return [tf.reshape(tensor, copied_shape)]
 
   @classmethod
   def handle_r_n_n(cls, node, input_dict):
@@ -1343,8 +1358,8 @@ class TensorflowBackend(TensorflowBackendBase):
       return [tf.nn.selu(input_dict[node.inputs[0]])]
 
     x = input_dict[node.inputs[0]]
-    alpha = node.attrs["alpha"] if "alpha" in node.attrs else 1.6732
-    gamma = node.attrs["gamma"] if "gamma" in node.attrs else 1.0507
+    alpha = node.attrs["alpha"] if "alpha" in node.attrs else 1.67326319217681884765625
+    gamma = node.attrs["gamma"] if "gamma" in node.attrs else 1.05070102214813232421875
 
     return [
         tf.clip_by_value(x, 0, tf.reduce_max(x)) * gamma +
@@ -1407,11 +1422,11 @@ class TensorflowBackend(TensorflowBackendBase):
           x, block_size=node.attrs["blocksize"], data_format=compute_format)
     else:
       x = tf.transpose(
-          x, perm=cls.get_perm_from_formats(storage_format, compute_format))
+          x, perm=get_perm_from_formats(storage_format, compute_format))
       y = tf.space_to_depth(
           x, block_size=node.attrs["blocksize"], data_format=compute_format)
       y = tf.transpose(
-          y, perm=cls.get_perm_from_formats(compute_format, storage_format))
+          y, perm=get_perm_from_formats(compute_format, storage_format))
     return [y]
 
   @classmethod
@@ -1496,9 +1511,9 @@ class TensorflowBackend(TensorflowBackendBase):
           tf.transpose(
               tf.image.resize_images(
                   tf.transpose(
-                      x, perm=cls.get_perm_from_formats(storage_format,
-                                                        "NHWC")), size, method),
-              perm=cls.get_perm_from_formats("NHWC", storage_format))
+                      x, perm=get_perm_from_formats(storage_format,
+                                                    "NHWC")), size, method),
+              perm=get_perm_from_formats("NHWC", storage_format))
       ]
 
   @classmethod

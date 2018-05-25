@@ -27,16 +27,16 @@ from onnx_tf.opset_version import backend_opset_version
 from onnx_tf.common import (ONNX_OP_TO_TF_OP, ONNX_ATTR_TO_TF_ATTR,
                             ONNX_ATTR_TO_TF_ATTR_PER_OP,
                             ONNX_ATTR_TO_REMOVE_PER_OP, ONNX_TYPE_TO_TF_TYPE,
-                            TF_TYPE_ENUM, op_name_to_lower,
-                            PAD_TF_INCOMPATIBLE)
+                            TF_TYPE_ENUM, op_name_to_lower, PAD_TF_INCOMPATIBLE)
 from onnx.backend.base import (
     Backend,
     Device,
     DeviceType,
     namedtupledict,
 )
-import onnx.defs
-import onnx.numpy_helper
+
+from onnx import defs
+from onnx import numpy_helper
 
 
 # TODO: allow more flexible placement
@@ -355,7 +355,7 @@ class TensorflowBackendBase(Backend):
 
     def tensor2list(onnx_tensor):
       # Use the onnx.numpy_helper because the data may be raw
-      return onnx.numpy_helper.to_array(onnx_tensor).flatten().tolist()
+      return numpy_helper.to_array(onnx_tensor).flatten().tolist()
 
     input_dict = [(tp.name,
                    tf.constant(
@@ -385,6 +385,10 @@ class TensorflowBackendBase(Backend):
     versions = backend_opset_version[node.op_type]
 
     if opset == 0:
+      # use the maximum opset version available that is
+      # smaller or equal to the version supported by
+      # the onnx package.
+      versions = filter(lambda v: v <= defs.onnx_opset_version(), versions)
       version = max(versions)
     else:
       versions = sorted(versions + [opset])
@@ -467,10 +471,6 @@ class TensorflowBackendBase(Backend):
     else:
       compute_format = "N" + sp_dim_string + "C"
     return storage_format, compute_format
-
-  @classmethod
-  def get_perm_from_formats(cls, _from, _to):
-    return list(map(lambda x: _from.find(x), _to))
 
   @classmethod
   def supports_device(cls, device):
