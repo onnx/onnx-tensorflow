@@ -36,7 +36,7 @@ ______
 |Exp|1, 6|
 |Flatten|1|
 |Floor|1, 6|
-|GRU|N/A|
+|GRU|1, 3, 7|
 |GRUUnit|N/A|
 |Gather|1|
 |Gemm|1, 6|
@@ -52,7 +52,7 @@ ______
 |ImageScaler|N/A|
 |InstanceNormalization|N/A|
 |LRN|1|
-|LSTM|1|
+|LSTM|1, 7|
 |LeakyRelu|1, 6|
 |Less|1|
 |Log|1, 6|
@@ -77,7 +77,7 @@ ______
 |Pad|1, 2|
 |ParametricSoftplus|N/A|
 |Pow|1|
-|RNN|N/A|
+|RNN|1, 7|
 |RandomNormal|1|
 |RandomNormalLike|1|
 |RandomUniform|1|

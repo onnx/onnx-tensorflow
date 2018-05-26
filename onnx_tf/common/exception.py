@@ -33,7 +33,7 @@ class OpUnimplementedException(CustomException):
   def get_message(self, op, version=None):
     insert_message = op
     if version is not None:
-      insert_message = "{} with version of {}".format(op, version)
+      insert_message = "{} version {}".format(op, version)
     return self._message.format(insert_message)
 
 
