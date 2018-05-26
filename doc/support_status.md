@@ -139,7 +139,7 @@ ______
 |avg_pool|1, 7|
 |batch_norm|1, 6|
 |bias_add|1, 6|
-|cast|1|
+|cast|1, 6|
 |ceil|1, 6|
 |concat_v2|1, 4|
 |conv1_d|1|
