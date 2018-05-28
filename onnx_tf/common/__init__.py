@@ -147,6 +147,17 @@ ONNX_OP_TO_TF_OP = {
     "transpose": tf.transpose,
 }
 
+# TODO(fumihwh): promote some nn ops
+# Currently just used for RNNs activations mapping
+EXPERIMENTAL_ONNX_OP_TO_TF_OP = {
+    "affine": tf.contrib.distributions.bijectors.AffineScalar,
+    "elu": tf.nn.elu,
+    "hard_sigmoid": tf.keras.backend.hard_sigmoid,
+    "leaky_relu": tf.nn.leaky_relu,
+    "softsign": tf.nn.softsign,
+    "softplus": tf.nn.softplus,
+    "thresholded_relu": tf.keras.layers.ThresholdedReLU,
+}
 
 def get_tf_shape_as_list(tf_shape_dim):
   return list(map(lambda x: x.size, list(tf_shape_dim)))
