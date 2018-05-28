@@ -123,7 +123,7 @@ class TensorflowBackend(TensorflowBackendBase):
     assert pads is not None
     num_sp_dim = int(len(kernel_shape))
 
-    if pads == [0] * num_sp_dim * 2 or pads is None:
+    if pads == [0] * num_sp_dim * 2:
       return "VALID"
 
     _, same_pads = cls._pool_get_shapes("SAME_UPPER", input_shape, kernel_shape,
