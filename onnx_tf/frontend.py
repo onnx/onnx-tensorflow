@@ -327,7 +327,7 @@ class TensorflowFrontendBase(object):
           exception.OP_UNIMPLEMENTED_EXCEPT(node.op)
         if node_proto is None:
           node_proto = FrontendHandler.make_node_from_tf_node(
-              node, onnx_op=node.op, should_check=False)
+              node, op_type=node.op, should_check=False)
         onnx_graph.add_node_proto(node_proto)
 
     output = TensorflowNode(output)

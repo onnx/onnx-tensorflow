@@ -28,7 +28,7 @@ class ConvMixin(object):
     transpose_node = cls.make_node_from_tf_node(
         node, [node.inputs[1]], [node.inputs[1] + "_T_" + unique_suffix],
         perm=[d + 1, d] + list(range(d)),
-        onnx_op="Transpose",
+        op_type="Transpose",
         name=node.inputs[1] + "_T_" + unique_suffix)
     conv_node = cls.make_node_from_tf_node(
         node, [node.inputs[0], node.inputs[1] + "_T_" + unique_suffix],

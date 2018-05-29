@@ -60,20 +60,20 @@ class FrontendHandler(Handler):
                              node,
                              inputs=None,
                              outputs=None,
-                             onnx_op=None,
+                             op_type=None,
                              name=None,
                              doc_string=None,
                              version=0,
                              should_check=True,
                              **kwargs):
     """ Helper method to make node.
-    The main api is same to onnx.helper.make_node with default value
+    The main api is almost same to onnx.helper.make_node with default value
     from TensorflowNode given.
 
     :param node: TensorflowNode.
     :param inputs: Inputs names. Default is node.inputs.
     :param outputs: Outputs name. Default is cls.get_outputs_names(node).
-    :param onnx_op: ONNX op name. Default is cls.ONNX_OP.
+    :param op_type: ONNX op name. Default is cls.ONNX_OP.
     :param name: Node name. Default is node.name.
     :param doc_string: optional documentation string.
     :param version: Version used for check node. Default is cls.VERSION.
@@ -85,7 +85,7 @@ class FrontendHandler(Handler):
     inputs = inputs if inputs is not None else node.inputs
     outputs = outputs if outputs is not None else cls.get_outputs_names(node)
     node = helper.make_node(
-        onnx_op if onnx_op is not None else cls.ONNX_OP,
+        op_type if op_type is not None else cls.ONNX_OP,
         inputs,
         outputs,
         name=name if name is not None else node.name,
