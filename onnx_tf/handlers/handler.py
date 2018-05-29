@@ -23,7 +23,7 @@ class Handler(object):
   SINCE_VERSION = 0
 
   @classmethod
-  def check(cls):
+  def check_cls(cls):
     if not cls.ONNX_OP:
       raise ValueError(
           "{} doesn't have ONNX_OP. "
