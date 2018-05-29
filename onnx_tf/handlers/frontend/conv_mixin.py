@@ -25,12 +25,12 @@ class ConvMixin(object):
     pads = cls.cal_pads(auto_pad, len(spatial_indices), input_shape,
                         output_shape, strides, kernel_shape)
     unique_suffix = get_unique_suffix()
-    transpose_node = cls.make_node(
+    transpose_node = cls.make_node_from_tf_node(
         node, [node.inputs[1]], [node.inputs[1] + "_T_" + unique_suffix],
         perm=[d + 1, d] + list(range(d)),
         onnx_op="Transpose",
         name=node.inputs[1] + "_T_" + unique_suffix)
-    conv_node = cls.make_node(
+    conv_node = cls.make_node_from_tf_node(
         node, [node.inputs[0], node.inputs[1] + "_T_" + unique_suffix],
         pads=pads,
         kernel_shape=kernel_shape,
