@@ -20,6 +20,7 @@ from onnx.helper import make_opsetid
 from onnx.helper import make_tensor
 from onnx.helper import make_tensor_value_info
 from onnx.helper import mapping
+from onnx.optimizer import optimize
 import tensorflow as tf
 from tensorflow.core.framework.attr_value_pb2 import AttrValue
 
@@ -344,6 +345,7 @@ class TensorflowFrontendBase(object):
                                      graph_def,
                                      output,
                                      opset=0,
+                                     optimizer_passes=None,
                                      producer_name="onnx-tensorflow",
                                      graph_name="graph",
                                      ignore_unimplemented=False):
@@ -358,6 +360,7 @@ class TensorflowFrontendBase(object):
     :param opset: Opset version number, list or tuple.
       Default is 0 means using latest version with domain ''.
       List or tuple items should be (str domain, int version number).
+    :param optimizer_passes: List of optimization names.
     :param producer_name: The name of the producer.
     :param graph_name: The name of the output ONNX Graph.
     :param ignore_unimplemented: Convert to ONNX model and ignore all the operators
@@ -393,6 +396,9 @@ class TensorflowFrontendBase(object):
         graph_def, output_node, opset, graph_name, ignore_unimplemented)
     onnx_model = make_model(
         onnx_graph, producer_name=producer_name, opset_imports=opset_imports)
+
+    if isinstance(optimizer_passes, (list, tuple)) and optimizer_passes:
+      onnx_model = optimize(onnx_model, optimizer_passes)
 
     return onnx_model
 
