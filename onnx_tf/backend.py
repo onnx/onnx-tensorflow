@@ -171,35 +171,6 @@ class TensorflowBackendBase(Backend):
 
   backend_version_cache = {}
 
-  # input_shape, kernel_shape, strides are specified for
-  # spatial dims only.
-  @classmethod
-  def get_tf_pad(cls, input_shape, kernel_shape, strides, pads):
-    assert pads is not None
-    num_dim = int(len(input_shape))
-    num_sp_dim = int(len(kernel_shape))
-
-    if pads == [0] * num_sp_dim * 2 or pads is None:
-      return "VALID"
-
-    is_same_padding = True
-    for (input_size, stride_size, kernel_size, left_pad, right_pad) in zip(
-        input_shape, strides, kernel_shape, pads[:num_sp_dim],
-        pads[num_sp_dim:]):
-      output_size = ceil(float(input_size) / float(stride_size))
-      padding_total = int(
-          (output_size - 1) * stride_size + kernel_size - input_size)
-      padding_left = int(floor(float(padding_total) / 2.0))
-      padding_right = padding_total - padding_left
-
-      is_same_padding = is_same_padding and (left_pad == padding_left and
-                                             right_pad == padding_right)
-
-    if is_same_padding:
-      return "SAME"
-
-    return PAD_TF_INCOMPATIBLE
-
   @classmethod
   def get_padding_as_op(cls, x, pads):
     num_dim = int(len(pads) / 2)
