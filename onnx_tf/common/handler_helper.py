@@ -46,6 +46,13 @@ def get_frontend_coverage():
   :return: onnx_coverage: e.g. {'domain': {'ONNX_OP': [versions], ...}, ...}
   tf_coverage: e.g. {'domain': {'TF_OP': [versions], ...}, ...}
   """
+
+  def _update_coverage(coverage, domain, key, versions):
+    domain_coverage = coverage.setdefault(domain, {})
+    vers = domain_coverage.get(key, [])
+    vers.extend(versions)
+    domain_coverage[key] = sorted(list(set(vers)))
+
   tf_coverage = {}
   onnx_coverage = {}
   for handler in FrontendHandler.__subclasses__():
@@ -54,6 +61,6 @@ def get_frontend_coverage():
     versions = handler.get_versions()
     domain = handler.DOMAIN
     for tf_op in handler.TF_OP:
-      tf_coverage.setdefault(domain, {})[op_name_to_lower(tf_op)] = versions
-    onnx_coverage.setdefault(domain, {})[handler.ONNX_OP] = versions
+      _update_coverage(tf_coverage, domain, op_name_to_lower(tf_op), versions)
+    _update_coverage(onnx_coverage, domain, handler.ONNX_OP, versions)
   return onnx_coverage, tf_coverage

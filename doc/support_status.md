@@ -130,15 +130,15 @@ ______
 | -------------- |:------------------:|
 |abs|1, 6|
 |acos|7|
-|add|1, 6|
+|add|1, 6, 7|
 |add_n|1, 6|
 |arg_max|1|
 |arg_min|1|
 |asin|7|
 |atan|7|
 |avg_pool|1, 7|
-|batch_norm|1, 6|
-|bias_add|1, 6|
+|batch_norm|1, 6, 7|
+|bias_add|1, 6, 7|
 |cast|1, 6|
 |ceil|1, 6|
 |concat_v2|1, 4|
@@ -146,21 +146,21 @@ ______
 |conv2_d|1|
 |conv3_d|1|
 |cos|7|
-|equal|1|
+|equal|1, 7|
 |exp|1, 6|
 |expand_dims|1|
 |fill|1|
 |floor|1, 6|
-|fused_batch_norm|1, 6|
-|greater|1|
+|fused_batch_norm|1, 6, 7|
+|greater|1, 7|
 |identity|1|
-|less|1|
+|less|1, 7|
 |log|1, 6|
 |log_softmax|1|
-|logical_and|1|
+|logical_and|1, 7|
 |logical_not|1|
-|logical_or|1|
-|logical_xor|1|
+|logical_or|1, 7|
+|logical_xor|1, 7|
 |mat_mul|1|
 |max|1|
 |max_pool|1|
@@ -168,14 +168,14 @@ ______
 |mean|1|
 |min|1|
 |minimum|1, 6|
-|mul|1, 6|
+|mul|1, 6, 7|
 |neg|1, 6|
 |pad|1, 2|
-|pow|1|
+|pow|1, 7|
 |prod|1|
 |random_standard_normal|1|
 |random_uniform|1|
-|real_div|1, 6|
+|real_div|1, 6, 7|
 |reciprocal|1, 6|
 |relu|1, 6|
 |reshape|1, 5|
@@ -190,10 +190,10 @@ ______
 |split_v|1, 2|
 |sqrt|1, 6|
 |squeeze|1|
-|sub|1, 6|
+|sub|1, 6, 7|
 |sum|1|
 |tan|7|
 |tanh|1, 6|
-|tile|1|
+|tile|6|
 |top_k_v2|1|
 |transpose|1|
