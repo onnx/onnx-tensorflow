@@ -17,4 +17,5 @@ class TopK(FrontendHandler):
   def version_1(cls, node, **kwargs):
     consts = kwargs["consts"]
     k = int(consts[node.inputs[1]])
-    return cls.make_node(node, inputs=[node.inputs[0]], k=k, axis=-1)
+    return cls.make_node_from_tf_node(
+        node, inputs=[node.inputs[0]], k=k, axis=-1)

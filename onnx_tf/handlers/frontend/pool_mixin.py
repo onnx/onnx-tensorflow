@@ -33,7 +33,7 @@ class PoolMixin(object):
     node_kwargs = {}
     if "count_include_pad" in kwargs:
       node_kwargs["count_include_pad"] = kwargs["count_include_pad"]
-    return cls.make_node(
+    return cls.make_node_from_tf_node(
         node, [node.inputs[0]],
         pads=pads,
         kernel_shape=kernel_shape,

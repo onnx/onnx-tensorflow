@@ -16,7 +16,7 @@ def get_all_frontend_handlers(opset_dict):
   """
   handlers = {}
   for handler in FrontendHandler.__subclasses__():
-    handler.check()
+    handler.check_cls()
 
     domain = handler.DOMAIN
     version = opset_dict[domain]
@@ -56,7 +56,7 @@ def get_frontend_coverage():
   tf_coverage = {}
   onnx_coverage = {}
   for handler in FrontendHandler.__subclasses__():
-    handler.check()
+    handler.check_cls()
 
     versions = handler.get_versions()
     domain = handler.DOMAIN

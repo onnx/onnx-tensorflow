@@ -27,19 +27,20 @@ class SpaceToDepth(FrontendHandler):
       space_to_depth_unique_suffix = get_unique_suffix()
       transpose_name = node.inputs[0] + "_T_" + transpose_unique_suffix
       space_to_depth_name = node.inputs[0] + "_T_STD_" + space_to_depth_unique_suffix
-      before_transpose_node = cls.make_node(
+      before_transpose_node = cls.make_node_from_tf_node(
           node, [node.inputs[0]], [transpose_name],
           perm=get_perm_from_formats(data_format, "NCHW"),
-          onnx_op="Transpose",
+          op_type="Transpose",
           name=transpose_name)
-      space_to_depth_node = cls.make_node(
+      space_to_depth_node = cls.make_node_from_tf_node(
           node, [transpose_name], [space_to_depth_name],
           blocksize=blocksize,
           name=space_to_depth_name)
-      after_transpose_node = cls.make_node(
+      after_transpose_node = cls.make_node_from_tf_node(
           node, [space_to_depth_name],
           perm=get_perm_from_formats("NCHW", data_format),
-          onnx_op="Transpose")
+          op_type="Transpose")
       return [before_transpose_node, space_to_depth_node, after_transpose_node]
 
-    return cls.make_node(node, [node.inputs[0]], blocksize=blocksize)
+    return cls.make_node_from_tf_node(
+        node, [node.inputs[0]], blocksize=blocksize)
