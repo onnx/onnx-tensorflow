@@ -34,25 +34,6 @@ def invert(dict):
     return inverse
 
 
-ONNX_TYPE_TO_TF_TYPE = {
-    TensorProto.FLOAT: tf.float32,
-    TensorProto.UINT8: tf.uint8,
-    TensorProto.INT8: tf.int8,
-    TensorProto.UINT16: tf.uint16,
-    TensorProto.INT16: tf.int16,
-    TensorProto.INT32: tf.int32,
-    TensorProto.INT64: tf.int64,
-    TensorProto.BOOL: tf.bool,
-    TensorProto.FLOAT16: tf.float16,
-    TensorProto.DOUBLE: tf.float64,
-    TensorProto.COMPLEX64: tf.complex64,
-    TensorProto.COMPLEX128: tf.complex128,
-    TensorProto.STRING: tf.string,
-    # TODO: uncomment this in the future
-    # TensorProto.UINT32: tf.uint32,
-    # TensorProto.UINT64: tf.uint64,
-}
-
 TF_TYPE_ENUM = [
     "undefined",
     tf.float32,
@@ -260,8 +241,10 @@ class AttrConverter(object):
       raise ValueError("Unsupported ONNX attribute: {}".format(attr_proto))
 
 
-# Keyed by old attribute names.
-attr_translator = {
+class AttrTranslator(object):
+
+  # Keyed by old attribute names.
+  _tf_attr_translator = {
     "_output_shapes": lambda x: list(map(lambda shape: get_tf_shape_as_list(shape.dim), x.list.shape)),
     "shape": lambda x: get_tf_shape_as_list(x.shape.dim),
     "T": lambda x: data_type.tf2onnx(x.type),
@@ -271,7 +254,21 @@ attr_translator = {
     "seed": lambda x: float(x.i),
     "keep_dims": lambda x: int(x.b),
     "squeeze_dims": lambda x: list(x.list.i),
-}
+  }
+
+  _onnx_attr_translator = {
+    "dtype": lambda cls, x: data_type.onnx2tf(x),
+    "keepdims": lambda cls, x: bool(x),
+    "to": lambda cls, x: data_type.onnx2tf(x),
+  }
+
+  @classmethod
+  def translate_tf(cls, key, val):
+    return cls._tf_attr_translator.get(key, lambda x: x)(val)
+
+  @classmethod
+  def translate_onnx(cls, key, val):
+    return cls._onnx_attr_translator.get(key, lambda x: x)(val)
 
 
 def get_unique_suffix():
@@ -319,3 +316,4 @@ def supports_device(device):
 PAD_TF_INCOMPATIBLE = "PAD_TF_INCOMPATIBLE"
 
 attr_converter = AttrConverter()
+attr_translator = AttrTranslator()

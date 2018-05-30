@@ -25,13 +25,14 @@ import tensorflow as tf
 
 from onnx_tf.backend_rep import TensorflowRep
 from onnx_tf.common import attr_converter
+from onnx_tf.common import attr_translator
 from onnx_tf.common import get_device_option
 from onnx_tf.opset_version import backend_opset_version
 from onnx_tf.tf_net import TensorflowNet
 
 from onnx_tf.common import (ONNX_OP_TO_TF_OP, ONNX_ATTR_TO_TF_ATTR,
                             ONNX_ATTR_TO_TF_ATTR_PER_OP,
-                            ONNX_ATTR_TO_REMOVE_PER_OP, ONNX_TYPE_TO_TF_TYPE,
+                            ONNX_ATTR_TO_REMOVE_PER_OP,
                             TF_TYPE_ENUM, op_name_to_lower, PAD_TF_INCOMPATIBLE)
 
 
@@ -77,11 +78,6 @@ class OnnxNode(object):
 class TensorflowBackendBase(Backend):
   """ Tensorflow Backend for ONNX
   """
-  attr_translator = {
-      "dtype": lambda cls, x: ONNX_TYPE_TO_TF_TYPE[x],
-      "keepdims": lambda cls, x: bool(x),
-      "to": lambda cls, x: ONNX_TYPE_TO_TF_TYPE[x],
-  }
 
   DEFAULT_ONNX_ATTR_PER_OP = {
       "random_normal": {

@@ -23,9 +23,9 @@ from onnx.helper import mapping
 import tensorflow as tf
 from tensorflow.core.framework.attr_value_pb2 import AttrValue
 
+from onnx_tf.common import attr_converter
 from onnx_tf.common import attr_translator
 from onnx_tf.common import exception
-from onnx_tf.common import get_attribute_value
 from onnx_tf.common.handler_helper import get_all_frontend_handlers
 from onnx_tf.handlers.frontend_handler import FrontendHandler
 
@@ -44,13 +44,10 @@ class TensorflowNode(object):
     self.attr = {}
 
     for key, val in node_proto.attr.items():
-      new_val = val
-
-      if key in attr_translator:
-        new_val = attr_translator[key](val)
+      new_val = attr_translator.translate_tf(key, val)
 
       if isinstance(new_val, AttrValue):
-        new_val = get_attribute_value(new_val)
+        new_val = attr_converter.onnx2tf(new_val)
 
       self.attr[key] = new_val
 

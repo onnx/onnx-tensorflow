@@ -86,6 +86,10 @@ class Handler(object):
     return Handler.property_register("TF_OP", ops)
 
   @staticmethod
+  def tf_func(func):
+    return Handler.property_register("TF_FUNC", func)
+
+  @staticmethod
   def domain(d):
     return Handler.property_register("DOMAIN", d)
 
@@ -102,4 +106,5 @@ class Handler(object):
 domain = Handler.domain
 onnx_op = Handler.onnx_op
 tf_op = Handler.tf_op
+tf_func = Handler.tf_func
 property_register = Handler.property_register
