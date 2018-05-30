@@ -77,6 +77,9 @@ Default is 0 means using latest version with domain ''.
 List or tuple items should be (str domain, int version number).
 
 
+`optimizer_passes` : List of optimization names.
+
+
 `producer_name` : The name of the producer.
 
 
