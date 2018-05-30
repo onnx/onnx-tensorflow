@@ -11,3 +11,7 @@ class LogicalAnd(LogicalMixin, FrontendHandler):
   @classmethod
   def version_1(cls, node, **kwargs):
     return cls.logical_op(node, **kwargs)
+
+  @classmethod
+  def version_7(cls, node, **kwargs):
+    return cls.logical_op(node, **kwargs)
