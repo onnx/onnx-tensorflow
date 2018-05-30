@@ -9,8 +9,6 @@ from __future__ import unicode_literals
 
 import importlib
 import warnings
-import sys
-from math import ceil, floor
 
 try:
   from itertools import izip as zip
@@ -18,60 +16,23 @@ except ImportError:  # will be 3.x series
   pass
 
 import numpy as np
+from onnx import defs
+from onnx import numpy_helper
+from onnx.backend.base import Backend
+from onnx.backend.base import Device
+from onnx.backend.base import namedtupledict
 import tensorflow as tf
-from tensorflow.python.client import device_lib
 
-from onnx_tf.tf_net import TensorflowNet
 from onnx_tf.backend_rep import TensorflowRep
+from onnx_tf.common import attr_converter
+from onnx_tf.common import get_device_option
 from onnx_tf.opset_version import backend_opset_version
+from onnx_tf.tf_net import TensorflowNet
+
 from onnx_tf.common import (ONNX_OP_TO_TF_OP, ONNX_ATTR_TO_TF_ATTR,
                             ONNX_ATTR_TO_TF_ATTR_PER_OP,
                             ONNX_ATTR_TO_REMOVE_PER_OP, ONNX_TYPE_TO_TF_TYPE,
                             TF_TYPE_ENUM, op_name_to_lower, PAD_TF_INCOMPATIBLE)
-from onnx.backend.base import (
-    Backend,
-    Device,
-    DeviceType,
-    namedtupledict,
-)
-
-from onnx import defs
-from onnx import numpy_helper
-
-
-# TODO: allow more flexible placement
-def get_device_option(device):
-  m = {DeviceType.CPU: '/cpu', DeviceType.CUDA: '/gpu'}
-  return m[device.type]
-
-
-# TODO: Move this into ONNX main library
-def convert_attribute_proto(onnx_arg):
-  """
-  Convert an ONNX AttributeProto into an appropriate Python object
-  for the type.
-  NB: Tensor attribute gets returned as the straight proto.
-  """
-  if onnx_arg.HasField('f'):
-    return onnx_arg.f
-  elif onnx_arg.HasField('i'):
-    return onnx_arg.i
-  elif onnx_arg.HasField('s'):
-    return str(onnx_arg.s, 'utf-8') \
-      if sys.version_info[0] >= 3 else onnx_arg.s
-  elif onnx_arg.HasField('t'):
-    return onnx_arg.t  # this is a proto!
-  elif onnx_arg.floats:
-    return list(onnx_arg.floats)
-  elif onnx_arg.ints:
-    return list(onnx_arg.ints)
-  elif onnx_arg.strings:
-    str_list = list(onnx_arg.strings)
-    if sys.version_info[0] >= 3:
-      str_list = map(lambda x: str(x, 'utf-8'), str_list)
-    return str_list
-  else:
-    raise ValueError("Unsupported ONNX attribute: {}".format(onnx_arg))
 
 
 class OnnxAttributes(dict):
@@ -84,7 +45,7 @@ class OnnxAttributes(dict):
   def from_onnx(args):
     d = OnnxAttributes()
     for arg in args:
-      d[arg.name] = convert_attribute_proto(arg)
+      d[arg.name] = attr_converter.onnx2tf(arg)
     return d
 
   def caffe2(self, kmap=lambda x: x):
@@ -427,37 +388,9 @@ class TensorflowBackendBase(Backend):
     return [ONNX_OP_TO_TF_OP[op_name_to_lower(node.op_type)] \
               (*inputs, **attrs)]
 
-  @classmethod
-  def get_data_format(cls, x_rank, support_cuda):
-    sp_dim_names = ["D", "H", "W"]
-    sp_dim_lst = []
-    for i in range(x_rank - 2):
-      sp_dim_lst.append(sp_dim_names[-i - 1])
-
-    sp_dim_string = "".join(reversed(sp_dim_lst))
-    storage_format = "NC" + sp_dim_string
-
-    if support_cuda:
-      compute_format = "NC" + sp_dim_string
-    else:
-      compute_format = "N" + sp_dim_string + "C"
-    return storage_format, compute_format
-
-  @classmethod
-  def supports_device(cls, device):
-    if device == "CUDA":
-      local_device_protos = device_lib.list_local_devices()
-      return len(
-          [x.name for x in local_device_protos if x.device_type == 'GPU']) > 0
-    elif device == "CPU":
-      return True
-    return False
-
 
 prepare = TensorflowBackendBase.prepare
 
 run_node = TensorflowBackendBase.run_node
 
 run_model = TensorflowBackendBase.run_model
-
-supports_device = TensorflowBackendBase.supports_device
