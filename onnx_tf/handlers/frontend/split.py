@@ -20,7 +20,7 @@ class Split(FrontendHandler):
   def version_1(cls, node, **kwargs):
     consts = kwargs["consts"]
     axis = int(consts[node.inputs[2]])
-    return cls.make_node(
+    return cls.make_node_from_tf_node(
         node, [node.inputs[0], node.inputs[1]],
         cls.get_outputs_names(node, num=node.attr["num_split"]),
         axis=axis)
@@ -30,7 +30,7 @@ class Split(FrontendHandler):
     consts = kwargs["consts"]
     split = consts[node.inputs[1]]
     axis = int(consts[node.inputs[2]])
-    return cls.make_node(
+    return cls.make_node_from_tf_node(
         node, [node.inputs[0]],
         cls.get_outputs_names(node, num=node.attr["num_split"]),
         split=split,

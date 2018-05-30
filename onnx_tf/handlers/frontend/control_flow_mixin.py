@@ -19,11 +19,11 @@ class LogicalMixin(object):
       axis = get_broadcast_axis(*[node_dict[x] for x in node.inputs[0:2]])
       if axis is not None:
         ex_kwargs["axis"] = axis
-    return cls.make_node(node, **ex_kwargs)
+    return cls.make_node_from_tf_node(node, **ex_kwargs)
 
   @classmethod
   def _np_broadcast(cls, node, **kwargs):
-    return cls.make_node(node)
+    return cls.make_node_from_tf_node(node)
 
 
 class ComparisonMixin(object):
@@ -42,8 +42,8 @@ class ComparisonMixin(object):
     axis = get_broadcast_axis(*[node_dict[x] for x in node.inputs[0:2]])
     if axis is not None:
       ex_kwargs["axis"] = axis
-    return cls.make_node(node, **ex_kwargs)
+    return cls.make_node_from_tf_node(node, **ex_kwargs)
 
   @classmethod
   def _np_broadcast(cls, node, **kwargs):
-    return cls.make_node(node)
+    return cls.make_node_from_tf_node(node)
