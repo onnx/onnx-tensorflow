@@ -110,6 +110,7 @@ test_cases = [
 ("test_exp", tf.exp, "Exp", [get_rnd([10, 10])], {}),
 ("test_expand_dims", tf.expand_dims, "ExpandDims", [get_rnd([1, 2, 3, 4])], {"axis": 1}),
 ("test_floor", tf.floor, "Floor", [get_rnd([10, 10], -10, 10)], {}),
+("test_identity", tf.identity, "Identity", [get_rnd([10, 10])], {}),
 ("test_log", tf.log, "Log", [get_rnd([10, 10])], {}),
 ("test_log_softmax", tf.nn.log_softmax, "LogSoftmax", [get_rnd([10, 10])], {}),
 ("test_or", tf.logical_or, "LogicalOr", [get_rnd([10, 10], dtype=np.bool_), get_rnd([10, 10], dtype=np.bool_)], {}),
