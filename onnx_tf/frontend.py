@@ -20,6 +20,7 @@ from onnx.helper import make_opsetid
 from onnx.helper import make_tensor
 from onnx.helper import make_tensor_value_info
 from onnx.helper import mapping
+from onnx.optimizer import optimize
 import tensorflow as tf
 from tensorflow.core.framework.attr_value_pb2 import AttrValue
 
@@ -343,7 +344,8 @@ class TensorflowFrontend(object):
                                      opset=0,
                                      producer_name="onnx-tensorflow",
                                      graph_name="graph",
-                                     ignore_unimplemented=False):
+                                     ignore_unimplemented=False,
+                                     optimizer_passes=None):
     """Converts a Tensorflow Graph Proto to an ONNX model
 
     This function converts a Tensorflow Graph proto to an equivalent
@@ -361,6 +363,9 @@ class TensorflowFrontend(object):
       that are not currently supported by onnx-tensorflow.
       This is an experimental feature. By enabling this feature,
       the model would not be guaranteed to match the ONNX specifications.
+    :param optimizer_passes: List of optimization names c.f.
+      https://github.com/onnx/onnx/blob/master/onnx/optimizer.py for available
+      optimization passes.
 
     :returns: The equivalent ONNX Model Proto object.
     """
@@ -390,6 +395,9 @@ class TensorflowFrontend(object):
         graph_def, output_node, opset, graph_name, ignore_unimplemented)
     onnx_model = make_model(
         onnx_graph, producer_name=producer_name, opset_imports=opset_imports)
+
+    if isinstance(optimizer_passes, (list, tuple)) and optimizer_passes:
+      onnx_model = optimize(onnx_model, optimizer_passes)
 
     return onnx_model
 

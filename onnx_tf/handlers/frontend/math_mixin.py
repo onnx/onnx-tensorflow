@@ -30,7 +30,7 @@ class ArithmeticMixin(object):
 
   @classmethod
   def _np_broadcast(cls, node, **kwargs):
-    return cls.make_node(node)
+    return cls.make_node_from_tf_node(node)
 
 
 class ReductionMixin(object):

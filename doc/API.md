@@ -89,6 +89,11 @@ This is an experimental feature. By enabling this feature,
 the model would not be guaranteed to match the ONNX specifications.
 
 
+`optimizer_passes` : List of optimization names c.f.
+https://github.com/onnx/onnx/blob/master/onnx/optimizer.py for available
+optimization passes.
+
+
 _returns_:
 
 The equivalent ONNX Model Proto object.
