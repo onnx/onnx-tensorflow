@@ -1559,3 +1559,19 @@ class TensorflowBackend(TensorflowBackendBase):
   @classmethod
   def handle_greater(cls, node, input_dict):
     return [cls._bin_op(node, input_dict, tf.greater)]
+
+  @classmethod
+  def handle_instance_normalization(cls, node, input_dict):
+    epsilon = node.attrs.get("epsilon", 1e-5)
+    with tf.Session() as sess:
+      gamma = input_dict[node.inputs[1]].eval()
+      beta = input_dict[node.inputs[2]].eval()
+      param_init = { "gamma": tf.constant_initializer(gamma),
+                    "beta": tf.constant_initializer(beta) }
+    return [tf.contrib.layers.instance_norm(
+                                            input_dict[node.inputs[0]],
+                                            center=True,
+                                            scale=True,
+                                            epsilon=epsilon,
+                                            param_initializers=param_init,
+                                            data_format="NCHW")]
