@@ -24,20 +24,22 @@ class BackendHandler(Handler):
   def process_attrs(cls, attrs):
     return attrs
 
-  @classmethod
-  def check_cls(cls):
-    super(BackendHandler, cls).check_cls()
-    if not cls.TF_FUNC:
-      raise ValueError(
-          "{} doesn't have TF_FUNC. "
-          "Please use Handler.tf_func decorator to register TF_FUNC.".format(
-              cls.__name__))
+  # @classmethod
+  # def check_cls(cls):
+  #   super(BackendHandler, cls).check_cls()
+  #   if not cls.TF_FUNC:
+  #     raise ValueError(
+  #         "{} doesn't have TF_FUNC. "
+  #         "Please use Handler.tf_func decorator to register TF_FUNC.".format(
+  #             cls.__name__))
 
   @classmethod
-  def make_tf_node(cls, node, tf_func=None, inputs=None, attrs=None, name=None, **kwargs):
+  def make_tf_tensor(cls, node, tf_func=None, inputs=None, attrs=None, name=None, **kwargs):
     tensor_dict = kwargs.pop("tensor_dict", {})
     tf_func = tf_func or cls.TF_FUNC
     inputs = inputs or [tensor_dict.get(inp, None) for inp in node.inputs]
     attrs = attrs or cls.process_attrs(node.attrs)
     name = name or node.name
-    return tf_func(*inputs, name=name, **attrs)
+    if name != "":
+      attrs["name"] = name
+    return tf_func(*inputs, **attrs)

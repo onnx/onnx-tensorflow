@@ -7,15 +7,11 @@ from onnx_tf.handlers.handler import tf_op
 from .math_mixin import BasicMathMixin
 
 
-@onnx_op("Abs")
-@tf_op("Abs")
-@tf_func(tf.abs)
-class Abs(BasicMathMixin, BackendHandler):
+@onnx_op("Atan")
+@tf_op("Atan")
+@tf_func(tf.atan)
+class Atan(BasicMathMixin, BackendHandler):
 
   @classmethod
-  def version_1(cls, node, **kwargs):
-    return [cls.make_tf_tensor(node, **kwargs)]
-
-  @classmethod
-  def version_6(cls, node, **kwargs):
+  def version_7(cls, node, **kwargs):
     return [cls.make_tf_tensor(node, **kwargs)]

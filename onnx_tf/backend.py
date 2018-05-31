@@ -7,7 +7,6 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-import importlib
 import warnings
 
 try:
@@ -15,24 +14,22 @@ try:
 except ImportError:  # will be 3.x series
   pass
 
-import numpy as np
 from onnx import defs
 from onnx import numpy_helper
 from onnx.backend.base import Backend
 from onnx.backend.base import Device
 from onnx.backend.base import namedtupledict
+from onnx.helper import make_opsetid
 import tensorflow as tf
 
 from onnx_tf.backend_rep import TensorflowRep
 from onnx_tf.common import attr_converter
 from onnx_tf.common import attr_translator
 from onnx_tf.common import data_type
+from onnx_tf.common import exception
 from onnx_tf.common import get_device_option
-from onnx_tf.opset_version import backend_opset_version
-
-from onnx_tf.common import (
-    ONNX_OP_TO_TF_OP, ONNX_ATTR_TO_TF_ATTR, ONNX_ATTR_TO_TF_ATTR_PER_OP,
-    ONNX_ATTR_TO_REMOVE_PER_OP, op_name_to_lower, PAD_TF_INCOMPATIBLE)
+from onnx_tf.common import supports_device  # noqa
+from onnx_tf.common.handler_helper import get_all_backend_handlers
 
 
 # TODO: Move this into ONNX main library
@@ -49,8 +46,11 @@ class OnnxNode(object):
   def __init__(self, node):
     self.name = str(node.name)
     self.op_type = str(node.op_type)
-    self.attrs = dict(
-        [(attr.name, attr_converter.onnx2tf(attr)) for attr in node.attribute])
+    self.domain = str(node.domain)
+    self.attrs = dict([(attr.name,
+                        attr_translator.translate_onnx(
+                            attr.name, attr_converter.onnx2tf(attr)))
+                       for attr in node.attribute])
     self.inputs = list(node.input)
     self.outputs = list(node.output)
     self.node_proto = node
@@ -110,16 +110,21 @@ class TensorflowBackendBase(Backend):
   backend_version_cache = {}
 
   @classmethod
-  def get_padding_as_op(cls, x, pads):
-    num_dim = int(len(pads) / 2)
+  def prepare(cls, model, device='CPU', **kwargs):
+    """Prepare an ONNX model for Tensorflow Backend
 
-    tf_pads = np.transpose(np.array(pads).reshape([2, num_dim]))
-    tf_pads = [0, 0, 0, 0] + tf_pads.flatten().tolist()
+    This function converts an ONNX model to an internel representation
+    of the computational graph called TensorflowRep and returns
+    the converted representation.
 
-    padding = tf.constant(
-        np.array(tf_pads).reshape([num_dim + 2, 2])
-        .astype(np.int32))  # tf requires int32 paddings
-    return tf.pad(x, padding)
+    :param model: the ONNX model to be converted
+    :param device: the device to execute this model on
+
+    :returns: a TensorflowRep class object representing the ONNX model
+    """
+    super(TensorflowBackendBase, cls).prepare(model, device, **kwargs)
+
+    return cls.onnx_model_to_tensorflow_rep(model)
 
   @classmethod
   def _explicit_broadcast(cls, tensor, broadcast_dim=1, total_num_dim=4):
@@ -147,7 +152,7 @@ class TensorflowBackendBase(Backend):
     return op_func(x, y)
 
   @classmethod
-  def run_node(cls, node, inputs, device='CPU'):
+  def run_node(cls, node, inputs, device='CPU', outputs_info=None, **kwargs):
     super(TensorflowBackendBase, cls).run_node(node, inputs, device)
     node_graph = tf.Graph()
     with node_graph.as_default():
@@ -167,7 +172,6 @@ class TensorflowBackendBase(Backend):
       input_dict = dict(
           [(x[0], tf.constant(x[1])) for x in feed_dict_raw.items()])
       ops = cls._onnx_node_to_tensorflow_op(node, input_dict)
-      output_vals = []
 
       with tf.Session() as sess:
         with tf.device(device_option):
@@ -182,6 +186,8 @@ class TensorflowBackendBase(Backend):
 
   @classmethod
   def _onnx_graph_to_tensorflow_rep(cls, graph_def, opset):
+    handlers = cls._get_handlers(opset)
+
     tf_rep_graph = tf.Graph()
     with tf_rep_graph.as_default():
       # initializer: TensorProtos representing the values to initialize
@@ -222,8 +228,8 @@ class TensorflowBackendBase(Backend):
       for node in graph_def.node:
         onnx_node = OnnxNode(node)
         output_ops = cls._onnx_node_to_tensorflow_op(
-            onnx_node, tensor_dict, opset=opset)
-        curr_node_output_map = dict(list(zip(onnx_node.outputs, output_ops)))
+            onnx_node, tensor_dict, handlers, opset=opset)
+        curr_node_output_map = dict(zip(onnx_node.outputs, output_ops))
         tensor_dict.update(curr_node_output_map)
 
     tf_rep = TensorflowRep()
@@ -236,23 +242,6 @@ class TensorflowBackendBase(Backend):
     tf_rep.outputs = [value_info.name for value_info in graph_def.output]
     tf_rep.tensor_dict = tensor_dict
     return tf_rep
-
-  @classmethod
-  def prepare(cls, model, device='CPU', **kwargs):
-    """Prepare an ONNX model for Tensorflow Backend
-
-    This function converts an ONNX model to an internel representation
-    of the computational graph called TensorflowRep and returns
-    the converted representation.
-
-    :param model: the ONNX model to be converted
-    :param device: the device to execute this model on
-
-    :returns: a TensorflowRep class object representing the ONNX model
-    """
-    super(TensorflowBackendBase, cls).prepare(model, device, **kwargs)
-
-    return cls.onnx_model_to_tensorflow_rep(model)
 
   @classmethod
   def _onnx_initializer_to_input_dict_items(cls, initializer):
@@ -269,7 +258,7 @@ class TensorflowBackendBase(Backend):
             for init in initializer]
 
   @classmethod
-  def _onnx_node_to_tensorflow_op(cls, node, input_dict, opset=0):
+  def _onnx_node_to_tensorflow_op(cls, node, tensor_dict, handlers=None, opset=None):
     """
     Convert onnx node to tensorflow op.
 
@@ -281,83 +270,18 @@ class TensorflowBackendBase(Backend):
     Returns:
       Tensorflow op
     """
-    op_name_lowered = op_name_to_lower(node.op_type)
-    handler_name = "handle_" + op_name_lowered
-
-    # Check if specialized handler exists.
-    versions = backend_opset_version[node.op_type]
-
-    if opset == 0:
-      # use the maximum opset version available that is
-      # smaller or equal to the version supported by
-      # the onnx package.
-      versions = filter(lambda v: v <= defs.onnx_opset_version(), versions)
-      version = max(versions)
+    handlers = handlers or cls._get_handlers(opset)
+    handler = handlers[node.domain].get(node.op_type, None)
+    if handler:
+      return handler.handle(node, tensor_dict=tensor_dict)
     else:
-      versions = sorted(versions + [opset])
-      version = versions[max([i for i, v in enumerate(versions) if v == opset])
-                         - 1]
-
-    backend_ver = 'backend_v{}'.format(version)
-    backend = cls.backend_version_cache.setdefault(
-        backend_ver,
-        importlib.import_module(
-            'onnx_tf.backends.' + backend_ver).TensorflowBackend)
-
-    if hasattr(backend, handler_name):
-      method_to_call = getattr(backend, handler_name)
-      return method_to_call(node, input_dict)
-    elif op_name_lowered in ONNX_OP_TO_TF_OP.keys():
-      return backend.handle_trivial(node, input_dict)
-    else:
-      raise NotImplementedError("{} op is not implemented.".format(
-          node.op_type))
+      exception.OP_UNIMPLEMENTED_EXCEPT(node.op_type)
 
   @classmethod
-  def handle_trivial(cls, node, input_dict):
-    op_name_lowered = op_name_to_lower(node.op_type)
-
-    attrs = dict([(x, node.attrs[x]) for x in node.attrs.keys()])
-
-    if op_name_lowered in cls.DEFAULT_ONNX_ATTR_PER_OP:
-      default_attrs = cls.DEFAULT_ONNX_ATTR_PER_OP[op_name_lowered]
-      default_attrs.update(attrs)
-      attrs = default_attrs
-
-    # Perform automatic attribute value translation.
-    attrs = dict([(x, cls.attr_translator[x](cls, attrs[x]) \
-      if x in cls.attr_translator else attrs[x]) \
-                  for x in attrs.keys()])
-
-    # Create an identity map from onnx attribute names to tf
-    # attribute names.
-    attr_map = dict([(x, x) for x in attrs.keys()])
-
-    # Modify the map accoridng to onnx_tf_attribute_map.
-    attr_map = dict([(x, ONNX_ATTR_TO_TF_ATTR[x] \
-      if x in ONNX_ATTR_TO_TF_ATTR.keys() else x) \
-                     for x in attr_map.keys()])
-
-    # TODO: Per op attribute name mapping has the final say.
-
-    # Modify the map according to onnx_tf_per_op_attr_map
-    attr_map = dict([(x, ONNX_ATTR_TO_TF_ATTR_PER_OP[op_name_lowered][x]
-                      if op_name_lowered in ONNX_ATTR_TO_TF_ATTR_PER_OP and
-                      x in ONNX_ATTR_TO_TF_ATTR_PER_OP[op_name_lowered].keys()
-                      else attr_map[x]) for x in attr_map.keys()])
-
-    # Substitute attribute names in attrs.
-    attrs = dict([(attr_map[x], y) for (x, y) in attrs.items()])
-    # Remove the key according to onnx_tf_per_op_attr_remove
-    attrs = {
-        x: attrs[x]
-        for x in attrs
-        if not (op_name_lowered in ONNX_ATTR_TO_REMOVE_PER_OP and
-                x in ONNX_ATTR_TO_REMOVE_PER_OP[op_name_lowered])
-    }
-    inputs = [input_dict[name] for name in node.inputs]
-    return [ONNX_OP_TO_TF_OP[op_name_to_lower(node.op_type)] \
-              (*inputs, **attrs)]
+  def _get_handlers(cls, opset):
+    opset = opset or make_opsetid(defs.ONNX_DOMAIN, defs.onnx_opset_version())
+    opset_dict = dict([(o.domain, o.version) for o in opset])
+    return get_all_backend_handlers(opset_dict)
 
 
 prepare = TensorflowBackendBase.prepare

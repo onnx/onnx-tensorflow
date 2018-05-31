@@ -38,7 +38,7 @@ class ReductionMixin(object):
   @classmethod
   def args_check(cls, node, **kwargs):
     if node.inputs[1] not in kwargs["consts"]:
-      exception.CONST_NOT_FOUND_EXCEPT(node.inputs[1], node.op)
+      exception.CONST_NOT_FOUND_EXCEPT(node.inputs[1], node.op_type)
 
   @classmethod
   def reduction_op(cls, node, **kwargs):

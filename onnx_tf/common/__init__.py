@@ -7,7 +7,6 @@ import re
 import sys
 import uuid
 
-from onnx import TensorProto
 from onnx.backend.base import DeviceType
 import tensorflow as tf
 from tensorflow.python.client import device_lib
@@ -257,9 +256,9 @@ class AttrTranslator(object):
   }
 
   _onnx_attr_translator = {
-    "dtype": lambda cls, x: data_type.onnx2tf(x),
-    "keepdims": lambda cls, x: bool(x),
-    "to": lambda cls, x: data_type.onnx2tf(x),
+      "dtype": lambda x: data_type.onnx2tf(x),
+      "keepdims": lambda x: bool(x),
+      "to": lambda x: data_type.onnx2tf(x),
   }
 
   @classmethod
@@ -304,8 +303,8 @@ def get_data_format(x_rank, support_cuda):
 def supports_device(device):
   if device == "CUDA":
     local_device_protos = device_lib.list_local_devices()
-    return len(
-        [x.name for x in local_device_protos if x.device_type == 'GPU']) > 0
+    return len([x.name for x in local_device_protos if x.device_type == 'GPU'
+                ]) > 0
   elif device == "CPU":
     return True
   return False

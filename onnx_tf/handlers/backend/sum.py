@@ -10,15 +10,17 @@ from .math_mixin import ArithmeticMixin
 @onnx_op("Sum")
 @tf_op("AddN")
 @tf_func(tf.add_n)
-class Add(ArithmeticMixin, BackendHandler):
+class Sum(ArithmeticMixin, BackendHandler):
 
   @classmethod
   def _common(cls, node, **kwargs):
     tensor_dict = kwargs.pop("tensor_dict", {})
-    return [cls.make_tf_node(
-        node,
-        inputs=[[tensor_dict.get(inp, None) for inp in node.inputs]],
-        **kwargs)]
+    return [
+        cls.make_tf_tensor(
+            node,
+            inputs=[[tensor_dict.get(inp, None) for inp in node.inputs]],
+            **kwargs)
+    ]
 
   @classmethod
   def version_1(cls, node, **kwargs):

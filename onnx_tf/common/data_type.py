@@ -2,6 +2,7 @@ from numbers import Number
 
 import numpy as np
 from onnx import mapping
+from onnx import TensorProto
 import tensorflow as tf
 
 
@@ -16,4 +17,10 @@ def tf2onnx(dtype):
 
 
 def onnx2tf(dtype):
-  return tf.as_dtype(mapping.TENSOR_TYPE_TO_NP_TYPE[dtype])
+  if isinstance(dtype, Number):
+    onnx_dype = dtype
+  elif isinstance(dtype, str):
+    onnx_dype = TensorProto.DataType.Value(dtype)
+  else:
+    raise RuntimeError("dtype should be number or str.")
+  return tf.as_dtype(mapping.TENSOR_TYPE_TO_NP_TYPE[onnx_dype])

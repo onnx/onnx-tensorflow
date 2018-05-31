@@ -11,12 +11,12 @@ class Convolution(ConvMixin, FrontendHandler):
 
   @classmethod
   def version_1(cls, node, **kwargs):
-    if node.op == "Conv1D":
+    if node.op_type == "Conv1D":
       d = 1
-    elif node.op == "Conv2D":
+    elif node.op_type == "Conv2D":
       d = 2
-    elif node.op == "Conv3D":
+    elif node.op_type == "Conv3D":
       d = 3
     else:
-      exception.OP_UNSUPPORTED_EXCEPT(node.op, "Tensorflow")
+      exception.OP_UNSUPPORTED_EXCEPT(node.op_type, "Tensorflow")
     return cls.conv_op(node, d=d, **kwargs)

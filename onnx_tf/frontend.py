@@ -54,7 +54,7 @@ class TensorflowNode(object):
     splitted_op_name = node_proto.op.split(".")
     self.domain = "" if len(splitted_op_name) == 1 else ".".join(
         splitted_op_name[:-1])
-    self.op = splitted_op_name[-1]
+    self.op_type = splitted_op_name[-1]
 
 
 class OnnxGraph(object):
@@ -149,7 +149,7 @@ class OnnxGraph(object):
 
   def add_input_proto(self, node):
     onnx_type = node.attr["dtype"]
-    shape = node.attr["shape"] if node.op != "Const" else node.attr[
+    shape = node.attr["shape"] if node.op_type != "Const" else node.attr[
         'value'].shape
     input_proto = make_tensor_value_info(node.name, onnx_type, shape)
     self._inputs_proto.append(input_proto)
@@ -262,7 +262,7 @@ class OnnxGraph(object):
                       **dict([(k, kwargs[k]) for k in kwargs if k in params]))
 
 
-class TensorflowFrontendBase(object):
+class TensorflowFrontend(object):
   """ Tensorflow Frontend for ONNX
   """
 
@@ -304,15 +304,15 @@ class TensorflowFrontendBase(object):
     node_tup = [(node.name, TensorflowNode(node)) for node in graph_def.node]
     for name, node in node_tup:
 
-      if node.op == "Placeholder":
+      if node.op_type == "Placeholder":
         onnx_graph.add_input_proto(node)
-      elif node.op == "Const":
+      elif node.op_type == "Const":
         onnx_graph.add_const(node)
         onnx_graph.add_const_proto(node)
         onnx_graph.add_input_proto(node)
       else:
         onnx_graph.add_value_info_proto(node)
-        handler = handlers[node.domain].get(node.op, None)
+        handler = handlers[node.domain].get(node.op_type, None)
         node_proto = None
         if handler:
           node_proto = handler.handle(
@@ -321,10 +321,10 @@ class TensorflowFrontendBase(object):
               node_dict=dict(node_tup),
               data_type_cast_map=onnx_graph.data_type_cast_map)
         else:
-          exception.OP_UNIMPLEMENTED_EXCEPT(node.op)
+          exception.OP_UNIMPLEMENTED_EXCEPT(node.op_type)
         if node_proto is None:
           node_proto = FrontendHandler.make_node_from_tf_node(
-              node, op_type=node.op, should_check=False)
+              node, op_type=node.op_type, should_check=False)
         onnx_graph.add_node_proto(node_proto)
 
     output = TensorflowNode(output)
@@ -403,6 +403,6 @@ class TensorflowFrontendBase(object):
       return sess.graph_def
 
 
-convert_graph = TensorflowFrontendBase.tensorflow_graph_to_onnx_graph
+convert_graph = TensorflowFrontend.tensorflow_graph_to_onnx_graph
 
-tensorflow_graph_to_onnx_model = TensorflowFrontendBase.tensorflow_graph_to_onnx_model
+tensorflow_graph_to_onnx_model = TensorflowFrontend.tensorflow_graph_to_onnx_model

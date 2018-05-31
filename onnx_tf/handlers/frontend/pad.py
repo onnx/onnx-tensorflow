@@ -13,7 +13,7 @@ class Pad(FrontendHandler):
   @classmethod
   def args_check(cls, node, **kwargs):
     if node.inputs[1] not in kwargs["consts"]:
-      exception.CONST_NOT_FOUND_EXCEPT(node.inputs[1], node.op)
+      exception.CONST_NOT_FOUND_EXCEPT(node.inputs[1], node.op_type)
     supported_modes = ["constant", "reflect"]
     mode = node.attr.get("mode", "constant")
     if mode.lower() not in supported_modes:

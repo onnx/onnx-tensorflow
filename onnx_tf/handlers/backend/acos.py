@@ -14,4 +14,4 @@ class Acos(BasicMathMixin, BackendHandler):
 
   @classmethod
   def version_7(cls, node, **kwargs):
-    return [cls.make_tf_node(node, **kwargs)]
+    return [cls.make_tf_tensor(node, **kwargs)]
