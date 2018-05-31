@@ -24,6 +24,6 @@ class BatchNormalization(FrontendHandler):
 
   @classmethod
   def version_7(cls, node, **kwargs):
-    return cls.make_node(
+    return cls.make_node_from_tf_node(
         node,
         epsilon=node.attr.get("epsilon", 1e-5))
