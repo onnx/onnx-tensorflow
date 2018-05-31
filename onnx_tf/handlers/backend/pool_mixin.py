@@ -13,6 +13,7 @@ from onnx_tf.common import get_data_format
 from onnx_tf.common import get_perm_from_formats
 from onnx_tf.common import PAD_TF_INCOMPATIBLE
 from onnx_tf.common import supports_device
+from .pad_mixin import PadMixin
 
 
 class PoolMixin(object):
@@ -61,7 +62,7 @@ class PoolMixin(object):
         return cls._compatibility_pool(node, input_dict, pooling_type)
     else:
       if pads != [0] * spatial_size * 2:
-        x = cls._get_padding_as_op(x, pads)
+        x = PadMixin.get_padding_as_op(x, pads)
       pad = "VALID"
 
     if support_cuda:
@@ -226,15 +227,3 @@ class PoolMixin(object):
       return "SAME"
 
     return PAD_TF_INCOMPATIBLE
-
-  @classmethod
-  def _get_padding_as_op(cls, x, pads):
-    num_dim = int(len(pads) / 2)
-
-    tf_pads = np.transpose(np.array(pads).reshape([2, num_dim]))
-    tf_pads = [0, 0, 0, 0] + tf_pads.flatten().tolist()
-
-    padding = tf.constant(
-        np.array(tf_pads).reshape([num_dim + 2, 2])
-        .astype(np.int32))  # tf requires int32 paddings
-    return tf.pad(x, padding)

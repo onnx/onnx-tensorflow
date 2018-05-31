@@ -127,17 +127,6 @@ class TensorflowBackendBase(Backend):
     return cls.onnx_model_to_tensorflow_rep(model)
 
   @classmethod
-  def _explicit_broadcast(cls, tensor, broadcast_dim=1, total_num_dim=4):
-    if broadcast_dim < 0:
-      broadcast_dim += total_num_dim
-    dims = [broadcast_dim + i for i in range(len(tensor.shape))]
-    for i in range(total_num_dim):
-      if i not in dims:
-        tensor = tf.expand_dims(tensor, i)
-
-    return tensor
-
-  @classmethod
   def _bin_op(cls, node, input_dict, op_func):
     x = input_dict[node.inputs[0]]
     y = input_dict[node.inputs[1]]

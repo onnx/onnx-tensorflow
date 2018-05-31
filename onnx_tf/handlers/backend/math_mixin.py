@@ -1,48 +1,21 @@
-import tensorflow as tf
-
 from onnx_tf.common import exception
 
 
-class MathMixin(object):
-
-  @classmethod
-  def explicit_broadcast(cls, inputs, axis, tensor_dict):
-    x = tensor_dict[inputs[0]]
-    y = tensor_dict[inputs[1]]
-
-    if axis is None:
-      return [x, y]
-
-    total_num_dim = len(x.get_shape())
-    if axis < 0:
-      axis += total_num_dim
-
-    if axis + len(y.get_shape()) == total_num_dim:
-      return [x, y]
-
-    dims = [axis + i for i in range(len(y.get_shape()))]
-    for i in range(total_num_dim):
-      if i not in dims:
-        new_y = tf.expand_dims(y, i)
-    return [x, new_y]
-
-
-class BasicMathMixin(MathMixin):
+class BasicMathMixin(object):
 
   @classmethod
   def process_attrs(cls, attrs):
-    attrs.pop("consumed_inputs", None)
-    return attrs
+    return cls._process_attrs(attrs, remove=["consumed_inputs"])
 
 
-class ArithmeticMixin(MathMixin):
+class ArithmeticMixin(object):
 
   @classmethod
   def process_attrs(cls, attrs):
-    return attrs
+    return cls._process_attrs(attrs, remove=["consumed_inputs", "axis", "broadcast"])
 
 
-class ReductionMixin(MathMixin):
+class ReductionMixin(object):
 
   @classmethod
   def args_check(cls, node, **kwargs):

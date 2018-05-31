@@ -3,6 +3,13 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
+import copy
+
+import tensorflow as tf
+
+from onnx_tf.common import get_data_format
+from onnx_tf.common import get_perm_from_formats
+from onnx_tf.common import supports_device
 from .handler import Handler
 
 
@@ -24,6 +31,19 @@ class BackendHandler(Handler):
   def process_attrs(cls, attrs):
     return attrs
 
+  @classmethod
+  def _process_attrs(cls, attrs, remove=None, rename=None):
+    remove = remove or []
+    for k in remove:
+      attrs.pop(k, None)
+
+    rename = rename or {}
+    for k, new_k in rename.items():
+      if k in attrs:
+        attrs[new_k] = attrs.pop(k)
+
+    return attrs
+
   # @classmethod
   # def check_cls(cls):
   #   super(BackendHandler, cls).check_cls()
@@ -34,12 +54,32 @@ class BackendHandler(Handler):
   #             cls.__name__))
 
   @classmethod
-  def make_tf_tensor(cls, node, tf_func=None, inputs=None, attrs=None, name=None, **kwargs):
-    tensor_dict = kwargs.pop("tensor_dict", {})
+  def make_tf_tensor(cls,
+                     node,
+                     tf_func=None,
+                     inputs=None,
+                     attrs=None,
+                     name=None,
+                     nc_cuda_only=False,
+                     **kwargs):
+    tensor_dict = kwargs.get("tensor_dict", {})
     tf_func = tf_func or cls.TF_FUNC
     inputs = inputs or [tensor_dict.get(inp, None) for inp in node.inputs]
-    attrs = attrs or cls.process_attrs(node.attrs)
+    attrs = attrs or cls.process_attrs(copy.deepcopy(node.attrs))
     name = name or node.name
     if name != "":
       attrs["name"] = name
-    return tf_func(*inputs, **attrs)
+    if not nc_cuda_only:
+      return tf_func(*inputs, **attrs)
+    else:
+      support_cuda = supports_device("CUDA")
+      x = inputs[0]
+      storage_format, compute_format = get_data_format(
+          len(x.get_shape()), support_cuda)
+      x_t = tf.transpose(
+          x, perm=get_perm_from_formats(storage_format, compute_format))
+      inputs[0] = x_t
+      y = tf_func(*inputs, data_format=compute_format, **attrs)
+      y_t = tf.transpose(
+          y, perm=get_perm_from_formats(compute_format, storage_format))
+      return [y_t]

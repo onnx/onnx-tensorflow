@@ -59,9 +59,12 @@ def get_all_backend_handlers(opset_dict):
 
     since_version = 1
     if defs.has(handler.ONNX_OP, domain=handler.DOMAIN):
-      since_version = defs.get_schema(
-          handler.ONNX_OP, domain=handler.DOMAIN,
-          max_inclusive_version=version).since_version
+      try:
+        since_version = defs.get_schema(
+            handler.ONNX_OP, domain=handler.DOMAIN,
+            max_inclusive_version=version).since_version
+      except RuntimeError:
+        pass
     else:
       warnings.warn("Unknown op {} in domain `{}`.".format(
           handler.ONNX_OP, handler.DOMAIN or "ai.onnx"))

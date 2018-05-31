@@ -4,16 +4,13 @@ from onnx_tf.handlers.backend_handler import BackendHandler
 from onnx_tf.handlers.handler import onnx_op
 from onnx_tf.handlers.handler import tf_func
 from onnx_tf.handlers.handler import tf_op
+from .math_mixin import BasicMathMixin
 
 
-@onnx_op("Cast")
-@tf_op("Cast")
-@tf_func(tf.cast)
-class Cast(BackendHandler):
-
-  @classmethod
-  def process_attrs(cls, attrs):
-    return cls._process_attrs(attrs, rename={"to": "dtype"})
+@onnx_op("Ceil")
+@tf_op("Ceil")
+@tf_func(tf.ceil)
+class Ceil(BasicMathMixin, BackendHandler):
 
   @classmethod
   def version_1(cls, node, **kwargs):
