@@ -11,6 +11,7 @@ from onnx_tf.backend import TensorflowBackendBase
 from onnx_tf.backends.backend_v1 import TensorflowBackend as TensorflowBackendV1
 import tensorflow as tf
 
+
 class TensorflowBackend(TensorflowBackendBase):
   """ Tensorflow Backend for ONNX
 

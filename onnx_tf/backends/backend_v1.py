@@ -51,8 +51,9 @@ class TensorflowBackend(TensorflowBackendBase):
     axis = node.attrs["axis"]
     keepdims = node.attrs.get("keepdims", 1)
     if keepdims == 1:
-      warnings.warn("Definition of ArgMax with keepdims enabled is "
-                    "incompatible between onnx and tensorflow.", UserWarning)
+      warnings.warn(
+          "Definition of ArgMax with keepdims enabled is "
+          "incompatible between onnx and tensorflow.", UserWarning)
     return [tf.argmax(data, axis=axis)]
 
   @classmethod
@@ -61,8 +62,9 @@ class TensorflowBackend(TensorflowBackendBase):
     axis = node.attrs["axis"]
     keepdims = node.attrs.get("keepdims", 1)
     if keepdims == 1:
-      warnings.warn("Definition of ArgMin with keepdims enabled is "
-                    "incompatible between onnx and tensorflow.", UserWarning)
+      warnings.warn(
+          "Definition of ArgMin with keepdims enabled is "
+          "incompatible between onnx and tensorflow.", UserWarning)
     return [tf.argmin(data, axis=axis)]
 
   @classmethod
@@ -161,16 +163,15 @@ class TensorflowBackend(TensorflowBackendBase):
       for shape in itertools.product(
           range(x_shape[0]), range(x_shape[1]), *[
               range(
-                  int((x_shape[i + 2] + pad_shape[i] - kernel_shape[i]
-                      ) / strides[i] + 1)) for i in range(spatial_size)
+                  int((x_shape[i + 2] + pad_shape[i] - kernel_shape[i]) /
+                      strides[i] + 1)) for i in range(spatial_size)
           ]):
         window = padded[shape[0], shape[1]]
         window_vals = np.array([
             window[i] for i in list(
                 itertools.product(*[
-                    range(strides[i] * shape[i + 2],
-                          strides[i] * shape[i + 2] + kernel_shape[i])
-                    for i in range(spatial_size)
+                    range(strides[i] * shape[i + 2], strides[i] * shape[i + 2] +
+                          kernel_shape[i]) for i in range(spatial_size)
                 ]))
         ])
         if pooling_type == 'AVG':
@@ -270,8 +271,7 @@ class TensorflowBackend(TensorflowBackendBase):
           strides=strides,
           data_format=compute_format)
       pooled = tf.transpose(
-          pooled,
-          perm=get_perm_from_formats(compute_format, storage_format))
+          pooled, perm=get_perm_from_formats(compute_format, storage_format))
 
     return [pooled]
 
@@ -519,8 +519,7 @@ class TensorflowBackend(TensorflowBackendBase):
       else:
         output = tf.concat(convolved, axis=-1)
         output = tf.transpose(
-            output,
-            perm=get_perm_from_formats(compute_format, storage_format))
+            output, perm=get_perm_from_formats(compute_format, storage_format))
     else:
       bias = input_dict[node.inputs[2]]
       bias = cls._explicit_broadcast(
@@ -533,8 +532,7 @@ class TensorflowBackend(TensorflowBackendBase):
         output = tf.concat(convolved, axis=-1)
         output = tf.add(output, bias)
         output = tf.transpose(
-            output,
-            perm=get_perm_from_formats(compute_format, storage_format))
+            output, perm=get_perm_from_formats(compute_format, storage_format))
 
     return [output]
 
@@ -585,8 +583,8 @@ class TensorflowBackend(TensorflowBackendBase):
     alpha = node.attrs.get("alpha", 1.0)
     if "alpha" in node.attrs.keys():
       return [
-          tf.cast(x < 0.0, tf.float32) * alpha *
-          (tf.exp(x) - 1.0) + tf.cast(x >= 0.0, tf.float32) * x
+          tf.cast(x < 0.0, tf.float32) * alpha * (tf.exp(x) - 1.0) +
+          tf.cast(x >= 0.0, tf.float32) * x
       ]
     else:
       return [tf.nn.elu(x)]
@@ -1238,8 +1236,8 @@ class TensorflowBackend(TensorflowBackendBase):
 
     # Extract indicies of the shape paramter where
     # a copy from the original dimension size is needed.
-    copy_indices = tf.squeeze(tf.where(tf.equal(shape,
-                                                tf.constant(0, dtype=tf.int64))), -1)
+    copy_indices = tf.squeeze(
+        tf.where(tf.equal(shape, tf.constant(0, dtype=tf.int64))), -1)
 
     indices_gathered = tf.gather(input_shape, copy_indices)
     indices_scattered = tf.sparse_to_dense(copy_indices,
@@ -1384,14 +1382,17 @@ class TensorflowBackend(TensorflowBackendBase):
 
   @classmethod
   def handle_selu(cls, node, input_dict):
-    warnings.warn("Definition of Selu is different "
-                  "between onnx and tensorflow.", UserWarning)
+    warnings.warn(
+        "Definition of Selu is different "
+        "between onnx and tensorflow.", UserWarning)
     if "alpha" not in node.attrs and "gamma" not in node.attrs:
       return [tf.nn.selu(input_dict[node.inputs[0]])]
 
     x = input_dict[node.inputs[0]]
-    alpha = node.attrs["alpha"] if "alpha" in node.attrs else 1.67326319217681884765625
-    gamma = node.attrs["gamma"] if "gamma" in node.attrs else 1.05070102214813232421875
+    alpha = node.attrs[
+        "alpha"] if "alpha" in node.attrs else 1.67326319217681884765625
+    gamma = node.attrs[
+        "gamma"] if "gamma" in node.attrs else 1.05070102214813232421875
 
     return [
         tf.clip_by_value(x, 0, tf.reduce_max(x)) * gamma +
@@ -1543,8 +1544,8 @@ class TensorflowBackend(TensorflowBackendBase):
           tf.transpose(
               tf.image.resize_images(
                   tf.transpose(
-                      x, perm=get_perm_from_formats(storage_format,
-                                                    "NHWC")), size, method),
+                      x, perm=get_perm_from_formats(storage_format, "NHWC")),
+                  size, method),
               perm=get_perm_from_formats("NHWC", storage_format))
       ]
 
@@ -1566,12 +1567,16 @@ class TensorflowBackend(TensorflowBackendBase):
     with tf.Session() as sess:
       gamma = input_dict[node.inputs[1]].eval()
       beta = input_dict[node.inputs[2]].eval()
-      param_init = { "gamma": tf.constant_initializer(gamma),
-                    "beta": tf.constant_initializer(beta) }
-    return [tf.contrib.layers.instance_norm(
-                                            input_dict[node.inputs[0]],
-                                            center=True,
-                                            scale=True,
-                                            epsilon=epsilon,
-                                            param_initializers=param_init,
-                                            data_format="NCHW")]
+      param_init = {
+          "gamma": tf.constant_initializer(gamma),
+          "beta": tf.constant_initializer(beta)
+      }
+    return [
+        tf.contrib.layers.instance_norm(
+            input_dict[node.inputs[0]],
+            center=True,
+            scale=True,
+            epsilon=epsilon,
+            param_initializers=param_init,
+            data_format="NCHW")
+    ]
