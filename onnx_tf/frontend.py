@@ -345,10 +345,10 @@ class TensorflowFrontendBase(object):
                                      graph_def,
                                      output,
                                      opset=0,
-                                     optimizer_passes=None,
                                      producer_name="onnx-tensorflow",
                                      graph_name="graph",
-                                     ignore_unimplemented=False):
+                                     ignore_unimplemented=False,
+                                     optimizer_passes=None):
     """Converts a Tensorflow Graph Proto to an ONNX model
 
     This function converts a Tensorflow Graph proto to an equivalent
@@ -360,13 +360,15 @@ class TensorflowFrontendBase(object):
     :param opset: Opset version number, list or tuple.
       Default is 0 means using latest version with domain ''.
       List or tuple items should be (str domain, int version number).
-    :param optimizer_passes: List of optimization names.
     :param producer_name: The name of the producer.
     :param graph_name: The name of the output ONNX Graph.
     :param ignore_unimplemented: Convert to ONNX model and ignore all the operators
       that are not currently supported by onnx-tensorflow.
       This is an experimental feature. By enabling this feature,
       the model would not be guaranteed to match the ONNX specifications.
+    :param optimizer_passes: List of optimization names.
+      c.f. https://github.com/onnx/onnx/blob/master/onnx/optimizer.py for available
+      optimization passes.
 
     :returns: The equivalent ONNX Model Proto object.
     """
