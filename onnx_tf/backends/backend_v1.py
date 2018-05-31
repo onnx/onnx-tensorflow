@@ -1563,20 +1563,40 @@ class TensorflowBackend(TensorflowBackendBase):
 
   @classmethod
   def handle_instance_normalization(cls, node, input_dict):
+    # this file is adapted from :
+    # https://github.com/tensorflow/tensorflow/blob/r1.8/tensorflow/contrib/layers/python/layers/normalization.py.
+    # We do not use the tf layer instance_norm because there is no way
+    # to pass in tensor as beta or gamma.
     epsilon = node.attrs.get("epsilon", 1e-5)
-    with tf.Session() as sess:
-      gamma = input_dict[node.inputs[1]].eval()
-      beta = input_dict[node.inputs[2]].eval()
-      param_init = {
-          "gamma": tf.constant_initializer(gamma),
-          "beta": tf.constant_initializer(beta)
-      }
-    return [
-        tf.contrib.layers.instance_norm(
-            input_dict[node.inputs[0]],
-            center=True,
-            scale=True,
-            epsilon=epsilon,
-            param_initializers=param_init,
-            data_format="NCHW")
-    ]
+    gamma = input_dict[node.inputs[1]]
+    beta = input_dict[node.inputs[2]]
+
+    inputs = input_dict[node.inputs[0]]
+    inputs_shape = inputs.shape
+    inputs_rank = inputs.shape.ndims
+
+    reduction_axis = 1
+
+    moments_axes = list(range(inputs_rank))
+    del moments_axes[reduction_axis]
+    del moments_axes[0]
+
+    params_shape_broadcast = list([1, inputs_shape[1].value] +
+                                  [1 for _ in range(2, inputs_rank)])
+
+    beta = tf.reshape(beta, params_shape_broadcast)
+    gamma = tf.reshape(gamma, params_shape_broadcast)
+
+    # Calculate the moments (instance activations).
+    mean, variance = tf.nn.moments(inputs, moments_axes, keep_dims=True)
+
+    # Compute instance normalization.
+    outputs = tf.nn.batch_normalization(
+        input_dict[node.inputs[0]],
+        mean,
+        variance,
+        beta,
+        gamma,
+        epsilon,
+        name='instancenorm')
+    return [outputs]
