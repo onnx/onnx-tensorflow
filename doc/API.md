@@ -77,9 +77,6 @@ Default is 0 means using latest version with domain ''.
 List or tuple items should be (str domain, int version number).
 
 
-`optimizer_passes` : List of optimization names.
-
-
 `producer_name` : The name of the producer.
 
 
@@ -90,6 +87,11 @@ List or tuple items should be (str domain, int version number).
 that are not currently supported by onnx-tensorflow.
 This is an experimental feature. By enabling this feature,
 the model would not be guaranteed to match the ONNX specifications.
+
+
+`optimizer_passes` : List of optimization names c.f.
+https://github.com/onnx/onnx/blob/master/onnx/optimizer.py for available
+optimization passes.
 
 
 _returns_:
