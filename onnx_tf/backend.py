@@ -26,32 +26,13 @@ import tensorflow as tf
 from onnx_tf.backend_rep import TensorflowRep
 from onnx_tf.common import attr_converter
 from onnx_tf.common import attr_translator
+from onnx_tf.common import data_type
 from onnx_tf.common import get_device_option
 from onnx_tf.opset_version import backend_opset_version
-from onnx_tf.tf_net import TensorflowNet
 
-from onnx_tf.common import (ONNX_OP_TO_TF_OP, ONNX_ATTR_TO_TF_ATTR,
-                            ONNX_ATTR_TO_TF_ATTR_PER_OP,
-                            ONNX_ATTR_TO_REMOVE_PER_OP,
-                            TF_TYPE_ENUM, op_name_to_lower, PAD_TF_INCOMPATIBLE)
-
-
-class OnnxAttributes(dict):
-  """
-  This is a more convenient way to work with ONNX/Caffe2 attributes
-  that is not the protobuf representation.
-  """
-
-  @staticmethod
-  def from_onnx(args):
-    d = OnnxAttributes()
-    for arg in args:
-      d[arg.name] = attr_converter.onnx2tf(arg)
-    return d
-
-  def caffe2(self, kmap=lambda x: x):
-    for k, v in self.items():
-      yield caffe2.python.utils.MakeArgument(kmap(k), v)
+from onnx_tf.common import (
+    ONNX_OP_TO_TF_OP, ONNX_ATTR_TO_TF_ATTR, ONNX_ATTR_TO_TF_ATTR_PER_OP,
+    ONNX_ATTR_TO_REMOVE_PER_OP, op_name_to_lower, PAD_TF_INCOMPATIBLE)
 
 
 # TODO: Move this into ONNX main library
@@ -68,8 +49,8 @@ class OnnxNode(object):
   def __init__(self, node):
     self.name = str(node.name)
     self.op_type = str(node.op_type)
-    self.attrs = OnnxAttributes.from_onnx(node.attribute)
-    self.consumed_inputs = self.attrs.pop("consumed_inputs", None)
+    self.attrs = dict(
+        [(attr.name, attr_converter.onnx2tf(attr)) for attr in node.attribute])
     self.inputs = list(node.input)
     self.outputs = list(node.output)
     self.node_proto = node
@@ -196,42 +177,36 @@ class TensorflowBackendBase(Backend):
     return namedtupledict('Outputs', node.outputs)(*output_vals)
 
   @classmethod
-  def onnx_graph_to_tensorflow_net(cls, graph_def, opset):
-    model_graph = tf.Graph()
-    with model_graph.as_default():
+  def onnx_model_to_tensorflow_rep(cls, model):
+    return cls._onnx_graph_to_tensorflow_rep(model.graph, model.opset_import)
+
+  @classmethod
+  def _onnx_graph_to_tensorflow_rep(cls, graph_def, opset):
+    tf_rep_graph = tf.Graph()
+    with tf_rep_graph.as_default():
       # initializer: TensorProtos representing the values to initialize
       # a given tensor.
       # initialized: A list of names of the initialized tensors.
       if graph_def.initializer:
-        input_dict_items = cls.onnx_initializer_to_input_dict_items(
+        input_dict_items = cls._onnx_initializer_to_input_dict_items(
             graph_def.initializer)
         initialized = {init.name for init in graph_def.initializer}
       else:
         input_dict_items = []
         initialized = set()
-      predict_net = TensorflowNet()
-      predict_net.name = graph_def.name
-      predict_net.graph = model_graph
 
-      predict_net.external_input.extend(value_info.name
-                                        for value_info in graph_def.input
-                                        if value_info.name not in initialized)
-
-      predict_net.external_output.extend(
-          value_info.name for value_info in graph_def.output)
-
-      # creating placeholders for currently unkown inputs
+      # creating placeholders for currently unknown inputs
       for value_info in graph_def.input:
         if value_info.name in initialized:
           continue
         shape = list(
-            d.dim_value if (d.dim_value >= 0 and d.dim_param == "") else None
+            d.dim_value if (d.dim_value > 0 and d.dim_param == "") else None
             for d in value_info.type.tensor_type.shape.dim)
         x = tf.placeholder(
-            TF_TYPE_ENUM[value_info.type.tensor_type.elem_type],
+            data_type.onnx2tf(value_info.type.tensor_type.elem_type),
             name=value_info.name,
             shape=shape)
-        input_dict_items.append([value_info.name, x])
+        input_dict_items.append((value_info.name, x))
 
       # tensor dict: this dictionary is a map from variable names
       # to the latest produced TF tensors of the given name.
@@ -245,16 +220,22 @@ class TensorflowBackendBase(Backend):
       input_dict = dict(input_dict_items)
 
       for node in graph_def.node:
-        node = OnnxNode(node)
-
+        onnx_node = OnnxNode(node)
         output_ops = cls._onnx_node_to_tensorflow_op(
-            node, tensor_dict, opset=opset)
-        curr_node_output_map = list(zip(node.outputs, output_ops))
-        tensor_dict = dict(list(tensor_dict.items()) + curr_node_output_map)
+            onnx_node, tensor_dict, opset=opset)
+        curr_node_output_map = dict(list(zip(onnx_node.outputs, output_ops)))
+        tensor_dict.update(curr_node_output_map)
 
-      predict_net.tensor_dict = tensor_dict
-
-    return predict_net
+    tf_rep = TensorflowRep()
+    tf_rep.graph = tf_rep_graph
+    tf_rep.inputs = [
+        value_info.name
+        for value_info in graph_def.input
+        if value_info.name not in initialized
+    ]
+    tf_rep.outputs = [value_info.name for value_info in graph_def.output]
+    tf_rep.tensor_dict = tensor_dict
+    return tf_rep
 
   @classmethod
   def prepare(cls, model, device='CPU', **kwargs):
@@ -271,27 +252,21 @@ class TensorflowBackendBase(Backend):
     """
     super(TensorflowBackendBase, cls).prepare(model, device, **kwargs)
 
-    predict_net = (cls.onnx_graph_to_tensorflow_net(
-        model.graph, opset=model.opset_import[0].version))
-
-    return TensorflowRep(predict_net)
+    return cls.onnx_model_to_tensorflow_rep(model)
 
   @classmethod
-  def onnx_initializer_to_input_dict_items(cls,
-                                           initializer,
-                                           init_net_name='init'):
+  def _onnx_initializer_to_input_dict_items(cls, initializer):
 
     def tensor2list(onnx_tensor):
       # Use the onnx.numpy_helper because the data may be raw
       return numpy_helper.to_array(onnx_tensor).flatten().tolist()
 
-    input_dict = [(tp.name,
-                   tf.constant(
-                       tensor2list(tp),
-                       shape=tp.dims,
-                       dtype=ONNX_TYPE_TO_TF_TYPE[tp.data_type]))
-                  for tp in initializer]
-    return input_dict
+    return [(init.name,
+             tf.constant(
+                 tensor2list(init),
+                 shape=init.dims,
+                 dtype=data_type.onnx2tf(init.data_type)))
+            for init in initializer]
 
   @classmethod
   def _onnx_node_to_tensorflow_op(cls, node, input_dict, opset=0):
