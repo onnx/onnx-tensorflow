@@ -366,8 +366,8 @@ class TensorflowFrontendBase(object):
       that are not currently supported by onnx-tensorflow.
       This is an experimental feature. By enabling this feature,
       the model would not be guaranteed to match the ONNX specifications.
-    :param optimizer_passes: List of optimization names.
-      c.f. https://github.com/onnx/onnx/blob/master/onnx/optimizer.py for available
+    :param optimizer_passes: List of optimization names c.f.
+      https://github.com/onnx/onnx/blob/master/onnx/optimizer.py for available
       optimization passes.
 
     :returns: The equivalent ONNX Model Proto object.
