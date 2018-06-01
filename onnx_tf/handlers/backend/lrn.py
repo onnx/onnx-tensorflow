@@ -16,7 +16,7 @@ class LRN(BackendHandler):
   def version_1(cls, node, **kwargs):
     attrs = copy.deepcopy(node.attrs)
     alpha = attrs.get("alpha", 1e-4)
-    attrs.setdetault("beta", 0.75)
+    attrs.setdefault("beta", 0.75)
     size = attrs["size"]
     attrs["alpha"] = alpha / size
     attrs["depth_radius"] = np.floor([(size - 1) / 2.])[0]
