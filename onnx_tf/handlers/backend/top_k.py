@@ -13,8 +13,17 @@ class TopK(BackendHandler):
   def version_1(cls, node, **kwargs):
     x = kwargs["tensor_dict"][node.inputs[0]]
     x_rank = len(x.get_shape())
+    axes = list(range(x_rank))
     axis = node.attrs.get("axis", -1)
-    if axis != -1 or axis != x_rank - 1:
-      pass
+    axis = axis if axis >= 0 else axis + x_rank
+
+    if axis != x_rank - 1:
+      pre_perm = [a for a in axes if a != axis] + [axis]
+      post_perm = axes[:axis] + [x_rank - 1] + axes[axis:x_rank - 1]
+      x = tf.transpose(x, perm=pre_perm)
+      values, indices = tf.nn.top_k(x, k=node.attrs["k"])
+      values = tf.transpose(values, perm=post_perm)
+      return [values, tf.cast(indices, dtype=tf.int64)]
+
     values, indices = tf.nn.top_k(x, k=node.attrs["k"])
     return [values, tf.cast(indices, dtype=tf.int64)]

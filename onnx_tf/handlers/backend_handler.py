@@ -88,6 +88,7 @@ class BackendHandler(Handler):
       if c_first_cuda_only and not support_cuda:
         pre_perm = get_perm_from_formats(storage_format, compute_format)
         post_perm = get_perm_from_formats(compute_format, storage_format)
+        attrs["data_format"] = compute_format
       if c_last_only:
         compute_format = compute_format.replace("C", "") + "C"
         pre_perm = get_perm_from_formats(storage_format, compute_format)
@@ -96,7 +97,6 @@ class BackendHandler(Handler):
       if pre_perm != list(range(len(x.get_shape()))):
         x_t = tf.transpose(x, perm=pre_perm)
         inputs[0] = x_t
-        attrs["data_format"] = compute_format
         y = tf_func(*inputs, **attrs)
         y_t = tf.transpose(y, perm=post_perm)
         return y_t

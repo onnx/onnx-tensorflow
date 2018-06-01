@@ -159,7 +159,7 @@ class ConvMixin(BroadcastMixin):
             output, perm=get_perm_from_formats(compute_format, storage_format))
     else:
       bias = input_dict[node.inputs[2]]
-      bias = BroadcastMixin.explicit_broadcast([bias, x], compute_c_idx,
+      bias = BroadcastMixin.explicit_broadcast([x, bias], compute_c_idx,
                                                input_dict)
 
       if support_cuda:
