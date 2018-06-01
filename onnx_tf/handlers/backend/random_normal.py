@@ -5,19 +5,18 @@ from onnx_tf.handlers.handler import onnx_op
 from onnx_tf.handlers.handler import tf_func
 
 
-@onnx_op("LeakyRelu")
-@tf_func(tf.nn.leaky_relu)
-class Identity(BackendHandler):
+@onnx_op("RandomNormal")
+@tf_func(tf.random_normal)
+class RandomNormal(BackendHandler):
 
   @classmethod
   def process_attrs(cls, attrs):
     return cls._process_attrs(
-        attrs, remove=["consumed_inputs"], default={"alpha": 0.01})
+        attrs, rename={"scale": "stddev"}, default={
+            "mean": 0.,
+            "scale": 1.
+        })
 
   @classmethod
   def version_1(cls, node, **kwargs):
-    return [cls.make_tf_tensor(node, **kwargs)]
-
-  @classmethod
-  def version_6(cls, node, **kwargs):
     return [cls.make_tf_tensor(node, **kwargs)]

@@ -22,12 +22,12 @@ class BroadcastMixin(object):
     for i in range(total_num_dim):
       if i not in dims:
         new_y = tf.expand_dims(y, i)
-    return [x, new_y]
+    return new_y
 
   @classmethod
   def limited_broadcast(cls, node, **kwargs):
     if node.attrs.get("broadcast") == 1:
-      inputs = cls.explicit_broadcast(node.inputs, node.attrs.get("axis", None),
-                                      kwargs["tensor_dict"])
-      return [cls.make_tf_tensor(node, inputs=inputs, **kwargs)]
+      y = cls.explicit_broadcast(node.inputs, node.attrs.get("axis", None),
+                                 kwargs["tensor_dict"])
+      return [cls.make_tf_tensor(node, inputs=[node.inputs[0], y], **kwargs)]
     return [cls.make_tf_tensor(node, **kwargs)]

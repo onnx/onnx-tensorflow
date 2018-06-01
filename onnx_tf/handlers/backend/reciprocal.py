@@ -3,16 +3,12 @@ import tensorflow as tf
 from onnx_tf.handlers.backend_handler import BackendHandler
 from onnx_tf.handlers.handler import onnx_op
 from onnx_tf.handlers.handler import tf_func
+from .math_mixin import BasicMathMixin
 
 
-@onnx_op("LeakyRelu")
-@tf_func(tf.nn.leaky_relu)
-class Identity(BackendHandler):
-
-  @classmethod
-  def process_attrs(cls, attrs):
-    return cls._process_attrs(
-        attrs, remove=["consumed_inputs"], default={"alpha": 0.01})
+@onnx_op("Reciprocal")
+@tf_func(tf.reciprocal)
+class Reciprocal(BasicMathMixin, BackendHandler):
 
   @classmethod
   def version_1(cls, node, **kwargs):

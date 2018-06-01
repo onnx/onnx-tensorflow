@@ -3,16 +3,17 @@ import tensorflow as tf
 from onnx_tf.handlers.backend_handler import BackendHandler
 from onnx_tf.handlers.handler import onnx_op
 from onnx_tf.handlers.handler import tf_func
+from .math_mixin import ReductionMixin
 
 
-@onnx_op("LogSoftmax")
-@tf_func(tf.nn.log_softmax)
-class LogSoftmax(BackendHandler):
+@onnx_op("ReduceL1")
+@tf_func(tf.norm)
+class ReduceL1(ReductionMixin, BackendHandler):
 
   @classmethod
   def process_attrs(cls, attrs):
-    return cls._process_attrs(attrs, default={"axis": 1})
+    return cls._process_attrs(attrs, default={"ord": 1})
 
   @classmethod
   def version_1(cls, node, **kwargs):
-    return [cls.make_tf_tensor(node, **kwargs)]
+    return cls._common(node, **kwargs)

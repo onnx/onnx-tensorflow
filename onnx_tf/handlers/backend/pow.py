@@ -4,19 +4,15 @@ from onnx_tf.handlers.backend_handler import BackendHandler
 from onnx_tf.handlers.handler import onnx_op
 from onnx_tf.handlers.handler import tf_func
 from .broadcast_mixin import BroadcastMixin
-from .math_mixin import ArithmeticMixin
+from .math_mixin import BasicMathMixin
 
 
-@onnx_op("Add")
-@tf_func(tf.add)
-class Add(ArithmeticMixin, BackendHandler):
+@onnx_op("Pow")
+@tf_func(tf.pow)
+class Pow(BasicMathMixin, BackendHandler):
 
   @classmethod
   def version_1(cls, node, **kwargs):
-    return BroadcastMixin.limited_broadcast(node, **kwargs)
-
-  @classmethod
-  def version_6(cls, node, **kwargs):
     return BroadcastMixin.limited_broadcast(node, **kwargs)
 
   @classmethod

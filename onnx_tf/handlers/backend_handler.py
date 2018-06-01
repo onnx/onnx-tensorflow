@@ -37,6 +37,7 @@ class BackendHandler(Handler):
     for k in remove:
       attrs.pop(k, None)
 
+    default = default or {}
     for k, v in default.items():
       attrs.setdefault(k, v)
 
