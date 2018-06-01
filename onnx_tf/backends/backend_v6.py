@@ -9,6 +9,7 @@ from __future__ import unicode_literals
 
 from onnx_tf.backend import TensorflowBackendBase
 from onnx_tf.backends.backend_v1 import TensorflowBackend as TensorflowBackendV1
+import tensorflow as tf
 
 
 class TensorflowBackend(TensorflowBackendBase):
@@ -129,3 +130,7 @@ class TensorflowBackend(TensorflowBackendBase):
   @classmethod
   def handle_tanh(cls, node, input_dict):
     return TensorflowBackendV1.handle_trivial(node, input_dict)
+
+  @classmethod
+  def handle_instance_normalization(cls, node, input_dict):
+    return TensorflowBackendV1.handle_instance_normalization(node, input_dict)
