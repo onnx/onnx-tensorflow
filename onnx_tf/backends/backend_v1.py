@@ -1575,12 +1575,7 @@ class TensorflowBackend(TensorflowBackendBase):
     inputs_shape = inputs.shape
     inputs_rank = inputs.shape.ndims
 
-    reduction_axis = 1
-
-    moments_axes = list(range(inputs_rank))
-    del moments_axes[reduction_axis]
-    del moments_axes[0]
-
+    moments_axes = list(range(inputs_rank))[2:]
     params_shape_broadcast = list([1, inputs_shape[1].value] +
                                   [1 for _ in range(2, inputs_rank)])
 
