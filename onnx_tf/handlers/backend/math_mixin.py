@@ -1,5 +1,6 @@
 import copy
 
+
 class BasicMathMixin(object):
 
   @classmethod
@@ -19,9 +20,11 @@ class ReductionMixin(object):
 
   @classmethod
   def _common(cls, node, **kwargs):
-    x = kwargs["tensor_dict"][node.inputs[0]]
     attrs = copy.deepcopy(node.attrs)
-    attrs["axis"] = attrs.pop("axes", list(range(len(x.get_shape().as_list()))))
+    axis = attrs.pop("axes", None)
+    if isinstance(axis, (list, tuple)) and len(axis) == 1:
+      axis = axis[0]
+    attrs["axis"] = axis
     # https://github.com/onnx/onnx/issues/585
     attrs["keepdims"] = attrs.pop("keepdims", 1) == 1
     return [cls.make_tf_tensor(node, attrs=attrs, **kwargs)]

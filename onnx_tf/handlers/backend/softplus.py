@@ -5,13 +5,9 @@ from onnx_tf.handlers.handler import onnx_op
 from onnx_tf.handlers.handler import tf_func
 
 
-@onnx_op("Shape")
-@tf_func(tf.shape)
-class Shape(BackendHandler):
-
-  @classmethod
-  def process_attrs(cls, attrs):
-    return cls._process_attrs(attrs, default={"out_type": tf.int64})
+@onnx_op("Softplus")
+@tf_func(tf.nn.softplus)
+class Softplus(BackendHandler):
 
   @classmethod
   def version_1(cls, node, **kwargs):

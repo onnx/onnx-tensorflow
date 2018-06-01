@@ -16,3 +16,7 @@ class Sigmoid(BackendHandler):
   @classmethod
   def version_1(cls, node, **kwargs):
     return [cls.make_tf_tensor(node, **kwargs)]
+
+  @classmethod
+  def version_6(cls, node, **kwargs):
+    return [cls.make_tf_tensor(node, **kwargs)]

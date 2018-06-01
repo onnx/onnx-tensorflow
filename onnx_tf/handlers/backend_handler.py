@@ -70,12 +70,12 @@ class BackendHandler(Handler):
     tensor_dict = kwargs.get("tensor_dict", {})
     tf_func = tf_func or cls.TF_FUNC
     inputs = inputs or [tensor_dict.get(inp, None) for inp in node.inputs]
-    attrs = attrs or cls.process_attrs(copy.deepcopy(node.attrs))
+    attrs = cls.process_attrs(attrs or copy.deepcopy(node.attrs))
     name = name or node.name
     if name != "":
       attrs["name"] = name
 
-    if not c_first_cuda_only or not c_last_only:
+    if not c_first_cuda_only and not c_last_only:
       return tf_func(*inputs, **attrs)
     else:
       support_cuda = supports_device("CUDA")
@@ -85,7 +85,7 @@ class BackendHandler(Handler):
       pre_perm = list(range(len(x.get_shape())))
       post_perm = pre_perm[:]
 
-      if c_first_cuda_only:
+      if c_first_cuda_only and not support_cuda:
         pre_perm = get_perm_from_formats(storage_format, compute_format)
         post_perm = get_perm_from_formats(compute_format, storage_format)
       if c_last_only:
@@ -96,9 +96,9 @@ class BackendHandler(Handler):
       if pre_perm != list(range(len(x.get_shape()))):
         x_t = tf.transpose(x, perm=pre_perm)
         inputs[0] = x_t
-        y = tf_func(*inputs, data_format=compute_format, **attrs)
+        attrs["data_format"] = compute_format
+        y = tf_func(*inputs, **attrs)
         y_t = tf.transpose(y, perm=post_perm)
-        return [y_t]
+        return y_t
 
       return tf_func(*inputs, **attrs)
-

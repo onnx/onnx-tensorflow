@@ -2,10 +2,12 @@ import tensorflow as tf
 
 from onnx_tf.handlers.backend_handler import BackendHandler
 from onnx_tf.handlers.handler import onnx_op
+from onnx_tf.handlers.handler import tf_func
 
 
-@onnx_op("PRelu")
-class PRelu(BackendHandler):
+@onnx_op("Selu")
+@tf_func(tf.nn.selu)
+class Selu(BackendHandler):
 
   @classmethod
   def process_attrs(cls, attrs):
@@ -13,16 +15,18 @@ class PRelu(BackendHandler):
 
   @classmethod
   def _common(cls, node, **kwargs):
-    """
-    Reference implementation at
-    https://github.com/tflearn/tflearn/blob/4ba8c8d78bf1bbdfc595bf547bad30580cb4c20b/tflearn/activations.py#L191
-    """
     tensor_dict = kwargs["tensor_dict"]
+    if "alpha" not in node.attrs and "gamma" not in node.attrs:
+      return [cls.make_tf_tensor(node, **kwargs)]
+
     x = tensor_dict[node.inputs[0]]
-    slope = tensor_dict[node.inputs[1]]
-    pos = tf.nn.relu(x)
-    neg = slope * (x - abs(x)) * 0.5
-    return [pos + neg]
+    alpha = node.attrs.get("alpha", 1.67326319217681884765625)
+    gamma = node.attrs.get("gamma", 1.05070102214813232421875)
+
+    return [
+        tf.clip_by_value(x, 0, tf.reduce_max(x)) * gamma +
+        (tf.exp(tf.clip_by_value(x, tf.reduce_min(x), 0)) - 1) * alpha * gamma
+    ]
 
   @classmethod
   def version_1(cls, node, **kwargs):

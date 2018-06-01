@@ -5,18 +5,14 @@ from onnx_tf.handlers.handler import onnx_op
 from onnx_tf.handlers.handler import tf_func
 
 
-@onnx_op("Relu")
-@tf_func(tf.nn.relu)
-class Relu(BackendHandler):
+@onnx_op("Squeeze")
+@tf_func(tf.squeeze)
+class Squeeze(BackendHandler):
 
   @classmethod
   def process_attrs(cls, attrs):
-    return cls._process_attrs(attrs, remove=["consumed_inputs"])
+    return cls._process_attrs(attrs, rename={"axes": "axis"})
 
   @classmethod
   def version_1(cls, node, **kwargs):
-    return [cls.make_tf_tensor(node, **kwargs)]
-
-  @classmethod
-  def version_6(cls, node, **kwargs):
     return [cls.make_tf_tensor(node, **kwargs)]

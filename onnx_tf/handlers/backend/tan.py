@@ -3,16 +3,13 @@ import tensorflow as tf
 from onnx_tf.handlers.backend_handler import BackendHandler
 from onnx_tf.handlers.handler import onnx_op
 from onnx_tf.handlers.handler import tf_func
+from .math_mixin import BasicMathMixin
 
 
-@onnx_op("Shape")
-@tf_func(tf.shape)
-class Shape(BackendHandler):
-
-  @classmethod
-  def process_attrs(cls, attrs):
-    return cls._process_attrs(attrs, default={"out_type": tf.int64})
+@onnx_op("Tan")
+@tf_func(tf.tan)
+class Tan(BasicMathMixin, BackendHandler):
 
   @classmethod
-  def version_1(cls, node, **kwargs):
+  def version_7(cls, node, **kwargs):
     return [cls.make_tf_tensor(node, **kwargs)]

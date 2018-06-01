@@ -9,9 +9,9 @@ from onnx_tf.handlers.handler import onnx_op
 from onnx_tf.handlers.handler import tf_func
 
 
-@onnx_op("DepthToSpace")
-@tf_func(tf.depth_to_space)
-class DepthToSpace(BackendHandler):
+@onnx_op("SpaceToDepth")
+@tf_func(tf.space_to_depth)
+class SpaceToDepth(BackendHandler):
 
   @classmethod
   def process_attrs(cls, attrs):
