@@ -4,12 +4,10 @@ import tensorflow as tf
 from onnx_tf.handlers.backend_handler import BackendHandler
 from onnx_tf.handlers.handler import onnx_op
 from onnx_tf.handlers.handler import tf_func
-from onnx_tf.handlers.handler import tf_op
 from onnx_tf.common import data_type
 
 
 @onnx_op("Constant")
-@tf_op("Constant")
 @tf_func(tf.constant)
 class Constant(BackendHandler):
 

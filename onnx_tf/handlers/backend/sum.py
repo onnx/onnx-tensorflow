@@ -3,18 +3,16 @@ import tensorflow as tf
 from onnx_tf.handlers.backend_handler import BackendHandler
 from onnx_tf.handlers.handler import onnx_op
 from onnx_tf.handlers.handler import tf_func
-from onnx_tf.handlers.handler import tf_op
 from .math_mixin import ArithmeticMixin
 
 
 @onnx_op("Sum")
-@tf_op("AddN")
 @tf_func(tf.add_n)
 class Sum(ArithmeticMixin, BackendHandler):
 
   @classmethod
   def _common(cls, node, **kwargs):
-    tensor_dict = kwargs.pop("tensor_dict", {})
+    tensor_dict = kwargs["tensor_dict"]
     return [
         cls.make_tf_tensor(
             node,

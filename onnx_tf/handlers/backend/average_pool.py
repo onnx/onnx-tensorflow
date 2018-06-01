@@ -4,12 +4,10 @@ import tensorflow as tf
 
 from onnx_tf.handlers.backend_handler import BackendHandler
 from onnx_tf.handlers.handler import onnx_op
-from onnx_tf.handlers.handler import tf_op
 from .pool_mixin import PoolMixin
 
 
 @onnx_op("AveragePool")
-@tf_op("AvgPool")
 class AveragePool(PoolMixin, BackendHandler):
 
   @classmethod

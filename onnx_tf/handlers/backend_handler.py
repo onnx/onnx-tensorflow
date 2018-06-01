@@ -32,10 +32,13 @@ class BackendHandler(Handler):
     return attrs
 
   @classmethod
-  def _process_attrs(cls, attrs, remove=None, rename=None):
+  def _process_attrs(cls, attrs, remove=None, rename=None, default=None):
     remove = remove or []
     for k in remove:
       attrs.pop(k, None)
+
+    for k, v in default.items():
+      attrs.setdefault(k, v)
 
     rename = rename or {}
     for k, new_k in rename.items():
@@ -60,7 +63,8 @@ class BackendHandler(Handler):
                      inputs=None,
                      attrs=None,
                      name=None,
-                     nc_cuda_only=False,
+                     c_first_cuda_only=False,
+                     c_last_only=False,
                      **kwargs):
     tensor_dict = kwargs.get("tensor_dict", {})
     tf_func = tf_func or cls.TF_FUNC
@@ -69,17 +73,31 @@ class BackendHandler(Handler):
     name = name or node.name
     if name != "":
       attrs["name"] = name
-    if not nc_cuda_only:
+
+    if not c_first_cuda_only or not c_last_only:
       return tf_func(*inputs, **attrs)
     else:
       support_cuda = supports_device("CUDA")
       x = inputs[0]
       storage_format, compute_format = get_data_format(
           len(x.get_shape()), support_cuda)
-      x_t = tf.transpose(
-          x, perm=get_perm_from_formats(storage_format, compute_format))
-      inputs[0] = x_t
-      y = tf_func(*inputs, data_format=compute_format, **attrs)
-      y_t = tf.transpose(
-          y, perm=get_perm_from_formats(compute_format, storage_format))
-      return [y_t]
+      pre_perm = list(range(len(x.get_shape())))
+      post_perm = pre_perm[:]
+
+      if c_first_cuda_only:
+        pre_perm = get_perm_from_formats(storage_format, compute_format)
+        post_perm = get_perm_from_formats(compute_format, storage_format)
+      if c_last_only:
+        compute_format = compute_format.replace("C", "") + "C"
+        pre_perm = get_perm_from_formats(storage_format, compute_format)
+        post_perm = get_perm_from_formats(compute_format, storage_format)
+
+      if pre_perm != list(range(len(x.get_shape()))):
+        x_t = tf.transpose(x, perm=pre_perm)
+        inputs[0] = x_t
+        y = tf_func(*inputs, data_format=compute_format, **attrs)
+        y_t = tf.transpose(y, perm=post_perm)
+        return [y_t]
+
+      return tf_func(*inputs, **attrs)
+

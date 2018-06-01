@@ -29,11 +29,6 @@ class Handler(object):
           "{} doesn't have ONNX_OP. "
           "Please use Handler.onnx_op decorator to register ONNX_OP.".format(
               cls.__name__))
-    if not cls.TF_OP:
-      raise ValueError(
-          "{} doesn't have TF_OP. "
-          "Please use Handler.tf_op decorator to register TF_OP.".format(
-              cls.__name__))
 
   @classmethod
   def args_check(cls, node, **kwargs):

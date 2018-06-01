@@ -3,11 +3,9 @@ import tensorflow as tf
 from onnx_tf.handlers.backend_handler import BackendHandler
 from onnx_tf.handlers.handler import onnx_op
 from onnx_tf.handlers.handler import tf_func
-from onnx_tf.handlers.handler import tf_op
 
 
 @onnx_op("Elu")
-@tf_op("Elu")
 @tf_func(tf.nn.elu)
 class Elu(BackendHandler):
 

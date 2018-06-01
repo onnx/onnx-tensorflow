@@ -24,6 +24,15 @@ class FrontendHandler(Handler):
   """
 
   @classmethod
+  def check_cls(cls):
+    super(FrontendHandler, cls).check_cls()
+    if not cls.TF_OP:
+      raise ValueError(
+          "{} doesn't have TF_OP. "
+          "Please use Handler.tf_op decorator to register TF_OP.".format(
+              cls.__name__))
+
+  @classmethod
   def make_node(cls,
                 op_type,
                 inputs,

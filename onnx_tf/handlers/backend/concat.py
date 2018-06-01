@@ -3,11 +3,9 @@ import tensorflow as tf
 from onnx_tf.handlers.backend_handler import BackendHandler
 from onnx_tf.handlers.handler import onnx_op
 from onnx_tf.handlers.handler import tf_func
-from onnx_tf.handlers.handler import tf_op
 
 
 @onnx_op("Concat")
-@tf_op("ConcatV2")
 @tf_func(tf.concat)
 class Concat(BackendHandler):
 
