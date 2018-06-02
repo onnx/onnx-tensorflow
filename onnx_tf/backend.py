@@ -203,7 +203,7 @@ class TensorflowBackend(Backend):
 
   @classmethod
   def _get_handlers(cls, opset):
-    opset = opset or make_opsetid(defs.ONNX_DOMAIN, defs.onnx_opset_version())
+    opset = opset or [make_opsetid(defs.ONNX_DOMAIN, defs.onnx_opset_version())]
     opset_dict = dict([(o.domain, o.version) for o in opset])
     return get_all_backend_handlers(opset_dict)
 

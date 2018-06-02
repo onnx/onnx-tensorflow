@@ -10,35 +10,40 @@ from onnx_tf.handlers.handler import tf_func
 class BatchNormalization(BackendHandler):
 
   @classmethod
+  def process_attrs(cls, attrs):
+    return cls._process_attrs(
+        attrs,
+        remove=["consumed_inputs"],
+        default={"epsilon": 1e-5},
+        rename={"epsilon": "variance_epsilon"})
+
+  @classmethod
   def _common(cls, node, **kwargs):
     tensor_dict = kwargs["tensor_dict"]
     x = tensor_dict[node.inputs[0]]
-    total_num_dim = len(x.get_shape())
-    scale = cls._explicit_broadcast(tensor_dict[node.inputs[1]], 1,
-                                    total_num_dim)
-    bias = cls._explicit_broadcast(tensor_dict[node.inputs[2]], 1,
-                                   total_num_dim)
-    running_mean = cls._explicit_broadcast(tensor_dict[node.inputs[3]], 1,
-                                           total_num_dim)
-    running_variance = cls._explicit_broadcast(tensor_dict[node.inputs[4]], 1,
-                                               total_num_dim)
+    x_shape = x.get_shape().as_list()
+    x_rank = len(x_shape)
 
-    variance_epsilon = node.attrs.get("epsilon", 0.00001)
+    params_shape_broadcast = list(
+      [1, x_shape[1]] + [1 for _ in range(2, x_rank)])
+
+    total_num_dim = len(x.get_shape())
+    scale = tf.reshape(tensor_dict[node.inputs[1]], params_shape_broadcast)
+    bias = tf.reshape(tensor_dict[node.inputs[2]], params_shape_broadcast)
+    running_mean = tf.reshape(tensor_dict[node.inputs[3]], params_shape_broadcast)
+    running_variance = tf.reshape(tensor_dict[node.inputs[4]], params_shape_broadcast)
+
     if node.attrs.get("is_test", 0):
-      inputs = [
-          x, running_mean, running_variance, bias, scale, variance_epsilon
-      ]
+      inputs = [x, running_mean, running_variance, bias, scale]
       return [cls.make_tf_tensor(node, inputs=inputs)]
     spatial = node.attrs.get("spatial", 1) == 1
     momentum = node.attrs.get("momentum", 0.9)
     axis = [0] if spatial else [0] + list(range(2, total_num_dim))
     mean, variance = tf.nn.moments(x, axis)
-    mean = cls._explicit_broadcast(mean, 1, total_num_dim)
-    variance = cls._explicit_broadcast(variance, 1, total_num_dim)
     running_mean = running_mean * momentum + mean * (1 - momentum)
     running_variance = running_variance * momentum + variance * (1 - momentum)
     # TODO: need to conform to the documentation here
-    inputs = [x, running_mean, running_variance, bias, scale, variance_epsilon]
+    inputs = [x, running_mean, running_variance, bias, scale]
     return [cls.make_tf_tensor(node, inputs=inputs)]
 
   @classmethod

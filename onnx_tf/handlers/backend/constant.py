@@ -19,5 +19,6 @@ class Constant(BackendHandler):
   def version_1(cls, node, **kwargs):
     attr_value = node.attrs["value"]
     dtype = data_type.onnx2tf(attr_value.data_type)
-    value = np.reshape(attr_value.float_data, attr_value.dims)
+    field = data_type.onnx2field(attr_value.data_type)
+    value = np.reshape(getattr(attr_value, field), attr_value.dims)
     return [cls.make_tf_tensor(node, inputs=[value], attrs={"dtype": dtype})]

@@ -17,10 +17,18 @@ def tf2onnx(dtype):
 
 
 def onnx2tf(dtype):
+  return tf.as_dtype(mapping.TENSOR_TYPE_TO_NP_TYPE[_onnx_dtype(dtype)])
+
+
+def onnx2field(dtype):
+  return mapping.STORAGE_TENSOR_TYPE_TO_FIELD[_onnx_dtype(dtype)]
+
+
+def _onnx_dtype(dtype):
   if isinstance(dtype, Number):
     onnx_dype = dtype
   elif isinstance(dtype, str):
     onnx_dype = TensorProto.DataType.Value(dtype)
   else:
     raise RuntimeError("dtype should be number or str.")
-  return tf.as_dtype(mapping.TENSOR_TYPE_TO_NP_TYPE[onnx_dype])
+  return onnx_dype

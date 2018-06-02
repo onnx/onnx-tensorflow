@@ -43,9 +43,9 @@ class TestNode(unittest.TestCase):
     np.testing.assert_almost_equal(output["Y"], np.abs(x))
 
   def test_add(self):
-    node_def = helper.make_node("Add", ["X", "Y"], ["Z"], broadcast=1, axis=1)
+    node_def = helper.make_node("Add", ["X", "Y"], ["Z"])
     x = self._get_rnd([5, 10, 5, 5])
-    y = self._get_rnd([10])
+    y = self._get_rnd([10, 1, 1])
     output = run_node(node_def, [x, y])
     np.testing.assert_almost_equal(output["Z"],
                                    np.add(x, y.reshape([1, 10, 1, 1])))
@@ -282,7 +282,7 @@ class TestNode(unittest.TestCase):
     np.testing.assert_almost_equal(output["Y"], y, decimal=5)
 
   def test_div(self):
-    node_def = helper.make_node("Div", ["X", "Y"], ["Z"], broadcast=1)
+    node_def = helper.make_node("Div", ["X", "Y"], ["Z"])
     x = self._get_rnd([10, 10])
     y = self._get_rnd([10, 10])
     output = run_node(node_def, [x, y])
@@ -306,9 +306,9 @@ class TestNode(unittest.TestCase):
     np.testing.assert_almost_equal(output["Y"], test_output)
 
   def test_equal(self):
-    node_def = helper.make_node("Equal", ["X", "Y"], ["Z"], broadcast=1, axis=1)
+    node_def = helper.make_node("Equal", ["X", "Y"], ["Z"])
     x = self._get_rnd([5, 3, 3, 2])
-    y = self._get_rnd([3, 3])
+    y = self._get_rnd([3, 3, 1])
     output = run_node(node_def, [x, y])
     np.testing.assert_equal(output["Z"], np.equal(x, np.reshape(
         y, [1, 3, 3, 1])))
@@ -355,7 +355,6 @@ class TestNode(unittest.TestCase):
         "Gemm", ["A", "B", "C"], ["Y"],
         transA=0,
         transB=0,
-        broadcast=1,
         alpha=1.0,
         beta=1.0)
     x = np.floor(self._get_rnd([10, 10]))
@@ -433,9 +432,9 @@ class TestNode(unittest.TestCase):
     np.testing.assert_almost_equal(output["Y"], test_output)
 
   def test_less(self):
-    node_def = helper.make_node("Less", ["X", "Y"], ["Z"], broadcast=1, axis=1)
+    node_def = helper.make_node("Less", ["X", "Y"], ["Z"])
     x = self._get_rnd([5, 3, 3, 2])
-    y = self._get_rnd([3, 3])
+    y = self._get_rnd([3, 3, 1])
     output = run_node(node_def, [x, y])
     np.testing.assert_equal(output["Z"], np.less(x, np.reshape(y,
                                                                [1, 3, 3, 1])))
@@ -488,10 +487,10 @@ class TestNode(unittest.TestCase):
     np.testing.assert_almost_equal(output["Y"], np.floor(x))
 
   def test_leakyrelu(self):
-    node_def = helper.make_node("LeakyRelu", ["X"], ["Y"], alpha=2.0)
+    node_def = helper.make_node("LeakyRelu", ["X"], ["Y"], alpha=0.8)
     x = np.floor(self._get_rnd([100]))
     output = run_node(node_def, [x])
-    test_output = [self._leaky_relu(a, 2.0) for a in x]
+    test_output = [self._leaky_relu(a, 0.8) for a in x]
     np.testing.assert_almost_equal(output["Y"], test_output)
 
   def test_log(self):
@@ -541,9 +540,9 @@ class TestNode(unittest.TestCase):
     np.testing.assert_almost_equal(output["Z"], test_output)
 
   def test_mul(self):
-    node_def = helper.make_node("Mul", ["X", "Y"], ["Z"], broadcast=1, axis=1)
+    node_def = helper.make_node("Mul", ["X", "Y"], ["Z"])
     x = self._get_rnd([5, 10, 5, 5])
-    y = self._get_rnd([10])
+    y = self._get_rnd([10, 1, 1])
     output = run_node(node_def, [x, y])
     np.testing.assert_almost_equal(output["Z"],
                                    np.multiply(x, y.reshape([1, 10, 1, 1])))
@@ -674,7 +673,7 @@ class TestNode(unittest.TestCase):
     gamma = 1.0507
     x[x <= 0] = gamma * (alpha * np.exp(x[x <= 0]) - alpha)
     x[x > 0] = gamma * x[x > 0]
-    np.testing.assert_allclose(output["Y"], x, rtol=1e-3)
+    np.testing.assert_allclose(output["Y"], x, rtol=1e-3, atol=1e-7)
 
   def test_shape(self):
     node_def = helper.make_node("Shape", ["X"], ["Y"])
@@ -750,7 +749,7 @@ class TestNode(unittest.TestCase):
     np.testing.assert_almost_equal(output["Y"], np.squeeze(x, axis=2))
 
   def test_sub(self):
-    node_def = helper.make_node("Sub", ["X", "Y"], ["Z"], broadcast=1)
+    node_def = helper.make_node("Sub", ["X", "Y"], ["Z"])
     x = self._get_rnd([10, 10])
     y = self._get_rnd([10, 10])
     output = run_node(node_def, [x, y])
