@@ -5,7 +5,7 @@ import tensorflow as tf
 class BroadcastMixin(object):
 
   @classmethod
-  def _explicit_broadcast(cls, inputs, axis=1, tensor_dict=None):
+  def _explicit_broadcast(cls, inputs, axis=None, tensor_dict=None):
     x = inputs[0] if isinstance(inputs[0],
                                 tf.Tensor) else tensor_dict[inputs[0]]
     y = inputs[1] if isinstance(inputs[1],

@@ -26,7 +26,7 @@ from onnx_tf.common import attr_translator
 from onnx_tf.common import data_type
 from onnx_tf.common import exception
 from onnx_tf.common import get_device_option
-from onnx_tf.common import supports_device  # noqa
+from onnx_tf.common import supports_device as common_supports_device
 from onnx_tf.common.handler_helper import get_all_backend_handlers
 
 
@@ -207,9 +207,15 @@ class TensorflowBackend(Backend):
     opset_dict = dict([(o.domain, o.version) for o in opset])
     return get_all_backend_handlers(opset_dict)
 
+  @classmethod
+  def supports_device(cls, device):
+    return common_supports_device(device)
+
 
 prepare = TensorflowBackend.prepare
 
 run_node = TensorflowBackend.run_node
 
 run_model = TensorflowBackend.run_model
+
+supports_device = TensorflowBackend.supports_device
