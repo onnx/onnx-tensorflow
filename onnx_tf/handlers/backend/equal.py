@@ -9,11 +9,11 @@ from .control_flow_mixin import ComparisonMixin
 
 @onnx_op("Equal")
 @tf_func(tf.equal)
-class Equal(ComparisonMixin, BackendHandler):
+class Equal(BroadcastMixin, ComparisonMixin, BackendHandler):
 
   @classmethod
   def version_1(cls, node, **kwargs):
-    return BroadcastMixin.limited_broadcast(node, **kwargs)
+    return cls.limited_broadcast(node, **kwargs)
 
   @classmethod
   def version_7(cls, node, **kwargs):

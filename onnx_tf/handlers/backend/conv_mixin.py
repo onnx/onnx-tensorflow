@@ -159,7 +159,7 @@ class ConvMixin(BroadcastMixin):
             output, perm=get_perm_from_formats(compute_format, storage_format))
     else:
       bias = input_dict[node.inputs[2]]
-      bias = BroadcastMixin.explicit_broadcast([x, bias], compute_c_idx)
+      bias = cls.explicit_broadcast([x, bias], compute_c_idx)
 
       if support_cuda:
         output = tf.concat(convolved, axis=1)

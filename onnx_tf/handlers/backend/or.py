@@ -9,11 +9,11 @@ from .broadcast_mixin import BroadcastMixin
 
 @onnx_op("Or")
 @tf_func(tf.logical_or)
-class Or(LogicalMixin, BackendHandler):
+class Or(BroadcastMixin, LogicalMixin, BackendHandler):
 
   @classmethod
   def version_1(cls, node, **kwargs):
-    return [BroadcastMixin.limited_broadcast(node, **kwargs)]
+    return cls.limited_broadcast(node, **kwargs)
 
   @classmethod
   def version_7(cls, node, **kwargs):

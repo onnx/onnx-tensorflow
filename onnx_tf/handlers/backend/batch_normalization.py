@@ -13,7 +13,7 @@ class BatchNormalization(BackendHandler):
   def process_attrs(cls, attrs):
     return cls._process_attrs(
         attrs,
-        remove=["consumed_inputs"],
+        remove=["consumed_inputs", "is_test"],
         default={"epsilon": 1e-5},
         rename={"epsilon": "variance_epsilon"})
 

@@ -9,15 +9,15 @@ from .math_mixin import ArithmeticMixin
 
 @onnx_op("Sub")
 @tf_func(tf.subtract)
-class Sub(ArithmeticMixin, BackendHandler):
+class Sub(BroadcastMixin, ArithmeticMixin, BackendHandler):
 
   @classmethod
   def version_1(cls, node, **kwargs):
-    return BroadcastMixin.limited_broadcast(node, **kwargs)
+    return cls.limited_broadcast(node, **kwargs)
 
   @classmethod
   def version_6(cls, node, **kwargs):
-    return BroadcastMixin.limited_broadcast(node, **kwargs)
+    return cls.limited_broadcast(node, **kwargs)
 
   @classmethod
   def version_7(cls, node, **kwargs):

@@ -9,11 +9,11 @@ from .broadcast_mixin import BroadcastMixin
 
 @onnx_op("Xor")
 @tf_func(tf.logical_xor)
-class Xor(LogicalMixin, BackendHandler):
+class Xor(BroadcastMixin, LogicalMixin, BackendHandler):
 
   @classmethod
   def version_1(cls, node, **kwargs):
-    return [BroadcastMixin.limited_broadcast(node, **kwargs)]
+    return cls.limited_broadcast(node, **kwargs)
 
   @classmethod
   def version_7(cls, node, **kwargs):
