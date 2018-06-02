@@ -3,11 +3,24 @@ from functools import partial
 import tensorflow as tf
 from tensorflow.python.ops import array_ops
 
-from onnx_tf.common import ONNX_OP_TO_TF_OP
-from onnx_tf.common import EXPERIMENTAL_ONNX_OP_TO_TF_OP
+from onnx_tf.common import exception
 
 
 class RNNMixin(object):
+
+  ONNX_ACTIVATION_MAPPING = {
+      # Added from tf 1.8
+      # "affine": tf.contrib.distributions.bijectors.AffineScalar,
+      "elu": tf.nn.elu,
+      "hard_sigmoid": tf.keras.backend.hard_sigmoid,
+      "leaky_relu": tf.nn.leaky_relu,
+      "relu": tf.nn.relu,
+      "sigmoid": tf.sigmoid,
+      "softsign": tf.nn.softsign,
+      "softplus": tf.nn.softplus,
+      "tanh": tf.tanh,
+      "thresholded_relu": tf.keras.layers.ThresholdedReLU,
+  }
 
   @classmethod
   def rnn(cls, x, cell_class, cell_kwargs, rnn_kwargs, activations, direction):
@@ -40,22 +53,25 @@ class RNNMixin(object):
 
   @classmethod
   def rnn_get_activation(cls, name, alpha, beta):
-    op_dict = ONNX_OP_TO_TF_OP.copy()
-    op_dict.update(EXPERIMENTAL_ONNX_OP_TO_TF_OP)
-    if name not in op_dict:
-      raise NotImplementedError(
-          "Activation function {} is not supported.".format(name))
-    activation = op_dict[name]
+    if name not in cls.ONNX_ACTIVATION_MAPPING:
+      exception.OP_UNSUPPORTED_EXCEPT("Activation function {} for {}".format(
+          name, cls.__name__), "Tensorflow")
+    activation = cls.ONNX_ACTIVATION_MAPPING[name]
     kwargs = {}
     if name == "affine":
       kwargs["scale"] = alpha
       kwargs["shift"] = beta
       activation = activation(**kwargs)
     elif name == "elu":
-      assert alpha == 1, "TensorFlow does not support alpha, else 1."
+      if alpha != 1:
+        exception.OP_UNSUPPORTED_EXCEPT(
+            "Activation function {} with alpha={} for {}".format(
+                name, alpha, cls.__name__), "Tensorflow")
     elif name == "hard_sigmoid":
-      assert alpha == 0.2, "TensorFlow can only set default alpha 0.2."
-      assert beta == 0.5, "TensorFlow can only set default beta 0.5"
+      if alpha != 0.2 or beta != 0.5:
+        exception.OP_UNSUPPORTED_EXCEPT(
+            "Activation function {} with alpha={}, beta={} for {}".format(
+                name, alpha, beta, cls.__name__), "Tensorflow")
     elif name == "leaky_relu":
       kwargs["alpha"] = alpha or 0.01
       activation = partial(activation, **kwargs)

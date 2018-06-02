@@ -5,7 +5,7 @@ import tensorflow as tf
 class BroadcastMixin(object):
 
   @classmethod
-  def _explicit_broadcast(cls, inputs, axis=None, tensor_dict=None):
+  def explicit_broadcast(cls, inputs, axis=None, tensor_dict=None):
     x = inputs[0] if isinstance(inputs[0],
                                 tf.Tensor) else tensor_dict[inputs[0]]
     y = inputs[1] if isinstance(inputs[1],
@@ -35,11 +35,11 @@ class BroadcastMixin(object):
     return new_y
 
   @classmethod
-  def _limited_broadcast(cls, node, **kwargs):
+  def limited_broadcast(cls, node, **kwargs):
     tensor_dict = kwargs["tensor_dict"]
     x = tensor_dict[node.inputs[0]]
     y = tensor_dict[node.inputs[1]]
     if node.attrs.get("broadcast") == 1:
-      y = cls._explicit_broadcast([x, y], node.attrs.get("axis", None))
+      y = cls.explicit_broadcast([x, y], node.attrs.get("axis", None))
       return [cls.make_tensor_from_onnx_node(node, inputs=[x, y], **kwargs)]
     return [cls.make_tensor_from_onnx_node(node, **kwargs)]

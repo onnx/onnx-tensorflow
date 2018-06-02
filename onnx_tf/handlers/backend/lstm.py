@@ -133,13 +133,13 @@ class LSTM(RNNMixin, BackendHandler):
       activation_alpha = node.attrs.get("activation_alpha", [None] * 6)
       activation_beta = node.attrs.get("activation_beta", [None] * 6)
       tf_activations = [
-          cls._rnn_get_activation(activations[1], activation_alpha[1],
-                                  activation_beta[1])
+          cls.rnn_get_activation(activations[1], activation_alpha[1],
+                                 activation_beta[1])
       ]
       if num_directions == 2:
         tf_activations.append(
-            cls._rnn_get_activation(activations[4], activation_alpha[4],
-                                    activation_beta[4]))
+            cls.rnn_get_activation(activations[4], activation_alpha[4],
+                                   activation_beta[4]))
 
     # TODO(fumihwh): check if reverse and bidirectional works
     with tf.variable_scope(

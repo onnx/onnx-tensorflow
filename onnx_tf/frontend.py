@@ -323,7 +323,7 @@ class TensorflowFrontend(object):
               data_type_cast_map=onnx_graph.data_type_cast_map)
         else:
           exception.OP_UNIMPLEMENTED_EXCEPT(
-              node.op,
+              node.op_type,
               domain=None if node.domain in handlers else node.domain)
         if node_proto is None:
           node_proto = FrontendHandler.make_node_from_tf_node(
