@@ -10,10 +10,6 @@ from onnx_tf.handlers.handler import tf_func
 class Reshape(BackendHandler):
 
   @classmethod
-  def process_attrs(cls, attrs):
-    return cls._process_attrs(attrs, remove=["consumed_inputs"])
-
-  @classmethod
   def _common(cls, node, **kwargs):
     tensor = kwargs["tensor_dict"][node.inputs[0]]
     if cls.SINCE_VERSION == 1:
@@ -34,7 +30,10 @@ class Reshape(BackendHandler):
 
     # Perform the copy wherever requested (wherever dim_size == 0)
     copied_shape = shape + indices_scattered
-    return [cls.make_tf_tensor(node, inputs=[tensor, copied_shape], **kwargs)]
+    return [
+        cls.make_tensor_from_onnx_node(
+            node, inputs=[tensor, copied_shape], **kwargs)
+    ]
 
   @classmethod
   def version_1(cls, node, **kwargs):

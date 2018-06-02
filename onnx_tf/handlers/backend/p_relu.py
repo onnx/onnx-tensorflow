@@ -9,10 +9,6 @@ from .broadcast_mixin import BroadcastMixin
 class PRelu(BackendHandler):
 
   @classmethod
-  def process_attrs(cls, attrs):
-    return cls._process_attrs(attrs, remove=["consumed_inputs"])
-
-  @classmethod
   def _common(cls, node, **kwargs):
     """
     Reference implementation at

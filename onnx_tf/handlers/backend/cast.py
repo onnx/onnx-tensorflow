@@ -10,13 +10,13 @@ from onnx_tf.handlers.handler import tf_func
 class Cast(BackendHandler):
 
   @classmethod
-  def process_attrs(cls, attrs):
-    return cls._process_attrs(attrs, rename={"to": "dtype"})
+  def get_attrs_processor_param(cls):
+    return {"rename": {"to": "dtype"}}
 
   @classmethod
   def version_1(cls, node, **kwargs):
-    return [cls.make_tf_tensor(node, **kwargs)]
+    return [cls.make_tensor_from_onnx_node(node, **kwargs)]
 
   @classmethod
   def version_6(cls, node, **kwargs):
-    return [cls.make_tf_tensor(node, **kwargs)]
+    return [cls.make_tensor_from_onnx_node(node, **kwargs)]

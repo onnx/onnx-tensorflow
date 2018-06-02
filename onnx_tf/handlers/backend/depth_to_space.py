@@ -14,8 +14,8 @@ from onnx_tf.handlers.handler import tf_func
 class DepthToSpace(BackendHandler):
 
   @classmethod
-  def process_attrs(cls, attrs):
-    return cls._process_attrs(attrs, rename={"blocksize": "block_size"})
+  def get_attrs_processor_param(cls):
+    return {"rename": {"blocksize": "block_size"}}
 
   @classmethod
   def version_1(cls, node, **kwargs):
@@ -26,5 +26,6 @@ class DepthToSpace(BackendHandler):
     attrs = copy.deepcopy(node.attrs)
     attrs["data_format"] = storage_format
     return [
-        cls.make_tf_tensor(node, attrs=attrs, c_first_cuda_only=True, **kwargs)
+        cls.make_tensor_from_onnx_node(
+            node, attrs=attrs, c_first_cuda_only=True, **kwargs)
     ]

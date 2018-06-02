@@ -10,19 +10,19 @@ from onnx_tf.handlers.handler import tf_func
 class RandomUniformLike(BackendHandler):
 
   @classmethod
-  def process_attrs(cls, attrs):
-    return cls._process_attrs(
-        attrs,
-        rename={
-            "minval": "low",
-            "maxval": "high"
+  def get_attrs_processor_param(cls):
+    return {
+        "default": {
+            "low": 0.,
+            "high": 1.
         },
-        default={
-            "high": 1.,
-            "low": 0.
-        })
+        "rename": {
+            "low": "minval",
+            "high": "maxval"
+        }
+    }
 
   @classmethod
   def version_1(cls, node, **kwargs):
     inputs = [kwargs["tensor_dict"][node.inputs[0]].get_shape()]
-    return [cls.make_tf_tensor(node, inputs=inputs, **kwargs)]
+    return [cls.make_tensor_from_onnx_node(node, inputs=inputs, **kwargs)]

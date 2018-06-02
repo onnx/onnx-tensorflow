@@ -11,10 +11,6 @@ from onnx_tf.handlers.handler import tf_func
 class Slice(BackendHandler):
 
   @classmethod
-  def process_attrs(cls, attrs):
-    return cls._process_attrs(attrs, remove=["axes", "ends", "starts"])
-
-  @classmethod
   def version_1(cls, node, **kwargs):
     tensor_dict = kwargs["tensor_dict"]
     x = tensor_dict[node.inputs[0]]
@@ -36,7 +32,7 @@ class Slice(BackendHandler):
       full_sizes[axes[i]] = ends[i] - starts[i]
 
     return [
-        cls.make_tf_tensor(
+        cls.make_tensor_from_onnx_node(
             node,
             inputs=[
                 tensor_dict[node.inputs[0]],

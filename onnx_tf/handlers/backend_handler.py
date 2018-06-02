@@ -4,6 +4,8 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import copy
+import inspect
+import sys
 
 import tensorflow as tf
 
@@ -29,44 +31,32 @@ class BackendHandler(Handler):
 
   @classmethod
   def process_attrs(cls, attrs):
-    return attrs
+    param = {"rename": {}, "default": {}}
+    param.update(cls.get_attrs_processor_param())
 
-  @classmethod
-  def _process_attrs(cls, attrs, remove=None, rename=None, default=None):
-    remove = remove or []
-    for k in remove:
-      attrs.pop(k, None)
-
-    default = default or {}
-    for k, v in default.items():
+    for k, v in param["default"].items():
       attrs.setdefault(k, v)
 
-    rename = rename or {}
-    for k, new_k in rename.items():
+    for k, new_k in param["rename"].items():
       if k in attrs:
         attrs[new_k] = attrs.pop(k)
 
     return attrs
 
-  # @classmethod
-  # def check_cls(cls):
-  #   super(BackendHandler, cls).check_cls()
-  #   if not cls.TF_FUNC:
-  #     raise ValueError(
-  #         "{} doesn't have TF_FUNC. "
-  #         "Please use Handler.tf_func decorator to register TF_FUNC.".format(
-  #             cls.__name__))
+  @classmethod
+  def get_attrs_processor_param(cls):
+    return {}
 
   @classmethod
-  def make_tf_tensor(cls,
-                     node,
-                     tf_func=None,
-                     inputs=None,
-                     attrs=None,
-                     name=None,
-                     c_first_cuda_only=False,
-                     c_last_only=False,
-                     **kwargs):
+  def make_tensor_from_onnx_node(cls,
+                                 node,
+                                 tf_func=None,
+                                 inputs=None,
+                                 attrs=None,
+                                 name=None,
+                                 c_first_cuda_only=False,
+                                 c_last_only=False,
+                                 **kwargs):
     tensor_dict = kwargs.get("tensor_dict", {})
     tf_func = tf_func or cls.TF_FUNC
     inputs = inputs or [tensor_dict.get(inp, None) for inp in node.inputs]
@@ -76,7 +66,7 @@ class BackendHandler(Handler):
       attrs["name"] = name
 
     if not c_first_cuda_only and not c_last_only:
-      return tf_func(*inputs, **attrs)
+      return cls._run_tf_func(tf_func, inputs, attrs)
     else:
       support_cuda = supports_device("CUDA")
       x = inputs[0]
@@ -97,8 +87,17 @@ class BackendHandler(Handler):
       if pre_perm != list(range(len(x.get_shape()))):
         x_t = tf.transpose(x, perm=pre_perm)
         inputs[0] = x_t
-        y = tf_func(*inputs, **attrs)
+        y = cls._run_tf_func(tf_func, inputs, attrs)
         y_t = tf.transpose(y, perm=post_perm)
         return y_t
 
-      return tf_func(*inputs, **attrs)
+      return cls._run_tf_func(tf_func, inputs, attrs)
+
+  @classmethod
+  def _run_tf_func(cls, tf_func, inputs, attrs):
+    if sys.version_info > (3,):
+      params = list(inspect.signature(tf_func).parameters.keys())
+    else:
+      params = inspect.getargspec(tf_func).args
+    return tf_func(*inputs,
+                   **dict([(p, attrs[p]) for p in params if p in attrs]))

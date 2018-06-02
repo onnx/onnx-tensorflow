@@ -4,18 +4,11 @@ from .broadcast_mixin import BroadcastMixin
 
 
 class BasicMathMixin(BroadcastMixin):
-
-  @classmethod
-  def process_attrs(cls, attrs):
-    return cls._process_attrs(attrs, remove=["consumed_inputs"])
+  pass
 
 
 class ArithmeticMixin(BroadcastMixin):
-
-  @classmethod
-  def process_attrs(cls, attrs):
-    return cls._process_attrs(
-        attrs, remove=["consumed_inputs", "axis", "broadcast"])
+  pass
 
 
 class ReductionMixin(BroadcastMixin):
@@ -29,4 +22,4 @@ class ReductionMixin(BroadcastMixin):
     attrs["axis"] = axis
     # https://github.com/onnx/onnx/issues/585
     attrs["keepdims"] = attrs.pop("keepdims", 1) == 1
-    return [cls.make_tf_tensor(node, attrs=attrs, **kwargs)]
+    return [cls.make_tensor_from_onnx_node(node, attrs=attrs, **kwargs)]

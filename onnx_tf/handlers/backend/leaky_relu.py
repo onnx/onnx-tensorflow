@@ -10,14 +10,13 @@ from onnx_tf.handlers.handler import tf_func
 class Identity(BackendHandler):
 
   @classmethod
-  def process_attrs(cls, attrs):
-    return cls._process_attrs(
-        attrs, remove=["consumed_inputs"], default={"alpha": 0.01})
+  def get_attrs_processor_param(cls):
+    return {"default": {"alpha": 0.01}}
 
   @classmethod
   def version_1(cls, node, **kwargs):
-    return [cls.make_tf_tensor(node, **kwargs)]
+    return [cls.make_tensor_from_onnx_node(node, **kwargs)]
 
   @classmethod
   def version_6(cls, node, **kwargs):
-    return [cls.make_tf_tensor(node, **kwargs)]
+    return [cls.make_tensor_from_onnx_node(node, **kwargs)]

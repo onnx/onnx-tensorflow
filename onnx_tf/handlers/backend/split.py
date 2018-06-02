@@ -12,8 +12,8 @@ from onnx_tf.handlers.handler import tf_func
 class Split(BackendHandler):
 
   @classmethod
-  def process_attrs(cls, attrs):
-    return cls._process_attrs(attrs, remove=["split"], default={"axis": 0})
+  def get_attrs_processor_param(cls):
+    return {"default": {"axis": 0}}
 
   @classmethod
   def _common(cls, node, **kwargs):
@@ -32,7 +32,7 @@ class Split(BackendHandler):
       split = [int(per_part)] * len(node.outputs)
     attrs["num_or_size_splits"] = split
     return list(
-        cls.make_tf_tensor(
+        cls.make_tensor_from_onnx_node(
             node, inputs=[tensor_dict[node.inputs[0]]], attrs=attrs, **kwargs))
 
   @classmethod

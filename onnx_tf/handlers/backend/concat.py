@@ -12,7 +12,7 @@ class Concat(BackendHandler):
   @classmethod
   def _common(cls, node, **kwargs):
     inputs = [kwargs["tensor_dict"][inp] for inp in node.inputs]
-    return [cls.make_tf_tensor(node, inputs=[inputs])]
+    return [cls.make_tensor_from_onnx_node(node, inputs=[inputs])]
 
   @classmethod
   def version_1(cls, node, **kwargs):

@@ -6,8 +6,10 @@ class BroadcastMixin(object):
 
   @classmethod
   def _explicit_broadcast(cls, inputs, axis=1, tensor_dict=None):
-    x = inputs[0] if isinstance(inputs[0], tf.Tensor) else tensor_dict[inputs[0]]
-    y = inputs[1] if isinstance(inputs[1], tf.Tensor) else tensor_dict[inputs[1]]
+    x = inputs[0] if isinstance(inputs[0],
+                                tf.Tensor) else tensor_dict[inputs[0]]
+    y = inputs[1] if isinstance(inputs[1],
+                                tf.Tensor) else tensor_dict[inputs[1]]
 
     if np.prod(y.shape) == 1:
       return y
@@ -39,5 +41,5 @@ class BroadcastMixin(object):
     y = tensor_dict[node.inputs[1]]
     if node.attrs.get("broadcast") == 1:
       y = cls._explicit_broadcast([x, y], node.attrs.get("axis", None))
-      return [cls.make_tf_tensor(node, inputs=[x, y], **kwargs)]
-    return [cls.make_tf_tensor(node, **kwargs)]
+      return [cls.make_tensor_from_onnx_node(node, inputs=[x, y], **kwargs)]
+    return [cls.make_tensor_from_onnx_node(node, **kwargs)]

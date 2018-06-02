@@ -11,8 +11,8 @@ from .math_mixin import ReductionMixin
 class ReduceL1(ReductionMixin, BackendHandler):
 
   @classmethod
-  def process_attrs(cls, attrs):
-    return cls._process_attrs(attrs, default={"ord": 1})
+  def get_attrs_processor_param(cls):
+    return {"default": {"ord": 1}}
 
   @classmethod
   def version_1(cls, node, **kwargs):

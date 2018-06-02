@@ -10,12 +10,15 @@ from onnx_tf.handlers.handler import tf_func
 class BatchNormalization(BackendHandler):
 
   @classmethod
-  def process_attrs(cls, attrs):
-    return cls._process_attrs(
-        attrs,
-        remove=["consumed_inputs", "is_test", "momentum"],
-        default={"epsilon": 1e-5},
-        rename={"epsilon": "variance_epsilon"})
+  def get_attrs_processor_param(cls):
+    return {
+        "default": {
+            "epsilon": 1e-5
+        },
+        "rename": {
+            "epsilon": "variance_epsilon"
+        }
+    }
 
   @classmethod
   def _common(cls, node, **kwargs):
@@ -25,17 +28,19 @@ class BatchNormalization(BackendHandler):
     x_rank = len(x_shape)
 
     params_shape_broadcast = list(
-      [1, x_shape[1]] + [1 for _ in range(2, x_rank)])
+        [1, x_shape[1]] + [1 for _ in range(2, x_rank)])
 
     total_num_dim = len(x.get_shape())
     scale = tf.reshape(tensor_dict[node.inputs[1]], params_shape_broadcast)
     bias = tf.reshape(tensor_dict[node.inputs[2]], params_shape_broadcast)
-    running_mean = tf.reshape(tensor_dict[node.inputs[3]], params_shape_broadcast)
-    running_variance = tf.reshape(tensor_dict[node.inputs[4]], params_shape_broadcast)
+    running_mean = tf.reshape(tensor_dict[node.inputs[3]],
+                              params_shape_broadcast)
+    running_variance = tf.reshape(tensor_dict[node.inputs[4]],
+                                  params_shape_broadcast)
 
     if node.attrs.get("is_test", 0):
       inputs = [x, running_mean, running_variance, bias, scale]
-      return [cls.make_tf_tensor(node, inputs=inputs)]
+      return [cls.make_tensor_from_onnx_node(node, inputs=inputs)]
     spatial = node.attrs.get("spatial", 1) == 1
     momentum = node.attrs.get("momentum", 0.9)
     axis = [0] if spatial else [0] + list(range(2, total_num_dim))
@@ -44,7 +49,7 @@ class BatchNormalization(BackendHandler):
     running_variance = running_variance * momentum + variance * (1 - momentum)
     # TODO: need to conform to the documentation here
     inputs = [x, running_mean, running_variance, bias, scale]
-    return [cls.make_tf_tensor(node, inputs=inputs)]
+    return [cls.make_tensor_from_onnx_node(node, inputs=inputs)]
 
   @classmethod
   def version_1(cls, node, **kwargs):

@@ -14,7 +14,7 @@ class Sum(ArithmeticMixin, BackendHandler):
   def _common(cls, node, **kwargs):
     tensor_dict = kwargs["tensor_dict"]
     return [
-        cls.make_tf_tensor(
+        cls.make_tensor_from_onnx_node(
             node,
             inputs=[[tensor_dict.get(inp, None) for inp in node.inputs]],
             **kwargs)

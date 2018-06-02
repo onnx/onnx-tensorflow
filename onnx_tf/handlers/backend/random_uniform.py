@@ -10,18 +10,18 @@ from onnx_tf.handlers.handler import tf_func
 class RandomUniform(BackendHandler):
 
   @classmethod
-  def process_attrs(cls, attrs):
-    return cls._process_attrs(
-        attrs,
-        rename={
-            "low": "minval",
-            "high": "maxval"
-        },
-        default={
+  def get_attrs_processor_param(cls):
+    return {
+        "default": {
             "low": 0.,
             "high": 1.
-        })
+        },
+        "rename": {
+            "low": "minval",
+            "high": "maxval"
+        }
+    }
 
   @classmethod
   def version_1(cls, node, **kwargs):
-    return [cls.make_tf_tensor(node, **kwargs)]
+    return [cls.make_tensor_from_onnx_node(node, **kwargs)]

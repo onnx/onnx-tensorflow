@@ -21,4 +21,4 @@ class Unsqueeze(BackendHandler):
         x = tf.expand_dims(x, axis=axis, **kwargs)
       return [x]
     attrs["axis"] = axes[0]
-    return [cls.make_tf_tensor(node, attrs=attrs, **kwargs)]
+    return [cls.make_tensor_from_onnx_node(node, attrs=attrs, **kwargs)]

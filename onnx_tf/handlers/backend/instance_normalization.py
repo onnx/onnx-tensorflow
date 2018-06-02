@@ -10,12 +10,15 @@ from onnx_tf.handlers.handler import tf_func
 class InstanceNormalization(BackendHandler):
 
   @classmethod
-  def process_attrs(cls, attrs):
-    return cls._process_attrs(
-        attrs,
-        remove=["consumed_inputs"],
-        default={"epsilon", 1e-5},
-        rename={"epsilon": "variance_epsilon"})
+  def get_attrs_processor_param(cls):
+    return {
+        "default": {
+            "epsilon": 1e-5
+        },
+        "rename": {
+            "epsilon": "variance_epsilon"
+        }
+    }
 
   @classmethod
   def _common(cls, node, **kwargs):
@@ -44,7 +47,8 @@ class InstanceNormalization(BackendHandler):
     # Compute instance normalization.
     inputs = [inputs, mean, variance, beta, gamma]
     return [
-        cls.make_tf_tensor(node, inputs=inputs, name="instancenorm", **kwargs)
+        cls.make_tensor_from_onnx_node(
+            node, inputs=inputs, name="instancenorm", **kwargs)
     ]
 
   @classmethod

@@ -35,7 +35,7 @@ class Pad(BackendHandler):
           tf.py_func(_compatibility_edge_pad, [x, attrs["paddings"]], x.dtype)
       ]
 
-    return [cls.make_tf_tensor(node, attrs=attrs, **kwargs)]
+    return [cls.make_tensor_from_onnx_node(node, attrs=attrs, **kwargs)]
 
   @classmethod
   def version_1(cls, node, **kwargs):

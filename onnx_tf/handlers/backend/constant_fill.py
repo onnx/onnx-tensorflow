@@ -19,11 +19,8 @@ class ConstantFill(BackendHandler):
       raise ValueError("Cannot set extra_shape when there is no input.")
 
   @classmethod
-  def process_attrs(cls, attrs):
-    return cls._process_attrs(
-        attrs,
-        remove=["shape", "input_as_shape", "extra_shape", "dtype"],
-        default={"value": 0.})
+  def get_attrs_processor_param(cls):
+    return {"default": {"value": 0.}}
 
   @classmethod
   def version_1(cls, node, **kwargs):
@@ -44,4 +41,4 @@ class ConstantFill(BackendHandler):
     if "dtype" in node.attrs:
       return [tf.cast(tf.fill(shape, value), dtype=node.attrs["dtype"])]
 
-    return [cls.make_tf_tensor(node, inputs=[shape], **kwargs)]
+    return [cls.make_tensor_from_onnx_node(node, inputs=[shape], **kwargs)]

@@ -10,16 +10,18 @@ from onnx_tf.handlers.handler import tf_func
 class LpNormalization(BackendHandler):
 
   @classmethod
-  def process_attrs(cls, attrs):
-    return cls._process_attrs(
-        attrs,
-        rename={"p": "ord"},
-        default={
+  def get_attrs_processor_param(cls):
+    return {
+        "default": {
             "axis": -1,
             "p": 2,
             "keepdims": True
-        })
+        },
+        "rename": {
+            "p": "ord"
+        }
+    }
 
   @classmethod
   def version_1(cls, node, **kwargs):
-    return [cls.make_tf_tensor(node, **kwargs)]
+    return [cls.make_tensor_from_onnx_node(node, **kwargs)]

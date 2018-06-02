@@ -25,10 +25,6 @@ class Upsample(BackendHandler):
                                       "Tensorflow")
 
   @classmethod
-  def process_attrs(cls, attrs):
-    return cls._process_attrs(attrs, remove=["scales", "mode"])
-
-  @classmethod
   def version_7(cls, node, **kwargs):
     x = kwargs["tensor_dict"][node.inputs[0]]
     x_shape = x.get_shape().as_list()
@@ -46,4 +42,7 @@ class Upsample(BackendHandler):
     attrs["size"] = np.array((new_height, new_weight), dtype=np.int32)
     attrs["method"] = mode
 
-    return [cls.make_tf_tensor(node, attrs=attrs, c_last_only=True, **kwargs)]
+    return [
+        cls.make_tensor_from_onnx_node(
+            node, attrs=attrs, c_last_only=True, **kwargs)
+    ]

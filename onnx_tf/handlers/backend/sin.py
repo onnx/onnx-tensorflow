@@ -12,4 +12,4 @@ class Sin(BasicMathMixin, BackendHandler):
 
   @classmethod
   def version_7(cls, node, **kwargs):
-    return [cls.make_tf_tensor(node, **kwargs)]
+    return [cls.make_tensor_from_onnx_node(node, **kwargs)]

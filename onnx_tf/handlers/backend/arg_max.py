@@ -10,14 +10,14 @@ from onnx_tf.handlers.handler import tf_func
 class ArgMax(BackendHandler):
 
   @classmethod
-  def process_attrs(cls, attrs):
-    return cls._process_attrs(attrs, remove=["keepdims"], default={"axis": 0})
+  def get_attrs_processor_param(cls):
+    return {"default": {"axis": 0}}
 
   @classmethod
   def version_1(cls, node, **kwargs):
     axis = node.attrs.get("axis", 0)
     keepdims = node.attrs.get("keepdims", 1)
-    arg_max = cls.make_tf_tensor(node, **kwargs)
+    arg_max = cls.make_tensor_from_onnx_node(node, **kwargs)
     if keepdims == 1:
       return [tf.expand_dims(arg_max, axis=axis)]
     return [arg_max]
