@@ -25,15 +25,17 @@ class OpUnimplementedException(CustomException):
     self._func = NotImplementedError
     self._message = "{} is not implemented."
 
-  def __call__(self, op, version=None):
+  def __call__(self, op, version=None, domain=None):
     if IGNORE_UNIMPLEMENTED:
       self._func = warnings.warn
-    super(OpUnimplementedException, self).__call__(op, version)
+    super(OpUnimplementedException, self).__call__(op, version, domain)
 
-  def get_message(self, op, version=None):
+  def get_message(self, op, version=None, domain=None):
     insert_message = op
     if version is not None:
-      insert_message = "{} version {}".format(op, version)
+      insert_message += " version {}".format(version)
+    if domain is not None:
+      insert_message += " in domain `{}`".format(domain)
     return self._message.format(insert_message)
 
 
