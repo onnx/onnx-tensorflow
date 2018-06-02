@@ -98,6 +98,11 @@ class BackendHandler(Handler):
     if sys.version_info > (3,):
       params = list(inspect.signature(tf_func).parameters.keys())
     else:
-      params = inspect.getargspec(tf_func).args
+      # use closure to get args for function using decorator
+      if tf_func.__closure__ is not None:
+        params = tf_func.__closure__[1].cell_contents.args
+      else:
+        params = inspect.getargspec(tf_func).args
+
     return tf_func(*inputs,
                    **dict([(p, attrs[p]) for p in params if p in attrs]))
