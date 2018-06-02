@@ -313,7 +313,7 @@ class TensorflowFrontend(object):
         onnx_graph.add_input_proto(node)
       else:
         onnx_graph.add_value_info_proto(node)
-        handler = handlers.get(node.domain, {}).get(node.op, None)
+        handler = handlers.get(node.domain, {}).get(node.op_type, None)
         node_proto = None
         if handler:
           node_proto = handler.handle(
