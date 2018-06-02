@@ -61,7 +61,8 @@ def get_all_backend_handlers(opset_dict):
     if defs.has(handler.ONNX_OP, domain=handler.DOMAIN):
       try:
         since_version = defs.get_schema(
-            handler.ONNX_OP, domain=handler.DOMAIN,
+            handler.ONNX_OP,
+            domain=handler.DOMAIN,
             max_inclusive_version=version).since_version
       except RuntimeError:
         pass

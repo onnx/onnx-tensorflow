@@ -6,7 +6,7 @@ from onnx_tf.handlers.handler import tf_func
 
 
 @onnx_op("ArgMax")
-@tf_func(tf.arg_max)
+@tf_func(tf.argmax)
 class ArgMax(BackendHandler):
 
   @classmethod

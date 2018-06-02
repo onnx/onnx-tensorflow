@@ -13,6 +13,10 @@ from onnx_tf.handlers.handler import tf_func
 class LRN(BackendHandler):
 
   @classmethod
+  def process_attrs(cls, attrs):
+    return cls._process_attrs(attrs, remove=["size"])
+
+  @classmethod
   def version_1(cls, node, **kwargs):
     attrs = copy.deepcopy(node.attrs)
     alpha = attrs.get("alpha", 1e-4)
@@ -23,4 +27,4 @@ class LRN(BackendHandler):
     # TODO: LRN in tf accepts radius
     # but in ONNX/Caffe accepts diameter.
     # This could be a problem.
-    return [cls.make_tf_tensor(node, attrs=attrs)]
+    return [cls.make_tf_tensor(node, attrs=attrs, c_last_only=True, **kwargs)]

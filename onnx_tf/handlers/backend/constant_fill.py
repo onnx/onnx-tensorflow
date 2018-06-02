@@ -22,7 +22,7 @@ class ConstantFill(BackendHandler):
   def process_attrs(cls, attrs):
     return cls._process_attrs(
         attrs,
-        remove=["value", "shape", "input_as_shape", "extra_shape", "dtype"],
+        remove=["shape", "input_as_shape", "extra_shape", "dtype"],
         default={"value": 0.})
 
   @classmethod

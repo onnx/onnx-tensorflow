@@ -6,7 +6,7 @@ from onnx_tf.handlers.handler import tf_func
 
 
 @onnx_op("ArgMin")
-@tf_func(tf.arg_min)
+@tf_func(tf.argmin)
 class ArgMin(BackendHandler):
 
   @classmethod

@@ -48,7 +48,7 @@ class TensorflowNode(object):
       new_val = attr_translator.translate_tf(key, val)
 
       if isinstance(new_val, AttrValue):
-        new_val = attr_converter.onnx2tf(new_val)
+        new_val = attr_converter.tf2onnx(new_val)
 
       self.attr[key] = new_val
 

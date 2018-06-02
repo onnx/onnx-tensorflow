@@ -304,7 +304,7 @@ def supports_device(device):
   if device == "CUDA":
     local_device_protos = device_lib.list_local_devices()
     return len([x.name for x in local_device_protos if x.device_type == 'GPU'
-                ]) > 0
+               ]) > 0
   elif device == "CPU":
     return True
   return False

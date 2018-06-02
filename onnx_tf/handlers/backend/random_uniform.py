@@ -14,12 +14,12 @@ class RandomUniform(BackendHandler):
     return cls._process_attrs(
         attrs,
         rename={
-            "minval": "low",
-            "maxval": "high"
+            "low": "minval",
+            "high": "maxval"
         },
         default={
-            "high": 1.,
-            "low": 0.
+            "low": 0.,
+            "high": 1.
         })
 
   @classmethod

@@ -7,8 +7,6 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-import warnings
-
 try:
   from itertools import izip as zip
 except ImportError:  # will be 3.x series
@@ -37,10 +35,6 @@ class OnnxNode(object):
   """
   Reimplementation of NodeProto from ONNX, but in a form
   more convenient to work with from Python.
-  We may temporarily edit these nodes to get them into Caffe2 form,
-  before actually translating into the Caffe2 protobuf, since this
-  is easier than decomposing everything, and putting it back together
-  when we're ready.
   """
 
   def __init__(self, node):
@@ -56,58 +50,9 @@ class OnnxNode(object):
     self.node_proto = node
 
 
-class TensorflowBackendBase(Backend):
+class TensorflowBackend(Backend):
   """ Tensorflow Backend for ONNX
   """
-
-  DEFAULT_ONNX_ATTR_PER_OP = {
-      "random_normal": {
-          "mean": 0,
-          "scale": 1
-      },
-      "random_uniform": {
-          "low": 0,
-          "high": 1
-      },
-      "reduce_log_sum_exp": {
-          "keepdims": 1
-      },
-      "reduce_max": {
-          "keepdims": 1
-      },
-      "reduce_mean": {
-          "keepdims": 1
-      },
-      "reduce_min": {
-          "keepdims": 1
-      },
-      "reduce_prod": {
-          "keepdims": 1
-      },
-      "reduce_sum": {
-          "keepdims": 1
-      },
-      "shape": {
-          "out_type": tf.int64
-      },
-      "size": {
-          "out_type": tf.int64
-      },
-
-      # Force to use NCHW temporally
-      # https://github.com/onnx/onnx/pull/443
-      "conv": {
-          "data_format": "channels_first"
-      },
-      "max_pool": {
-          "data_format": "NCHW"
-      },
-      "average_pool": {
-          "data_format": "NCHW"
-      },
-  }
-
-  backend_version_cache = {}
 
   @classmethod
   def prepare(cls, model, device='CPU', **kwargs):
@@ -122,52 +67,9 @@ class TensorflowBackendBase(Backend):
 
     :returns: a TensorflowRep class object representing the ONNX model
     """
-    super(TensorflowBackendBase, cls).prepare(model, device, **kwargs)
+    super(TensorflowBackend, cls).prepare(model, device, **kwargs)
 
     return cls.onnx_model_to_tensorflow_rep(model)
-
-  @classmethod
-  def _bin_op(cls, node, input_dict, op_func):
-    x = input_dict[node.inputs[0]]
-    y = input_dict[node.inputs[1]]
-    broadcast = node.attrs.get("broadcast", 1)
-    if broadcast == 0:
-      warnings.warn("Definition of {} with broadcast disabled is not "
-                    "yet supported.".format(node.type), UserWarning)
-
-    if "axis" in node.attrs.keys():
-      y = cls._explicit_broadcast(y, node.attrs["axis"], len(x.shape))
-
-    return op_func(x, y)
-
-  @classmethod
-  def run_node(cls, node, inputs, device='CPU', outputs_info=None, **kwargs):
-    super(TensorflowBackendBase, cls).run_node(node, inputs, device)
-    node_graph = tf.Graph()
-    with node_graph.as_default():
-      node = OnnxNode(node)
-      device_option = get_device_option(Device(device))
-      input_tensors = []
-      for i in inputs:
-        input_tensors.append(tf.constant(i))
-
-      if isinstance(inputs, dict):
-        feed_dict_raw = inputs
-      else:
-        assert len(node.inputs) == len(inputs)
-        feed_dict_raw = dict(zip(node.inputs, inputs))
-
-      # TODO: is constant the best way for feeding inputs?
-      input_dict = dict(
-          [(x[0], tf.constant(x[1])) for x in feed_dict_raw.items()])
-      ops = cls._onnx_node_to_tensorflow_op(node, input_dict)
-
-      with tf.Session() as sess:
-        with tf.device(device_option):
-          sess.run(tf.global_variables_initializer())
-          output_vals = sess.run(ops)
-
-    return namedtupledict('Outputs', node.outputs)(*output_vals)
 
   @classmethod
   def onnx_model_to_tensorflow_rep(cls, model):
@@ -233,6 +135,35 @@ class TensorflowBackendBase(Backend):
     return tf_rep
 
   @classmethod
+  def run_node(cls, node, inputs, device='CPU', outputs_info=None, **kwargs):
+    super(TensorflowBackend, cls).run_node(node, inputs, device)
+    node_graph = tf.Graph()
+    with node_graph.as_default():
+      node = OnnxNode(node)
+      device_option = get_device_option(Device(device))
+      input_tensors = []
+      for i in inputs:
+        input_tensors.append(tf.constant(i))
+
+      if isinstance(inputs, dict):
+        feed_dict_raw = inputs
+      else:
+        assert len(node.inputs) == len(inputs)
+        feed_dict_raw = dict(zip(node.inputs, inputs))
+
+      # TODO: is constant the best way for feeding inputs?
+      input_dict = dict(
+          [(x[0], tf.constant(x[1])) for x in feed_dict_raw.items()])
+      ops = cls._onnx_node_to_tensorflow_op(node, input_dict)
+
+      with tf.Session() as sess:
+        with tf.device(device_option):
+          sess.run(tf.global_variables_initializer())
+          output_vals = sess.run(ops)
+
+    return namedtupledict('Outputs', node.outputs)(*output_vals)
+
+  @classmethod
   def _onnx_initializer_to_input_dict_items(cls, initializer):
 
     def tensor2list(onnx_tensor):
@@ -247,7 +178,11 @@ class TensorflowBackendBase(Backend):
             for init in initializer]
 
   @classmethod
-  def _onnx_node_to_tensorflow_op(cls, node, tensor_dict, handlers=None, opset=None):
+  def _onnx_node_to_tensorflow_op(cls,
+                                  node,
+                                  tensor_dict,
+                                  handlers=None,
+                                  opset=None):
     """
     Convert onnx node to tensorflow op.
 
@@ -273,8 +208,8 @@ class TensorflowBackendBase(Backend):
     return get_all_backend_handlers(opset_dict)
 
 
-prepare = TensorflowBackendBase.prepare
+prepare = TensorflowBackend.prepare
 
-run_node = TensorflowBackendBase.run_node
+run_node = TensorflowBackend.run_node
 
-run_model = TensorflowBackendBase.run_model
+run_model = TensorflowBackend.run_model
