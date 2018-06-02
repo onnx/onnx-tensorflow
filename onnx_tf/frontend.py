@@ -313,7 +313,7 @@ class TensorflowFrontend(object):
         onnx_graph.add_input_proto(node)
       else:
         onnx_graph.add_value_info_proto(node)
-        handler = handlers[node.domain].get(node.op_type, None)
+        handler = handlers.get(node.domain, {}).get(node.op, None)
         node_proto = None
         if handler:
           node_proto = handler.handle(
@@ -322,7 +322,9 @@ class TensorflowFrontend(object):
               node_dict=dict(node_tup),
               data_type_cast_map=onnx_graph.data_type_cast_map)
         else:
-          exception.OP_UNIMPLEMENTED_EXCEPT(node.op_type)
+          exception.OP_UNIMPLEMENTED_EXCEPT(
+              node.op,
+              domain=None if node.domain in handlers else node.domain)
         if node_proto is None:
           node_proto = FrontendHandler.make_node_from_tf_node(
               node, op_type=node.op_type, should_check=False)
