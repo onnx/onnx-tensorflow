@@ -75,17 +75,11 @@ def get_all_backend_handlers(opset_dict):
 
 
 def get_frontend_coverage():
-  """ Get frontend coverage. For document.
+  """ Get frontend coverage for document.
 
   :return: onnx_coverage: e.g. {'domain': {'ONNX_OP': [versions], ...}, ...}
   tf_coverage: e.g. {'domain': {'TF_OP': [versions], ...}, ...}
   """
-
-  def _update_coverage(coverage, domain, key, versions):
-    domain_coverage = coverage.setdefault(domain, {})
-    vers = domain_coverage.get(key, [])
-    vers.extend(versions)
-    domain_coverage[key] = sorted(list(set(vers)))
 
   tf_coverage = {}
   onnx_coverage = {}
@@ -98,3 +92,26 @@ def get_frontend_coverage():
       _update_coverage(tf_coverage, domain, op_name_to_lower(tf_op), versions)
     _update_coverage(onnx_coverage, domain, handler.ONNX_OP, versions)
   return onnx_coverage, tf_coverage
+
+
+def get_backend_coverage():
+  """ Get backend coverage for document.
+
+  :return: onnx_coverage: e.g. {'domain': {'ONNX_OP': [versions], ...}, ...}
+  """
+
+  onnx_coverage = {}
+  for handler in BackendHandler.__subclasses__():
+    handler.check_cls()
+
+    versions = handler.get_versions()
+    domain = handler.DOMAIN
+    _update_coverage(onnx_coverage, domain, handler.ONNX_OP, versions)
+  return onnx_coverage
+
+
+def _update_coverage(coverage, domain, key, versions):
+  domain_coverage = coverage.setdefault(domain, {})
+  vers = domain_coverage.get(key, [])
+  vers.extend(versions)
+  domain_coverage[key] = sorted(list(set(vers)))
