@@ -15,9 +15,12 @@ class Flatten(BackendHandler):
     axis = node.attrs.get("axis", 1)
     if axis == 1:
       return [cls.make_tensor_from_onnx_node(node, **kwargs)]
-    x_shape = kwargs["tensor_dict"][node.inputs[0]].get_shape().as_list()
-    shape = (np.prod(x_shape[:axis], dtype=np.int64),
-             np.prod(x_shape[axis:], dtype=np.int64))
+    if axis == 0:
+      shape = (1, -1)
+    else:
+      x_shape = kwargs["tensor_dict"][node.inputs[0]].get_shape().as_list()
+      shape = (np.prod(x_shape[:axis], dtype=np.int64),
+               np.prod(x_shape[axis:], dtype=np.int64))
     return [
         cls.make_tensor_from_onnx_node(
             node, tf_func=tf.reshape, attrs={"shape": shape}, **kwargs)
