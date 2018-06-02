@@ -256,6 +256,8 @@ class AttrTranslator(object):
   }
 
   _onnx_attr_translator = {
+      "axis": lambda x: int(x),
+      "axes": lambda x: [int(a) for a in x],
       "dtype": lambda x: data_type.onnx2tf(x),
       "keepdims": lambda x: bool(x),
       "to": lambda x: data_type.onnx2tf(x),

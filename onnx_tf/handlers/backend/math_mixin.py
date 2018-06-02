@@ -1,14 +1,16 @@
 import copy
 
+from .broadcast_mixin import BroadcastMixin
 
-class BasicMathMixin(object):
+
+class BasicMathMixin(BroadcastMixin):
 
   @classmethod
   def process_attrs(cls, attrs):
     return cls._process_attrs(attrs, remove=["consumed_inputs"])
 
 
-class ArithmeticMixin(object):
+class ArithmeticMixin(BroadcastMixin):
 
   @classmethod
   def process_attrs(cls, attrs):
@@ -16,7 +18,7 @@ class ArithmeticMixin(object):
         attrs, remove=["consumed_inputs", "axis", "broadcast"])
 
 
-class ReductionMixin(object):
+class ReductionMixin(BroadcastMixin):
 
   @classmethod
   def _common(cls, node, **kwargs):

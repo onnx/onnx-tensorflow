@@ -4,6 +4,8 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import inspect
+import sys
+from functools import partial
 
 from onnx_tf.common import exception
 
@@ -92,7 +94,10 @@ class Handler(object):
   def property_register(name, value):
 
     def deco(cls):
-      setattr(cls, name, value)
+      if inspect.isfunction(value) and not sys.version_info > (3,):
+        setattr(cls, name, staticmethod(value))
+      else:
+        setattr(cls, name, value)
       return cls
 
     return deco

@@ -9,11 +9,11 @@ from .control_flow_mixin import ComparisonMixin
 
 @onnx_op("Greater")
 @tf_func(tf.greater)
-class Greater(BroadcastMixin, ComparisonMixin, BackendHandler):
+class Greater(ComparisonMixin, BackendHandler):
 
   @classmethod
   def version_1(cls, node, **kwargs):
-    return cls.limited_broadcast(node, **kwargs)
+    return cls._limited_broadcast(node, **kwargs)
 
   @classmethod
   def version_7(cls, node, **kwargs):

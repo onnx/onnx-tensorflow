@@ -2,6 +2,7 @@ import tensorflow as tf
 
 from onnx_tf.handlers.backend_handler import BackendHandler
 from onnx_tf.handlers.handler import onnx_op
+from .broadcast_mixin import BroadcastMixin
 
 
 @onnx_op("PRelu")
@@ -20,6 +21,8 @@ class PRelu(BackendHandler):
     tensor_dict = kwargs["tensor_dict"]
     x = tensor_dict[node.inputs[0]]
     slope = tensor_dict[node.inputs[1]]
+    if cls.SINCE_VERSION == 1:
+      slope = BroadcastMixin._explicit_broadcast([x, slope])
     pos = tf.nn.relu(x)
     neg = slope * (x - abs(x)) * 0.5
     return [pos + neg]
