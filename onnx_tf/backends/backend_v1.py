@@ -51,8 +51,9 @@ class TensorflowBackend(TensorflowBackendBase):
     axis = node.attrs["axis"]
     keepdims = node.attrs.get("keepdims", 1)
     if keepdims == 1:
-      warnings.warn("Definition of ArgMax with keepdims enabled is "
-                    "incompatible between onnx and tensorflow.", UserWarning)
+      warnings.warn(
+          "Definition of ArgMax with keepdims enabled is "
+          "incompatible between onnx and tensorflow.", UserWarning)
     return [tf.argmax(data, axis=axis)]
 
   @classmethod
@@ -61,13 +62,13 @@ class TensorflowBackend(TensorflowBackendBase):
     axis = node.attrs["axis"]
     keepdims = node.attrs.get("keepdims", 1)
     if keepdims == 1:
-      warnings.warn("Definition of ArgMin with keepdims enabled is "
-                    "incompatible between onnx and tensorflow.", UserWarning)
+      warnings.warn(
+          "Definition of ArgMin with keepdims enabled is "
+          "incompatible between onnx and tensorflow.", UserWarning)
     return [tf.argmin(data, axis=axis)]
 
   @classmethod
-  def _pool_get_shapes(cls, auto_pad, x_shape, kernel_shape, strides,
-                       spatial_size, pads):
+  def _pool_get_shapes(cls, auto_pad, x_shape, kernel_shape, strides, pads):
 
     def _get_pad_shape(auto_pad, input_spatial_shape, kernel_spatial_shape,
                        strides_spatial, output_spatial_shape):
@@ -96,25 +97,43 @@ class TensorflowBackend(TensorflowBackendBase):
                   / float(strides_spatial[i])))
       return out_shape
 
+    spatial_size = len(x_shape)
+    new_pads = pads[:]
     if auto_pad in ["SAME_UPPER", "SAME_LOWER"]:
-      out_shape = _get_output_shape(auto_pad, x_shape[2:], kernel_shape,
-                                    strides)
-      pad_shape = _get_pad_shape(auto_pad, x_shape[2:], kernel_shape, strides,
+      out_shape = _get_output_shape(auto_pad, x_shape, kernel_shape, strides)
+      pad_shape = _get_pad_shape(auto_pad, x_shape, kernel_shape, strides,
                                  out_shape)
       for i in range(spatial_size):
         if auto_pad == "SAME_LOWER":
-          pads[i + spatial_size] = pad_shape[i] // 2
-          pads[i] = pad_shape[i] - pads[i + spatial_size]
+          new_pads[i + spatial_size] = pad_shape[i] // 2
+          new_pads[i] = pad_shape[i] - new_pads[i + spatial_size]
         elif auto_pad == "SAME_UPPER":
-          pads[i] = pad_shape[i] // 2
-          pads[i + spatial_size] = pad_shape[i] - pads[i]
+          new_pads[i] = pad_shape[i] // 2
+          new_pads[i + spatial_size] = pad_shape[i] - new_pads[i]
     elif auto_pad in ["", "VALID"]:
       pad_shape = [
           pads[i] + pads[i + spatial_size] for i in range(spatial_size)
       ]
-      out_shape = _get_output_shape(auto_pad, np.add(x_shape[2:], pad_shape),
+      out_shape = _get_output_shape(auto_pad, np.add(x_shape, pad_shape),
                                     kernel_shape, strides)
-    return out_shape, pad_shape, pads
+    return out_shape, new_pads
+
+  # input_shape, kernel_shape, strides are specified for
+  # spatial dims only.
+  @classmethod
+  def get_tf_pad(cls, input_shape, kernel_shape, strides, pads):
+    assert pads is not None
+    num_sp_dim = int(len(kernel_shape))
+
+    if pads == [0] * num_sp_dim * 2:
+      return "VALID"
+
+    _, same_pads = cls._pool_get_shapes("SAME_UPPER", input_shape, kernel_shape,
+                                        strides, pads)
+    if pads == same_pads:
+      return "SAME"
+
+    return PAD_TF_INCOMPATIBLE
 
   @classmethod
   def _compatibility_pool(cls, node, input_dict, pooling_type):
@@ -124,8 +143,8 @@ class TensorflowBackend(TensorflowBackendBase):
         "Please configure your pooling operation to only use paddings that "
         "correspond to Tensorflow SAME or VALID padding.", UserWarning)
 
-    def py_pool(x, kernel_shape, strides, pads, out_shape, pad_shape,
-                count_include_pad, pooling_type):
+    def py_pool(x, kernel_shape, strides, pads, out_shape, count_include_pad,
+                pooling_type):
       pooling_type = pooling_type.decode('UTF-8')
       x_shape = np.shape(x)
       spatial_size = len(x_shape[2:])
@@ -135,22 +154,24 @@ class TensorflowBackend(TensorflowBackendBase):
       constant_values = np.nan if count_include_pad == 0 else 0
       padded = np.pad(
           x, pad_attr, mode="constant", constant_values=constant_values)
+      pad_shape = [
+          pads[i] + pads[i + spatial_size] for i in range(spatial_size)
+      ]
 
       y = np.zeros([x_shape[0], x_shape[1]] + list(out_shape))
 
       for shape in itertools.product(
           range(x_shape[0]), range(x_shape[1]), *[
               range(
-                  int((x_shape[i + 2] + pad_shape[i] - kernel_shape[i]
-                      ) / strides[i] + 1)) for i in range(spatial_size)
+                  int((x_shape[i + 2] + pad_shape[i] - kernel_shape[i]) /
+                      strides[i] + 1)) for i in range(spatial_size)
           ]):
         window = padded[shape[0], shape[1]]
         window_vals = np.array([
             window[i] for i in list(
                 itertools.product(*[
-                    range(strides[i] * shape[i + 2],
-                          strides[i] * shape[i + 2] + kernel_shape[i])
-                    for i in range(spatial_size)
+                    range(strides[i] * shape[i + 2], strides[i] * shape[i + 2] +
+                          kernel_shape[i]) for i in range(spatial_size)
                 ]))
         ])
         if pooling_type == 'AVG':
@@ -170,18 +191,18 @@ class TensorflowBackend(TensorflowBackendBase):
 
     x = input_dict[node.inputs[0]]
     x_shape = x.shape.as_list()
-    spatial_size = len(x_shape[2:])
+    spatial_size = len(x_shape) - 2
     kernel_shape = node.attrs["kernel_shape"]
     strides = node.attrs.get("strides", [1] * spatial_size)
     pads = node.attrs.get("pads", [0] * spatial_size * 2)
     auto_pad = node.attrs.get("auto_pad", "")
     count_include_pad = node.attrs.get("count_include_pad", 0)
 
-    out_shape, pad_shape, pads = cls._pool_get_shapes(
-        auto_pad, x_shape, kernel_shape, strides, spatial_size, pads)
+    out_shape, pads = cls._pool_get_shapes(auto_pad, x_shape[2:], kernel_shape,
+                                           strides, pads)
 
     pooled = tf.py_func(py_pool, [
-        x, kernel_shape, strides, pads, out_shape, pad_shape, count_include_pad,
+        x, kernel_shape, strides, pads, out_shape, count_include_pad,
         pooling_type
     ], tf.float32)
     pooled.set_shape(x_shape[0:2] + out_shape)
@@ -191,35 +212,47 @@ class TensorflowBackend(TensorflowBackendBase):
   def _pool(cls, node, input_dict, pool_func, pooling_type):
     x = input_dict[node.inputs[0]]
     x_rank = len(x.get_shape())
+    x_shape = x.get_shape().as_list()
+    spatial_size = x_rank - 2
 
     support_cuda = cls.supports_device("CUDA")
     storage_format, compute_format = cls.get_data_format(x_rank, support_cuda)
 
     kernel_shape = node.attrs["kernel_shape"]
-    strides = node.attrs.get("strides", [1] * (x_rank - 2))
-    pad = node.attrs.get("pads", None)
+    strides = node.attrs.get("strides", [1] * spatial_size)
+    pads = node.attrs.get("pads", None)
+    pad = PAD_TF_INCOMPATIBLE
+    count_include_pad = node.attrs.get("count_include_pad", 0)
 
     # If padding is specified, try to recover it from explicit padding
     # specification to tensorflow padding mode:
-    if pad is not None:
-      pad = cls.get_tf_pad(x.get_shape().as_list(), kernel_shape, strides, pad)
-
-    # We consult auto_pad if pad is not specified and auto_pad
-    # is available.
-    if pad is None and "auto_pad" in node.attrs:
-      if node.attrs["auto_pad"] == "SAME_UPPER":
-        pad = "SAME"
-      elif node.attrs["auto_pad"] == "VALID":
+    if pads is not None:
+      pad = cls.get_tf_pad(x_shape[2:], kernel_shape, strides, pads)
+    else:
+      # Neither pad nor auto_pad is specified, assume no padding.
+      if "auto_pad" not in node.attrs:
         pad = "VALID"
-      elif node.attrs["auto_pad"] == "SAME_LOWER":
-        pad = PAD_TF_INCOMPATIBLE
+      # We consult auto_pad if pad is not specified and auto_pad
+      # is available.
+      else:
+        if node.attrs["auto_pad"] == "SAME_UPPER":
+          pad = "SAME"
+        elif node.attrs["auto_pad"] == "VALID":
+          pad = "VALID"
+        elif node.attrs["auto_pad"] == "SAME_LOWER":
+          pad = PAD_TF_INCOMPATIBLE
+        if count_include_pad == 1:
+          _, pads = cls._pool_get_shapes(node.attrs["auto_pad"], x_shape[2:],
+                                         kernel_shape, strides,
+                                         [0] * spatial_size * 2)
 
-    # Neither pad nor auto_pad is specified, assume no padding.
-    if pad is None and "auto_pad" not in node.attrs:
+    if count_include_pad == 0:
+      if pad is PAD_TF_INCOMPATIBLE:
+        return cls._compatibility_pool(node, input_dict, pooling_type)
+    else:
+      if pads != [0] * spatial_size * 2:
+        x = cls.get_padding_as_op(x, pads)
       pad = "VALID"
-
-    if pad is PAD_TF_INCOMPATIBLE:
-      return cls._compatibility_pool(node, input_dict, pooling_type)
 
     if support_cuda:
       pooled = pool_func(
@@ -238,8 +271,7 @@ class TensorflowBackend(TensorflowBackendBase):
           strides=strides,
           data_format=compute_format)
       pooled = tf.transpose(
-          pooled,
-          perm=get_perm_from_formats(compute_format, storage_format))
+          pooled, perm=get_perm_from_formats(compute_format, storage_format))
 
     return [pooled]
 
@@ -487,8 +519,7 @@ class TensorflowBackend(TensorflowBackendBase):
       else:
         output = tf.concat(convolved, axis=-1)
         output = tf.transpose(
-            output,
-            perm=get_perm_from_formats(compute_format, storage_format))
+            output, perm=get_perm_from_formats(compute_format, storage_format))
     else:
       bias = input_dict[node.inputs[2]]
       bias = cls._explicit_broadcast(
@@ -501,8 +532,7 @@ class TensorflowBackend(TensorflowBackendBase):
         output = tf.concat(convolved, axis=-1)
         output = tf.add(output, bias)
         output = tf.transpose(
-            output,
-            perm=get_perm_from_formats(compute_format, storage_format))
+            output, perm=get_perm_from_formats(compute_format, storage_format))
 
     return [output]
 
@@ -553,8 +583,8 @@ class TensorflowBackend(TensorflowBackendBase):
     alpha = node.attrs.get("alpha", 1.0)
     if "alpha" in node.attrs.keys():
       return [
-          tf.cast(x < 0.0, tf.float32) * alpha *
-          (tf.exp(x) - 1.0) + tf.cast(x >= 0.0, tf.float32) * x
+          tf.cast(x < 0.0, tf.float32) * alpha * (tf.exp(x) - 1.0) +
+          tf.cast(x >= 0.0, tf.float32) * x
       ]
     else:
       return [tf.nn.elu(x)]
@@ -1206,8 +1236,8 @@ class TensorflowBackend(TensorflowBackendBase):
 
     # Extract indicies of the shape paramter where
     # a copy from the original dimension size is needed.
-    copy_indices = tf.squeeze(tf.where(tf.equal(shape,
-                                                tf.constant(0, dtype=tf.int64))), -1)
+    copy_indices = tf.squeeze(
+        tf.where(tf.equal(shape, tf.constant(0, dtype=tf.int64))), -1)
 
     indices_gathered = tf.gather(input_shape, copy_indices)
     indices_scattered = tf.sparse_to_dense(copy_indices,
@@ -1352,14 +1382,17 @@ class TensorflowBackend(TensorflowBackendBase):
 
   @classmethod
   def handle_selu(cls, node, input_dict):
-    warnings.warn("Definition of Selu is different "
-                  "between onnx and tensorflow.", UserWarning)
+    warnings.warn(
+        "Definition of Selu is different "
+        "between onnx and tensorflow.", UserWarning)
     if "alpha" not in node.attrs and "gamma" not in node.attrs:
       return [tf.nn.selu(input_dict[node.inputs[0]])]
 
     x = input_dict[node.inputs[0]]
-    alpha = node.attrs["alpha"] if "alpha" in node.attrs else 1.67326319217681884765625
-    gamma = node.attrs["gamma"] if "gamma" in node.attrs else 1.05070102214813232421875
+    alpha = node.attrs[
+        "alpha"] if "alpha" in node.attrs else 1.67326319217681884765625
+    gamma = node.attrs[
+        "gamma"] if "gamma" in node.attrs else 1.05070102214813232421875
 
     return [
         tf.clip_by_value(x, 0, tf.reduce_max(x)) * gamma +
@@ -1511,8 +1544,8 @@ class TensorflowBackend(TensorflowBackendBase):
           tf.transpose(
               tf.image.resize_images(
                   tf.transpose(
-                      x, perm=get_perm_from_formats(storage_format,
-                                                    "NHWC")), size, method),
+                      x, perm=get_perm_from_formats(storage_format, "NHWC")),
+                  size, method),
               perm=get_perm_from_formats("NHWC", storage_format))
       ]
 
@@ -1527,3 +1560,38 @@ class TensorflowBackend(TensorflowBackendBase):
   @classmethod
   def handle_greater(cls, node, input_dict):
     return [cls._bin_op(node, input_dict, tf.greater)]
+
+  @classmethod
+  def handle_instance_normalization(cls, node, input_dict):
+    # this file is adapted from :
+    # https://github.com/tensorflow/tensorflow/blob/r1.8/tensorflow/contrib/layers/python/layers/normalization.py.
+    # We do not use the tf layer instance_norm because there is no way
+    # to pass in tensor as beta or gamma.
+    epsilon = node.attrs.get("epsilon", 1e-5)
+    gamma = input_dict[node.inputs[1]]
+    beta = input_dict[node.inputs[2]]
+
+    inputs = input_dict[node.inputs[0]]
+    inputs_shape = inputs.shape
+    inputs_rank = inputs.shape.ndims
+
+    moments_axes = list(range(inputs_rank))[2:]
+    params_shape_broadcast = list([1, inputs_shape[1].value] +
+                                  [1 for _ in range(2, inputs_rank)])
+
+    beta = tf.reshape(beta, params_shape_broadcast)
+    gamma = tf.reshape(gamma, params_shape_broadcast)
+
+    # Calculate the moments (instance activations).
+    mean, variance = tf.nn.moments(inputs, moments_axes, keep_dims=True)
+
+    # Compute instance normalization.
+    outputs = tf.nn.batch_normalization(
+        input_dict[node.inputs[0]],
+        mean,
+        variance,
+        beta,
+        gamma,
+        epsilon,
+        name='instancenorm')
+    return [outputs]

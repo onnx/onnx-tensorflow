@@ -17,10 +17,10 @@ class Concat(FrontendHandler):
   def version_1(cls, node, **kwargs):
     consts = kwargs["consts"]
     axis = int(consts[node.inputs[-1]])
-    return cls.make_node(node, node.inputs[0:-1], axis=axis)
+    return cls.make_node_from_tf_node(node, node.inputs[0:-1], axis=axis)
 
   @classmethod
   def version_4(cls, node, **kwargs):
     consts = kwargs["consts"]
     axis = int(consts[node.inputs[-1]])
-    return cls.make_node(node, node.inputs[0:-1], axis=axis)
+    return cls.make_node_from_tf_node(node, node.inputs[0:-1], axis=axis)

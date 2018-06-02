@@ -17,4 +17,4 @@ class ExpandDims(FrontendHandler):
   def version_1(cls, node, **kwargs):
     consts = kwargs["consts"]
     axes = [int(consts[node.inputs[1]])]
-    return cls.make_node(node, [node.inputs[0]], axes=axes)
+    return cls.make_node_from_tf_node(node, [node.inputs[0]], axes=axes)

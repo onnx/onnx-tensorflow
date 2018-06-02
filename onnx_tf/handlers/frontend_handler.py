@@ -25,22 +25,57 @@ class FrontendHandler(Handler):
 
   @classmethod
   def make_node(cls,
-                node,
-                inputs=None,
-                outputs=None,
-                onnx_op=None,
+                op_type,
+                inputs,
+                outputs,
                 name=None,
+                doc_string=None,
                 version=0,
                 should_check=True,
                 **kwargs):
-    """ Helper method to make node. Each operator handler should call this
-    instead of call helper.make_node directly.
+    """ Make a NodeProto from scratch.
+    The main api is same to onnx.helper.make_node without any default value.
+
+    :param op_type: The name of the operator to construct.
+    :param inputs: Inputs names.
+    :param outputs: Outputs names.
+    :param name: optional unique identifier.
+    :param doc_string: optional documentation string.
+    :param version: Version used for check node. Default is cls.VERSION.
+    :param should_check: Should check flag.
+    Should set to False if is an unimplemented customized op.
+    :param kwargs: Other args.
+    :return: NodeProto.
+    """
+    node = helper.make_node(op_type, inputs, outputs, name, doc_string,
+                            **kwargs)
+    if should_check:
+      cls.check_node(node, version)
+    else:
+      warnings.warn("Skipped check for {}.".format(node.op_type))
+    return node
+
+  @classmethod
+  def make_node_from_tf_node(cls,
+                             node,
+                             inputs=None,
+                             outputs=None,
+                             op_type=None,
+                             name=None,
+                             doc_string=None,
+                             version=0,
+                             should_check=True,
+                             **kwargs):
+    """ Helper method to make node.
+    The main api is almost same to onnx.helper.make_node with default value
+    from TensorflowNode given.
 
     :param node: TensorflowNode.
     :param inputs: Inputs names. Default is node.inputs.
     :param outputs: Outputs name. Default is cls.get_outputs_names(node).
-    :param onnx_op: ONNX op name. Default is cls.ONNX_OP.
+    :param op_type: ONNX op name. Default is cls.ONNX_OP.
     :param name: Node name. Default is node.name.
+    :param doc_string: optional documentation string.
     :param version: Version used for check node. Default is cls.VERSION.
     :param should_check: Should check flag.
     Should set to False if is an unimplemented customized op.
@@ -50,22 +85,27 @@ class FrontendHandler(Handler):
     inputs = inputs if inputs is not None else node.inputs
     outputs = outputs if outputs is not None else cls.get_outputs_names(node)
     node = helper.make_node(
-        onnx_op if onnx_op is not None else cls.ONNX_OP,
+        op_type if op_type is not None else cls.ONNX_OP,
         inputs,
         outputs,
         name=name if name is not None else node.name,
+        doc_string=doc_string,
         **kwargs)
     if should_check:
-      version = version or cls.VERSION
-      if version == 0:
-        raise ValueError("version can not be 0.")
-      ctx = checker.C.CheckerContext()
-      ctx.ir_version = onnx.IR_VERSION
-      ctx.opset_imports = {cls.DOMAIN: version}
-      checker.check_node(node, ctx=ctx)
+      cls.check_node(node, version)
     else:
       warnings.warn("Skipped check for {}.".format(node.op_type))
     return node
+
+  @classmethod
+  def check_node(cls, node, version=0):
+    version = version or cls.VERSION
+    if version == 0:
+      raise ValueError("version can not be 0.")
+    ctx = checker.C.CheckerContext()
+    ctx.ir_version = onnx.IR_VERSION
+    ctx.opset_imports = {cls.DOMAIN: version}
+    checker.check_node(node, ctx=ctx)
 
   @classmethod
   def get_outputs_names(cls, node, num=None):

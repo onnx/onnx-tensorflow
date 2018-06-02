@@ -15,3 +15,7 @@ class Multiply(ArithmeticMixin, FrontendHandler):
   @classmethod
   def version_6(cls, node, **kwargs):
     return cls.arithmetic_op(node, **kwargs)
+
+  @classmethod
+  def version_7(cls, node, **kwargs):
+    return cls.arithmetic_op(node, **kwargs)
