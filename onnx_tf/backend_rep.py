@@ -50,6 +50,12 @@ class TensorflowRep(BackendRep):
     self._tensor_dict = tensor_dict
 
   def run(self, inputs, **kwargs):
+    """ Run TensorflowRep.
+
+    :param inputs: Given inputs.
+    :param kwargs: Other args.
+    :return: Outputs.
+    """
     super(TensorflowRep, self).run(inputs, **kwargs)
 
     # TODO: handle name scope if necessary

@@ -15,22 +15,42 @@ from onnx_tf.common import supports_device
 from .handler import Handler
 
 
-# TODO(fumihwh): fix all doc
 class BackendHandler(Handler):
-  """ This class is base frontend handler class.
-  All frontend operator handler class MUST inherit this class.
-  In frontend, operator handler class's name should be pascal case of file name
+  """ This class is base backend handler class.
+  All backend operator handler class MUST inherit this class.
+  In backend, operator handler class's name should be pascal case of file name
   which should be snake case.
-  It is best to use tf functions' names. e.g. tf.nn.avg_pool
-  If there is a multiple mapping, e.g. tf.nn.conv1d, tf.nn.conv2d, tf.nn.conv3d,
-  try find common one first. In this case, tf.nn.convolution.
-  Finally, use ONNX name if above does not work.
+  Use ONNX operator name as class name.
   """
 
   TF_FUNC = None
 
   @classmethod
-  def process_attrs(cls, attrs):
+  def get_attrs_processor_param(cls):
+    """ Get param for attrs processor.
+
+    :return: Dict.
+    """
+    return {}
+
+  @classmethod
+  def _process_attrs(cls, attrs):
+    """ Private method for processing attrs.
+    Param for this processor got from `get_attrs_processor_param`.
+    Param is dict contains two key: `default` and `raname`.
+    First add default value to attrs if key does not exist.
+    Second rename key to new key.
+
+    For example:
+      attrs = {"keep_dims": True}
+      param = {"default": {"axis": 1},
+               "rename": {"keep_dims": "keepdims"}}
+
+      processed_attrs = {"axis": "1", "keepdims": True}
+
+    :param attrs: Process target attrs.
+    :return: Processed attrs.
+    """
     param = {"rename": {}, "default": {}}
     param.update(cls.get_attrs_processor_param())
 
@@ -44,10 +64,6 @@ class BackendHandler(Handler):
     return attrs
 
   @classmethod
-  def get_attrs_processor_param(cls):
-    return {}
-
-  @classmethod
   def make_tensor_from_onnx_node(cls,
                                  node,
                                  tf_func=None,
@@ -57,10 +73,24 @@ class BackendHandler(Handler):
                                  c_first_cuda_only=False,
                                  c_last_only=False,
                                  **kwargs):
+    """ Helper method to make tensor.
+
+    :param node: OnnxNode object.
+    :param tf_func: Tf function. Default is cls.TF_FUNC.
+    :param inputs: Inputs tensor. Default is got from node.inputs.
+    :param attrs: Attributes. Default is processed node.attrs.
+    :param name: Node name.
+    :param c_first_cuda_only: If channel first is only supported by cuda.
+    If true and not cuda, do pre and post transpose.
+    :param c_last_only: If only channel last is support,
+    do pre and post transpose.
+    :param kwargs: Other args.
+    :return: Tensor.
+    """
     tensor_dict = kwargs.get("tensor_dict", {})
     tf_func = tf_func or cls.TF_FUNC
     inputs = inputs or [tensor_dict.get(inp, None) for inp in node.inputs]
-    attrs = cls.process_attrs(attrs or copy.deepcopy(node.attrs))
+    attrs = cls._process_attrs(attrs or copy.deepcopy(node.attrs))
     name = name or node.name
     if name != "":
       attrs["name"] = name
@@ -95,6 +125,14 @@ class BackendHandler(Handler):
 
   @classmethod
   def _run_tf_func(cls, tf_func, inputs, attrs):
+    """ Run Tensorflow function.
+    Use acceptable attrs of function from attrs only.
+
+    :param tf_func: Tensorflow function.
+    :param inputs: Inputs.
+    :param attrs: Attributes.
+    :return: Tensor.
+    """
     if sys.version_info > (3,):
       params = list(inspect.signature(tf_func).parameters.keys())
     else:

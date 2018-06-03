@@ -73,10 +73,21 @@ class TensorflowBackend(Backend):
 
   @classmethod
   def onnx_model_to_tensorflow_rep(cls, model):
+    """ Convert ONNX model to TensorflowRep.
+
+    :param model: ONNX ModelProto object.
+    :return: TensorflowRep object.
+    """
     return cls._onnx_graph_to_tensorflow_rep(model.graph, model.opset_import)
 
   @classmethod
   def _onnx_graph_to_tensorflow_rep(cls, graph_def, opset):
+    """ Convert ONNX graph to TensorflowRep.
+
+    :param graph_def: ONNX GraphProto object.
+    :param opset: ONNX OperatorSetIdProto list.
+    :return: TensorflowRep object.
+    """
     handlers = cls._get_handlers(opset)
 
     tf_rep_graph = tf.Graph()
@@ -136,6 +147,15 @@ class TensorflowBackend(Backend):
 
   @classmethod
   def run_node(cls, node, inputs, device='CPU', outputs_info=None, **kwargs):
+    """ Run ONNX node.
+
+    :param node: ONNX NodeProto object.
+    :param inputs: Inputs.
+    :param device: Device run on.
+    :param outputs_info: None.
+    :param kwargs: Other args.
+    :return: Outputs.
+    """
     super(TensorflowBackend, cls).run_node(node, inputs, device)
     node_graph = tf.Graph()
     with node_graph.as_default():
@@ -165,6 +185,11 @@ class TensorflowBackend(Backend):
 
   @classmethod
   def _onnx_initializer_to_input_dict_items(cls, initializer):
+    """ Convert ONNX graph initializer to input dict items.
+
+    :param initializer: ONNX graph initializer, list of TensorProto.
+    :return: List of input dict items.
+    """
 
     def tensor2list(onnx_tensor):
       # Use the onnx.numpy_helper because the data may be raw
@@ -188,7 +213,7 @@ class TensorflowBackend(Backend):
 
     Args:
       node: Onnx node object.
-      input_dict: Inputs dict of graph.
+      tensor_dict: Tensor dict of graph.
       opset: Opset version of the operator set. Default 0 means using latest version.
 
     Returns:
@@ -203,6 +228,11 @@ class TensorflowBackend(Backend):
 
   @classmethod
   def _get_handlers(cls, opset):
+    """ Get all backend handlers with opset.
+
+    :param opset: ONNX OperatorSetIdProto list.
+    :return: All backend handlers.
+    """
     opset = opset or [make_opsetid(defs.ONNX_DOMAIN, defs.onnx_opset_version())]
     opset_dict = dict([(o.domain, o.version) for o in opset])
     return get_all_backend_handlers(opset_dict)
