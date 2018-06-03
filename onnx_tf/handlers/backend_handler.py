@@ -89,6 +89,8 @@ class BackendHandler(Handler):
     """
     tensor_dict = kwargs.get("tensor_dict", {})
     tf_func = tf_func or cls.TF_FUNC
+    if tf_func is None:
+      raise RuntimeError("No Tensorflow function is set.")
     inputs = inputs or [tensor_dict.get(inp, None) for inp in node.inputs]
     attrs = cls._process_attrs(attrs or copy.deepcopy(node.attrs))
     name = name or node.name
