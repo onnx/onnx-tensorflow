@@ -66,7 +66,7 @@ backend_opset_version = {
     'Neg': [1, 6],
     'Not': [1],
     'Or': [1, 7],
-    'PRelu': [1, 6],
+    'PRelu': [1, 6, 7],
     'Pad': [1, 2],
     'ParametricSoftplus': [],
     'Pow': [1, 7],
