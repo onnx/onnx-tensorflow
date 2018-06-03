@@ -273,7 +273,7 @@ class TensorflowFrontendBase(object):
   @classmethod
   def tensorflow_graph_to_onnx_graph(cls,
                                      graph_def,
-                                     output,
+                                     outputs,
                                      opset=(("", 0),),
                                      name="graph",
                                      ignore_unimplemented=False):
@@ -283,8 +283,8 @@ class TensorflowFrontendBase(object):
     representation of ONNX graph.
 
     :param graph_def: Tensorflow Graph Proto object.
-    :param output: A Tensorflow NodeDef object specifying which node
-      to be taken as output of the ONNX graph.
+    :param outputs: List of Tensorflow NodeDef object specifying which nodes
+      to be taken as outputs of the ONNX graph.
     :param opset: Opset, which should be ((str domain: int version number),).
     :param name: The name of the output ONNX Graph.
     :param ignore_unimplemented: Convert to ONNX model and ignore all the operators
@@ -333,19 +333,20 @@ class TensorflowFrontendBase(object):
               node, op_type=node.op, should_check=False)
         onnx_graph.add_node_proto(node_proto)
 
-    output = TensorflowNode(output)
-    # making output proto
-    # TODO: deal with multi-output case.
-    # TODO: default to BOOL, cf.
-    # https://github.com/tensorflow/tensorflow/issues/14769
-    onnx_graph.add_output_proto(output)
+    for output in outputs:
+      output = TensorflowNode(output)
+      # making output proto
+      # TODO: deal with multi-output case.
+      # TODO: default to BOOL, cf.
+      # https://github.com/tensorflow/tensorflow/issues/14769
+      onnx_graph.add_output_proto(output)
 
     return onnx_graph.make_graph_proto()
 
   @classmethod
   def tensorflow_graph_to_onnx_model(cls,
                                      graph_def,
-                                     output,
+                                     outputs,
                                      opset=0,
                                      producer_name="onnx-tensorflow",
                                      graph_name="graph",
@@ -357,8 +358,8 @@ class TensorflowFrontendBase(object):
     representation of ONNX model.
 
     :param graph_def: Tensorflow Graph Proto object.
-    :param output: A string specifying the name of the output
-      graph node.
+    :param outputs: List of string or a string specifying the name
+      of the output graph node.
     :param opset: Opset version number, list or tuple.
       Default is 0 means using latest version with domain ''.
       List or tuple items should be (str domain, int version number).
@@ -389,15 +390,18 @@ class TensorflowFrontendBase(object):
       opset = [("", opset or defs.onnx_opset_version())]
     opset_imports = [make_opsetid(item[0], item[1]) for item in opset]
 
-    output_node = get_node_by_name(graph_def.node, output)
+    if isinstance(outputs, str):
+      outputs = [outputs]
 
-    if "_output_shapes" not in output_node.attr:
+    output_nodes = [get_node_by_name(graph_def.node, o) for o in outputs]
+
+    if "_output_shapes" not in output_nodes[0].attr:
       # Add infer_shapes to GraphDef
       graph_def = cls._add_infer_shapes(graph_def)
-      output_node = get_node_by_name(graph_def.node, output)
+      output_nodes = [get_node_by_name(graph_def.node, o) for o in outputs]
 
     onnx_graph = cls.tensorflow_graph_to_onnx_graph(
-        graph_def, output_node, opset, graph_name, ignore_unimplemented)
+        graph_def, output_nodes, opset, graph_name, ignore_unimplemented)
     onnx_model = make_model(
         onnx_graph, producer_name=producer_name, opset_imports=opset_imports)
 
