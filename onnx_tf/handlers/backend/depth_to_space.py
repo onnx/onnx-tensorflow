@@ -3,7 +3,6 @@ import copy
 import tensorflow as tf
 
 from onnx_tf.common import get_data_format
-from onnx_tf.common import supports_device
 from onnx_tf.handlers.backend_handler import BackendHandler
 from onnx_tf.handlers.handler import onnx_op
 from onnx_tf.handlers.handler import tf_func
@@ -21,8 +20,7 @@ class DepthToSpace(BackendHandler):
   def version_1(cls, node, **kwargs):
     x = kwargs["tensor_dict"][node.inputs[0]]
     x_rank = len(x.get_shape())
-    support_cuda = supports_device("CUDA")
-    storage_format, compute_format = get_data_format(x_rank, support_cuda)
+    storage_format, compute_format = get_data_format(x_rank)
     attrs = copy.deepcopy(node.attrs)
     attrs["data_format"] = storage_format
     return [

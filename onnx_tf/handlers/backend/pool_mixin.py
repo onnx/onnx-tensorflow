@@ -26,7 +26,7 @@ class PoolMixin(object):
     spatial_size = x_rank - 2
 
     support_cuda = supports_device("CUDA")
-    storage_format, compute_format = get_data_format(x_rank, support_cuda)
+    storage_format, compute_format = get_data_format(x_rank)
 
     kernel_shape = node.attrs["kernel_shape"]
     strides = node.attrs.get("strides", [1] * spatial_size)

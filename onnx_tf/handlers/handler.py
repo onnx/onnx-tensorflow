@@ -105,7 +105,11 @@ class Handler(object):
 
 
 domain = Handler.domain
+
 onnx_op = Handler.onnx_op
+
 tf_op = Handler.tf_op
+
 tf_func = Handler.tf_func
+
 property_register = Handler.property_register

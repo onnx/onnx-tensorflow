@@ -43,7 +43,7 @@ class OnnxNode(object):
     self.domain = str(node.domain)
     self.attrs = dict([(attr.name,
                         attr_translator.translate_onnx(
-                            attr.name, attr_converter.onnx2tf(attr)))
+                            attr.name, attr_converter.convert_onnx(attr)))
                        for attr in node.attribute])
     self.inputs = list(node.input)
     self.outputs = list(node.output)

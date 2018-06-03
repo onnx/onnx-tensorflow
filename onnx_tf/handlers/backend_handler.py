@@ -101,7 +101,7 @@ class BackendHandler(Handler):
       support_cuda = supports_device("CUDA")
       x = inputs[0]
       x_rank = len(x.get_shape())
-      storage_format, compute_format = get_data_format(x_rank, support_cuda)
+      storage_format, compute_format = get_data_format(x_rank)
       pre_perm = list(range(x_rank))
       post_perm = pre_perm[:]
 

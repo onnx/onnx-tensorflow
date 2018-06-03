@@ -26,7 +26,7 @@ class ConvMixin(BroadcastMixin):
     spatial_size = x_rank - 2
 
     support_cuda = supports_device("CUDA")
-    storage_format, compute_format = get_data_format(x_rank, support_cuda)
+    storage_format, compute_format = get_data_format(x_rank)
     compute_c_idx = compute_format.find("C")
     spatial_format = "".join([d for d in compute_format if d not in ["N", "C"]])
 

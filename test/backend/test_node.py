@@ -13,6 +13,7 @@ from onnx import TensorProto
 
 from onnx import defs
 
+
 class TestNode(unittest.TestCase):
   """ Tests for nodes
   """
