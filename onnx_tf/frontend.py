@@ -390,7 +390,7 @@ class TensorflowFrontendBase(object):
       opset = [("", opset or defs.onnx_opset_version())]
     opset_imports = [make_opsetid(item[0], item[1]) for item in opset]
 
-    if isinstance(output, str):
+    if not isinstance(output, (list, tuple)):
       output = [output]
 
     output_nodes = [get_node_by_name(graph_def.node, o) for o in output]
