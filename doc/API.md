@@ -68,7 +68,7 @@ _params_:
 `graph_def` : Tensorflow Graph Proto object.
 
 
-`outputs` : List of string or a string specifying the name
+`output` : List of string or a string specifying the name
 of the output graph node.
 
 
