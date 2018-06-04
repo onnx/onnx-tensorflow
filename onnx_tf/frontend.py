@@ -335,10 +335,6 @@ class TensorflowFrontendBase(object):
 
     for o in output:
       output_node = TensorflowNode(o)
-      # making output proto
-      # TODO: deal with multi-output case.
-      # TODO: default to BOOL, cf.
-      # https://github.com/tensorflow/tensorflow/issues/14769
       onnx_graph.add_output_proto(output_node)
 
     return onnx_graph.make_graph_proto()
