@@ -5,6 +5,8 @@ from __future__ import unicode_literals
 
 import inspect
 
+from onnx import defs
+
 from onnx_tf.common import exception
 
 
@@ -18,7 +20,7 @@ class Handler(object):
   ONNX_OP = None
   TF_OP = []
 
-  DOMAIN = ""
+  DOMAIN = defs.ONNX_DOMAIN
   VERSION = 0
   SINCE_VERSION = 0
 
