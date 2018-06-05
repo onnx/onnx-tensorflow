@@ -8,6 +8,8 @@ import sys
 
 from onnx import defs
 
+from onnx import defs
+
 from onnx_tf.common import exception
 
 
