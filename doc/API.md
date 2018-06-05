@@ -68,8 +68,8 @@ _params_:
 `graph_def` : Tensorflow Graph Proto object.
 
 
-`output` : A string specifying the name of the output
-graph node.
+`output` : List of string or a string specifying the name
+of the output graph node.
 
 
 `opset` : Opset version number, list or tuple.
