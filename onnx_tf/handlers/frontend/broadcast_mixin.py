@@ -14,7 +14,7 @@ class BroadcastMixin(object):
         return i
 
   @classmethod
-  def _limited_broadcast(cls, node, broadcast=1, **kwargs):
+  def limited_broadcast(cls, node, broadcast=1, **kwargs):
     ex_kwargs = {}
     if broadcast == 1:
       ex_kwargs["broadcast"] = 1
@@ -25,5 +25,5 @@ class BroadcastMixin(object):
     return cls.make_node_from_tf_node(node, **ex_kwargs)
 
   @classmethod
-  def _np_broadcast(cls, node, **kwargs):
+  def np_broadcast(cls, node, **kwargs):
     return cls.make_node_from_tf_node(node)

@@ -1,6 +1,9 @@
-class LogicalMixin(object):
+from .broadcast_mixin import BroadcastMixin
+
+
+class LogicalMixin(BroadcastMixin):
   pass
 
 
-class ComparisonMixin(object):
+class ComparisonMixin(BroadcastMixin):
   pass

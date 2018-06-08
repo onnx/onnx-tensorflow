@@ -12,7 +12,7 @@ class Equal(ComparisonMixin, BackendHandler):
 
   @classmethod
   def version_1(cls, node, **kwargs):
-    return cls._limited_broadcast(node, **kwargs)
+    return cls.limited_broadcast(node, **kwargs)
 
   @classmethod
   def version_7(cls, node, **kwargs):
