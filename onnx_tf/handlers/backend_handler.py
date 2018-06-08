@@ -5,10 +5,10 @@ from __future__ import unicode_literals
 
 import copy
 import inspect
-import sys
 
 import tensorflow as tf
 
+from onnx_tf.common import IS_PYTHON3
 from onnx_tf.common import get_data_format
 from onnx_tf.common import get_perm_from_formats
 from onnx_tf.common import supports_device
@@ -76,9 +76,9 @@ class BackendHandler(Handler):
     """ Helper method to make tensor.
 
     :param node: OnnxNode object.
-    :param tf_func: Tf function. Default is cls.TF_FUNC.
+    :param tf_func: Callable Tf function. Default is cls.TF_FUNC.
     :param inputs: Inputs tensor. Default is got from node.inputs.
-    :param attrs: Attributes. Default is processed node.attrs.
+    :param attrs: Attributes. Default is node.attrs.
     :param name: Node name.
     :param c_first_cuda_only: If channel first is only supported by cuda.
     If true and not cuda, do pre and post transpose.
@@ -90,55 +90,83 @@ class BackendHandler(Handler):
     tensor_dict = kwargs.get("tensor_dict", {})
     tf_func = tf_func or cls.TF_FUNC
     if tf_func is None:
-      raise RuntimeError("No Tensorflow function is set.")
+      raise RuntimeError("No Tensorflow function is given.")
     if inputs is None:
       inputs = [tensor_dict.get(inp, None) for inp in node.inputs]
     if attrs is None:
       attrs = copy.deepcopy(node.attrs)
-    attrs = cls._process_attrs(attrs)
     name = name or node.name
     if name != "":
       attrs["name"] = name
 
-    if not c_first_cuda_only and not c_last_only:
-      return cls._run_tf_func(tf_func, inputs, attrs)
-    else:
-      support_cuda = supports_device("CUDA")
-      x = inputs[0]
-      x_rank = len(x.get_shape())
-      storage_format, compute_format = get_data_format(x_rank)
-      pre_perm = list(range(x_rank))
-      post_perm = pre_perm[:]
+    if c_first_cuda_only and c_last_only:
+      raise ValueError(
+          "c_first_cuda_only and c_last_only can not both be True.")
 
-      if c_first_cuda_only and not support_cuda:
-        pre_perm = get_perm_from_formats(storage_format, compute_format)
-        post_perm = get_perm_from_formats(compute_format, storage_format)
-      if c_last_only:
-        compute_format = compute_format.replace("C", "") + "C"
-        pre_perm = get_perm_from_formats(storage_format, compute_format)
-        post_perm = get_perm_from_formats(compute_format, storage_format)
+    if c_first_cuda_only:
+      return cls.c_first_cuda_only(tf_func, inputs, attrs)
+    elif c_last_only:
+      return cls.c_last_only(tf_func, inputs, attrs)
 
-      attrs["data_format"] = compute_format
+    return cls._run_tf_func(tf_func, inputs, attrs)
 
-      if pre_perm != list(range(x_rank)):
-        x_t = tf.transpose(x, perm=pre_perm)
-        y = cls._run_tf_func(tf_func, [x_t] + inputs[1:], attrs)
-        y_t = tf.transpose(y, perm=post_perm)
-        return y_t
+  @classmethod
+  def c_first_cuda_only(cls, tf_func, inputs, attrs):
+    """ Handle operator that channel first is only supported by CUDA.
+    When using CPU, two transposes should be added.
 
-      return cls._run_tf_func(tf_func, inputs, attrs)
+    :param tf_func: Callable Tf function.
+    :param inputs: Inputs tensor.
+    :param attrs: Attributes.
+    :return: Tensor.
+    """
+    support_cuda = supports_device("CUDA")
+    if not support_cuda:
+      return cls._tuck_transpose(tf_func, inputs, attrs)
+    return cls._run_tf_func(tf_func, inputs, attrs)
+
+  @classmethod
+  def c_last_only(cls, tf_func, inputs, attrs):
+    """ Handle operator that channel last only is supported.
+    Add two transposes anyway.
+
+    :param tf_func: Callable Tf function.
+    :param inputs: Inputs tensor.
+    :param attrs: Attributes.
+    :return: Tensor.
+    """
+    storage_format, compute_format = get_data_format(len(inputs[0].get_shape()))
+    compute_format = compute_format.replace("C", "") + "C"
+    return cls._tuck_transpose(tf_func, inputs, attrs,
+                               (storage_format, compute_format))
+
+  @classmethod
+  def _tuck_transpose(cls, tf_func, inputs, attrs, data_format=None):
+    x = inputs[0]
+    x_rank = len(x.get_shape())
+    if not data_format:
+      data_format = get_data_format(x_rank)
+    pre_perm = get_perm_from_formats(data_format[0], data_format[1])
+    post_perm = get_perm_from_formats(data_format[1], data_format[0])
+    attrs["data_format"] = data_format[1]
+    if pre_perm != list(range(x_rank)):
+      x_t = tf.transpose(x, perm=pre_perm)
+      y = cls._run_tf_func(tf_func, [x_t] + inputs[1:], attrs)
+      y_t = tf.transpose(y, perm=post_perm)
+      return y_t
+    return cls._run_tf_func(tf_func, inputs, attrs)
 
   @classmethod
   def _run_tf_func(cls, tf_func, inputs, attrs):
     """ Run Tensorflow function.
-    Use acceptable attrs of function from attrs only.
+    Use only acceptable attributes of function from attrs.
 
     :param tf_func: Tensorflow function.
     :param inputs: Inputs.
     :param attrs: Attributes.
     :return: Tensor.
     """
-    if sys.version_info > (3,):
+    if IS_PYTHON3:
       params = list(inspect.signature(tf_func).parameters.keys())
     else:
       # use closure to get args for function using decorator
@@ -147,5 +175,6 @@ class BackendHandler(Handler):
       else:
         params = inspect.getargspec(tf_func).args
 
+    attrs = cls._process_attrs(attrs)
     return tf_func(*inputs,
                    **dict([(p, attrs[p]) for p in params if p in attrs]))
