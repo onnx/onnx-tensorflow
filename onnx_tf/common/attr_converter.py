@@ -1,4 +1,4 @@
-import sys
+from onnx_tf.common import IS_PYTHON3
 
 
 def convert_tf(attr):
@@ -66,8 +66,7 @@ def __convert_onnx_attribute_proto(attr_proto):
   elif attr_proto.HasField('i'):
     return attr_proto.i
   elif attr_proto.HasField('s'):
-    return str(attr_proto.s,
-               'utf-8') if sys.version_info[0] >= 3 else attr_proto.s
+    return str(attr_proto.s, 'utf-8') if IS_PYTHON3 else attr_proto.s
   elif attr_proto.HasField('t'):
     return attr_proto.t  # this is a proto!
   elif attr_proto.floats:
@@ -76,7 +75,7 @@ def __convert_onnx_attribute_proto(attr_proto):
     return list(attr_proto.ints)
   elif attr_proto.strings:
     str_list = list(attr_proto.strings)
-    if sys.version_info[0] >= 3:
+    if IS_PYTHON3:
       str_list = map(lambda x: str(x, 'utf-8'), str_list)
     return str_list
   else:

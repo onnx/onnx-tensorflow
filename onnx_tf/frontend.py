@@ -8,7 +8,6 @@ from __future__ import unicode_literals
 
 import inspect
 from itertools import chain
-import sys
 
 import numpy as np
 from onnx import defs
@@ -28,10 +27,11 @@ from onnx_tf.common import attr_converter
 from onnx_tf.common import attr_translator
 from onnx_tf.common import exception
 from onnx_tf.common.handler_helper import get_all_frontend_handlers
+from onnx_tf.common import IS_PYTHON3
 from onnx_tf.handlers.frontend_handler import FrontendHandler
 
 # Define long type for Python 3:
-if sys.version_info > (3,):
+if IS_PYTHON3:
   long = int
 
 
@@ -248,7 +248,7 @@ class OnnxGraph(object):
     self._clean_graph()
     self._fix_data_type()
 
-    if sys.version_info > (3,):
+    if IS_PYTHON3:
       params = list(inspect.signature(make_graph).parameters.keys())
     else:
       params = inspect.getargspec(make_graph).args

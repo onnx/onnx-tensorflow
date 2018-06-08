@@ -4,13 +4,11 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import inspect
-import sys
-
-from onnx import defs
 
 from onnx import defs
 
 from onnx_tf.common import exception
+from onnx_tf.common import IS_PYTHON3
 
 
 class Handler(object):
@@ -97,7 +95,7 @@ class Handler(object):
   def property_register(name, value):
 
     def deco(cls):
-      if inspect.isfunction(value) and not sys.version_info > (3,):
+      if inspect.isfunction(value) and not IS_PYTHON3:
         setattr(cls, name, staticmethod(value))
       else:
         setattr(cls, name, value)

@@ -11,9 +11,12 @@ import tensorflow as tf
 
 from onnx_tf.common import get_data_format
 from onnx_tf.common import get_perm_from_formats
-from onnx_tf.common import PAD_TF_INCOMPATIBLE
 from onnx_tf.common import supports_device
 from .pad_mixin import PadMixin
+
+# Constant string used to indicate that requested padding
+# is not natively supported in Tensorflow.
+PAD_TF_INCOMPATIBLE = "PAD_TF_INCOMPATIBLE"
 
 
 class PoolMixin(object):

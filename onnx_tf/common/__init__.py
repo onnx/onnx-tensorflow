@@ -4,10 +4,13 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import re
+import sys
 import uuid
 
 from onnx.backend.base import DeviceType
 from tensorflow.python.client import device_lib
+
+IS_PYTHON3 = sys.version_info > (3,)
 
 
 # This function inserts an underscore before every upper
@@ -79,8 +82,3 @@ def supports_device(device):
   elif device == "CPU":
     return True
   return False
-
-
-# Constant string used to indicate that requested padding
-# is not natively supported in Tensorflow.
-PAD_TF_INCOMPATIBLE = "PAD_TF_INCOMPATIBLE"
