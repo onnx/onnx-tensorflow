@@ -1,3 +1,5 @@
+import copy
+
 import tensorflow as tf
 
 from onnx_tf.handlers.backend_handler import BackendHandler
@@ -30,9 +32,11 @@ class Reshape(BackendHandler):
 
     # Perform the copy wherever requested (wherever dim_size == 0)
     copied_shape = shape + indices_scattered
+    attrs = copy.deepcopy(node.attrs)
+    attrs.pop("shape", None)
     return [
         cls.make_tensor_from_onnx_node(
-            node, inputs=[tensor, copied_shape], **kwargs)
+            node, inputs=[tensor, copied_shape], attrs=attrs, **kwargs)
     ]
 
   @classmethod
