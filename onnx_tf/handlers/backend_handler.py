@@ -69,7 +69,7 @@ class BackendHandler(Handler):
                                  tf_func=None,
                                  inputs=None,
                                  attrs=None,
-                                 name=None,
+                                 name="",
                                  c_first_cuda_only=False,
                                  c_last_only=False,
                                  **kwargs):
@@ -91,8 +91,11 @@ class BackendHandler(Handler):
     tf_func = tf_func or cls.TF_FUNC
     if tf_func is None:
       raise RuntimeError("No Tensorflow function is set.")
-    inputs = inputs or [tensor_dict.get(inp, None) for inp in node.inputs]
-    attrs = cls._process_attrs(attrs or copy.deepcopy(node.attrs))
+    if inputs is None:
+      inputs = [tensor_dict.get(inp, None) for inp in node.inputs]
+    if attrs is None:
+      attrs = copy.deepcopy(node.attrs)
+    attrs = cls._process_attrs(attrs)
     name = name or node.name
     if name != "":
       attrs["name"] = name
