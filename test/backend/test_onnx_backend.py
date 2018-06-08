@@ -26,6 +26,9 @@ backend_test.exclude(r'[a-z,_]*Conv2d_dilated[a-z,_]*')
 # PRelu OnnxBackendPyTorchConvertedModelTest has wrong dim for broadcasting
 backend_test.exclude(r'[a-z,_]*PReLU_[0-9]d_multiparam[a-z,_]*')
 
+# Skip experimental Upsample
+backend_test.exclude(r'[a-z,_]*Upsample[a-z,_]*')
+
 if 'TRAVIS' in os.environ:
   backend_test.exclude('test_vgg19')
 
