@@ -8,17 +8,17 @@ ______
 | -------------- |:------------------:|
 |ATen|N/A|
 |Abs|1, 6|
-|Acos|N/A|
-|Add|1, 6|
+|Acos|7|
+|Add|1, 6, 7|
 |Affine|N/A|
-|And|1|
+|And|1, 7|
 |ArgMax|1|
 |ArgMin|1|
-|Asin|N/A|
-|Atan|N/A|
+|Asin|7|
+|Atan|7|
 |AveragePool|1, 7|
-|BatchNormalization|1, 6|
-|Cast|1|
+|BatchNormalization|1, 6, 7|
+|Cast|1, 6|
 |Ceil|1, 6|
 |Clip|1, 6|
 |Concat|1, 4|
@@ -26,35 +26,35 @@ ______
 |ConstantFill|1|
 |Conv|1|
 |ConvTranspose|1|
-|Cos|N/A|
+|Cos|7|
 |Crop|N/A|
 |DepthToSpace|1|
-|Div|1, 6|
+|Div|1, 6, 7|
 |Dropout|1, 6|
 |Elu|1, 6|
-|Equal|1|
+|Equal|1, 7|
 |Exp|1, 6|
 |Flatten|1|
 |Floor|1, 6|
 |GRU|1, 3, 7|
 |GRUUnit|N/A|
 |Gather|1|
-|Gemm|1, 6|
+|Gemm|1, 6, 7|
 |GivenTensorFill|N/A|
 |GlobalAveragePool|1|
 |GlobalLpPool|1, 2|
 |GlobalMaxPool|1|
-|Greater|1|
+|Greater|1, 7|
 |HardSigmoid|1, 6|
 |Hardmax|1|
 |Identity|1|
 |If|N/A|
 |ImageScaler|N/A|
-|InstanceNormalization|N/A|
+|InstanceNormalization|1, 6|
 |LRN|1|
 |LSTM|1, 7|
 |LeakyRelu|1, 6|
-|Less|1|
+|Less|1, 7|
 |Log|1, 6|
 |LogSoftmax|1|
 |Loop|N/A|
@@ -68,15 +68,15 @@ ______
 |Mean|1, 6|
 |MeanVarianceNormalization|N/A|
 |Min|1, 6|
-|Mul|1, 6|
+|Mul|1, 6, 7|
 |Multinomial|N/A|
 |Neg|1, 6|
 |Not|1|
-|Or|1|
-|PRelu|1, 6|
+|Or|1, 7|
+|PRelu|1, 6, 7|
 |Pad|1, 2|
 |ParametricSoftplus|N/A|
-|Pow|1|
+|Pow|1, 7|
 |RNN|1, 7|
 |RandomNormal|1|
 |RandomNormalLike|1|
@@ -84,7 +84,7 @@ ______
 |RandomUniformLike|1|
 |Reciprocal|1, 6|
 |ReduceL1|1|
-|ReduceL2|N/A|
+|ReduceL2|1|
 |ReduceLogSum|1|
 |ReduceLogSumExp|1|
 |ReduceMax|1|
@@ -100,7 +100,7 @@ ______
 |Selu|1, 6|
 |Shape|1|
 |Sigmoid|1, 6|
-|Sin|N/A|
+|Sin|7|
 |Size|1|
 |Slice|1|
 |Softmax|1|
@@ -110,17 +110,17 @@ ______
 |Split|1, 2|
 |Sqrt|1, 6|
 |Squeeze|1|
-|Sub|1, 6|
-|Sum|1, 6|
-|Tan|N/A|
+|Sub|1, 6, 7|
+|Sum|1, 6, 7|
+|Tan|7|
 |Tanh|1, 6|
 |ThresholdedRelu|1|
-|Tile|1|
+|Tile|1, 6|
 |TopK|1|
 |Transpose|1|
 |Unsqueeze|1|
-|Upsample|1|
-|Xor|1|
+|Upsample|7|
+|Xor|1, 7|
 
 
 Frontend

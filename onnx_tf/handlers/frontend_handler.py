@@ -20,8 +20,17 @@ class FrontendHandler(Handler):
   It is best to use tf functions' names. e.g. tf.nn.avg_pool
   If there is a multiple mapping, e.g. tf.nn.conv1d, tf.nn.conv2d, tf.nn.conv3d,
   try find common one first. In this case, tf.nn.convolution.
-  Finally, use ONNX name if above does not work.
+  Finally, use ONNX operator name if above does not work.
   """
+
+  @classmethod
+  def check_cls(cls):
+    super(FrontendHandler, cls).check_cls()
+    if not cls.TF_OP:
+      raise ValueError(
+          "{} doesn't have TF_OP. "
+          "Please use Handler.tf_op decorator to register TF_OP.".format(
+              cls.__name__))
 
   @classmethod
   def make_node(cls,
@@ -70,7 +79,7 @@ class FrontendHandler(Handler):
     The main api is almost same to onnx.helper.make_node with default value
     from TensorflowNode given.
 
-    :param node: TensorflowNode.
+    :param node: TensorflowNode object.
     :param inputs: Inputs names. Default is node.inputs.
     :param outputs: Outputs name. Default is cls.get_outputs_names(node).
     :param op_type: ONNX op name. Default is cls.ONNX_OP.

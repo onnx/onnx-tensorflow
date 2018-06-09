@@ -8,6 +8,7 @@ import inspect
 from onnx import defs
 
 from onnx_tf.common import exception
+from onnx_tf.common import IS_PYTHON3
 
 
 class Handler(object):
@@ -30,11 +31,6 @@ class Handler(object):
       raise ValueError(
           "{} doesn't have ONNX_OP. "
           "Please use Handler.onnx_op decorator to register ONNX_OP.".format(
-              cls.__name__))
-    if not cls.TF_OP:
-      raise ValueError(
-          "{} doesn't have TF_OP. "
-          "Please use Handler.tf_op decorator to register TF_OP.".format(
               cls.__name__))
 
   @classmethod
@@ -61,7 +57,7 @@ class Handler(object):
     if ver_handle:
       cls.args_check(node, **kwargs)
       return ver_handle(node, **kwargs)
-    exception.OP_UNIMPLEMENTED_EXCEPT(node.op, cls.SINCE_VERSION)
+    exception.OP_UNIMPLEMENTED_EXCEPT(node.op_type, cls.SINCE_VERSION)
     return None
 
   @classmethod
@@ -88,6 +84,10 @@ class Handler(object):
     return Handler.property_register("TF_OP", ops)
 
   @staticmethod
+  def tf_func(func):
+    return Handler.property_register("TF_FUNC", func)
+
+  @staticmethod
   def domain(d):
     return Handler.property_register("DOMAIN", d)
 
@@ -95,13 +95,21 @@ class Handler(object):
   def property_register(name, value):
 
     def deco(cls):
-      setattr(cls, name, value)
+      if inspect.isfunction(value) and not IS_PYTHON3:
+        setattr(cls, name, staticmethod(value))
+      else:
+        setattr(cls, name, value)
       return cls
 
     return deco
 
 
 domain = Handler.domain
+
 onnx_op = Handler.onnx_op
+
 tf_op = Handler.tf_op
+
+tf_func = Handler.tf_func
+
 property_register = Handler.property_register

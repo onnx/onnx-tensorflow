@@ -8,7 +8,6 @@ from __future__ import unicode_literals
 
 import inspect
 from itertools import chain
-import sys
 
 import numpy as np
 from onnx import defs
@@ -24,14 +23,15 @@ from onnx.optimizer import optimize
 import tensorflow as tf
 from tensorflow.core.framework.attr_value_pb2 import AttrValue
 
+from onnx_tf.common import attr_converter
 from onnx_tf.common import attr_translator
 from onnx_tf.common import exception
-from onnx_tf.common import get_attribute_value
 from onnx_tf.common.handler_helper import get_all_frontend_handlers
+from onnx_tf.common import IS_PYTHON3
 from onnx_tf.handlers.frontend_handler import FrontendHandler
 
 # Define long type for Python 3:
-if sys.version_info > (3,):
+if IS_PYTHON3:
   long = int
 
 
@@ -45,20 +45,17 @@ class TensorflowNode(object):
     self.attr = {}
 
     for key, val in node_proto.attr.items():
-      new_val = val
-
-      if key in attr_translator:
-        new_val = attr_translator[key](val)
+      new_val = attr_translator.translate_tf(key, val)
 
       if isinstance(new_val, AttrValue):
-        new_val = get_attribute_value(new_val)
+        new_val = attr_converter.convert_tf(new_val)
 
       self.attr[key] = new_val
 
     splitted_op_name = node_proto.op.split(".")
     self.domain = "" if len(splitted_op_name) == 1 else ".".join(
         splitted_op_name[:-1])
-    self.op = splitted_op_name[-1]
+    self.op_type = splitted_op_name[-1]
 
 
 class OnnxGraph(object):
@@ -153,7 +150,7 @@ class OnnxGraph(object):
 
   def add_input_proto(self, node):
     onnx_type = node.attr["dtype"]
-    shape = node.attr["shape"] if node.op != "Const" else node.attr[
+    shape = node.attr["shape"] if node.op_type != "Const" else node.attr[
         'value'].shape
     input_proto = make_tensor_value_info(node.name, onnx_type, shape)
     self._inputs_proto.append(input_proto)
@@ -251,7 +248,7 @@ class OnnxGraph(object):
     self._clean_graph()
     self._fix_data_type()
 
-    if sys.version_info > (3,):
+    if IS_PYTHON3:
       params = list(inspect.signature(make_graph).parameters.keys())
     else:
       params = inspect.getargspec(make_graph).args
@@ -266,7 +263,7 @@ class OnnxGraph(object):
                       **dict([(k, kwargs[k]) for k in kwargs if k in params]))
 
 
-class TensorflowFrontendBase(object):
+class TensorflowFrontend(object):
   """ Tensorflow Frontend for ONNX
   """
 
@@ -309,15 +306,15 @@ class TensorflowFrontendBase(object):
     node_tup = [(node.name, TensorflowNode(node)) for node in graph_def.node]
     for name, node in node_tup:
 
-      if node.op == "Placeholder":
+      if node.op_type == "Placeholder":
         onnx_graph.add_input_proto(node)
-      elif node.op == "Const":
+      elif node.op_type == "Const":
         onnx_graph.add_const(node)
         onnx_graph.add_const_proto(node)
         onnx_graph.add_input_proto(node)
       else:
         onnx_graph.add_value_info_proto(node)
-        handler = handlers.get(node.domain, {}).get(node.op, None)
+        handler = handlers.get(node.domain, {}).get(node.op_type, None)
         node_proto = None
         if handler:
           node_proto = handler.handle(
@@ -327,10 +324,12 @@ class TensorflowFrontendBase(object):
               data_type_cast_map=onnx_graph.data_type_cast_map)
         else:
           exception.OP_UNIMPLEMENTED_EXCEPT(
-              node.op, domain=None if node.domain in handlers else node.domain)
+              node.op_type,
+              domain=None if node.domain in handlers else node.domain)
+
         if node_proto is None:
           node_proto = FrontendHandler.make_node_from_tf_node(
-              node, op_type=node.op, should_check=False)
+              node, op_type=node.op_type, should_check=False)
         onnx_graph.add_node_proto(node_proto)
 
     for o in output:
@@ -416,6 +415,6 @@ class TensorflowFrontendBase(object):
       return sess.graph_def
 
 
-convert_graph = TensorflowFrontendBase.tensorflow_graph_to_onnx_graph
+convert_graph = TensorflowFrontend.tensorflow_graph_to_onnx_graph
 
-tensorflow_graph_to_onnx_model = TensorflowFrontendBase.tensorflow_graph_to_onnx_model
+tensorflow_graph_to_onnx_model = TensorflowFrontend.tensorflow_graph_to_onnx_model

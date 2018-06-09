@@ -6,11 +6,11 @@ from __future__ import unicode_literals
 
 import os
 
+from onnx_tf import opset_version
 import onnx_tf.backend
 import onnx_tf.backend_rep
 import onnx_tf.frontend
-from onnx_tf.third_party import get_info
-import opset_version
+from third_party import get_info
 
 
 def main(docs_dir):

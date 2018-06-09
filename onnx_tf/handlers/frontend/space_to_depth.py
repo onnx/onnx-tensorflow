@@ -15,7 +15,7 @@ class SpaceToDepth(FrontendHandler):
     data_format = node.attr.get("data_format", "NHWC").decode()
     if data_format not in ["NHWC", "NCHW"]:
       exception.OP_UNSUPPORTED_EXCEPT("{} with data_format {}".format(
-          node.op, data_format), "ONNX")
+          node.op_type, data_format), "ONNX")
 
   @classmethod
   def version_1(cls, node, **kwargs):

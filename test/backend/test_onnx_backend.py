@@ -7,12 +7,13 @@ import os
 import unittest
 
 import onnx.backend.test
-import onnx_tf.backend as tf_backend
+
+from onnx_tf.backend import TensorflowBackend
 
 # This is a pytest magic variable to load extra plugins
 pytest_plugins = 'onnx.backend.test.report',
 
-backend_test = onnx.backend.test.BackendTest(tf_backend, __name__)
+backend_test = onnx.backend.test.BackendTest(TensorflowBackend, __name__)
 
 # https://github.com/onnx/onnx/issues/349
 backend_test.exclude(r'[a-z,_]*GLU[a-z,_]*')
@@ -22,7 +23,10 @@ backend_test.exclude(r'[a-z,_]*GLU[a-z,_]*')
 backend_test.exclude(r'[a-z,_]*dilated_strided[a-z,_]*')
 backend_test.exclude(r'[a-z,_]*Conv2d_dilated[a-z,_]*')
 
-# Experimental op we do not currently support:
+# PRelu OnnxBackendPyTorchConvertedModelTest has wrong dim for broadcasting
+backend_test.exclude(r'[a-z,_]*PReLU_[0-9]d_multiparam[a-z,_]*')
+
+# Skip experimental Upsample
 backend_test.exclude(r'[a-z,_]*Upsample[a-z,_]*')
 
 if 'TRAVIS' in os.environ:

@@ -76,8 +76,8 @@ def create_test(test_data):
       backend_rep = prepare(onnx_model)
       backend_output = []
       backend_rep_outputs = backend_rep.run(onnx_feed_dict)
-      for ext_output in backend_rep.predict_net.external_output:
-        backend_output.append(backend_rep_outputs[ext_output])
+      for output in backend_rep.outputs:
+        backend_output.append(backend_rep_outputs[output])
       backend_output = np.asarray(backend_output)
       backend_output = np.squeeze(
           backend_output, 0) if backend_output.shape[0] == 1 else backend_output
@@ -87,7 +87,7 @@ def create_test(test_data):
 
       # skip comparison if test_option specifies that
       # the test is call only.
-      if (test_option.get("call_only", False)):
+      if test_option.get("call_only", False):
         return
       for backend_o, tf_o in zip(backend_output, tf_output):
         np.testing.assert_allclose(backend_o, tf_o, rtol=1e-3, atol=1e-7)
