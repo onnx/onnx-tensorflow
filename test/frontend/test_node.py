@@ -9,6 +9,7 @@ import tensorflow as tf
 
 from onnx_tf.frontend import tensorflow_graph_to_onnx_model
 from onnx import checker
+from onnx import defs
 
 # for testing
 from onnx_tf.backend import prepare
@@ -138,7 +139,6 @@ test_cases = [
 ("test_squeeze", tf.squeeze, "Squeeze", [get_rnd([1, 1, 10, 10])], {"axis":[0, 1]}),
 ("test_subtract", tf.subtract, "Sub", [get_rnd([10, 10]), get_rnd([10, 10])], {}),
 ("test_tanh", tf.tanh, "Tanh", [get_rnd([10, 10])], {}),
-("test_tile", tf.tile, "Tile", [get_rnd([1, 2, 3, 4]), np.random.randint(1, 10, (4,), dtype=np.int32)], {}),
 ("test_top_k", tf.nn.top_k, "TopKV2", [get_rnd([10, 10, 10, 10])], {"k": 3}),
 # Use reverse to test ignore_unimplemented
 ("test_unimplemented", tf.reverse, "ReverseV2", [get_rnd([1, 2, 3, 4]), [3]], {}, {"ignore_unimplemented": True}),
@@ -146,6 +146,10 @@ test_cases = [
 ("test_transpose", tf.transpose, "transpose", [get_rnd([2, 10])], {"perm":[1, 0]}),
 ("test_concat", tf.concat, "concat", [[get_rnd([1, 10]),get_rnd([10, 10]),get_rnd([20, 10])], 0], {})
 ]
+
+if defs.onnx_opset_version() >= 6:
+  test_cases.append(("test_tile", tf.tile, "Tile", [get_rnd([1, 2, 3, 4]), np.random.randint(1, 10, (4,), dtype=np.int32)], {}))
+
 
 for k, val in enumerate(test_cases):
   test_method = create_test(val)

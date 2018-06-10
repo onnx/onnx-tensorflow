@@ -121,6 +121,9 @@ class TestNode(unittest.TestCase):
     return x * inv + (bias - mean * inv if bias is not None else -mean * inv)
 
   def test_batch_normalization(self):
+    if defs.onnx_opset_version() < 6:
+      raise unittest.SkipTest(
+          "Backend doesn't support consumed flag")
     node_def = helper.make_node(
         "BatchNormalization", ["X", "scale", "bias", "mean", "var"], ["Y"],
         epsilon=0.001)
