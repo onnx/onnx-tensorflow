@@ -34,10 +34,18 @@ if 'TRAVIS' in os.environ:
 
 major, minor, revision = map(int, onnx.version.version.split("."))
 if major == 1 and minor < 2:
+	# These following tests fails by a tiny margin with onnx<1.2:
 	backend_test.exclude('test_operator_add_broadcast_cpu')
 	backend_test.exclude('test_operator_add_size1_broadcast_cpu')
 	backend_test.exclude('test_operator_add_size1_right_broadcast_cpu')
 	backend_test.exclude('test_operator_add_size1_singleton_broadcast_cpu')
+	backend_test.exclude('test_averagepool_3d_default_cpu')
+	# Do not support consumed flag:
+	backend_test.exclude('test_batch_normalization')
+	# Do not support RNN testing on onnx<1.2 due to incorrect tests:
+	backend_test.exclude(r'test_operator_rnn_cpu')
+	backend_test.exclude(r'test_operator_lstm_cpu')
+	backend_test.exclude(r'test_operator_rnn_single_layer_cpu')
 
 # import all test cases at global scope to make them visible to python.unittest
 globals().update(backend_test.enable_report().test_cases)
