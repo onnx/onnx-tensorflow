@@ -128,7 +128,6 @@ class TensorflowBackend(Backend):
       input_dict = dict(input_dict_items)
 
       for node in graph_def.node:
-        print(node)
         onnx_node = OnnxNode(node)
         output_ops = cls._onnx_node_to_tensorflow_op(
             onnx_node, tensor_dict, handlers, opset=opset)
