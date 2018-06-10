@@ -122,8 +122,7 @@ class TestNode(unittest.TestCase):
 
   def test_batch_normalization(self):
     if defs.onnx_opset_version() < 6:
-      raise unittest.SkipTest(
-          "Backend doesn't support consumed flag")
+      raise unittest.SkipTest("Backend doesn't support consumed flag")
     node_def = helper.make_node(
         "BatchNormalization", ["X", "scale", "bias", "mean", "var"], ["Y"],
         epsilon=0.001)
@@ -149,31 +148,26 @@ class TestNode(unittest.TestCase):
   def test_cast(self):
     major, minor, revision = map(int, onnx.version.version.split("."))
     if (major == 1 and minor < 2) or defs.onnx_opset_version() < 6:
-      test_cases = [("FLOAT", tf.float32), ("UINT8", tf.uint8), ("INT8",
-                                                                 tf.int8),
-                    ("UINT16", tf.uint16), ("INT16", tf.int16), ("INT32",
-                                                                 tf.int32),
-                    ("INT64", tf.int64), ("BOOL", tf.bool), ("FLOAT16",
-                                                             tf.float16),
-                    ("DOUBLE",
-                     tf.float64), ("COMPLEX64",
-                                   tf.complex64), ("COMPLEX128",
-                                                   tf.complex128)]
+      test_cases = [("FLOAT", tf.float32), ("UINT8", tf.uint8),
+                    ("INT8", tf.int8), ("UINT16", tf.uint16), ("INT16",
+                                                               tf.int16),
+                    ("INT32", tf.int32), ("INT64", tf.int64), ("BOOL", tf.bool),
+                    ("FLOAT16", tf.float16), ("DOUBLE", tf.float64),
+                    ("COMPLEX64", tf.complex64), ("COMPLEX128", tf.complex128)]
     else:
       test_cases = [(TensorProto.FLOAT,
-                         tf.float32), (TensorProto.UINT8,
-                                       tf.uint8), (TensorProto.INT8, tf.int8),
-                        (TensorProto.UINT16,
-                         tf.uint16), (TensorProto.INT16,
-                                      tf.int16), (TensorProto.INT32, tf.int32),
-                        (TensorProto.INT64,
-                         tf.int64), (TensorProto.BOOL,
-                                     tf.bool), (TensorProto.FLOAT16,
-                                                tf.float16),
-                        (TensorProto.DOUBLE,
-                         tf.float64), (TensorProto.COMPLEX64,
-                                       tf.complex64), (TensorProto.COMPLEX128,
-                                                       tf.complex128)]
+                     tf.float32), (TensorProto.UINT8,
+                                   tf.uint8), (TensorProto.INT8, tf.int8),
+                    (TensorProto.UINT16,
+                     tf.uint16), (TensorProto.INT16,
+                                  tf.int16), (TensorProto.INT32, tf.int32),
+                    (TensorProto.INT64,
+                     tf.int64), (TensorProto.BOOL,
+                                 tf.bool), (TensorProto.FLOAT16, tf.float16),
+                    (TensorProto.DOUBLE,
+                     tf.float64), (TensorProto.COMPLEX64,
+                                   tf.complex64), (TensorProto.COMPLEX128,
+                                                   tf.complex128)]
     for ty, tf_type in test_cases:
       node_def = helper.make_node("Cast", ["input"], ["output"], to=ty)
       vector = [2, 3]
@@ -258,8 +252,9 @@ class TestNode(unittest.TestCase):
                   w_in_range = (w - kW // 2 + kw) < W and (
                       w - kW // 2 + kw) >= 0
                   if h_in_range and w_in_range:
-                    test_output[n][k][h][w] += (x[n][c][h - kH // 2 + kh][
-                        w - kW // 2 + kw] * weights[k][c][kh][kw])
+                    test_output[n][k][h][w] += (
+                        x[n][c][h - kH // 2 + kh][w - kW // 2 + kw] *
+                        weights[k][c][kh][kw])
 
     np.testing.assert_almost_equal(output["Y"], test_output, decimal=5)
 
@@ -370,11 +365,7 @@ class TestNode(unittest.TestCase):
   def test_gemm(self):
     # Compute Y = alpha * A * B + beta * C
     node_def = helper.make_node(
-        "Gemm", ["A", "B", "C"], ["Y"],
-        transA=0,
-        transB=0,
-        alpha=1.0,
-        beta=1.0)
+        "Gemm", ["A", "B", "C"], ["Y"], transA=0, transB=0, alpha=1.0, beta=1.0)
     x = np.floor(self._get_rnd([10, 10]))
     y = np.floor(self._get_rnd([10, 10]))
     z = np.floor(self._get_rnd([10, 10]))
@@ -582,11 +573,9 @@ class TestNode(unittest.TestCase):
         "Pad", ["X"], ["Y"], mode="constant", pads=[1, 1, 1, 1], value=2.0)
     x = self._get_rnd([100, 100])
     output = run_node(node_def, [x])
-    np.testing.assert_almost_equal(output["Y"],
-                                   np.lib.pad(
-                                       x, ((1, 1), (1, 1)),
-                                       'constant',
-                                       constant_values=(2, 2)))
+    np.testing.assert_almost_equal(
+        output["Y"],
+        np.lib.pad(x, ((1, 1), (1, 1)), 'constant', constant_values=(2, 2)))
 
   def test_reciprocal(self):
     node_def = helper.make_node("Reciprocal", ["X"], ["Y"])
@@ -672,7 +661,7 @@ class TestNode(unittest.TestCase):
     np.testing.assert_almost_equal(output["Z"], x.reshape([10, 10]))
 
   def test_reshape_with_copy(self):
-    x = self._get_rnd([10, 20*30])
+    x = self._get_rnd([10, 20 * 30])
     shape = [0, 20, 30]
     if defs.onnx_opset_version() < 5:
       node_def = helper.make_node("Reshape", ["X"], ["Z"], shape=shape)
@@ -792,8 +781,9 @@ class TestNode(unittest.TestCase):
   def test_tile(self):
     major, minor, revision = map(int, onnx.version.version.split("."))
     if major == 1 and minor < 2:
-        raise unittest.SkipTest(
-          "The current version of ONNX does not record correctly the opset of Tile.")
+      raise unittest.SkipTest(
+          "The current version of ONNX does not record correctly the opset of Tile."
+      )
     node_def = helper.make_node("Tile", ["X1", "X2"], ["Z"])
     x = self._get_rnd([3, 5, 5, 3])
     repeats = [1, 1, 2, 1]
@@ -805,6 +795,7 @@ class TestNode(unittest.TestCase):
     x = self._get_rnd([1000]).reshape([10, 10, 10])
     output = run_node(node_def, [x])
     np.testing.assert_almost_equal(output["Y"], np.transpose(x, (0, 2, 1)))
+
 
 if __name__ == '__main__':
   unittest.main()
