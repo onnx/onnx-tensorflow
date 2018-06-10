@@ -150,7 +150,6 @@ test_cases = [
 if defs.onnx_opset_version() >= 6:
   test_cases.append(("test_tile", tf.tile, "Tile", [get_rnd([1, 2, 3, 4]), np.random.randint(1, 10, (4,), dtype=np.int32)], {}))
 
-
 for k, val in enumerate(test_cases):
   test_method = create_test(val)
   test_method.__name__ = str(val[0])
