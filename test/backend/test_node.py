@@ -6,11 +6,11 @@ from __future__ import unicode_literals
 import unittest
 import numpy as np
 import tensorflow as tf
+import onnx
 from onnx_tf.backend import run_node
 from onnx_tf.common import supports_device
 from onnx import helper
 from onnx import TensorProto
-
 from onnx import defs
 
 
@@ -147,7 +147,20 @@ class TestNode(unittest.TestCase):
     np.testing.assert_almost_equal(output["Y"], golden, decimal=5)
 
   def test_cast(self):
-    for ty, tf_type in [(TensorProto.FLOAT,
+    major, minor, revision = map(int, onnx.version.version.split("."))
+    if (major == 1 and minor < 2) or defs.onnx_opset_version() < 6:
+      test_cases = [("FLOAT", tf.float32), ("UINT8", tf.uint8), ("INT8",
+                                                                 tf.int8),
+                    ("UINT16", tf.uint16), ("INT16", tf.int16), ("INT32",
+                                                                 tf.int32),
+                    ("INT64", tf.int64), ("BOOL", tf.bool), ("FLOAT16",
+                                                             tf.float16),
+                    ("DOUBLE",
+                     tf.float64), ("COMPLEX64",
+                                   tf.complex64), ("COMPLEX128",
+                                                   tf.complex128)]
+    else:
+      test_cases = [(TensorProto.FLOAT,
                          tf.float32), (TensorProto.UINT8,
                                        tf.uint8), (TensorProto.INT8, tf.int8),
                         (TensorProto.UINT16,
@@ -160,7 +173,8 @@ class TestNode(unittest.TestCase):
                         (TensorProto.DOUBLE,
                          tf.float64), (TensorProto.COMPLEX64,
                                        tf.complex64), (TensorProto.COMPLEX128,
-                                                       tf.complex128)]:
+                                                       tf.complex128)]
+    for ty, tf_type in test_cases:
       node_def = helper.make_node("Cast", ["input"], ["output"], to=ty)
       vector = [2, 3]
       output = run_node(node_def, [vector])
@@ -776,6 +790,10 @@ class TestNode(unittest.TestCase):
     np.testing.assert_almost_equal(output["Y"], np.tanh(x), decimal=5)
 
   def test_tile(self):
+    major, minor, revision = map(int, onnx.version.version.split("."))
+    if major == 1 and minor < 2:
+        raise unittest.SkipTest(
+          "The current version of ONNX does not record correctly the opset of Tile.")
     node_def = helper.make_node("Tile", ["X1", "X2"], ["Z"])
     x = self._get_rnd([3, 5, 5, 3])
     repeats = [1, 1, 2, 1]
