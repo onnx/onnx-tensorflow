@@ -4,7 +4,7 @@ ONNX-Tensorflow API
 #### `onnx_tf.backend.prepare`
 
 <details>
-  <summary>Prepare an ONNX model for Tensorflow Backend
+  <summary>Prepare an ONNX model for Tensorflow Backend.
 
   </summary>
 This function converts an ONNX model to an internel representation
@@ -17,10 +17,15 @@ the converted representation.
 
 _params_:
 
-`model` : the ONNX model to be converted
+`model` : the ONNX model to be converted.
 
 
-`device` : the device to execute this model on
+`device` : the device to execute this model on.
+
+
+`strict` : whether to enforce semantic equivalence between the original model
+and the converted tensorflow model, defaults to True (yes, enforce semantic equivalence).
+Changing to False is strongly discouraged.
 
 
 _returns_:
