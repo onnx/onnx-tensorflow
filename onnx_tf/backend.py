@@ -62,13 +62,13 @@ class TensorflowBackend(Backend):
     of the computational graph called TensorflowRep and returns
     the converted representation.
 
-    :param model: the ONNX model to be converted.
-    :param device: the device to execute this model on.
-    :param strict: whether to enforce semantic equivalence between the original model
+    :param model: The ONNX model to be converted.
+    :param device: The device to execute this model on.
+    :param strict: Whether to enforce semantic equivalence between the original model
       and the converted tensorflow model, defaults to True (yes, enforce semantic equivalence).
       Changing to False is strongly discouraged.
 
-    :returns: a TensorflowRep class object representing the ONNX model
+    :returns: A TensorflowRep class object representing the ONNX model
     """
     super(TensorflowBackend, cls).prepare(model, device, **kwargs)
 

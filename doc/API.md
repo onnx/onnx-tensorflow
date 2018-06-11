@@ -17,20 +17,20 @@ the converted representation.
 
 _params_:
 
-`model` : the ONNX model to be converted.
+`model` : The ONNX model to be converted.
 
 
-`device` : the device to execute this model on.
+`device` : The device to execute this model on.
 
 
-`strict` : whether to enforce semantic equivalence between the original model
+`strict` : Whether to enforce semantic equivalence between the original model
 and the converted tensorflow model, defaults to True (yes, enforce semantic equivalence).
 Changing to False is strongly discouraged.
 
 
 _returns_:
 
-a TensorflowRep class object representing the ONNX model
+A TensorflowRep class object representing the ONNX model
 
 #### `onnx_tf.backend_rep.TensorflowRep.export_graph`
 
