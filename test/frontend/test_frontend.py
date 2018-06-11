@@ -41,7 +41,7 @@ def make_xval(shape):
     return x_val
 
 
-class TestNode(unittest.TestCase):
+class TestNodeExtra(unittest.TestCase):
     def setUp(self):
         tf.reset_default_graph()
         arg = namedtuple("Arg", "input inputs outputs verbose continue_on_error")
@@ -81,10 +81,10 @@ class TestNode(unittest.TestCase):
         actual, expected = self._run(output, {x: x_val}, {_INPUT: x_val})
         self.assertAllClose(expected, actual)
 
-    @unittest.skip
-    def test_expand_dims(self):
-        for i in [-1, 0, 1, -2]:
-            self._test_expand_dims(i)
+    # @unittest.skip
+    # def test_expand_dims(self):
+    #     for i in [-1, 0, 1, -2]:
+    #         self._test_expand_dims(i)
 
     def test_argminmax(self):
         x_val = np.array([0.5, 1.0, -0.5, -1.0], dtype=np.float32).reshape((2, 2))
@@ -94,33 +94,33 @@ class TestNode(unittest.TestCase):
         actual, expected = self._run(output, {x: x_val}, {_TFINPUT: x_val})
         self.assertAllClose(expected, actual)
 
-    @unittest.skip
-    def test_maxppol(self):
-        x_val = make_xval((1, 4, 4, 1))
-        x = tf.placeholder(tf.float32, shape=x_val.shape, name=_TFINPUT)
-        mp = tf.nn.max_pool(x, [1, 2, 2, 1], _STRIDE1x1, padding="VALID")
-        output = tf.identity(mp, name=_TFOUTPUT)
-        actual, expected = self._run(output, {x: x_val}, {_INPUT: x_val})
-        self.assertAllClose(expected, actual)
+    # @unittest.skip
+    # def test_maxppol(self):
+    #     x_val = make_xval((1, 4, 4, 1))
+    #     x = tf.placeholder(tf.float32, shape=x_val.shape, name=_TFINPUT)
+    #     mp = tf.nn.max_pool(x, [1, 2, 2, 1], _STRIDE1x1, padding="VALID")
+    #     output = tf.identity(mp, name=_TFOUTPUT)
+    #     actual, expected = self._run(output, {x: x_val}, {_INPUT: x_val})
+    #     self.assertAllClose(expected, actual)
 
-    # Negative dimension size by subtracting 2 from 1 for 'avg_pool' (op: 'AvgPool') with input shapes: [1,4,1,4]
-    @unittest.skip
-    def test_avgppol(self):
-        x_val = make_xval((1, 4, 4, 1))
-        x = tf.placeholder(tf.float32, shape=x_val.shape, name=_TFINPUT)
-        mp = tf.nn.avg_pool(x, [1, 2, 2, 1], _STRIDE1x1, padding="VALID")
-        output = tf.identity(mp, name=_TFOUTPUT)
-        actual, expected = self._run(output, {x: x_val}, {_INPUT: x_val})
-        self.assertAllClose(expected, actual)
+    # # Negative dimension size by subtracting 2 from 1 for 'avg_pool' (op: 'AvgPool') with input shapes: [1,4,1,4]
+    # @unittest.skip
+    # def test_avgppol(self):
+    #     x_val = make_xval((1, 4, 4, 1))
+    #     x = tf.placeholder(tf.float32, shape=x_val.shape, name=_TFINPUT)
+    #     mp = tf.nn.avg_pool(x, [1, 2, 2, 1], _STRIDE1x1, padding="VALID")
+    #     output = tf.identity(mp, name=_TFOUTPUT)
+    #     actual, expected = self._run(output, {x: x_val}, {_INPUT: x_val})
+    #     self.assertAllClose(expected, actual)
 
-    @unittest.skip
-    def test_abs(self):
-        x_val = np.array([1.0, 2.0, -3.0, -4.0], dtype=np.float32).reshape((2, 2))
-        x = tf.placeholder(tf.float32, [2, 2], name=_TFINPUT)
-        x_ = tf.abs(x)
-        output = tf.identity(x_, name=_TFOUTPUT)
-        actual, expected = self._run(output, {x: x_val}, {_INPUT: x_val})
-        self.assertAllClose(expected, actual)
+    # @unittest.skip
+    # def test_abs(self):
+    #     x_val = np.array([1.0, 2.0, -3.0, -4.0], dtype=np.float32).reshape((2, 2))
+    #     x = tf.placeholder(tf.float32, [2, 2], name=_TFINPUT)
+    #     x_ = tf.abs(x)
+    #     output = tf.identity(x_, name=_TFOUTPUT)
+    #     actual, expected = self._run(output, {x: x_val}, {_INPUT: x_val})
+    #     self.assertAllClose(expected, actual)
 
     def test_const(self):
         x_val = np.array([1.0, 2.0, 3.0, 4.0], dtype=np.float32).reshape((2, 2))
@@ -197,55 +197,55 @@ class TestNode(unittest.TestCase):
         actual, expected = self._run(output, {x: x_val}, {_INPUT: x_val})
         self.assertAllClose(expected, actual)
 
-    @unittest.skip
-    def test_gather(self):
-        x_val = np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9]], dtype=np.float32)
-        idx = np.array([1, 0, 2], dtype=np.int32)
-        idx_flattened = np.array([i * x_val.shape[1] + idx for i in range(0, x_val.shape[0])])
-        x = tf.placeholder(tf.float32, x_val.shape, name=_TFINPUT)
-        x_ = tf.gather(tf.reshape(x, [-1]), tf.constant(idx_flattened))
-        output = tf.identity(x_, name=_TFOUTPUT)
-        actual, expected = self._run(output, {x: x_val}, {_INPUT: x_val})
-        self.assertAllClose(expected, actual)
+    # @unittest.skip
+    # def test_gather(self):
+    #     x_val = np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9]], dtype=np.float32)
+    #     idx = np.array([1, 0, 2], dtype=np.int32)
+    #     idx_flattened = np.array([i * x_val.shape[1] + idx for i in range(0, x_val.shape[0])])
+    #     x = tf.placeholder(tf.float32, x_val.shape, name=_TFINPUT)
+    #     x_ = tf.gather(tf.reshape(x, [-1]), tf.constant(idx_flattened))
+    #     output = tf.identity(x_, name=_TFOUTPUT)
+    #     actual, expected = self._run(output, {x: x_val}, {_INPUT: x_val})
+    #     self.assertAllClose(expected, actual)
 
-    @unittest.skip
-    def test_tile(self):
-        x_val = np.array([[0, 1], [2, 3]], dtype=np.float32)
-        multiple = tf.constant([2, 2])
-        x = tf.placeholder(tf.float32, x_val.shape, name=_TFINPUT)
-        x_ = tf.tile(x, multiple)
-        output = tf.identity(x_, name=_TFOUTPUT)
-        actual, expected = self._run(output, {x: x_val}, {_INPUT: x_val})
-        self.assertAllClose(expected, actual)
+    # @unittest.skip
+    # def test_tile(self):
+    #     x_val = np.array([[0, 1], [2, 3]], dtype=np.float32)
+    #     multiple = tf.constant([2, 2])
+    #     x = tf.placeholder(tf.float32, x_val.shape, name=_TFINPUT)
+    #     x_ = tf.tile(x, multiple)
+    #     output = tf.identity(x_, name=_TFOUTPUT)
+    #     actual, expected = self._run(output, {x: x_val}, {_INPUT: x_val})
+    #     self.assertAllClose(expected, actual)
 
-    @unittest.skip
-    def test_neg(self):
-        x_val = np.array([1.0, 2.0, -3.0, -4.0], dtype=np.float32).reshape((2, 2))
-        x = tf.placeholder(tf.float32, x_val.shape, name=_TFINPUT)
-        x_ = tf.negative(x)
-        output = tf.identity(x_, name=_TFOUTPUT)
-        actual, expected = self._run(output, {x: x_val}, {_INPUT: x_val})
-        self.assertAllClose(expected, actual)
+    # @unittest.skip
+    # def test_neg(self):
+    #     x_val = np.array([1.0, 2.0, -3.0, -4.0], dtype=np.float32).reshape((2, 2))
+    #     x = tf.placeholder(tf.float32, x_val.shape, name=_TFINPUT)
+    #     x_ = tf.negative(x)
+    #     output = tf.identity(x_, name=_TFOUTPUT)
+    #     actual, expected = self._run(output, {x: x_val}, {_INPUT: x_val})
+    #     self.assertAllClose(expected, actual)
 
-    @unittest.skip
-    def test_square(self):
-        x_val = np.array([1.0, 2.0, -3.0, -4.0], dtype=np.float32).reshape((2, 2))
-        x = tf.placeholder(tf.float32, [2, 2], name=_TFINPUT)
-        x_ = tf.square(x)
-        output = tf.identity(x_, name=_TFOUTPUT)
-        actual, expected = self._run(output, {x: x_val}, {_INPUT: x_val})
-        self.assertAllClose(expected, actual)
+    # @unittest.skip
+    # def test_square(self):
+    #     x_val = np.array([1.0, 2.0, -3.0, -4.0], dtype=np.float32).reshape((2, 2))
+    #     x = tf.placeholder(tf.float32, [2, 2], name=_TFINPUT)
+    #     x_ = tf.square(x)
+    #     output = tf.identity(x_, name=_TFOUTPUT)
+    #     actual, expected = self._run(output, {x: x_val}, {_INPUT: x_val})
+    #     self.assertAllClose(expected, actual)
 
-    @unittest.skip
-    def test_min(self):
-        x_val1 = np.array([4.0, 16.0, 4.0, 1.6], dtype=np.float32).reshape((2, 2))
-        x_val2 = np.array([4.0, 4.0, 4.0, 4.0], dtype=np.float32).reshape((2, 2))
-        x1 = tf.placeholder(tf.float32, [2, 2], name=_TFINPUT)
-        x2 = tf.placeholder(tf.float32, [2, 2], name=_TFINPUT1)
-        mi = tf.minimum(x1, x2)
-        output = tf.identity(mi, name=_TFOUTPUT)
-        actual, expected = self._run(output, {x1: x_val1, x2: x_val2}, {_INPUT: x_val1, _INPUT1: x_val2,})
-        self.assertAllClose(expected, actual)
+    # @unittest.skip
+    # def test_min(self):
+    #     x_val1 = np.array([4.0, 16.0, 4.0, 1.6], dtype=np.float32).reshape((2, 2))
+    #     x_val2 = np.array([4.0, 4.0, 4.0, 4.0], dtype=np.float32).reshape((2, 2))
+    #     x1 = tf.placeholder(tf.float32, [2, 2], name=_TFINPUT)
+    #     x2 = tf.placeholder(tf.float32, [2, 2], name=_TFINPUT1)
+    #     mi = tf.minimum(x1, x2)
+    #     output = tf.identity(mi, name=_TFOUTPUT)
+    #     actual, expected = self._run(output, {x1: x_val1, x2: x_val2}, {_INPUT: x_val1, _INPUT1: x_val2,})
+    #     self.assertAllClose(expected, actual)
 
     def test_logicaland(self):
         x_val1 = np.array([1, 0, 1, 1], dtype=np.bool).reshape((2, 2))
@@ -267,23 +267,23 @@ class TestNode(unittest.TestCase):
         actual, expected = self._run(output, {x1: x_val1, x2: x_val2}, {_INPUT: x_val1, _INPUT1: x_val2,})
         self.assertAllClose(expected, actual)
 
-    @unittest.skip
-    def test_sequeeze(self):
-        x_val = np.array([1.0, 2.0, 3.0, 4.0], dtype=np.float32).reshape((2, 2, 1))
-        x = tf.placeholder(tf.float32, [2, 2, 1], name=_TFINPUT)
-        x_ = tf.squeeze(x)
-        output = tf.identity(x_, name=_TFOUTPUT)
-        actual, expected = self._run(output, {x: x_val}, {_INPUT: x_val})
-        self.assertAllClose(expected, actual)
+    # @unittest.skip
+    # def test_sequeeze(self):
+    #     x_val = np.array([1.0, 2.0, 3.0, 4.0], dtype=np.float32).reshape((2, 2, 1))
+    #     x = tf.placeholder(tf.float32, [2, 2, 1], name=_TFINPUT)
+    #     x_ = tf.squeeze(x)
+    #     output = tf.identity(x_, name=_TFOUTPUT)
+    #     actual, expected = self._run(output, {x: x_val}, {_INPUT: x_val})
+    #     self.assertAllClose(expected, actual)
 
-    @unittest.skip
-    def test_transpose(self):
-        x_val = np.array([1.0, 2.0, 3.0, 4.0, 5.0, 6.0], dtype=np.float32).reshape((2, 3))
-        x = tf.placeholder(tf.float32, [2, 3], name=_TFINPUT)
-        x_ = tf.transpose(x)  # perm=[1,0])
-        output = tf.identity(x_, name=_TFOUTPUT)
-        actual, expected = self._run(output, {x: x_val}, {_INPUT: x_val})
-        self.assertAllClose(expected, actual)
+    # @unittest.skip
+    # def test_transpose(self):
+    #     x_val = np.array([1.0, 2.0, 3.0, 4.0, 5.0, 6.0], dtype=np.float32).reshape((2, 3))
+    #     x = tf.placeholder(tf.float32, [2, 3], name=_TFINPUT)
+    #     x_ = tf.transpose(x)  # perm=[1,0])
+    #     output = tf.identity(x_, name=_TFOUTPUT)
+    #     actual, expected = self._run(output, {x: x_val}, {_INPUT: x_val})
+    #     self.assertAllClose(expected, actual)
 
     def test_reshape(self):
         x_val = np.array([1.0, 2.0, 3.0, 4.0], dtype=np.float32).reshape((2, 2))
@@ -311,14 +311,14 @@ class TestNode(unittest.TestCase):
         actual, expected = self._run(output, {x: x_val}, {_INPUT: x_val})
         self.assertAllClose(expected, actual)
 
-    @unittest.skip
-    def test_elu(self):
-        x_val = np.array([0.5, 1.0, -0.5, -1.0], dtype=np.float32).reshape((2, 2))
-        x = tf.placeholder(tf.float32, [2, 2], name=_TFINPUT)
-        x_ = tf.nn.elu(x)
-        output = tf.identity(x_, name=_TFOUTPUT)
-        actual, expected = self._run(output, {x: x_val}, {_INPUT: x_val})
-        self.assertAllClose(expected, actual)
+    # @unittest.skip
+    # def test_elu(self):
+    #     x_val = np.array([0.5, 1.0, -0.5, -1.0], dtype=np.float32).reshape((2, 2))
+    #     x = tf.placeholder(tf.float32, [2, 2], name=_TFINPUT)
+    #     x_ = tf.nn.elu(x)
+    #     output = tf.identity(x_, name=_TFOUTPUT)
+    #     actual, expected = self._run(output, {x: x_val}, {_INPUT: x_val})
+    #     self.assertAllClose(expected, actual)
 
     def test_tanh(self):
         x_val = np.array([0.5, 1.0, -0.5, -1.0], dtype=np.float32).reshape((2, 2))
@@ -328,14 +328,14 @@ class TestNode(unittest.TestCase):
         actual, expected = self._run(output, {x: x_val}, {_INPUT: x_val})
         self.assertAllClose(expected, actual, rtol=1e-05)
 
-    @unittest.skip
-    def test_relu6(self):
-        x_val = np.array([0.5, 1.0, -0.5, -1.0], dtype=np.float32).reshape((2, 2))
-        x = tf.placeholder(tf.float32, [2, 2], name=_TFINPUT)
-        x_ = tf.nn.relu6(x)
-        output = tf.identity(x_, name=_TFOUTPUT)
-        actual, expected = self._run(output, {x: x_val}, {_INPUT: x_val})
-        self.assertAllClose(expected, actual)
+    # @unittest.skip
+    # def test_relu6(self):
+    #     x_val = np.array([0.5, 1.0, -0.5, -1.0], dtype=np.float32).reshape((2, 2))
+    #     x = tf.placeholder(tf.float32, [2, 2], name=_TFINPUT)
+    #     x_ = tf.nn.relu6(x)
+    #     output = tf.identity(x_, name=_TFOUTPUT)
+    #     actual, expected = self._run(output, {x: x_val}, {_INPUT: x_val})
+    #     self.assertAllClose(expected, actual)
 
     def test_concat(self):
         x_val1 = np.array([[1, 2, 3], [4, 5, 6]], dtype=np.float32)
