@@ -9,6 +9,7 @@ import unittest
 import onnx.backend.test
 
 from onnx_tf.backend import TensorflowBackend
+from onnx_tf.common.legacy import legacy_onnx_pre_1_2
 
 # This is a pytest magic variable to load extra plugins
 pytest_plugins = 'onnx.backend.test.report',
@@ -32,8 +33,7 @@ backend_test.exclude(r'[a-z,_]*Upsample[a-z,_]*')
 if 'TRAVIS' in os.environ:
   backend_test.exclude('test_vgg19')
 
-major, minor, revision = map(int, onnx.version.version.split("."))
-if major == 1 and minor < 2:
+if legacy_onnx_pre_1_2():
 	# These following tests fails by a tiny margin with onnx<1.2:
 	backend_test.exclude('test_operator_add_broadcast_cpu')
 	backend_test.exclude('test_operator_add_size1_broadcast_cpu')

@@ -13,6 +13,7 @@ from onnx import defs
 
 # for testing
 from onnx_tf.backend import prepare
+from onnx_tf.common.legacy import legacy_opset_pre_6
 
 
 def get_node_by_name(nodes, name):
@@ -147,7 +148,7 @@ test_cases = [
 ("test_concat", tf.concat, "concat", [[get_rnd([1, 10]),get_rnd([10, 10]),get_rnd([20, 10])], 0], {})
 ]
 
-if defs.onnx_opset_version() >= 6:
+if legacy_opset_pre_6():
   test_cases.append(("test_tile", tf.tile, "Tile", [get_rnd([1, 2, 3, 4]), np.random.randint(1, 10, (4,), dtype=np.int32)], {}))
 
 for k, val in enumerate(test_cases):
