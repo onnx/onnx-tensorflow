@@ -92,7 +92,7 @@ class TensorflowRep(BackendRep):
     model associated with the backend representation and serializes
     to a protobuf file.
 
-    :param path: the path to the output TF protobuf file.
+    :param path: The path to the output TF protobuf file.
 
     :returns: none.
     """

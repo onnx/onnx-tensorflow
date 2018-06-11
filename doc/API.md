@@ -48,7 +48,7 @@ to a protobuf file.
 
 _params_:
 
-`path` : the path to the output TF protobuf file.
+`path` : The path to the output TF protobuf file.
 
 
 _returns_:
