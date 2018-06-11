@@ -83,7 +83,7 @@ class TensorflowBackend(Backend):
       and the converted tensorflow model.
     :return: TensorflowRep object.
     """
-    return cls._onnx_graph_to_tensorflow_rep(model.graph, model.opset_import)
+    return cls._onnx_graph_to_tensorflow_rep(model.graph, model.opset_import, strict)
 
   @classmethod
   def _onnx_graph_to_tensorflow_rep(cls, graph_def, opset, strict):
