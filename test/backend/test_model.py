@@ -34,6 +34,10 @@ class TestModel(unittest.TestCase):
     np.testing.assert_almost_equal(output.X1, Y_ref)
 
   def test_initializer(self):
+    major, minor, revision = map(int, onnx.version.version.split("."))
+    if major == 1 and minor < 2:
+        raise unittest.SkipTest(
+          "The current version of ONNX does not record correctly the opset of Cast.")
     X = np.array([[1, 2], [3, 4]]).astype(np.float32)
     Y = np.array([[1, 2], [3, 4]]).astype(np.float32)
     weight = np.array([[1, 0], [0, 1]])
