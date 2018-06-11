@@ -60,8 +60,9 @@ class PoolMixin(object):
                                          kernel_shape, strides,
                                          [0] * spatial_size * 2)
 
-    if strict and count_include_pad == 0 and pad is PAD_TF_INCOMPATIBLE:
-      return cls._compatibility_pool(node, input_dict, pooling_type)
+    if strict and count_include_pad == 0:
+      if pad is PAD_TF_INCOMPATIBLE:
+        return cls._compatibility_pool(node, input_dict, pooling_type)
     else:
       if pads != [0] * spatial_size * 2:
         x = PadMixin.get_padding_as_op(x, pads)
