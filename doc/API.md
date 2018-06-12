@@ -26,6 +26,7 @@ _params_:
 `strict` : Whether to enforce semantic equivalence between the original model
 and the converted tensorflow model, defaults to True (yes, enforce semantic equivalence).
 Changing to False is strongly discouraged.
+Currently, the strict flag only affects the behavior of MaxPool and AveragePool ops.
 
 
 _returns_:
