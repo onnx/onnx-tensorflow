@@ -183,6 +183,7 @@ ______
 |shape|1|
 |sigmoid|1, 6|
 |sin|7|
+|slice|1|
 |softmax|1|
 |softplus|1|
 |softsign|1|
