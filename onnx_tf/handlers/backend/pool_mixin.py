@@ -22,7 +22,7 @@ PAD_TF_INCOMPATIBLE = "PAD_TF_INCOMPATIBLE"
 class PoolMixin(object):
 
   @classmethod
-  def pool(cls, node, input_dict, pool_func, pooling_type):
+  def pool(cls, node, input_dict, pool_func, pooling_type, strict=True):
     x = input_dict[node.inputs[0]]
     x_rank = len(x.get_shape())
     x_shape = x.get_shape().as_list()
@@ -60,7 +60,7 @@ class PoolMixin(object):
                                          kernel_shape, strides,
                                          [0] * spatial_size * 2)
 
-    if count_include_pad == 0:
+    if strict and count_include_pad == 0:
       if pad is PAD_TF_INCOMPATIBLE:
         return cls._compatibility_pool(node, input_dict, pooling_type)
     else:
@@ -117,16 +117,15 @@ class PoolMixin(object):
       for shape in itertools.product(
           range(x_shape[0]), range(x_shape[1]), *[
               range(
-                  int((x_shape[i + 2] + pad_shape[i] - kernel_shape[i]
-                      ) / strides[i] + 1)) for i in range(spatial_size)
+                  int((x_shape[i + 2] + pad_shape[i] - kernel_shape[i]) /
+                      strides[i] + 1)) for i in range(spatial_size)
           ]):
         window = padded[shape[0], shape[1]]
         window_vals = np.array([
             window[i] for i in list(
                 itertools.product(*[
-                    range(strides[i] * shape[i + 2],
-                          strides[i] * shape[i + 2] + kernel_shape[i])
-                    for i in range(spatial_size)
+                    range(strides[i] * shape[i + 2], strides[i] * shape[i + 2] +
+                          kernel_shape[i]) for i in range(spatial_size)
                 ]))
         ])
         if pooling_type == 'AVG':
