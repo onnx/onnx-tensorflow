@@ -131,6 +131,7 @@ test_cases = [
 ("test_selu", tf.nn.selu, "Selu", [get_rnd([10, 10])], {}),
 ("test_shape", tf.shape, "Shape", [get_rnd([1, 2, 3, 4])], {}),
 ("test_sigmoid", tf.sigmoid, "Sigmoid", [get_rnd([10, 10])], {}),
+("test_slice", tf.slice, "Slice", [get_rnd([5, 6, 7])], {"begin": [1, 0, 0], "size": [1, 1, 3]}),
 ("test_softmax", tf.nn.softmax, "Softmax", [get_rnd([10, 10])], {}),
 ("test_softplus", tf.nn.softplus, "Softplus", [get_rnd([10, 10])], {}),
 ("test_softsign", tf.nn.softsign, "Softsign", [get_rnd([10, 10])], {}),
