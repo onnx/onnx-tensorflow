@@ -15,7 +15,7 @@ IS_PYTHON3 = sys.version_info > (3,)
 
 
 def is_test():
-  return os.environ.get("TRAVIS", 0) == 1 or "PYTEST_CURRENT_TEST" in os.environ
+  return os.getenv("TRAVIS") or "PYTEST_CURRENT_TEST" in os.environ
 
 
 # This function inserts an underscore before every upper
