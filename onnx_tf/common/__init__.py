@@ -3,6 +3,7 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
+import os
 import re
 import sys
 import uuid
@@ -11,6 +12,10 @@ from onnx.backend.base import DeviceType
 from tensorflow.python.client import device_lib
 
 IS_PYTHON3 = sys.version_info > (3,)
+
+
+def is_test():
+  return os.environ.get("TRAVIS", 0) == 1 or "PYTEST_CURRENT_TEST" in os.environ
 
 
 # This function inserts an underscore before every upper

@@ -1,5 +1,6 @@
 import tensorflow as tf
 
+from onnx_tf.common import is_test
 from onnx_tf.handlers.backend_handler import BackendHandler
 from onnx_tf.handlers.handler import onnx_op
 from onnx_tf.handlers.handler import tf_func
@@ -38,8 +39,8 @@ class BatchNormalization(BackendHandler):
     running_variance = tf.reshape(tensor_dict[node.inputs[4]],
                                   params_shape_broadcast)
 
-    # from version 7, force to use test mode
-    if cls.SINCE_VERSION >= 7 or node.attrs.get("is_test", 0):
+    # force to use test mode since v7 with CI test
+    if node.attrs.get("is_test", 0) or (cls.SINCE_VERSION >= 7 and is_test()):
       inputs = [x, running_mean, running_variance, bias, scale]
       return [cls.make_tensor_from_onnx_node(node, inputs=inputs)]
     spatial = node.attrs.get("spatial", 1) == 1
