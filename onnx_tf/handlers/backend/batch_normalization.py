@@ -38,7 +38,8 @@ class BatchNormalization(BackendHandler):
     running_variance = tf.reshape(tensor_dict[node.inputs[4]],
                                   params_shape_broadcast)
 
-    if node.attrs.get("is_test", 0):
+    # from version 7, force to use test mode
+    if cls.SINCE_VERSION >= 7 or node.attrs.get("is_test", 0):
       inputs = [x, running_mean, running_variance, bias, scale]
       return [cls.make_tensor_from_onnx_node(node, inputs=inputs)]
     spatial = node.attrs.get("spatial", 1) == 1
