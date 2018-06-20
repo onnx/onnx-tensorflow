@@ -46,6 +46,11 @@ The result is `[ 0.   0.1]`
 - __test__ test files.
 
 ## Code Standard:
+- Format code:
+```
+pip install yapf
+yapf -rip --style="{based_on_style: google, indent_width: 2}" $FilePath$
+```
 - Install pylint:
 ```
 pip install pylint
