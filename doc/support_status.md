@@ -49,7 +49,7 @@ ______
 |Hardmax|1|
 |Identity|1|
 |If|N/A|
-|ImageScaler|N/A|
+|ImageScaler|1|
 |InstanceNormalization|1, 6|
 |LRN|1|
 |LSTM|1, 7|
