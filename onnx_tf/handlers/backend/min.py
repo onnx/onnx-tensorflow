@@ -28,3 +28,7 @@ class Min(BackendHandler):
   @classmethod
   def version_6(cls, node, **kwargs):
     return cls._common(node, **kwargs)
+
+  @classmethod
+  def version_8(cls, node, **kwargs):
+    return cls._common(node, **kwargs)
