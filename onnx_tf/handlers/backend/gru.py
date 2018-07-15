@@ -240,7 +240,7 @@ class GRU(RNNMixin, BackendHandler):
 
     cell_kwargs = {}
 
-    tf_activations = [tf.nn.tanh]
+    tf_activations = [tf.nn.tanh] * num_directions
     if "activations" in node.attrs:
       activations = list(map(lambda x: x.lower(), node.attrs["activations"]))
       activation_alpha = node.attrs.get("activation_alpha", [None] * 4)
