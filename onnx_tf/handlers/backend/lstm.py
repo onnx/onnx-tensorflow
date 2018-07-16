@@ -195,9 +195,7 @@ class LSTM(RNNMixin, BackendHandler):
       h_fw = tf.expand_dims(state_fw[1], 0)
       h_bw = tf.expand_dims(state_bw[1], 0)
       h = tf.concat((h_fw, h_bw), axis=0)
-      output_fw = tf.expand_dims(output_fw, 1)
-      output_bw = tf.expand_dims(output_bw, 1)
-      output = tf.concat((output_fw, output_bw), axis=1)
+      output = tf.concat((output_fw, output_bw), axis=-1)
 
     return [output, h, c] if output_sequence == 0 else [h, c]
 
