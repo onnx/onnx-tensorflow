@@ -290,14 +290,12 @@ class GRU(RNNMixin, BackendHandler):
       else:
         cell_class = tf.nn.rnn_cell.GRUCell
 
-      print("Input to GRU: %s" % str(x.shape))
       outputs, states = cls.rnn(x, cell_class, cell_kwargs,
                                 rnn_kwargs, tf_activations, direction)
 
     if num_directions == 1:
       state = states[0]
       h = tf.expand_dims(state, 0)
-      # output = tf.expand_dims(outputs, 1)
       output = outputs
     else:
       state_fw = states[0][0]
