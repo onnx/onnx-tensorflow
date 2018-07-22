@@ -9,6 +9,7 @@ except ImportError:  # will be 3.x series
 import numpy as np
 import tensorflow as tf
 
+from onnx_tf.common import exception
 from onnx_tf.common import get_data_format
 from onnx_tf.common import get_perm_from_formats
 from onnx_tf.common import supports_device
@@ -60,13 +61,36 @@ class PoolMixin(object):
                                          kernel_shape, strides,
                                          [0] * spatial_size * 2)
 
-    if strict and count_include_pad == 0:
-      if pad is PAD_TF_INCOMPATIBLE:
-        return cls._compatibility_pool(node, input_dict, pooling_type)
-    else:
-      if pads != [0] * spatial_size * 2:
-        x = PadMixin.get_padding_as_op(x, pads)
-      pad = "VALID"
+    if pooling_type in ("AVG", "MAX"):
+      if strict and count_include_pad == 0:
+        if pad is PAD_TF_INCOMPATIBLE:
+          return cls._compatibility_pool(node, input_dict, pooling_type)
+      else:
+        if pads != [0] * spatial_size * 2:
+          x = PadMixin.get_padding_as_op(x, pads)
+        pad = "VALID"
+    elif pooling_type == "MAX_WITH_ARGMAX":
+      if pad in (None, PAD_TF_INCOMPATIBLE):
+        exception.OP_UNSUPPORTED_EXCEPT(
+            "MaxPoolWithArgmax with pad is None or incompatible mode",
+            "Tensorflow")
+      if x_rank != 4:
+        exception.OP_UNSUPPORTED_EXCEPT(
+            "MaxPoolWithArgmax with {}D input".format(x_rank), "Tensorflow")
+      if node.attrs.get("storage_order", 0) != 0:
+        exception.OP_UNSUPPORTED_EXCEPT(
+          "MaxPoolWithArgmax with column major".format(x_rank), "Tensorflow")
+
+      need_trans = storage_format != "NHWC"
+      if need_trans:
+        x = tf.transpose(x, perm=get_perm_from_formats(storage_format, "NHWC"))
+      pooled, argmax = pool_func(
+          x, [1] + kernel_shape + [1], padding=pad, strides=[1] + strides + [1])
+      if need_trans:
+        pooled = tf.transpose(
+            pooled, perm=get_perm_from_formats("NHWC", storage_format))
+
+      return [pooled, argmax]
 
     if support_cuda:
       pooled = pool_func(

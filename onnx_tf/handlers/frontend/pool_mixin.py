@@ -1,3 +1,5 @@
+from onnx_tf.common import exception
+
 from .conv_mixin import ConvMixin
 
 
@@ -15,7 +17,8 @@ class PoolMixin(object):
   def pool_op(cls, node, **kwargs):
     auto_pad = node.attr["padding"].decode("UTF-8")
     auto_pad = "SAME_UPPER" if auto_pad == "SAME" else auto_pad
-    data_format = node.attr["data_format"].decode("UTF-8")
+    data_format = kwargs.get("data_format",
+                             None) or node.attr["data_format"].decode("UTF-8")
     spatial_indices = [
         i for i in range(len(data_format)) if data_format[i] not in ["N", "C"]
     ]

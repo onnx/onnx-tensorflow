@@ -30,7 +30,7 @@ ______
 |Crop|N/A|
 |DepthToSpace|1|
 |Div|1, 6, 7|
-|Dropout|1, 6|
+|Dropout|1, 6, 7|
 |Elu|1, 6|
 |Equal|1, 7|
 |Exp|1, 6|
@@ -62,12 +62,12 @@ ______
 |LpNormalization|1|
 |LpPool|N/A|
 |MatMul|1|
-|Max|1, 6|
-|MaxPool|1|
+|Max|1, 6, 8|
+|MaxPool|1, 8|
 |MaxRoiPool|N/A|
-|Mean|1, 6|
+|Mean|1, 6, 8|
 |MeanVarianceNormalization|N/A|
-|Min|1, 6|
+|Min|1, 6, 8|
 |Mul|1, 6, 7|
 |Multinomial|N/A|
 |Neg|1, 6|
@@ -111,7 +111,7 @@ ______
 |Sqrt|1, 6|
 |Squeeze|1|
 |Sub|1, 6, 7|
-|Sum|1, 6, 7|
+|Sum|1, 6, 8|
 |Tan|7|
 |Tanh|1, 6|
 |ThresholdedRelu|1|
@@ -163,7 +163,8 @@ ______
 |logical_xor|1, 7|
 |mat_mul|1|
 |max|1|
-|max_pool|1|
+|max_pool|1, 8|
+|max_pool_with_argmax|8|
 |maximum|1, 6|
 |mean|1|
 |min|1|
