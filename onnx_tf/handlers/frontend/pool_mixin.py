@@ -1,5 +1,3 @@
-from onnx_tf.common import exception
-
 from .conv_mixin import ConvMixin
 
 

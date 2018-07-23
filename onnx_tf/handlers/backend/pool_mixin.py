@@ -70,7 +70,7 @@ class PoolMixin(object):
           x = PadMixin.get_padding_as_op(x, pads)
         pad = "VALID"
     elif pooling_type == "MAX_WITH_ARGMAX":
-      if pad in (None, PAD_TF_INCOMPATIBLE):
+      if pad is PAD_TF_INCOMPATIBLE:
         exception.OP_UNSUPPORTED_EXCEPT(
             "MaxPoolWithArgmax with pad is None or incompatible mode",
             "Tensorflow")
@@ -79,7 +79,7 @@ class PoolMixin(object):
             "MaxPoolWithArgmax with {}D input".format(x_rank), "Tensorflow")
       if node.attrs.get("storage_order", 0) != 0:
         exception.OP_UNSUPPORTED_EXCEPT(
-          "MaxPoolWithArgmax with column major".format(x_rank), "Tensorflow")
+          "MaxPoolWithArgmax with column major", "Tensorflow")
 
       need_trans = storage_format != "NHWC"
       if need_trans:
