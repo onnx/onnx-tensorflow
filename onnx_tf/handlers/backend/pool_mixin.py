@@ -78,8 +78,8 @@ class PoolMixin(object):
         exception.OP_UNSUPPORTED_EXCEPT(
             "MaxPoolWithArgmax with {}D input".format(x_rank), "Tensorflow")
       if node.attrs.get("storage_order", 0) != 0:
-        exception.OP_UNSUPPORTED_EXCEPT(
-          "MaxPoolWithArgmax with column major", "Tensorflow")
+        exception.OP_UNSUPPORTED_EXCEPT("MaxPoolWithArgmax with column major",
+                                        "Tensorflow")
 
       need_trans = storage_format != "NHWC"
       if need_trans:
@@ -89,6 +89,8 @@ class PoolMixin(object):
       if need_trans:
         pooled = tf.transpose(
             pooled, perm=get_perm_from_formats("NHWC", storage_format))
+        argmax = tf.transpose(
+            argmax, perm=get_perm_from_formats("NHWC", storage_format))
 
       return [pooled, argmax]
 
