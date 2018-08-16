@@ -187,7 +187,6 @@ frontend_opset_version = {
     'Not': [1],
     'Or': [1, 7],
     'PRelu': [],
-    'Pack': [1],
     'Pad': [1, 2],
     'ParametricSoftplus': [],
     'Pow': [1, 7],
@@ -232,7 +231,6 @@ frontend_opset_version = {
     'Tile': [6],
     'TopK': [1],
     'Transpose': [1],
-    'Unpack': [1],
     'Unsqueeze': [1],
     'Upsample': [],
     'Xor': [1, 7]

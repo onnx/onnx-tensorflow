@@ -92,7 +92,8 @@ def get_frontend_coverage():
     domain = handler.DOMAIN
     for tf_op in handler.TF_OP:
       _update_coverage(tf_coverage, domain, op_name_to_lower(tf_op), versions)
-    _update_coverage(onnx_coverage, domain, handler.ONNX_OP, versions)
+    if handler.ONNX_OP:
+      _update_coverage(onnx_coverage, domain, handler.ONNX_OP, versions)
   return onnx_coverage, tf_coverage
 
 

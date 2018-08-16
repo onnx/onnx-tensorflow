@@ -1,10 +1,8 @@
 from onnx_tf.common import get_unique_suffix
 from onnx_tf.handlers.frontend_handler import FrontendHandler
-from onnx_tf.handlers.handler import onnx_op
 from onnx_tf.handlers.handler import tf_op
 
 
-@onnx_op("Pack")
 @tf_op("Pack")
 class Pack(FrontendHandler):
 
