@@ -34,6 +34,7 @@ ______
 |Elu|1, 6|
 |Equal|1, 7|
 |Exp|1, 6|
+|Expand|8|
 |Flatten|1|
 |Floor|1, 6|
 |GRU|1, 3, 7|
