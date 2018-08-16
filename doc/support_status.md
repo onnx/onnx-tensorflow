@@ -34,6 +34,7 @@ ______
 |Elu|1, 6|
 |Equal|1, 7|
 |Exp|1, 6|
+|Expand|N/A|
 |Flatten|1|
 |Floor|1, 6|
 |GRU|1, 3, 7|
@@ -171,6 +172,7 @@ ______
 |minimum|1, 6|
 |mul|1, 6, 7|
 |neg|1, 6|
+|pack|1|
 |pad|1, 2|
 |pow|1, 7|
 |prod|1|
@@ -199,3 +201,4 @@ ______
 |tile|6|
 |top_k_v2|1|
 |transpose|1|
+|unpack|1|

@@ -27,6 +27,7 @@ backend_opset_version = {
     'Elu': [1, 6],
     'Equal': [1, 7],
     'Exp': [1, 6],
+    'Expand': [],
     'Flatten': [1],
     'Floor': [1, 6],
     'GRU': [1, 3, 7],
@@ -145,6 +146,7 @@ frontend_opset_version = {
     'Elu': [],
     'Equal': [1, 7],
     'Exp': [1, 6],
+    'Expand': [],
     'Flatten': [],
     'Floor': [1, 6],
     'GRU': [],
@@ -185,6 +187,7 @@ frontend_opset_version = {
     'Not': [1],
     'Or': [1, 7],
     'PRelu': [],
+    'Pack': [1],
     'Pad': [1, 2],
     'ParametricSoftplus': [],
     'Pow': [1, 7],
@@ -229,6 +232,7 @@ frontend_opset_version = {
     'Tile': [6],
     'TopK': [1],
     'Transpose': [1],
+    'Unpack': [1],
     'Unsqueeze': [1],
     'Upsample': [],
     'Xor': [1, 7]
@@ -278,6 +282,7 @@ frontend_tf_opset_version = {
     'minimum': [1, 6],
     'mul': [1, 6, 7],
     'neg': [1, 6],
+    'pack': [1],
     'pad': [1, 2],
     'pow': [1, 7],
     'prod': [1],
@@ -305,5 +310,6 @@ frontend_tf_opset_version = {
     'tanh': [1, 6],
     'tile': [6],
     'top_k_v2': [1],
-    'transpose': [1]
+    'transpose': [1],
+    'unpack': [1]
 }
