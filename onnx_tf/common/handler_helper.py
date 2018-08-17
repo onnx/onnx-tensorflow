@@ -25,7 +25,7 @@ def get_all_frontend_handlers(opset_dict):
     handler.VERSION = version
 
     since_version = 1
-    if defs.has(handler.ONNX_OP, domain=handler.DOMAIN):
+    if handler.ONNX_OP and defs.has(handler.ONNX_OP, domain=handler.DOMAIN):
       since_version = defs.get_schema(
           handler.ONNX_OP, domain=handler.DOMAIN,
           max_inclusive_version=version).since_version
@@ -34,7 +34,8 @@ def get_all_frontend_handlers(opset_dict):
                     "Can't check specification by ONNX. "
                     "Please set should_check flag to False "
                     "when call make_node method in handler.".format(
-                        handler.ONNX_OP, handler.DOMAIN or "ai.onnx"))
+                        handler.ONNX_OP or "Undefined", handler.DOMAIN or
+                        "ai.onnx"))
     handler.SINCE_VERSION = since_version
 
     for tf_op in handler.TF_OP:
