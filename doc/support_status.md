@@ -59,7 +59,6 @@ ______
 |Log|1, 6|
 |LogSoftmax|1|
 |Loop|N/A|
-|LoopIndexTensor|N/A|
 |LpNormalization|1|
 |LpPool|N/A|
 |MatMul|1|
@@ -67,7 +66,7 @@ ______
 |MaxPool|1, 8|
 |MaxRoiPool|N/A|
 |Mean|1, 6, 8|
-|MeanVarianceNormalization|N/A|
+|MeanVarianceNormalization|1|
 |Min|1, 6, 8|
 |Mul|1, 6, 7|
 |Multinomial|N/A|
@@ -98,6 +97,7 @@ ______
 |Reshape|1, 5|
 |Scale|N/A|
 |ScaledTanh|N/A|
+|Scan|N/A|
 |Selu|1, 6|
 |Shape|1|
 |Sigmoid|1, 6|
