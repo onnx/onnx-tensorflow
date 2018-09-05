@@ -5,13 +5,9 @@ from .pool_mixin import PoolMixin
 
 
 @onnx_op("MaxPool")
-@tf_op("MaxPool")
-class MaxPool(PoolMixin, FrontendHandler):
-
-  @classmethod
-  def version_1(cls, node, **kwargs):
-    return cls.pool_op(node, **kwargs)
+@tf_op("MaxPoolWithArgmax")
+class MaxPoolWithArgmax(PoolMixin, FrontendHandler):
 
   @classmethod
   def version_8(cls, node, **kwargs):
-    return cls.pool_op(node, **kwargs)
+    return cls.pool_op(node, data_format="NHWC", **kwargs)

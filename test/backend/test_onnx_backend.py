@@ -24,6 +24,9 @@ backend_test.exclude(r'[a-z,_]*GLU[a-z,_]*')
 backend_test.exclude(r'[a-z,_]*dilated_strided[a-z,_]*')
 backend_test.exclude(r'[a-z,_]*Conv2d_dilated[a-z,_]*')
 
+# TF does not have column major max_pool_with_argmax
+backend_test.exclude(r'[a-z,_]*maxpool_with_argmax_2d_precomputed_strides[a-z,_]*')
+
 # PRelu OnnxBackendPyTorchConvertedModelTest has wrong dim for broadcasting
 backend_test.exclude(r'[a-z,_]*PReLU_[0-9]d_multiparam[a-z,_]*')
 

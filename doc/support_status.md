@@ -30,10 +30,11 @@ ______
 |Crop|N/A|
 |DepthToSpace|1|
 |Div|1, 6, 7|
-|Dropout|1, 6|
+|Dropout|1, 6, 7|
 |Elu|1, 6|
 |Equal|1, 7|
 |Exp|1, 6|
+|Expand|8|
 |Flatten|1|
 |Floor|1, 6|
 |GRU|1, 3, 7|
@@ -49,7 +50,7 @@ ______
 |Hardmax|1|
 |Identity|1|
 |If|N/A|
-|ImageScaler|N/A|
+|ImageScaler|1|
 |InstanceNormalization|1, 6|
 |LRN|1|
 |LSTM|1, 7|
@@ -58,16 +59,15 @@ ______
 |Log|1, 6|
 |LogSoftmax|1|
 |Loop|N/A|
-|LoopIndexTensor|N/A|
 |LpNormalization|1|
 |LpPool|N/A|
 |MatMul|1|
-|Max|1, 6|
-|MaxPool|1|
+|Max|1, 6, 8|
+|MaxPool|1, 8|
 |MaxRoiPool|N/A|
-|Mean|1, 6|
-|MeanVarianceNormalization|N/A|
-|Min|1, 6|
+|Mean|1, 6, 8|
+|MeanVarianceNormalization|1|
+|Min|1, 6, 8|
 |Mul|1, 6, 7|
 |Multinomial|N/A|
 |Neg|1, 6|
@@ -97,6 +97,7 @@ ______
 |Reshape|1, 5|
 |Scale|N/A|
 |ScaledTanh|N/A|
+|Scan|N/A|
 |Selu|1, 6|
 |Shape|1|
 |Sigmoid|1, 6|
@@ -111,7 +112,7 @@ ______
 |Sqrt|1, 6|
 |Squeeze|1|
 |Sub|1, 6, 7|
-|Sum|1, 6, 7|
+|Sum|1, 6, 8|
 |Tan|7|
 |Tanh|1, 6|
 |ThresholdedRelu|1|
@@ -163,13 +164,15 @@ ______
 |logical_xor|1, 7|
 |mat_mul|1|
 |max|1|
-|max_pool|1|
+|max_pool|1, 8|
+|max_pool_with_argmax|8|
 |maximum|1, 6|
 |mean|1|
 |min|1|
 |minimum|1, 6|
 |mul|1, 6, 7|
 |neg|1, 6|
+|pack|1|
 |pad|1, 2|
 |pow|1, 7|
 |prod|1|
@@ -183,6 +186,7 @@ ______
 |shape|1|
 |sigmoid|1, 6|
 |sin|7|
+|slice|1|
 |softmax|1|
 |softplus|1|
 |softsign|1|
@@ -197,3 +201,4 @@ ______
 |tile|6|
 |top_k_v2|1|
 |transpose|1|
+|unpack|1|

@@ -80,18 +80,18 @@ class ConvMixin(BroadcastMixin):
 
         # calculate output shape
         output_shape = node.attrs.get("output_shape", None)
+        conv_output_shape = [x_shape[storage_format.find("N")]]
         if output_shape is None:
-          conv_output_shape = [x_shape[storage_format.find("N")]] + [
+          conv_output_shape += [
               strides[i] * (x_spatial_shape[i] - 1) + weights_shape[i]
               for i in list(range(spatial_size))
           ]
-          conv_output_shape.insert(compute_c_idx, weights_shape[-2])
         else:
-          conv_output_shape = [output_shape[0]] + [
+          conv_output_shape += [
               s + pads[i] + pads[spatial_size + i]
-              for i, s in enumerate(output_shape[2:])
+              for i, s in enumerate(output_shape[-2:])
           ]
-          conv_output_shape.insert(compute_c_idx, output_shape[1])
+        conv_output_shape.insert(compute_c_idx, weights_shape[-2])
 
         # make strides to match input rank
         strides_full = [1] + strides

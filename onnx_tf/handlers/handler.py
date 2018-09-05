@@ -4,6 +4,7 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import inspect
+import warnings
 
 from onnx import defs
 
@@ -28,7 +29,7 @@ class Handler(object):
   @classmethod
   def check_cls(cls):
     if not cls.ONNX_OP:
-      raise ValueError(
+      warnings.warn(
           "{} doesn't have ONNX_OP. "
           "Please use Handler.onnx_op decorator to register ONNX_OP.".format(
               cls.__name__))

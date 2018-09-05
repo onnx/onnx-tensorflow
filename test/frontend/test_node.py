@@ -117,6 +117,7 @@ test_cases = [
 ("test_log_softmax", tf.nn.log_softmax, "LogSoftmax", [get_rnd([10, 10])], {}),
 ("test_or", tf.logical_or, "LogicalOr", [get_rnd([10, 10], dtype=np.bool_), get_rnd([10, 10], dtype=np.bool_)], {}),
 ("test_pow", tf.pow, "Pow", [get_rnd([10, 10]), get_rnd([10, 10])], {}),
+("test_pack", tf.stack, "stack_1", [[get_rnd([3, 4]), get_rnd([3, 4])]], {}),
 ("test_pad", tf.pad, "Pad", [get_rnd([2, 3]), [[1, 1,], [2, 2]]], {"mode": "constant"}),
 ("test_random_normal", tf.random_normal, "random_normal/RandomStandardNormal", [], {"shape": [100, 100], "mean": 0.0, "stddev": 1.0, "dtype": tf.float32, "seed": 42}, {"call_only": True}),
 ("test_random_uniform", tf.random_uniform, "random_uniform", [], {"shape": [100, 100], "minval": 0.0, "maxval": 1.0, "dtype": tf.float32, "seed": 42}, {"call_only": True}),
@@ -131,6 +132,7 @@ test_cases = [
 ("test_selu", tf.nn.selu, "Selu", [get_rnd([10, 10])], {}),
 ("test_shape", tf.shape, "Shape", [get_rnd([1, 2, 3, 4])], {}),
 ("test_sigmoid", tf.sigmoid, "Sigmoid", [get_rnd([10, 10])], {}),
+("test_slice", tf.slice, "Slice", [get_rnd([5, 6, 7])], {"begin": [1, 0, 0], "size": [1, 1, 3]}),
 ("test_softmax", tf.nn.softmax, "Softmax", [get_rnd([10, 10])], {}),
 ("test_softplus", tf.nn.softplus, "Softplus", [get_rnd([10, 10])], {}),
 ("test_softsign", tf.nn.softsign, "Softsign", [get_rnd([10, 10])], {}),
@@ -143,6 +145,7 @@ test_cases = [
 ("test_top_k", tf.nn.top_k, "TopKV2", [get_rnd([10, 10, 10, 10])], {"k": 3}),
 # Use reverse to test ignore_unimplemented
 ("test_unimplemented", tf.reverse, "ReverseV2", [get_rnd([1, 2, 3, 4]), [3]], {}, {"ignore_unimplemented": True}),
+("test_unpack", tf.unstack, "unstack", [get_rnd([2, 3, 4])], {}),
 ("test_xor", tf.logical_xor, "LogicalXor", [get_rnd([10, 10], dtype=np.bool_), get_rnd([10, 10], dtype=np.bool_)], {}),
 ("test_transpose", tf.transpose, "transpose", [get_rnd([2, 10])], {"perm":[1, 0]}),
 ("test_concat", tf.concat, "concat", [[get_rnd([1, 10]),get_rnd([10, 10]),get_rnd([20, 10])], 0], {})

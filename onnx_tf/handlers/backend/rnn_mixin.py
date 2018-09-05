@@ -32,7 +32,7 @@ class RNNMixin(object):
     if direction == "bidirectional":
       cell_kwargs["activation"] = activations[1]
       rnn_cell_bw = [cell_class(**cell_kwargs)]
-      cell_bw = tf.nn.rnn_cell.MultiRNNCell([rnn_cell_bw])
+      cell_bw = tf.nn.rnn_cell.MultiRNNCell(rnn_cell_bw)
 
     if direction == "forward":
       outputs, states = tf.nn.dynamic_rnn(cell_fw, x, **rnn_kwargs)
