@@ -36,7 +36,6 @@ class BiasAdd(ArithmeticMixin, FrontendHandler):
       # to facilitate broadcasting.
       num_sp_dim = len(data_format) - 2
       unsqueeze_axes = [i + 1 for i in range(num_sp_dim)]
-      print(unsqueeze_axes)
       reshape_node = cls.make_node_from_tf_node(
           node, [node.inputs[1]], [node.inputs[1] + unsqueeze_suffix],
           axes=unsqueeze_axes,
