@@ -55,37 +55,45 @@ class TensorflowBackend(Backend):
   """
 
   @classmethod
-  def prepare(cls, model, device='CPU', **kwargs):
-    """Prepare an ONNX model for Tensorflow Backend
+  def prepare(cls, model, device='CPU', strict=True, **kwargs):
+    """Prepare an ONNX model for Tensorflow Backend.
 
     This function converts an ONNX model to an internel representation
     of the computational graph called TensorflowRep and returns
     the converted representation.
 
-    :param model: the ONNX model to be converted
-    :param device: the device to execute this model on
+    :param model: The ONNX model to be converted.
+    :param device: The device to execute this model on.
+    :param strict: Whether to enforce semantic equivalence between the original model
+      and the converted tensorflow model, defaults to True (yes, enforce semantic equivalence).
+      Changing to False is strongly discouraged.
+      Currently, the strict flag only affects the behavior of MaxPool and AveragePool ops.
 
-    :returns: a TensorflowRep class object representing the ONNX model
+    :returns: A TensorflowRep class object representing the ONNX model
     """
     super(TensorflowBackend, cls).prepare(model, device, **kwargs)
 
-    return cls.onnx_model_to_tensorflow_rep(model)
+    return cls.onnx_model_to_tensorflow_rep(model, strict)
 
   @classmethod
-  def onnx_model_to_tensorflow_rep(cls, model):
+  def onnx_model_to_tensorflow_rep(cls, model, strict):
     """ Convert ONNX model to TensorflowRep.
 
     :param model: ONNX ModelProto object.
+    :param strict: whether to enforce semantic equivalence between the original model
+      and the converted tensorflow model.
     :return: TensorflowRep object.
     """
-    return cls._onnx_graph_to_tensorflow_rep(model.graph, model.opset_import)
+    return cls._onnx_graph_to_tensorflow_rep(model.graph, model.opset_import, strict)
 
   @classmethod
-  def _onnx_graph_to_tensorflow_rep(cls, graph_def, opset):
+  def _onnx_graph_to_tensorflow_rep(cls, graph_def, opset, strict):
     """ Convert ONNX graph to TensorflowRep.
 
     :param graph_def: ONNX GraphProto object.
     :param opset: ONNX OperatorSetIdProto list.
+    :param strict: whether to enforce semantic equivalence between the original model
+      and the converted tensorflow model.
     :return: TensorflowRep object.
     """
     handlers = cls._get_handlers(opset)
@@ -130,7 +138,7 @@ class TensorflowBackend(Backend):
       for node in graph_def.node:
         onnx_node = OnnxNode(node)
         output_ops = cls._onnx_node_to_tensorflow_op(
-            onnx_node, tensor_dict, handlers, opset=opset)
+            onnx_node, tensor_dict, handlers, opset=opset, strict=strict)
         curr_node_output_map = dict(zip(onnx_node.outputs, output_ops))
         tensor_dict.update(curr_node_output_map)
 
@@ -207,7 +215,8 @@ class TensorflowBackend(Backend):
                                   node,
                                   tensor_dict,
                                   handlers=None,
-                                  opset=None):
+                                  opset=None,
+                                  strict=True):
     """
     Convert onnx node to tensorflow op.
 
@@ -215,14 +224,16 @@ class TensorflowBackend(Backend):
       node: Onnx node object.
       tensor_dict: Tensor dict of graph.
       opset: Opset version of the operator set. Default 0 means using latest version.
-
+      strict: whether to enforce semantic equivalence between the original model
+        and the converted tensorflow model, defaults to True (yes, enforce semantic equivalence).
+        Changing to False is strongly discouraged.
     Returns:
       Tensorflow op
     """
     handlers = handlers or cls._get_handlers(opset)
     handler = handlers[node.domain].get(node.op_type, None)
     if handler:
-      return handler.handle(node, tensor_dict=tensor_dict)
+      return handler.handle(node, tensor_dict=tensor_dict, strict=strict)
     else:
       exception.OP_UNIMPLEMENTED_EXCEPT(node.op_type)
 

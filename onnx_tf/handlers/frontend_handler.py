@@ -27,7 +27,7 @@ class FrontendHandler(Handler):
   def check_cls(cls):
     super(FrontendHandler, cls).check_cls()
     if not cls.TF_OP:
-      raise ValueError(
+      warnings.warn(
           "{} doesn't have TF_OP. "
           "Please use Handler.tf_op decorator to register TF_OP.".format(
               cls.__name__))

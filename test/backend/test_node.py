@@ -127,16 +127,13 @@ class TestNode(unittest.TestCase):
         "BatchNormalization", ["X", "scale", "bias", "mean", "var"], ["Y"],
         epsilon=0.001)
     x_shape = [3, 5, 4, 2]
-    momentum = 0.9
     param_shape = [5]
     _param_shape = [1, 5, 1, 1]
     x = self._get_rnd(x_shape, 0, 1)
     m = self._get_rnd(param_shape, 0, 1)
     _m = m.reshape(_param_shape)
-    _m = _m * momentum + np.mean(x, axis=0) * (1 - momentum)
     v = self._get_rnd(param_shape, 0, 1)
     _v = v.reshape(_param_shape)
-    _v = _v * momentum + np.var(x, axis=0) * (1 - momentum)
     scale = self._get_rnd(param_shape, 0, 1)
     _scale = scale.reshape(_param_shape)
     bias = self._get_rnd(param_shape, 0, 1)
@@ -393,6 +390,26 @@ class TestNode(unittest.TestCase):
             sum += x[i1][i2][j1][j2]
         test_output[i1][i2][0][0] = sum / 6.
     np.testing.assert_almost_equal(output["Y"], test_output)
+
+  def test_image_sacler(self):
+    # Input:  (N x C x H x W), where N is the batch size,
+    # C is the number of channels, and H and W are the height
+    # and the width of the data
+    # Scale: (flout, default 1.0) the scale to apply
+    # Bias: applied to each channel, same size as C
+    # Output has same shape and type as input
+    x = self._get_rnd([1, 3, 224, 224])
+    #random distribution over [0,1), so add 0.1
+    scale = np.random.rand(1)[0] + 0.1
+    bias = np.random.rand(3)
+    node_def = helper.make_node(
+        "ImageScaler", ["X"], ["Y"], scale=scale, bias=bias)
+    output = run_node(node_def, [x])
+    test_out = np.multiply(x, scale)
+    test_out = np.transpose(test_out, [0, 2, 3, 1])
+    test_out = np.add(test_out, bias)
+    test_out = np.transpose(test_out, [0, 3, 1, 2])
+    np.testing.assert_almost_equal(output["Y"], test_out)
 
   def test_global_lp_pool(self):
     #   Image case:  (N x C x H x W), where N is the batch size,
