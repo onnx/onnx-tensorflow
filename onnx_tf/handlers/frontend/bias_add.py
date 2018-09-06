@@ -1,9 +1,10 @@
+import copy
+
 from onnx_tf.common import get_unique_suffix
 from onnx_tf.handlers.frontend_handler import FrontendHandler
 from onnx_tf.handlers.handler import onnx_op
 from onnx_tf.handlers.handler import tf_op
 from .math_mixin import ArithmeticMixin
-import copy
 
 
 @onnx_op("Add")
@@ -31,7 +32,7 @@ class BiasAdd(ArithmeticMixin, FrontendHandler):
     axis = 1 if channel_first else -1
 
     unsqueeze_suffix = get_unique_suffix()
-    if (axis == 1):
+    if axis == 1:
       # In this case, we manually unsqueeze the bias term
       # to facilitate broadcasting.
       num_sp_dim = len(data_format) - 2
