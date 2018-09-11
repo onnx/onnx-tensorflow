@@ -16,7 +16,7 @@ def tf2onnx(dtype):
   if isinstance(dtype, Number):
     # Check if dtype is DT_STRING as defined
     # https://github.com/tensorflow/tensorflow/blob/36d7b12357df667dcd427c070e21779ed83f4ec9/tensorflow/core/framework/types.proto#L24
-    if tf_dype is 7:
+    if dtype is 7:
       return TensorProto.String
     else:
       tf_dype = tf.as_dtype(dtype)
