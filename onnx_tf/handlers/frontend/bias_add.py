@@ -41,10 +41,10 @@ class BiasAdd(ArithmeticMixin, FrontendHandler):
           node, [node.inputs[1]], [node.inputs[1] + "_" + unsqueeze_suffix],
           axes=unsqueeze_axes,
           op_type="Unsqueeze",
-          name=node.inputs[1] + unsqueeze_suffix)
+          name=node.inputs[1] + "_" + unsqueeze_suffix)
       node_update_input = copy.deepcopy(node)
       node_update_input.inputs = [
-          node.inputs[0], node.inputs[1] + unsqueeze_suffix
+          node.inputs[0], node.inputs[1] + "_" + unsqueeze_suffix
       ]
       return [reshape_node, cls.arithmetic_op(node_update_input, **kwargs)]
     else:
