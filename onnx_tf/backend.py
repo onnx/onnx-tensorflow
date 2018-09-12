@@ -14,6 +14,7 @@ except ImportError:  # will be 3.x series
 
 from onnx import defs
 from onnx import numpy_helper
+from onnx import checker
 from onnx.backend.base import Backend
 from onnx.backend.base import Device
 from onnx.backend.base import namedtupledict
@@ -84,7 +85,16 @@ class TensorflowBackend(Backend):
       and the converted tensorflow model.
     :return: TensorflowRep object.
     """
-    return cls._onnx_graph_to_tensorflow_rep(model.graph, model.opset_import, strict)
+
+    # Models with IR_VERSION less than 3 does not have opset_import set.
+    # We default to minimum opset, this behavior is consistent with
+    # onnx checker.
+    # c.f. https://github.com/onnx/onnx/blob/427ac0c1b792363d373e3d7e4eef97fa46458420/onnx/checker.cc#L478
+    if model.ir_version < 3:
+      opset_import = [make_opsetid(defs.ONNX_DOMAIN, 1)]
+    else:
+      opset_import = model.opset_import
+    return cls._onnx_graph_to_tensorflow_rep(model.graph, opset_import, strict)
 
   @classmethod
   def _onnx_graph_to_tensorflow_rep(cls, graph_def, opset, strict):
