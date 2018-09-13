@@ -14,21 +14,24 @@ class BiasAdd(ArithmeticMixin, FrontendHandler):
   @classmethod
   def version_1(cls, node, **kwargs):
     data_format = node.attr.get("data_format", "NHWC")
-    channel_first = data_format[1] == "C"
+    channel_first = chr(data_format[1]) == "C" if isinstance(
+        data_format[1], int) else data_format[1] == "C"
     axis = 1 if channel_first else -1
     return cls.arithmetic_op(node, axis=axis, **kwargs)
 
   @classmethod
   def version_6(cls, node, **kwargs):
     data_format = node.attr.get("data_format", "NHWC")
-    channel_first = data_format[1] == "C"
+    channel_first = chr(data_format[1]) == "C" if isinstance(
+        data_format[1], int) else data_format[1] == "C"
     axis = 1 if channel_first else -1
     return cls.arithmetic_op(node, axis=axis, **kwargs)
 
   @classmethod
   def version_7(cls, node, **kwargs):
     data_format = node.attr.get("data_format", "NHWC")
-    channel_first = data_format[1] == "C"
+    channel_first = chr(data_format[1]) == "C" if isinstance(
+        data_format[1], int) else data_format[1] == "C"
     axis = 1 if channel_first else -1
 
     unsqueeze_suffix = get_unique_suffix()
@@ -44,7 +47,7 @@ class BiasAdd(ArithmeticMixin, FrontendHandler):
           name=node.inputs[1] + unsqueeze_suffix)
       node_update_input = copy.deepcopy(node)
       node_update_input.inputs = [
-          node.inputs[0], node.inputs[1] + unsqueeze_suffix
+          node.inputs[0], node.inputs[1] + "_" + unsqueeze_suffix
       ]
       return [reshape_node, cls.arithmetic_op(node_update_input, **kwargs)]
     else:
