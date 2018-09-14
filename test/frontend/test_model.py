@@ -143,8 +143,8 @@ def create_test(test_model):
 
   return do_test_expected
 
-
-with open("test_model.yaml", 'r') as config:
+dir_path = os.path.dirname(os.path.realpath(__file__))
+with open(dir_path + "/test_model.yaml", 'r') as config:
   try:
     for test_model in yaml.safe_load_all(config):
       print(test_model)
