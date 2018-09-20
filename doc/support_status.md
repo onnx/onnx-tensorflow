@@ -24,6 +24,7 @@ ______
 |Concat|1, 4|
 |Constant|1|
 |ConstantFill|1|
+|ConstantLike|9|
 |Conv|1|
 |ConvTranspose|1|
 |Cos|7|
@@ -31,6 +32,7 @@ ______
 |DepthToSpace|1|
 |Div|1, 6, 7|
 |Dropout|1, 6, 7|
+|DynamicSlice|N/A|
 |Elu|1, 6|
 |Equal|1, 7|
 |Exp|1, 6|
