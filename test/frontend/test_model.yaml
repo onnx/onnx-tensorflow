@@ -3,6 +3,7 @@ asset_url: https://s3-api.us-geo.objectstorage.softlayer.net/onnx-tensorflow/pub
 input_name: Placeholder
 graph_proto_path: tutorial_assets/graph.proto
 checkpoint_path: tutorial_assets/ckpt/model.ckpt
+devices: [CUDA]
 inputs:
   Placeholder: [1, 784]
 outputs:

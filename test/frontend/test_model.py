@@ -4,22 +4,24 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import unittest
-import numpy as np
-import tensorflow as tf
 import yaml
 import sys, os, tempfile
 import zipfile
-
-from onnx_tf.frontend import tensorflow_graph_to_onnx_model
-from onnx_tf.backend import prepare
-from tensorflow.python.tools import freeze_graph
-
+import logging
 if sys.version_info >= (3,):
   import urllib.request as urllib2
   import urllib.parse as urlparse
 else:
   import urllib2
   import urlparse
+
+import numpy as np
+import tensorflow as tf
+from tensorflow.python.tools import freeze_graph
+
+from onnx_tf.frontend import tensorflow_graph_to_onnx_model
+from onnx_tf.backend import prepare
+from onnx_tf.common import supports_device
 
 
 def get_rnd(shape, low=-1.0, high=1.0, dtype=np.float32, seed=42):
@@ -69,7 +71,6 @@ def download_and_extract(url, dest=None):
       if file_size:
         status += "   [{0:6.2f}%]".format(file_size_dl * 100 / file_size)
       status += chr(13)
-      print(status, end="")
     print()
 
   zip = zipfile.ZipFile(filename)
@@ -113,7 +114,6 @@ def create_test(test_model):
     tf_feed_dict = {}
     # Backend feed dict is keyed by tensor names.
     backend_feed_dict = {}
-    print(test_model["inputs"])
     for name, shape in test_model["inputs"].iteritems():
       x_val = get_rnd(shape)
       tf_feed_dict[graph.get_tensor_by_name(name + ":0")] = x_val
@@ -126,8 +126,8 @@ def create_test(test_model):
       backend_output_names.append(name)
 
     with tf.Session(graph=graph) as sess:
-      for op in graph.get_operations():
-        print(op.name)
+      logging.debug("ops in the graph:")
+      logging.debug(graph.get_operations())
       output_tf = sess.run(tf_output_tensors, feed_dict=tf_feed_dict)
 
     onnx_model = tensorflow_graph_to_onnx_model(graph_def, backend_output_names)
@@ -147,10 +147,13 @@ dir_path = os.path.dirname(os.path.realpath(__file__))
 with open(dir_path + "/test_model.yaml", 'r') as config:
   try:
     for test_model in yaml.safe_load_all(config):
-      print(test_model)
-      test_method = create_test(test_model)
-      test_method.__name__ = str("test_" + test_model["name"])
-      setattr(TestModel, test_method.__name__, test_method)
+      for device in test_model["devices"]:
+        if supports_device(device):
+          test_method = create_test(test_model)
+          test_name_parts = ["test", test_model["name"], device]
+          test_name = str("_".join(map(str, test_name_parts)))
+          test_method.__name__ = test_name
+          setattr(TestModel, test_method.__name__, test_method)
   except yaml.YAMLError as exception:
     print(exception)
 
