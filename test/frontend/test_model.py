@@ -143,6 +143,7 @@ def create_test(test_model):
 
   return do_test_expected
 
+
 dir_path = os.path.dirname(os.path.realpath(__file__))
 with open(dir_path + "/test_model.yaml", 'r') as config:
   try:
