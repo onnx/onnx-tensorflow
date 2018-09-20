@@ -114,7 +114,7 @@ def create_test(test_model):
     tf_feed_dict = {}
     # Backend feed dict is keyed by tensor names.
     backend_feed_dict = {}
-    for name, shape in test_model["inputs"].iteritems():
+    for name, shape in test_model["inputs"].items():
       x_val = get_rnd(shape)
       tf_feed_dict[graph.get_tensor_by_name(name + ":0")] = x_val
       backend_feed_dict[name] = x_val
