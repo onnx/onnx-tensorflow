@@ -26,10 +26,10 @@ from onnx_tf.common import supports_device
 
 def get_rnd(shape, low=-1.0, high=1.0, dtype=np.float32, seed=42):
   np.random.seed(seed)
-  if (dtype == np.float32):
+  if dtype == np.float32:
     return (np.random.uniform(low, high,
                               np.prod(shape)).reshape(shape).astype(np.float32))
-  elif (dtype == np.int32):
+  elif dtype == np.int32:
     return (np.random.uniform(low, high,
                               np.prod(shape)).reshape(shape).astype(np.int32))
   elif dtype == np.bool_:
