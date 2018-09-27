@@ -57,7 +57,7 @@ ______
 |LRN|1|
 |LSTM|1, 7|
 |LeakyRelu|1, 6|
-|Less|1, 7|
+|Less|1, 7, 9|
 |Log|1, 6|
 |LogSoftmax|1|
 |Loop|N/A|
@@ -157,7 +157,7 @@ ______
 |fused_batch_norm|1, 6, 7|
 |greater|1, 7|
 |identity|1|
-|less|1, 7|
+|less|1, 7, 9|
 |log|1, 6|
 |log_softmax|1|
 |logical_and|1, 7|
