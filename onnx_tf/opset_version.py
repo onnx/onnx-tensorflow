@@ -17,7 +17,7 @@ backend_opset_version = {
     'Concat': [1, 4],
     'Constant': [1],
     'ConstantFill': [1],
-    'ConstantLike': [],
+    'ConstantLike': [9],
     'Conv': [1],
     'ConvTranspose': [1],
     'Cos': [7],
