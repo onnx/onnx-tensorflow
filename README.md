@@ -21,6 +21,7 @@ Because users often have their own preferences for which variant of Tensorflow t
 
 ## To test:
 For backend, run `python -m unittest discover test`.
+Warning: This will download several large neural networks and may take several minutes.
 
 ## Example:
 In this example, we will define and run a Relu node and print the result.
