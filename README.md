@@ -21,7 +21,7 @@ Because users often have their own preferences for which variant of Tensorflow t
 
 ## To test:
 For backend, run `python -m unittest discover test`.
-Warning: This will download several large neural networks and may take several minutes.
+Testing requires significant resources ..., but nonetheless, we highly recommend that users run through the complete test suite before deploying onnx-tf. The complete test suite typically takes between 15 and 45 minutes, depending on hardware configurations.
 
 ## Example:
 In this example, we will define and run a Relu node and print the result.
