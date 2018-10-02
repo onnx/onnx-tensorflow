@@ -20,7 +20,8 @@ To install the latest version of ONNX-TF via pip, run `pip install onnx-tf`.
 Because users often have their own preferences for which variant of Tensorflow to install (i.e., a GPU version instead of a CPU version), we do not explicitly require tensorflow in the installation script. It is therefore users' responsibility to ensure that the proper variant of Tensorflow is available to ONNX-TF. Moreoever, we require Tensorflow version >= 1.5.0.
 
 ## To test:
-For backend, run `python -m unittest discover test`.
+To perfom unit tests, run `python -m unittest discover test`.
+Testing requires significant hardware resources, but nonetheless, we highly recommend that users run through the complete test suite before deploying onnx-tf. The complete test suite typically takes between 15 and 45 minutes to complete, depending on hardware configurations.
 
 ## Example:
 In this example, we will define and run a Relu node and print the result.
