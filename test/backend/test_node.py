@@ -306,7 +306,9 @@ class TestNode(unittest.TestCase):
 
   def test_dynamic_slice(self):
     if defs.onnx_opset_version() < 9:
-      return
+      raise unittest.SkipTest(
+          "ONNX version {} doesn't support DynamicSlice"
+              .format(defs.onnx_opset_version()))
     axes = np.array([0, 1], dtype=np.long)
     starts = np.array([1, 0], dtype=np.long)
     ends = np.array([2, 3], dtype=np.long)
