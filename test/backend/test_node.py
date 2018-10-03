@@ -144,26 +144,23 @@ class TestNode(unittest.TestCase):
 
   def test_cast(self):
     if legacy_onnx_pre_1_2() or legacy_opset_pre_6():
-      test_cases = [("FLOAT", tf.float32), ("UINT8", tf.uint8),
-                    ("INT8", tf.int8), ("UINT16", tf.uint16), ("INT16",
-                                                               tf.int16),
+      test_cases = [("FLOAT", tf.float32), ("UINT8", tf.uint8), ("INT8",
+                                                                 tf.int8),
+                    ("UINT16", tf.uint16), ("INT16", tf.int16),
                     ("INT32", tf.int32), ("INT64", tf.int64), ("BOOL", tf.bool),
                     ("FLOAT16", tf.float16), ("DOUBLE", tf.float64),
                     ("COMPLEX64", tf.complex64), ("COMPLEX128", tf.complex128)]
     else:
-      test_cases = [(TensorProto.FLOAT,
-                     tf.float32), (TensorProto.UINT8,
-                                   tf.uint8), (TensorProto.INT8, tf.int8),
-                    (TensorProto.UINT16,
-                     tf.uint16), (TensorProto.INT16,
-                                  tf.int16), (TensorProto.INT32, tf.int32),
-                    (TensorProto.INT64,
-                     tf.int64), (TensorProto.BOOL,
-                                 tf.bool), (TensorProto.FLOAT16, tf.float16),
-                    (TensorProto.DOUBLE,
-                     tf.float64), (TensorProto.COMPLEX64,
-                                   tf.complex64), (TensorProto.COMPLEX128,
-                                                   tf.complex128)]
+      test_cases = [(TensorProto.FLOAT, tf.float32),
+                    (TensorProto.UINT8, tf.uint8), (TensorProto.INT8, tf.int8),
+                    (TensorProto.UINT16, tf.uint16),
+                    (TensorProto.INT16, tf.int16), (TensorProto.INT32,
+                                                    tf.int32),
+                    (TensorProto.INT64, tf.int64), (TensorProto.BOOL, tf.bool),
+                    (TensorProto.FLOAT16, tf.float16),
+                    (TensorProto.DOUBLE, tf.float64),
+                    (TensorProto.COMPLEX64, tf.complex64),
+                    (TensorProto.COMPLEX128, tf.complex128)]
     for ty, tf_type in test_cases:
       node_def = helper.make_node("Cast", ["input"], ["output"], to=ty)
       vector = [2, 3]
@@ -306,6 +303,29 @@ class TestNode(unittest.TestCase):
     y = np.floor(self._get_rnd([10, 10]))
     output = run_node(node_def, [x, y])
     np.testing.assert_almost_equal(output["Z"], np.dot(x, y))
+
+  def test_dynamic_slice(self):
+    if defs.onnx_opset_version() < 9:
+      raise unittest.SkipTest(
+          "ONNX version {} doesn't support DynamicSlice."
+              .format(defs.onnx_opset_version()))
+    axes = np.array([0, 1], dtype=np.long)
+    starts = np.array([1, 0], dtype=np.long)
+    ends = np.array([2, 3], dtype=np.long)
+    # test case 1 with normal inputs
+    node_def = helper.make_node(
+        'DynamicSlice', inputs=['x', 'starts', 'ends', 'axes'], outputs=['y'])
+    x = np.array([[1, 2, 3, 4], [5, 6, 7, 8]], dtype=np.long)
+    y = x[1:2, 0:3]
+    output = run_node(node_def, inputs=[x, starts, ends, axes], outputs=[y])
+    np.testing.assert_almost_equal(output['y'], x[1:2, 0:3])
+    # test case 2 with negative, out-of-bound and default inputs
+    starts = np.array([0, 1], dtype=np.long)
+    ends = np.array([-1, 1000], dtype=np.long)
+    node_def = helper.make_node(
+        'DynamicSlice', inputs=['x', 'starts', 'ends'], outputs=['y'])
+    output = run_node(node_def, inputs=[x, starts, ends], outputs=[y])
+    np.testing.assert_almost_equal(output['y'], x[0:-1, 1:1000])
 
   def test_elu(self):
     node_def = helper.make_node("Elu", ["X"], ["Y"])

@@ -25,7 +25,7 @@ backend_opset_version = {
     'DepthToSpace': [1],
     'Div': [1, 6, 7],
     'Dropout': [1, 6, 7],
-    'DynamicSlice': [],
+    'DynamicSlice': [9],
     'Elu': [1, 6],
     'Equal': [1, 7],
     'Exp': [1, 6],
