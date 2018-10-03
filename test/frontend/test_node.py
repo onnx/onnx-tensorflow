@@ -24,11 +24,11 @@ def get_node_by_name(nodes, name):
 
 def get_rnd(shape, low=-1.0, high=1.0, dtype=np.float32):
   if (dtype == np.float32):
-    return (np.random.uniform(low, high, np.prod(shape)).reshape(shape).astype(
-        np.float32))
+    return (np.random.uniform(low, high,
+                              np.prod(shape)).reshape(shape).astype(np.float32))
   elif (dtype == np.int32):
-    return (np.random.uniform(low, high, np.prod(shape)).reshape(shape).astype(
-        np.int32))
+    return (np.random.uniform(low, high,
+                              np.prod(shape)).reshape(shape).astype(np.int32))
   elif dtype == np.bool_:
     return np.random.choice(a=[False, True], size=shape)
 
@@ -96,7 +96,7 @@ def create_test(test_data):
 
   return do_test_expected
 
-
+# yapf: disable
 # organized as a tuple of the format:
 # (test_name, tensorflow_op, output_node_name, LIST of inputs, MAP of attributes)
 # Note that a python array is used differently than a numpy array
@@ -128,6 +128,7 @@ test_cases = [
 ("test_reduce_prod", tf.reduce_prod, "Prod", [get_rnd([10, 10])], {"keep_dims": True}),
 ("test_reduce_sum", tf.reduce_sum, "Sum", [get_rnd([10, 10])], {"keep_dims": True}),
 ("test_relu", tf.nn.relu, "Relu", [get_rnd([10, 10])], {}),
+("test_relu6", tf.nn.relu6, "Relu6", [get_rnd([10, 10])], {}),
 ("test_reshape", tf.reshape, "Reshape", [get_rnd([10, 10]), [4, 25]], {}),
 ("test_selu", tf.nn.selu, "Selu", [get_rnd([10, 10])], {}),
 ("test_shape", tf.shape, "Shape", [get_rnd([1, 2, 3, 4])], {}),
@@ -156,6 +157,8 @@ test_cases = [
 
 if not legacy_opset_pre_6():
   test_cases.append(("test_tile", tf.tile, "Tile", [get_rnd([1, 2, 3, 4]), np.random.randint(1, 10, (4,), dtype=np.int32)], {}))
+
+# yapf: enable
 
 for k, val in enumerate(test_cases):
   test_method = create_test(val)

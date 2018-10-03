@@ -4,7 +4,7 @@ from onnx_tf.common import get_unique_suffix
 class ConvMixin(object):
 
   @classmethod
-  def conv_op(cls, node, d=2, **kwargs):
+  def conv_op(cls, node, d=2, is_depthwise=False, **kwargs):
     auto_pad = node.attr["padding"].decode("UTF-8")
     auto_pad = "SAME_UPPER" if auto_pad == "SAME" else auto_pad
     data_format = node.attr["data_format"].decode("UTF-8")
@@ -17,6 +17,9 @@ class ConvMixin(object):
             spatial_indices))
     node_dict = kwargs["node_dict"]
     kernel_shape = node_dict[node.inputs[1]].attr["_output_shapes"][0][:d]
+    n_groups = 1
+    if is_depthwise:
+      n_groups = kernel_shape[-1]
     output_shape = list(
         map(lambda i: node.attr["_output_shapes"][0][i], spatial_indices))
     input_shape = list(
@@ -33,6 +36,7 @@ class ConvMixin(object):
     conv_node = cls.make_node_from_tf_node(
         node, [node.inputs[0], node.inputs[1] + "_T_" + unique_suffix],
         pads=pads,
+        group=n_groups,
         kernel_shape=kernel_shape,
         strides=strides,
         dilations=dilations)
