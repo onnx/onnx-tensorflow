@@ -8,6 +8,13 @@ from .conv_mixin import ConvMixin
 @onnx_op("Conv")
 @tf_op(["Conv1D", "Conv2D", "Conv3D", "DepthwiseConv2dNative"])
 class Convolution(ConvMixin, FrontendHandler):
+  """
+    Converts different convolutions
+    Warning: Depthwise Conv is not supported by ONNX directly, so this generates
+    a grouped convolution with n_groups = n_channels which is semantically the same.
+    Make sure your backend knows about this special case in order
+    to generate more optimal code.
+  """
 
   @classmethod
   def version_1(cls, node, **kwargs):

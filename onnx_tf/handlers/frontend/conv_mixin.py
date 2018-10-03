@@ -19,7 +19,7 @@ class ConvMixin(object):
     kernel_shape = node_dict[node.inputs[1]].attr["_output_shapes"][0][:d]
     n_groups = 1
     if is_depthwise:
-        n_groups = kernel_shape[-1]
+      n_groups = kernel_shape[-1]
     output_shape = list(
         map(lambda i: node.attr["_output_shapes"][0][i], spatial_indices))
     input_shape = list(
