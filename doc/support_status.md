@@ -37,6 +37,7 @@ ______
 |Equal|1, 7|
 |Exp|1, 6|
 |Expand|8|
+|EyeLike|N/A|
 |Flatten|1, 9|
 |Floor|1, 6|
 |GRU|1, 3, 7|
@@ -149,6 +150,7 @@ ______
 |conv2_d|1|
 |conv3_d|1|
 |cos|7|
+|depthwise_conv2d_native|1|
 |equal|1, 7|
 |exp|1, 6|
 |expand_dims|1|
@@ -183,6 +185,7 @@ ______
 |real_div|1, 6, 7|
 |reciprocal|1, 6|
 |relu|1, 6|
+|relu6|1, 6|
 |reshape|1, 5|
 |selu|1, 6|
 |shape|1|
