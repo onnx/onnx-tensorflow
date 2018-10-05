@@ -15,7 +15,6 @@ class TensorflowRep(BackendRep):
     self._graph = graph
     self._inputs = inputs or []
     self._outputs = outputs or []
-    self._sess = None
     self._tensor_dict = tensor_dict or {}
 
   @property
@@ -50,10 +49,12 @@ class TensorflowRep(BackendRep):
   def tensor_dict(self, tensor_dict):
     self._tensor_dict = tensor_dict
 
-  def run(self, inputs, **kwargs):
+  def run(self, inputs, sess=None, **kwargs):
     """ Run TensorflowRep.
 
     :param inputs: Given inputs.
+    :param sess: tf.Session. The environment in which Operation objects are executed,
+      and Tensor objects are evaluated.
     :param kwargs: Other args.
     :return: Outputs.
     """
@@ -61,8 +62,7 @@ class TensorflowRep(BackendRep):
 
     # TODO: handle name scope if necessary
     with self.graph.as_default():
-      sess = self._sess or tf.Session()
-      self._sess = sess
+      sess = sess or tf.Session()
 
       if isinstance(inputs, dict):
         feed_dict = inputs
@@ -101,3 +101,12 @@ class TensorflowRep(BackendRep):
     file = open(path, "wb")
     file.write(graph_proto.SerializeToString())
     file.close()
+
+  def create_session(self):
+    """ Create tf.Session object by using current graph.
+    Pass it to `run` function could reduce the overhead of initialization
+    when doing inference consecutively.
+
+    :returns: A Session object.
+    """
+    return tf.Session(self.graph)
