@@ -10,7 +10,7 @@ from onnx_tf.handlers.handler import tf_func
 class Flatten(BackendHandler):
 
   @classmethod
-  def version_1(cls, node, **kwargs):
+  def _common(cls, node, **kwargs):
     x = kwargs["tensor_dict"][node.inputs[0]]
     shape = tf.shape(x)
     x_rank = len(x.shape)
@@ -25,3 +25,12 @@ class Flatten(BackendHandler):
       cal_shape = (tf.reduce_prod(shape[0:axis]),
                    tf.reduce_prod(shape[axis:tf.size(shape)]))
     return [tf.reshape(x, cal_shape)]
+
+  @classmethod
+  def version_1(cls, node, **kwargs):
+    return cls._common(node, **kwargs)
+
+  @classmethod
+  def version_9(cls, node, **kwargs):
+    return cls._common(node, **kwargs)
+

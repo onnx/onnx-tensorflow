@@ -22,7 +22,7 @@ ______
 |Ceil|1, 6|
 |Clip|1, 6|
 |Concat|1, 4|
-|Constant|1|
+|Constant|1, 9|
 |ConstantFill|1|
 |ConstantLike|9|
 |Conv|1|
@@ -37,17 +37,18 @@ ______
 |Equal|1, 7|
 |Exp|1, 6|
 |Expand|8|
-|Flatten|1|
+|EyeLike|N/A|
+|Flatten|1, 9|
 |Floor|1, 6|
 |GRU|1, 3, 7|
 |GRUUnit|N/A|
 |Gather|1|
-|Gemm|1, 6, 7|
+|Gemm|1, 6, 7, 9|
 |GivenTensorFill|N/A|
 |GlobalAveragePool|1|
 |GlobalLpPool|1, 2|
 |GlobalMaxPool|1|
-|Greater|1, 7|
+|Greater|1, 7, 9|
 |HardSigmoid|1, 6|
 |Hardmax|1|
 |Identity|1|
@@ -63,7 +64,7 @@ ______
 |Loop|N/A|
 |LpNormalization|1|
 |LpPool|N/A|
-|MatMul|1|
+|MatMul|1, 9|
 |Max|1, 6, 8|
 |MaxPool|1, 8|
 |MaxRoiPool|N/A|
@@ -75,7 +76,7 @@ ______
 |Neg|1, 6|
 |Not|1|
 |Or|1, 7|
-|PRelu|1, 6, 7|
+|PRelu|1, 6, 7, 9|
 |Pad|1, 2|
 |ParametricSoftplus|N/A|
 |Pow|1, 7|
@@ -149,6 +150,7 @@ ______
 |conv2_d|1|
 |conv3_d|1|
 |cos|7|
+|depthwise_conv2d_native|1|
 |equal|1, 7|
 |exp|1, 6|
 |expand_dims|1|
@@ -183,6 +185,7 @@ ______
 |real_div|1, 6, 7|
 |reciprocal|1, 6|
 |relu|1, 6|
+|relu6|1, 6|
 |reshape|1, 5|
 |selu|1, 6|
 |shape|1|
