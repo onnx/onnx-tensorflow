@@ -21,6 +21,11 @@ setuptools.setup(
     description=
     'Tensorflow backend and frontend for ONNX (Open Neural Network Exchange).',
     install_requires=[onnx_dep, "PyYAML"],
+    entry_points={
+        "console_scripts": [
+            "onnx-tf-converter=onnx_tf.converter:main",
+        ],
+    },
     url='https://github.com/onnx/onnx-tensorflow/',
     author='Arpith Jacob, Tian Jin, Gheorghe-Teodor Bercea, Wenhao Hu',
     author_email='tian.jin1@ibm.com',
