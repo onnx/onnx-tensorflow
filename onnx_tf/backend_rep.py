@@ -109,4 +109,4 @@ class TensorflowRep(BackendRep):
 
     :returns: A Session object.
     """
-    return tf.Session(self.graph)
+    return tf.Session(graph=self.graph)
