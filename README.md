@@ -1,9 +1,19 @@
 # Tensorflow Backend and Frontend for ONNX
 [![Build Status](https://travis-ci.org/onnx/onnx-tensorflow.svg?branch=master)](https://travis-ci.org/onnx/onnx-tensorflow)
 
-[ONNX-Tensorflow API](https://github.com/onnx/onnx-tensorflow/blob/master/doc/API.md)
+## To convert pb from Tensorflow to ONNX:
 
+`onnx-tf-converter --src /path/to/src.pb --dest /path/to/dest.onnx`
+
+## To convert pb from ONNX to Tensorflow:
+
+`onnx-tf-converter --src /path/to/src.onnx --dest /path/to/dest.pb`
+
+## Coverage Status:
 [ONNX-Tensorflow Op Coverage Status](https://github.com/onnx/onnx-tensorflow/blob/master/doc/support_status.md)
+
+## API:
+[ONNX-Tensorflow API](https://github.com/onnx/onnx-tensorflow/blob/master/doc/API.md)
 
 ## Tutorials:
 [Running an ONNX model using Tensorflow](https://github.com/onnx/tutorials/blob/master/tutorials/OnnxTensorflowImport.ipynb)
