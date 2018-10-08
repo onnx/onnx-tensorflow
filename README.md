@@ -3,18 +3,62 @@
 
 ## To convert pb between Tensorflow and ONNX:
 
-### From Tensorflow to ONNX:
-`onnx-tf convert -t onnx -i /path/to/input.pb -o /path/to/output.onnx`
+### Use CLI:
+Tensorflow -> ONNX: `onnx-tf convert -t onnx -i /path/to/input.pb -o /path/to/output.onnx`
 
-### From ONNX to Tensorflow:
-`onnx-tf convert -t tf -i /path/to/input.onnx -o /path/to/output.pb`
+ONNX -> Tensorflow: `onnx-tf convert -t tf -i /path/to/input.onnx -o /path/to/output.pb`
 
-## Tutorials:
+### Use python:
+
+Tensorflow -> ONNX:
+```
+from tensorflow.core.framework import graph_pb2
+
+from onnx_tf.frontend import tensorflow_graph_to_onnx_model
+
+
+graph_def = graph_pb2.GraphDef()
+with open(input_path, "rb") as f:
+  graph_def.ParseFromString(f.read())
+nodes, node_inputs = set(), set()
+for node in graph_def.node:
+  nodes.add(node.name)
+  node_inputs.update(set(node.input))
+  output = list(set(nodes) - node_inputs)
+
+model = tensorflow_graph_to_onnx_model(graph_def, output, ignore_unimplemented=True)
+with open(output_path, 'wb') as f:
+  f.write(model.SerializeToString())
+```
+
+ONNX -> Tensorflow:
+```
+import onnx
+
+from onnx_tf.backend import prepare
+
+
+onnx_model = onnx.load(input_path)
+tf_rep = prepare(onnx_model)
+tf_rep.export_graph(output_path)
+```
+
+## To do inference on ONNX model by using Tensorflow backend:
+```
+import onnx
+
+from onnx_tf.backend import prepare
+
+
+output = prepare(onnx.load(input_path)).run(input)
+```
+
+## More tutorials:
 [Running an ONNX model using Tensorflow](https://github.com/onnx/tutorials/blob/master/tutorials/OnnxTensorflowImport.ipynb)
 
 [Exporting a Tensorflow Model to ONNX](https://github.com/onnx/tutorials/blob/master/tutorials/OnnxTensorflowExport.ipynb)
 
-## To install:
+## Production Installation:
 ONNX-TF requires ONNX (Open Neural Network Exchange) as an external dependency, for any issues related to ONNX installation, we refer our users to [ONNX project repository](https://github.com/onnx/onnx) for documentation and help. Notably, please ensure that protoc is available if you plan to install ONNX via pip.
 
 The specific ONNX release version that we support in the master branch of ONNX-TF can be found [here](https://github.com/onnx/onnx-tensorflow/blob/master/ONNX_VERSION_NUMBER). This information about ONNX version requirement is automatically encoded in `setup.py`, therefore users needn't worry about ONNX version requirement when installing ONNX-TF.
@@ -22,19 +66,6 @@ The specific ONNX release version that we support in the master branch of ONNX-T
 To install the latest version of ONNX-TF via pip, run `pip install onnx-tf`.
 
 Because users often have their own preferences for which variant of Tensorflow to install (i.e., a GPU version instead of a CPU version), we do not explicitly require tensorflow in the installation script. It is therefore users' responsibility to ensure that the proper variant of Tensorflow is available to ONNX-TF. Moreoever, we require Tensorflow version >= 1.5.0.
-
-## Example:
-In this example, we will define and run a Relu node and print the result.
-This example is available as a python script at example/relu.py .
-```python
-from onnx_tf.backend import run_node
-from onnx import helper
-
-node_def = helper.make_node("Relu", ["X"], ["Y"])
-output = run_node(node_def, [[-0.1, 0.1]])
-print(output["Y"])
-```
-The result is `[ 0.   0.1]`
 
 ## Development:
 
@@ -44,7 +75,7 @@ The result is `[ 0.   0.1]`
 ### API:
 [ONNX-Tensorflow API](https://github.com/onnx/onnx-tensorflow/blob/master/doc/API.md)
 
-### Install:
+### Installation:
 - Install ONNX master branch from source.
 - Install Tensorflow>=1.5.0.
 - Run `git clone git@github.com:onnx/onnx-tensorflow.git && cd onnx-tensorflow`.
