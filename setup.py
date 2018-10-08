@@ -23,7 +23,7 @@ setuptools.setup(
     install_requires=[onnx_dep, "PyYAML"],
     entry_points={
         "console_scripts": [
-            "onnx-tf-converter=onnx_tf.converter:main",
+            "onnx-tf=onnx_tf.cli:main",
         ],
     },
     url='https://github.com/onnx/onnx-tensorflow/',

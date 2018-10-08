@@ -12,12 +12,12 @@ logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger()
 
 
-def main():
-  args = parse_args()
+def main(args):
+  args = parse_args(args)
   convert(**{k: v for k, v in vars(args).items() if v is not None})
 
 
-def parse_args():
+def parse_args(args):
 
   class ListAction(argparse.Action):
     """ Define how to convert command line list strings to Python objects.
@@ -53,12 +53,16 @@ def parse_args():
         setattr(namespace, "opset", res)
 
   def get_param_doc_dict(funcs):
-    """ Get doc of funcs params.
+    """Get doc of funcs params.
 
-    :param funcs: Target funcs.
-    :return: Dict of params doc.
+    Args:
+      funcs: Target funcs.
+
+    Returns:
+      Dict of params doc.
     """
 
+    # TODO(fumihwh): support google doc format
     def helper(doc, func):
       first_idx = doc.find(":param")
       last_idx = doc.find(":return")
@@ -87,8 +91,15 @@ def parse_args():
   )
 
   # required two args, source and destination path
-  parser.add_argument("--src", help="Path for model.", required=True)
-  parser.add_argument("--dest", help="Path for exporting.", required=True)
+  parser.add_argument("--infile", "-i", help="Input file path.", required=True)
+  parser.add_argument(
+      "--outfile", "-o", help="Output file path.", required=True)
+  parser.add_argument(
+      "--convert-to",
+      "-t",
+      choices=["onnx", "tf"],
+      help="Format converted to.",
+      required=True)
 
   # backend args
   backend_group = parser.add_argument_group("backend arguments (onnx -> tf)")
@@ -115,25 +126,29 @@ def parse_args():
   for k, v in frontend_param_doc_dict.items():
     frontend_group.add_argument("--{}".format(k), help=v["doc"], **v["params"])
 
-  return parser.parse_args()
+  return parser.parse_args(args)
 
 
-def convert(src, dest, **kwargs):
-  """ Convert pb.
+def convert(infile, outfile, convert_to, **kwargs):
+  """Convert pb.
 
-  :param src: Source pb's path
-  :param dest: Destination path.
-  :param kwargs: Other args for converting.
-  :return: None.
+  Args:
+    infile: Input path.
+    outfile: Output path.
+    convert_to: Format converted to.
+    **kwargs: Other args for converting.
+
+  Returns:
+    None.
   """
-  onnx_model = onnx.load(src)
-  if onnx_model.ir_version != 0:
+  if convert_to == "tf":
     logger.info("Start converting onnx pb to tf pb:")
+    onnx_model = onnx.load(infile)
     tf_rep = backend.prepare(onnx_model, **kwargs)
-    tf_rep.export_graph(dest)
-  else:
+    tf_rep.export_graph(outfile)
+  elif convert_to == "onnx":
     logger.info("Start converting tf pb to onnx pb:")
-    with open(src, "rb") as f:
+    with open(infile, "rb") as f:
       graph_def = graph_pb2.GraphDef()
       graph_def.ParseFromString(f.read())
     nodes, input_names = dict(), set()
@@ -143,9 +158,5 @@ def convert(src, dest, **kwargs):
     output = list(set(nodes) - input_names)
     onnx_model = frontend.tensorflow_graph_to_onnx_model(
         graph_def, output, **kwargs)
-    onnx.save(onnx_model, dest)
+    onnx.save(onnx_model, outfile)
   logger.info("Converting completes successfully.")
-
-
-if __name__ == '__main__':
-  main()
