@@ -4,17 +4,17 @@
 ## To convert models between Tensorflow and ONNX:
 
 ### Use CLI:
-Tensorflow -> ONNX: `onnx-tf convert -t onnx -i /path/to/input.pb -o /path/to/output.onnx`
+From Tensorflow to ONNX: `onnx-tf convert -t onnx -i /path/to/input.pb -o /path/to/output.onnx`
 
-ONNX -> Tensorflow: `onnx-tf convert -t tf -i /path/to/input.onnx -o /path/to/output.pb`
+From ONNX to Tensorflow: `onnx-tf convert -t tf -i /path/to/input.onnx -o /path/to/output.pb`
 
 ### Convert programmatically:
 
-[Tensorflow -> ONNX](https://github.com/onnx/onnx-tensorflow/blob/master/example/tf_to_onnx.py)
+[From Tensorflow to ONNX](https://github.com/onnx/onnx-tensorflow/blob/master/example/tf_to_onnx.py)
 
-[ONNX -> Tensorflow](https://github.com/onnx/onnx-tensorflow/blob/master/example/onnx_to_tf.py)
+[From ONNX to Tensorflow](https://github.com/onnx/onnx-tensorflow/blob/master/example/onnx_to_tf.py)
 
-## To do inference on ONNX model by using Tensorflow backend:
+## ONNX model inference with Tensorflow backend:
 ```
 import onnx
 from onnx_tf.backend import prepare
