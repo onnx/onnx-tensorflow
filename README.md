@@ -1,54 +1,23 @@
 # Tensorflow Backend and Frontend for ONNX
 [![Build Status](https://travis-ci.org/onnx/onnx-tensorflow.svg?branch=master)](https://travis-ci.org/onnx/onnx-tensorflow)
 
-## To convert pb between Tensorflow and ONNX:
+## To convert models between Tensorflow and ONNX:
 
 ### Use CLI:
 Tensorflow -> ONNX: `onnx-tf convert -t onnx -i /path/to/input.pb -o /path/to/output.onnx`
 
 ONNX -> Tensorflow: `onnx-tf convert -t tf -i /path/to/input.onnx -o /path/to/output.pb`
 
-### Use python:
+### Convert programmatically:
 
-Tensorflow -> ONNX:
-```
-from tensorflow.core.framework import graph_pb2
+[Tensorflow -> ONNX](https://github.com/onnx/onnx-tensorflow/blob/master/example/tf_to_onnx.py)
 
-from onnx_tf.frontend import tensorflow_graph_to_onnx_model
-
-
-graph_def = graph_pb2.GraphDef()
-with open(input_path, "rb") as f:
-  graph_def.ParseFromString(f.read())
-nodes, node_inputs = set(), set()
-for node in graph_def.node:
-  nodes.add(node.name)
-  node_inputs.update(set(node.input))
-  output = list(set(nodes) - node_inputs)
-
-model = tensorflow_graph_to_onnx_model(graph_def, output, ignore_unimplemented=True)
-with open(output_path, 'wb') as f:
-  f.write(model.SerializeToString())
-```
-
-ONNX -> Tensorflow:
-```
-import onnx
-
-from onnx_tf.backend import prepare
-
-
-onnx_model = onnx.load(input_path)
-tf_rep = prepare(onnx_model)
-tf_rep.export_graph(output_path)
-```
+[ONNX -> Tensorflow](https://github.com/onnx/onnx-tensorflow/blob/master/example/onnx_to_tf.py)
 
 ## To do inference on ONNX model by using Tensorflow backend:
 ```
 import onnx
-
 from onnx_tf.backend import prepare
-
 
 output = prepare(onnx.load(input_path)).run(input)
 ```
