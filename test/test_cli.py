@@ -25,14 +25,14 @@ class TestCli(unittest.TestCase):
             kind='real',
         ))
 
-  def test_cli(self):
+  def test_convert_to_tf(self):
     for model_name, url in _ONNX_MODELS:
       model_dir = self.prepare_model(model_name, url)
       subprocess.check_call([
           "onnx-tf",
           "convert",
           "-t",
-          "onnx",
+          "tf",
           "-i",
           os.path.join(model_dir, '{}.onnx'.format(model_name)),
           "-o",
