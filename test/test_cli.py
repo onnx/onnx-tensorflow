@@ -5,7 +5,7 @@ from onnx.backend.test.runner import Runner
 from onnx.backend.test.case.model import TestCase
 import unittest
 
-_MODELS = [(
+_ONNX_MODELS = [(
     "mobilenetv2-1.0",
     "https://s3.amazonaws.com/onnx-model-zoo/mobilenet/mobilenetv2-1.0/mobilenetv2-1.0.tar.gz"
 )]
@@ -26,7 +26,7 @@ class TestCli(unittest.TestCase):
         ))
 
   def test_cli(self):
-    for model_name, url in _MODELS:
+    for model_name, url in _ONNX_MODELS:
       model_dir = self.prepare_model(model_name, url)
       subprocess.check_call([
           "onnx-tf",
