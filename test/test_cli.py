@@ -13,7 +13,8 @@ _ONNX_MODELS = [(
 
 class TestCli(unittest.TestCase):
 
-  def prepare_model(self, model_name, url):
+  @staticmethod
+  def prepare_model(model_name, url):
     return Runner._prepare_model_data(
         TestCase(
             name="test_{}".format(model_name),
