@@ -101,7 +101,7 @@ def parse_args(args):
   parser.add_argument(
       "--outfile", "-o", help="Output file path.", required=True)
   parser.add_argument(
-      "--convert-to",
+      "--convert_to",
       "-t",
       choices=["onnx", "tf"],
       help="Format converted to.",
