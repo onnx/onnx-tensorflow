@@ -307,8 +307,8 @@ class TestNode(unittest.TestCase):
   def test_dynamic_slice(self):
     if defs.onnx_opset_version() < 9:
       raise unittest.SkipTest(
-          "ONNX version {} doesn't support DynamicSlice."
-              .format(defs.onnx_opset_version()))
+          "ONNX version {} doesn't support DynamicSlice.".format(
+              defs.onnx_opset_version()))
     axes = np.array([0, 1], dtype=np.long)
     starts = np.array([1, 0], dtype=np.long)
     ends = np.array([2, 3], dtype=np.long)
@@ -737,12 +737,24 @@ class TestNode(unittest.TestCase):
     np.testing.assert_almost_equal(output["Y"], np.size(x))
 
   def test_slice(self):
-    # TODO: API update or fix onnx version
-    return
-    node_def = helper.make_node("Slice", ["X", "Y", "Z", "W"], ["S"])
+    # test case 1 with normal inputs
+    axes = [0, 1, 2]
+    starts = [0, 0, 0]
+    ends = [2, 2, 2]
+    node_def = helper.make_node(
+        "Slice", ["X"], ["S"], axes=axes, starts=starts, ends=ends)
     x = self._get_rnd([1000]).reshape([10, 10, 10])
-    output = run_node(node_def, [x, [0, 1, 2], [0, 0, 0], [2, 2, 2]])
+    output = run_node(node_def, [x])
     np.testing.assert_almost_equal(output["S"], x[0:2, 0:2, 0:2])
+    # test case 2 with negative, out-of-bound and default inputs
+    axes = [0, 2]
+    starts = [0, -7]
+    ends = [-8, 20]
+    node_def = helper.make_node(
+        "Slice", ["X"], ["S"], axes=axes, starts=starts, ends=ends)
+    x = self._get_rnd([1000]).reshape([10, 10, 10])
+    output = run_node(node_def, [x])
+    np.testing.assert_almost_equal(output["S"], x[0:-8, :, -7:20])
 
   def test_softplus(self):
     node_def = helper.make_node("Softplus", ["X"], ["Y"])
