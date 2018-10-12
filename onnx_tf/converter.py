@@ -8,6 +8,7 @@ import tensorflow as tf
 from tensorflow.core.framework import graph_pb2
 
 import onnx_tf.backend as backend
+from onnx_tf.common import get_output_node_names
 import onnx_tf.frontend as frontend
 
 logging.basicConfig(level=logging.DEBUG)
@@ -156,14 +157,6 @@ def convert(infile, outfile, convert_to, **kwargs):
     tf_rep = backend.prepare(onnx_model, **kwargs)
     tf_rep.export_graph(outfile)
   elif convert_to == "onnx":
-
-    def get_output_node_names(graph_def):
-      nodes, input_names = dict(), set()
-      for node in graph_def.node:
-        nodes[node.name] = node
-        input_names.update(set(node.input))
-      return list(set(nodes) - input_names)
-
     ext = os.path.splitext(infile)[1]
     logger.info("Start converting tf pb to onnx pb:")
     if ext == ".pb":
