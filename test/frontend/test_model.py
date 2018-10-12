@@ -8,6 +8,7 @@ import yaml
 import sys, os, tempfile
 import zipfile
 import logging
+import subprocess
 if sys.version_info >= (3,):
   import urllib.request as urllib2
   import urllib.parse as urlparse
@@ -17,6 +18,7 @@ else:
 
 import numpy as np
 import tensorflow as tf
+import onnx
 from tensorflow.python.tools import freeze_graph
 
 from onnx_tf.frontend import tensorflow_graph_to_onnx_model
@@ -85,7 +87,7 @@ class TestModel(unittest.TestCase):
   pass
 
 
-def create_test(test_model):
+def create_test(test_model, interface):
 
   def do_test_expected(self):
     tf.reset_default_graph()
@@ -130,9 +132,22 @@ def create_test(test_model):
       logging.debug(graph.get_operations())
       output_tf = sess.run(tf_output_tensors, feed_dict=tf_feed_dict)
 
-    onnx_model = tensorflow_graph_to_onnx_model(graph_def, backend_output_names)
+    # If we use python API for conversion:
+    if interface is "python":
+      model = tensorflow_graph_to_onnx_model(graph_def, backend_output_names)
+    else: # else we use CLI utility
+      subprocess.check_call([
+            "onnx-tf",
+            "convert",
+            "-t",
+            "onnx",
+            "-i",
+            work_dir_prefix + "frozen_graph.pb",
+            "-o",
+            work_dir_prefix + "model.onnx",
+      ])
+      model = onnx.load_model(work_dir_prefix + "model.onnx")
 
-    model = onnx_model
     tf_rep = prepare(model)
     output_onnx_tf = tf_rep.run(backend_feed_dict)
 
@@ -149,12 +164,13 @@ with open(dir_path + "/test_model.yaml", 'r') as config:
   try:
     for test_model in yaml.safe_load_all(config):
       for device in test_model["devices"]:
-        if supports_device(device):
-          test_method = create_test(test_model)
-          test_name_parts = ["test", test_model["name"], device]
-          test_name = str("_".join(map(str, test_name_parts)))
-          test_method.__name__ = test_name
-          setattr(TestModel, test_method.__name__, test_method)
+        for interface in ["python", "cli"]:
+          if supports_device(device):
+            test_method = create_test(test_model, interface)
+            test_name_parts = ["test", test_model["name"], device, interface]
+            test_name = str("_".join(map(str, test_name_parts)))
+            test_method.__name__ = test_name
+            setattr(TestModel, test_method.__name__, test_method)
   except yaml.YAMLError as exception:
     print(exception)
 
