@@ -107,30 +107,33 @@ def parse_args(args):
       help="Format converted to.",
       required=True)
 
+  def add_argument_group(parser, group_name, funcs):
+    group = parser.add_argument_group(group_name)
+    param_doc_dict = get_param_doc_dict(funcs)
+    for k, v in param_doc_dict.items():
+      group.add_argument("--{}".format(k), help=v["doc"], **v["params"])
+
   # backend args
-  backend_group = parser.add_argument_group("backend arguments (onnx -> tf)")
-  backend_funcs = [(backend.prepare, {"device": {}, "strict": {}})]
-  backend_param_doc_dict = get_param_doc_dict(backend_funcs)
-  for k, v in backend_param_doc_dict.items():
-    backend_group.add_argument("--{}".format(k), help=v["doc"], **v["params"])
+  add_argument_group(parser, "backend arguments (onnx -> tf)",
+                     [(backend.prepare, {
+                         "device": {},
+                         "strict": {}
+                     })])
 
   # frontend args
-  frontend_group = parser.add_argument_group("frontend arguments (tf -> onnx)")
-  frontend_funcs = [(frontend.tensorflow_graph_to_onnx_model, {
-      "opset": {
-          "action": OpsetAction,
-      },
-      "ignore_unimplemented": {
-          "type": bool
-      },
-      "optimizer_passes": {
-          "action": ListAction,
-          "dest": "optimizer_passes"
-      }
-  })]
-  frontend_param_doc_dict = get_param_doc_dict(frontend_funcs)
-  for k, v in frontend_param_doc_dict.items():
-    frontend_group.add_argument("--{}".format(k), help=v["doc"], **v["params"])
+  add_argument_group(parser, "frontend arguments (tf -> onnx)",
+                     [(frontend.tensorflow_graph_to_onnx_model, {
+                         "opset": {
+                             "action": OpsetAction,
+                         },
+                         "ignore_unimplemented": {
+                             "type": bool
+                         },
+                         "optimizer_passes": {
+                             "action": ListAction,
+                             "dest": "optimizer_passes"
+                         }
+                     })])
 
   return parser.parse_args(args)
 
