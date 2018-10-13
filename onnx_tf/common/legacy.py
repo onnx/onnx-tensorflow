@@ -12,7 +12,7 @@ def get_onnx_version():
 
 # Returns whether onnx version is prior to major.minor.patch
 def legacy_onnx_pre_ver(major=0, minor=0, patch=0):
-  return (major, minor, patch) < get_onnx_version()
+  return get_onnx_version() < (major, minor, patch)
 
 
 # Returns whether the opset version accompanying the
