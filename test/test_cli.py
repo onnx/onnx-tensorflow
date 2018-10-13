@@ -15,16 +15,16 @@ class TestCli(unittest.TestCase):
 
   @staticmethod
   def prepare_model(model_name, url):
-    test_case = TestCase(
-        name="test_{}".format(model_name),
-        model_name=model_name,
-        url=url,
-        model_dir=None,
-        model=None,
-        data_sets=None,
-        kind='real',
-    )
-    return Runner._prepare_model_data(test_case)
+    return Runner._prepare_model_data(
+        model_test=TestCase(
+            name="test_{}".format(model_name),
+            model_name=model_name,
+            url=url,
+            model_dir=None,
+            model=None,
+            data_sets=None,
+            kind='real',
+        ))
 
   def test_convert_to_tf(self):
     for model_name, url in _ONNX_MODELS:
