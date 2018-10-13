@@ -93,13 +93,25 @@ def create_test(test_model, interface):
     tf.reset_default_graph()
     work_dir = "".join([test_model["name"], "-", "workspace"])
     work_dir_prefix = work_dir + "/"
-    download_and_extract(test_model["asset_url"], work_dir)
-    freeze_graph.freeze_graph(
-        work_dir_prefix + test_model["graph_proto_path"], "", True,
-        work_dir_prefix + test_model["checkpoint_path"], ",".join(
-            test_model["outputs"]), "", "", work_dir_prefix + "frozen_graph.pb",
-        "", "")
+    # download_and_extract(test_model["asset_url"], work_dir)
 
+    # Parse metagraph def to obtain graph_def
+    meta_graph_def_file = open(work_dir_prefix + test_model["metagraph_path"],
+                               "rb")
+
+    meta_graph_def = tf.MetaGraphDef()
+    meta_graph_def.ParseFromString(meta_graph_def_file.read())
+
+    with open(work_dir_prefix + "graph_def.pb", 'wb') as f:
+      f.write(meta_graph_def.graph_def.SerializeToString())
+
+    # Proceed to freeze graph:
+    freeze_graph.freeze_graph(work_dir_prefix + "graph_def.pb", "", True,
+                              work_dir_prefix + test_model["checkpoint_path"],
+                              ",".join(test_model["outputs"]), "", "",
+                              work_dir_prefix + "frozen_graph.pb", "", "")
+
+    # Now read the frozen graph and import it:
     with tf.gfile.GFile(work_dir_prefix + "frozen_graph.pb", "rb") as f:
       graph_def = tf.GraphDef()
       graph_def.ParseFromString(f.read())
@@ -127,27 +139,31 @@ def create_test(test_model, interface):
       tf_output_tensors.append(graph.get_tensor_by_name(name + ":0"))
       backend_output_names.append(name)
 
+    # Obtain reference tensorflow outputs:
     with tf.Session(graph=graph) as sess:
       logging.debug("ops in the graph:")
       logging.debug(graph.get_operations())
       output_tf = sess.run(tf_output_tensors, feed_dict=tf_feed_dict)
 
-    # If we use python API for conversion:
-    if interface is "python":
+    # Now we convert tensorflow models to onnx,
+    # if we use python API for conversion:
+    if interface == "python":
       model = tensorflow_graph_to_onnx_model(graph_def, backend_output_names)
-    else: # else we use CLI utility
+    else:  # else we use CLI utility
+      assert interface == "cli"
       subprocess.check_call([
-            "onnx-tf",
-            "convert",
-            "-t",
-            "onnx",
-            "-i",
-            work_dir_prefix + "frozen_graph.pb",
-            "-o",
-            work_dir_prefix + "model.onnx",
+          "onnx-tf",
+          "convert",
+          "-t",
+          "onnx",
+          "-i",
+          work_dir_prefix + "frozen_graph.pb",
+          "-o",
+          work_dir_prefix + "model.onnx",
       ])
       model = onnx.load_model(work_dir_prefix + "model.onnx")
 
+    # Run the output onnx models in our backend:
     tf_rep = prepare(model)
     output_onnx_tf = tf_rep.run(backend_feed_dict)
 

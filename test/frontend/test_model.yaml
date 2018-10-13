@@ -1,10 +1,23 @@
 name: mnist_tutorial
 asset_url: https://s3-api.us-geo.objectstorage.softlayer.net/onnx-tensorflow/public_tutorial_assets.zip
 input_name: Placeholder
-graph_proto_path: tutorial_assets/graph.proto
+checkpoint_dir: tutorial_assets/ckpt
+metagraph_path: tutorial_assets/ckpt/model.ckpt.meta
 checkpoint_path: tutorial_assets/ckpt/model.ckpt
 devices: [CUDA]
 inputs:
   Placeholder: [1, 784]
 outputs:
   - fc2/add
+
+name: mnist-lstm
+asset_url: https://s3-api.us-geo.objectstorage.softlayer.net/onnx-tensorflow/test-assets/mnist-lstm.zip
+input_name: Placeholder
+checkpoint_dir: checkpoint
+metagraph_path: checkpoint/lstm.ckpt.meta
+checkpoint_path: checkpoint/lstm.ckpt
+devices: [CUDA]
+inputs:
+  Placeholder: [4, 28, 28]
+outputs:
+  - Softmax
