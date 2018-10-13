@@ -1,9 +1,13 @@
+import inspect
 import os
 import subprocess
+import unittest
 
 from onnx.backend.test.runner import Runner
 from onnx.backend.test.case.model import TestCase
-import unittest
+
+from onnx_tf.backend import TensorflowBackend
+from onnx_tf.common import IS_PYTHON3
 
 _ONNX_MODELS = [(
     "mobilenetv2-1.0",
@@ -15,8 +19,16 @@ class TestCli(unittest.TestCase):
 
   @staticmethod
   def prepare_model(model_name, url):
-    return Runner._prepare_model_data(
-        model_test=TestCase(
+    if IS_PYTHON3:
+      params = list(
+          inspect.signature(Runner._prepare_model_data).parameters.keys())
+    else:
+      params = inspect.getargspec(Runner._prepare_model_data).args
+    runner_class = Runner
+    if "self" == params[0]:
+      runner_class = Runner(TensorflowBackend)
+    return runner_class._prepare_model_data(
+        TestCase(
             name="test_{}".format(model_name),
             model_name=model_name,
             url=url,
