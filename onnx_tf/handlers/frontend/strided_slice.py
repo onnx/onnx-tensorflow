@@ -14,12 +14,16 @@ class StridedSlice(FrontendHandler):
 
   @classmethod
   def version_1(cls, node, **kwargs):
-    shrink_axis_mask = node.attr.get("shrink_axis_mask", 0)
     begin_mask = node.attr.get("begin_mask", 0)
     end_mask = node.attr.get("end_mask", 0)
     ellipsis_mask = node.attr.get("ellipsis_mask", 0)
     new_axis_mask = node.attr.get("new_axis_mask", 0)
     shrink_axis_mask = node.attr.get("shrink_axis_mask", 0)
+
+    do_not_support = (begin_mask is 0 and end_mask is 0 and
+                      ellipsis_mask is 0 and new_axis_mask is 0)
+    assert do_not_support, "limited strided slice support"
+    # TODO: assert strides must be 1.
 
     need_post_processing = (shrink_axis_mask > 0 or begin_mask > 0 or
                             end_mask > 0 or ellipsis_mask > 0 or
