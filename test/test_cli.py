@@ -25,7 +25,7 @@ class TestCli(unittest.TestCase):
     else:
       params = inspect.getargspec(Runner._prepare_model_data).args
     runner_class = Runner
-    if "self" == params[0]:
+    if params[0] == "self":
       runner_class = Runner(TensorflowBackend)
     return runner_class._prepare_model_data(
         TestCase(
