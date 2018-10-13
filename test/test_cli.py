@@ -27,7 +27,6 @@ class TestCli(unittest.TestCase):
     runner_class = Runner
     if params[0] == "self":
       runner_class = Runner(TensorflowBackend)
-    print(url)
     return runner_class._prepare_model_data(
         model_test=TestCase(
             name="test_{}".format(model_name),
