@@ -9,7 +9,7 @@ from onnx_tf.handlers.handler import tf_op
 class Matmul(FrontendHandler):
 
   @classmethod
-  def version_1(cls, node, **kwargs):
+  def _common(cls, node, **kwargs):
     transpose_a = node.attr.get("transpose_a", False)
     transpose_b = node.attr.get("transpose_b", False)
     input_a = node.inputs[0]
@@ -33,3 +33,11 @@ class Matmul(FrontendHandler):
       nodes.append(transposed_b)
     nodes.append(cls.make_node_from_tf_node(node, [input_a, input_b]))
     return nodes
+
+  @classmethod
+  def version_1(cls, node, **kwargs):
+    return cls._common(node, **kwargs)
+
+  @classmethod
+  def version_9(cls, node, **kwargs):
+    return cls._common(node, **kwargs)
