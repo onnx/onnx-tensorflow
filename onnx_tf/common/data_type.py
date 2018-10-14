@@ -11,6 +11,8 @@ def tf2onnx(dtype):
     tf_dype = tf.as_dtype(dtype)
   elif isinstance(dtype, tf.DType):
     tf_dype = dtype
+  elif isinstance(dtype, list):
+    return [tf2onnx(t) for t in dtype]
   else:
     raise RuntimeError("dtype should be number or tf.DType.")
     
