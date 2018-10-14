@@ -11,7 +11,7 @@ class Shape(BackendHandler):
 
   @classmethod
   def get_attrs_processor_param(cls):
-    return {"default": {"out_type": tf.int64}}
+    return {"default": {"out_type": tf.int32}}
 
   @classmethod
   def version_1(cls, node, **kwargs):
