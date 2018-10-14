@@ -93,7 +93,7 @@ def create_test(test_model, interface):
     tf.reset_default_graph()
     work_dir = "".join([test_model["name"], "-", "workspace"])
     work_dir_prefix = work_dir + "/"
-    # download_and_extract(test_model["asset_url"], work_dir)
+    download_and_extract(test_model["asset_url"], work_dir)
 
     # Parse metagraph def to obtain graph_def
     meta_graph_def_file = open(work_dir_prefix + test_model["metagraph_path"],
@@ -180,6 +180,7 @@ with open(dir_path + "/test_model.yaml", 'r') as config:
   try:
     for test_model in yaml.safe_load_all(config):
       for device in test_model["devices"]:
+        print(test_model["name"])
         for interface in ["python", "cli"]:
           if supports_device(device):
             test_method = create_test(test_model, interface)

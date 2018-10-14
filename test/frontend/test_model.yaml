@@ -9,7 +9,7 @@ inputs:
   Placeholder: [1, 784]
 outputs:
   - fc2/add
-
+---
 name: mnist-lstm
 asset_url: https://s3-api.us-geo.objectstorage.softlayer.net/onnx-tensorflow/test-assets/mnist-lstm.zip
 input_name: Placeholder
