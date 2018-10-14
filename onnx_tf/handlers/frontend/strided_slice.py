@@ -8,6 +8,9 @@ from onnx_tf.handlers.handler import tf_op
 @tf_op("StridedSlice")
 class StridedSlice(FrontendHandler):
 
+  # Convenience function to convert int bit mask to a list of bit indices
+  # where the bit is set. For instance, _int_to_set_pos_list(5) -> [1, 3]
+  # (since 5 has binary representatioin of 0101)
   @classmethod
   def _int_to_set_pos_list(cls, num, num_bit=32):
     return np.where([bool(num & (1 << n)) for n in range(num_bit)])[0].tolist()
