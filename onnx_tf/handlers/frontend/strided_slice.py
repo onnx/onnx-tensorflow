@@ -20,8 +20,8 @@ class StridedSlice(FrontendHandler):
     new_axis_mask = node.attr.get("new_axis_mask", 0)
     shrink_axis_mask = node.attr.get("shrink_axis_mask", 0)
 
-    do_not_support = (begin_mask is 0 and end_mask is 0 and
-                      ellipsis_mask is 0 and new_axis_mask is 0)
+    do_not_support = (int(begin_mask) is 0 and int(end_mask) is 0 and
+                      int(ellipsis_mask) is 0 and int(new_axis_mask) is 0)
     assert do_not_support, "limited strided slice support"
     # TODO: assert strides must be 1.
 
