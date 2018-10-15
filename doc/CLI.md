@@ -24,10 +24,10 @@ optional arguments:
 #### From Tensorflow to ONNX:
 
 - Use frozen pb:
-`onnx-tf convert -t onnx -i /path/to/input.pb -o /path/to/output.onnx --ignore_unimplemented True`
+`onnx-tf convert -t onnx -i /path/to/input.pb -o /path/to/output.onnx`
 
 - Use ckpt:
-`onnx-tf convert -t onnx -i /path/to/input.ckpt -o /path/to/output.onnx --ignore_unimplemented True`
+`onnx-tf convert -t onnx -i /path/to/input.ckpt -o /path/to/output.onnx`
 (`/path/to` folder should contain files: `checkpoint`, `*.ckpt-{step}.data-*`, `*.ckpt-{step}.index`, `.ckpt-{step}.meta`)
 
 #### From ONNX to Tensorflow:

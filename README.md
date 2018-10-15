@@ -7,7 +7,7 @@
 
 [Command Line Interface Documentation](https://github.com/onnx/onnx-tensorflow/blob/master/doc/CLI.md)
 
-From Tensorflow to ONNX: `onnx-tf convert -t onnx -i /path/to/input.pb -o /path/to/output.onnx --ignore_unimplemented True`
+From Tensorflow to ONNX: `onnx-tf convert -t onnx -i /path/to/input.pb -o /path/to/output.onnx`
 
 From ONNX to Tensorflow: `onnx-tf convert -t tf -i /path/to/input.onnx -o /path/to/output.pb`
 
