@@ -4,6 +4,9 @@
 ## To convert models between Tensorflow and ONNX:
 
 ### Use CLI:
+
+[Command Line Interface Documentation](https://github.com/onnx/onnx-tensorflow/blob/master/doc/CLI.md)
+
 From Tensorflow to ONNX: `onnx-tf convert -t onnx -i /path/to/input.pb -o /path/to/output.onnx`
 
 From ONNX to Tensorflow: `onnx-tf convert -t tf -i /path/to/input.onnx -o /path/to/output.pb`
@@ -19,7 +22,8 @@ From ONNX to Tensorflow: `onnx-tf convert -t tf -i /path/to/input.onnx -o /path/
 import onnx
 from onnx_tf.backend import prepare
 
-output = prepare(onnx.load(input_path)).run(input)
+onnx_model = onnx.load("input_path")  # load onnx model
+output = prepare(onnx_model).run(input)  # run the loaded model
 ```
 
 ## More tutorials:

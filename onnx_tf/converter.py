@@ -8,6 +8,7 @@ import tensorflow as tf
 from tensorflow.core.framework import graph_pb2
 
 import onnx_tf.backend as backend
+from onnx_tf.common import get_output_node_names
 import onnx_tf.frontend as frontend
 
 logging.basicConfig(level=logging.DEBUG)
@@ -89,7 +90,7 @@ def parse_args(args):
 
   parser = argparse.ArgumentParser(
       description=
-      "This is the converter for converting protocol buffer between onnx and tf."
+      "This is the converter for converting protocol buffer between tf and onnx."
   )
 
   # required two args, source and destination path
@@ -107,30 +108,33 @@ def parse_args(args):
       help="Format converted to.",
       required=True)
 
+  def add_argument_group(parser, group_name, funcs):
+    group = parser.add_argument_group(group_name)
+    param_doc_dict = get_param_doc_dict(funcs)
+    for k, v in param_doc_dict.items():
+      group.add_argument("--{}".format(k), help=v["doc"], **v["params"])
+
   # backend args
-  backend_group = parser.add_argument_group("backend arguments (onnx -> tf)")
-  backend_funcs = [(backend.prepare, {"device": {}, "strict": {}})]
-  backend_param_doc_dict = get_param_doc_dict(backend_funcs)
-  for k, v in backend_param_doc_dict.items():
-    backend_group.add_argument("--{}".format(k), help=v["doc"], **v["params"])
+  add_argument_group(parser, "backend arguments (onnx -> tf)",
+                     [(backend.prepare, {
+                         "device": {},
+                         "strict": {}
+                     })])
 
   # frontend args
-  frontend_group = parser.add_argument_group("frontend arguments (tf -> onnx)")
-  frontend_funcs = [(frontend.tensorflow_graph_to_onnx_model, {
-      "opset": {
-          "action": OpsetAction,
-      },
-      "ignore_unimplemented": {
-          "type": bool
-      },
-      "optimizer_passes": {
-          "action": ListAction,
-          "dest": "optimizer_passes"
-      }
-  })]
-  frontend_param_doc_dict = get_param_doc_dict(frontend_funcs)
-  for k, v in frontend_param_doc_dict.items():
-    frontend_group.add_argument("--{}".format(k), help=v["doc"], **v["params"])
+  add_argument_group(parser, "frontend arguments (tf -> onnx)",
+                     [(frontend.tensorflow_graph_to_onnx_model, {
+                         "opset": {
+                             "action": OpsetAction,
+                         },
+                         "ignore_unimplemented": {
+                             "type": bool
+                         },
+                         "optimizer_passes": {
+                             "action": ListAction,
+                             "dest": "optimizer_passes"
+                         }
+                     })])
 
   return parser.parse_args(args)
 
@@ -153,14 +157,6 @@ def convert(infile, outfile, convert_to, **kwargs):
     tf_rep = backend.prepare(onnx_model, **kwargs)
     tf_rep.export_graph(outfile)
   elif convert_to == "onnx":
-
-    def get_output_node_names(graph_def):
-      nodes, input_names = dict(), set()
-      for node in graph_def.node:
-        nodes[node.name] = node
-        input_names.update(set(node.input))
-      return list(set(nodes) - input_names)
-
     ext = os.path.splitext(infile)[1]
     logger.info("Start converting tf pb to onnx pb:")
     if ext == ".pb":

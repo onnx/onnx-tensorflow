@@ -4,14 +4,14 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import unittest
+
 import numpy as np
-import tensorflow as tf
-import onnx
-from onnx_tf.backend import run_node, prepare
+from onnx_tf.backend import prepare
 from onnx import helper
 from onnx import TensorProto
 
-from onnx_tf.common.legacy import legacy_onnx_pre_1_2
+from onnx_tf.common.legacy import legacy_onnx_pre_ver
+
 
 class TestModel(unittest.TestCase):
   """ Tests for models
@@ -35,10 +35,10 @@ class TestModel(unittest.TestCase):
     np.testing.assert_almost_equal(output.X1, Y_ref)
 
   def test_initializer(self):
-    major, minor, revision = map(int, onnx.version.version.split("."))
-    if legacy_onnx_pre_1_2():
-        raise unittest.SkipTest(
-          "The current version of ONNX does not record correctly the opset of Cast.")
+    if legacy_onnx_pre_ver(1, 2):
+      raise unittest.SkipTest(
+          "The current version of ONNX does not record correctly the opset of Cast."
+      )
     X = np.array([[1, 2], [3, 4]]).astype(np.float32)
     Y = np.array([[1, 2], [3, 4]]).astype(np.float32)
     weight = np.array([[1, 0], [0, 1]])

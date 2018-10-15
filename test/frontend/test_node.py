@@ -9,11 +9,10 @@ import tensorflow as tf
 
 from onnx_tf.frontend import tensorflow_graph_to_onnx_model
 from onnx import checker
-from onnx import defs
 
 # for testing
 from onnx_tf.backend import prepare
-from onnx_tf.common.legacy import legacy_opset_pre_6
+from onnx_tf.common.legacy import legacy_opset_pre_ver
 
 
 def get_node_by_name(nodes, name):
@@ -23,10 +22,10 @@ def get_node_by_name(nodes, name):
 
 
 def get_rnd(shape, low=-1.0, high=1.0, dtype=np.float32):
-  if (dtype == np.float32):
+  if dtype == np.float32:
     return (np.random.uniform(low, high,
                               np.prod(shape)).reshape(shape).astype(np.float32))
-  elif (dtype == np.int32):
+  elif dtype == np.int32:
     return (np.random.uniform(low, high,
                               np.prod(shape)).reshape(shape).astype(np.int32))
   elif dtype == np.bool_:
@@ -157,7 +156,7 @@ test_cases = [
 ("test_strided_slice_shrink", tf.strided_slice, "StridedSlice", [get_rnd([5, 5]), [0, 0], [1, 3]], {"shrink_axis_mask":1}),
 ]
 
-if not legacy_opset_pre_6():
+if not legacy_opset_pre_ver(6):
   test_cases.append(("test_tile", tf.tile, "Tile", [get_rnd([1, 2, 3, 4]), np.random.randint(1, 10, (4,), dtype=np.int32)], {}))
 
 # yapf: enable
