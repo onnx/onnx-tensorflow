@@ -1,5 +1,6 @@
 import numpy as np
 
+from onnx_tf.common import exception
 from onnx_tf.common import get_unique_suffix
 from onnx_tf.handlers.frontend_handler import FrontendHandler
 from onnx_tf.handlers.handler import onnx_op
@@ -8,6 +9,11 @@ from onnx_tf.handlers.handler import tf_op
 @onnx_op("DynamicSlice")
 @tf_op("StridedSlice")
 class StridedSlice(FrontendHandler):
+
+  @classmethod
+  def args_check(cls, node, **kwargs):
+    if node.inputs[3] not in kwargs["consts"]:
+      exception.CONST_NOT_FOUND_EXCEPT(node.inputs[3], node.op_type)
 
   # Convenience function to convert int bit mask to a list of bit indices
   # where the bit is set. For instance, _int_to_set_pos_list(5) -> [1, 3]
@@ -27,7 +33,10 @@ class StridedSlice(FrontendHandler):
     only_support = (int(begin_mask) is 0 and int(end_mask) is 0 and
                     int(ellipsis_mask) is 0 and int(new_axis_mask) is 0)
     assert only_support, "limited strided slice support"
-    # TODO: assert strides must be 1.
+
+    # Assert that strides are all ones, since we have limited support.
+    const_strides = kwargs["consts"][node.inputs[3]]
+    np.testing.assert_array_equal(np.ones_like(const_strides), const_strides)
 
     need_post_processing = (shrink_axis_mask > 0 or begin_mask > 0 or
                             end_mask > 0 or ellipsis_mask > 0 or
