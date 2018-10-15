@@ -90,7 +90,7 @@ def parse_args(args):
 
   parser = argparse.ArgumentParser(
       description=
-      "This is the converter for converting protocol buffer between onnx and tf."
+      "This is the converter for converting protocol buffer between tf and onnx."
   )
 
   # required two args, source and destination path
