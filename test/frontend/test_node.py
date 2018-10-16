@@ -159,6 +159,10 @@ test_cases = [
 if not legacy_opset_pre_ver(6):
   test_cases.append(("test_tile", tf.tile, "Tile", [get_rnd([1, 2, 3, 4]), np.random.randint(1, 10, (4,), dtype=np.int32)], {}))
 
+if not legacy_opset_pre_ver(9):
+  test_cases.append(("test_strided_slice", tf.strided_slice, "StridedSlice", [get_rnd([5, 5]), [0, 0], [1, 5], [1, 1]], {}))
+  test_cases.append(("test_strided_slice_shrink", tf.strided_slice, "StridedSlice", [get_rnd([5, 5]), [0, 0], [1, 3], [1, 1]], {"shrink_axis_mask":1}))
+
 # yapf: enable
 
 for k, val in enumerate(test_cases):
