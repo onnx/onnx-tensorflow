@@ -11,7 +11,7 @@ from onnx import helper
 from onnx import NodeProto
 
 from .handler import Handler
-from onnx_tf.pb_class import TensorflowNode
+from onnx_tf.pb_wrapper import TensorflowNode
 
 
 class FrontendHandler(Handler):

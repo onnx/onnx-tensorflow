@@ -16,8 +16,8 @@ from onnx_tf.common import exception
 from onnx_tf.common.handler_helper import get_all_frontend_handlers
 from onnx_tf.common import IS_PYTHON3
 from onnx_tf.handlers.frontend_handler import FrontendHandler
-from onnx_tf.pb_class import TensorflowNode
-from onnx_tf.pb_class import OnnxGraph
+from onnx_tf.pb_wrapper import TensorflowNode
+from onnx_tf.pb_wrapper import OnnxGraph
 
 # Define long type for Python 3:
 if IS_PYTHON3:

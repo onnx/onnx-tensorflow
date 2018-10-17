@@ -26,7 +26,7 @@ from onnx_tf.common import exception
 from onnx_tf.common import get_device_option
 from onnx_tf.common import supports_device as common_supports_device
 from onnx_tf.common.handler_helper import get_all_backend_handlers
-from onnx_tf.pb_class import OnnxNode
+from onnx_tf.pb_wrapper import OnnxNode
 
 
 class TensorflowBackend(Backend):
