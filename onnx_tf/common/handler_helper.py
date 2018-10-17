@@ -6,7 +6,6 @@ from onnx_tf.handlers.backend import *  # noqa
 from onnx_tf.handlers.backend_handler import BackendHandler
 from onnx_tf.handlers.frontend import *  # noqa
 from onnx_tf.handlers.frontend_handler import FrontendHandler
-from . import op_name_to_lower
 
 
 def get_all_frontend_handlers(opset_dict):
@@ -88,11 +87,10 @@ def get_frontend_coverage():
   onnx_coverage = {}
   for handler in FrontendHandler.__subclasses__():
     handler.check_cls()
-
     versions = handler.get_versions()
     domain = handler.DOMAIN
     for tf_op in handler.TF_OP:
-      _update_coverage(tf_coverage, domain, op_name_to_lower(tf_op), versions)
+      _update_coverage(tf_coverage, domain, tf_op, versions)
     if handler.ONNX_OP:
       _update_coverage(onnx_coverage, domain, handler.ONNX_OP, versions)
   return onnx_coverage, tf_coverage
