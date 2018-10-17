@@ -6,10 +6,12 @@ from __future__ import unicode_literals
 import warnings
 
 import onnx
-from onnx import helper
 from onnx import checker
+from onnx import helper
+from onnx import NodeProto
 
 from .handler import Handler
+from onnx_tf.pb_wrapper import TensorflowNode
 
 
 class FrontendHandler(Handler):
@@ -31,6 +33,12 @@ class FrontendHandler(Handler):
           "{} doesn't have TF_OP. "
           "Please use Handler.tf_op decorator to register TF_OP.".format(
               cls.__name__))
+
+  @classmethod
+  def handle(cls, node, **kwargs):
+    if isinstance(node, NodeProto):
+      node = TensorflowNode(node)
+    return super(FrontendHandler, cls).handle(node, **kwargs)
 
   @classmethod
   def make_node(cls,
