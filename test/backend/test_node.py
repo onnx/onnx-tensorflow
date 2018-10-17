@@ -8,7 +8,7 @@ import numpy as np
 import tensorflow as tf
 from onnx_tf.backend import run_node
 from onnx_tf.common import supports_device
-from onnx_tf.common.legacy import legacy_onnx_pre_1_2, legacy_opset_pre_6
+from onnx_tf.common.legacy import legacy_onnx_pre_ver, legacy_opset_pre_ver
 from onnx import helper
 from onnx import TensorProto
 from onnx import defs
@@ -121,7 +121,7 @@ class TestNode(unittest.TestCase):
     return x * inv + (bias - mean * inv if bias is not None else -mean * inv)
 
   def test_batch_normalization(self):
-    if legacy_opset_pre_6():
+    if legacy_opset_pre_ver(6):
       raise unittest.SkipTest("Backend doesn't support consumed flag")
     node_def = helper.make_node(
         "BatchNormalization", ["X", "scale", "bias", "mean", "var"], ["Y"],
@@ -143,7 +143,7 @@ class TestNode(unittest.TestCase):
     np.testing.assert_almost_equal(output["Y"], golden, decimal=5)
 
   def test_cast(self):
-    if legacy_onnx_pre_1_2() or legacy_opset_pre_6():
+    if legacy_onnx_pre_ver(1, 2) or legacy_opset_pre_ver(6):
       test_cases = [("FLOAT", tf.float32), ("UINT8", tf.uint8), ("INT8",
                                                                  tf.int8),
                     ("UINT16", tf.uint16), ("INT16", tf.int16),
@@ -827,7 +827,7 @@ class TestNode(unittest.TestCase):
     np.testing.assert_almost_equal(output["Y"], np.tanh(x), decimal=5)
 
   def test_tile(self):
-    if legacy_onnx_pre_1_2():
+    if legacy_onnx_pre_ver(1, 2):
       raise unittest.SkipTest(
           "The current version of ONNX does not record correctly the opset of Tile."
       )

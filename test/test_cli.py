@@ -1,9 +1,15 @@
+import inspect
 import os
 import subprocess
+import unittest
 
+import onnx
 from onnx.backend.test.runner import Runner
 from onnx.backend.test.case.model import TestCase
-import unittest
+
+from onnx_tf.backend import TensorflowBackend
+from onnx_tf.common import IS_PYTHON3
+from onnx_tf.common.legacy import legacy_onnx_pre_ver
 
 _ONNX_MODELS = [(
     "mobilenetv2-1.0",
@@ -15,8 +21,16 @@ class TestCli(unittest.TestCase):
 
   @staticmethod
   def prepare_model(model_name, url):
-    return Runner._prepare_model_data(
-        TestCase(
+    if IS_PYTHON3:
+      params = list(
+          inspect.signature(Runner._prepare_model_data).parameters.keys())
+    else:
+      params = inspect.getargspec(Runner._prepare_model_data).args
+    runner_class = Runner
+    if params[0] == "self":
+      runner_class = Runner(TensorflowBackend)
+    return runner_class._prepare_model_data(
+        model_test=TestCase(
             name="test_{}".format(model_name),
             model_name=model_name,
             url=url,
@@ -27,6 +41,9 @@ class TestCli(unittest.TestCase):
         ))
 
   def test_convert_to_tf(self):
+    if legacy_onnx_pre_ver(1, 2, 1):
+      raise unittest.SkipTest(
+          "The current version of ONNX uses dead model link.")
     for model_name, url in _ONNX_MODELS:
       model_dir = self.prepare_model(model_name, url)
       subprocess.check_call([
