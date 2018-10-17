@@ -21,3 +21,13 @@ inputs:
   Placeholder: [4, 28, 28]
 outputs:
   - Softmax
+---
+name: mobilenet_v1_1
+asset_url: https://s3-api.us-geo.objectstorage.softlayer.net/onnx-tensorflow/mobilenet_v1_1.0_224.zip
+input_name: input
+frozen_path: mobilenet_v1_1.0_224/mobilenet_v1_1.0_224_frozen.pb
+devices: [CUDA]
+inputs:
+  input: [1, 224, 224, 3]
+outputs:
+  - MobilenetV1/Predictions/Softmax
