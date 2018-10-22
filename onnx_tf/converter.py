@@ -8,8 +8,8 @@ import tensorflow as tf
 from tensorflow.core.framework import graph_pb2
 
 import onnx_tf.backend as backend
-from onnx_tf.pb_wrapper import TensorflowGraph
 import onnx_tf.frontend as frontend
+from onnx_tf.pb_wrapper import TensorflowGraph
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger()
