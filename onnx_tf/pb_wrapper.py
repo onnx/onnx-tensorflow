@@ -9,6 +9,7 @@ from onnx.helper import make_graph
 from onnx.helper import make_tensor
 from onnx.helper import make_tensor_value_info
 from onnx.helper import mapping
+import tensorflow as tf
 from tensorflow.core.framework.attr_value_pb2 import AttrValue
 from tensorflow.core.framework.node_def_pb2 import NodeDef
 
@@ -56,6 +57,68 @@ class TensorflowNode(object):
     self.domain = "" if len(splitted_op_name) == 1 else ".".join(
         splitted_op_name[:-1])
     self.op_type = splitted_op_name[-1]
+
+
+class TensorflowGraph(object):
+
+  def __init__(self, graph_def, outputs=(), graph_name="graph"):
+    self._graph_name = graph_name
+    self._nodes = graph_def.node
+    self._nodes_dict = {n.name: n for n in graph_def.node}
+    self._outputs = outputs or self.get_output_node_names(graph_def)
+
+    self._graph_def = graph_def
+    if self._outputs and "_output_shapes" not in self.get_node_by_name(
+        self._outputs[0]).attr:
+      self._graph_def = self._add_infer_shapes(graph_def)
+
+  def get_node_by_name(self, name):
+    node = self._nodes_dict.get(name, None)
+    if node is None:
+      raise ValueError(
+          "Node {} is not found in the graph provided".format(name))
+    return node
+
+  @staticmethod
+  def _add_infer_shapes(graph_def):
+    with tf.Graph().as_default():
+      with tf.Session(
+          config=tf.ConfigProto(
+              graph_options=tf.GraphOptions(infer_shapes=True))) as sess:
+        tf.import_graph_def(graph_def, name="")
+      return sess.graph_def
+
+  @staticmethod
+  def get_output_node_names(graph_def):
+    """Get output node names from GraphDef.
+
+    Args:
+      graph_def: GraphDef object.
+
+    Returns:
+      List of output node names.
+    """
+    nodes, input_names = dict(), set()
+    for node in graph_def.node:
+      nodes[node.name] = node
+      input_names.update(set(node.input))
+    return list(set(nodes) - input_names)
+
+  @property
+  def graph_def(self):
+    return self._graph_def
+
+  @property
+  def graph_name(self):
+    return self._graph_name
+
+  @property
+  def nodes_dict(self):
+    return self._nodes_dict
+
+  @property
+  def outputs(self):
+    return self._outputs
 
 
 # TODO: Move this into ONNX main library

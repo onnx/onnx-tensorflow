@@ -1,5 +1,4 @@
 """Frontend for exporting Tensorflow graph to ONNX graph
-
 """
 from __future__ import absolute_import
 from __future__ import division
@@ -10,12 +9,12 @@ from onnx import defs
 from onnx.helper import make_model
 from onnx.helper import make_opsetid
 from onnx.optimizer import optimize
-import tensorflow as tf
 
 from onnx_tf.common import exception
 from onnx_tf.common.handler_helper import get_all_frontend_handlers
 from onnx_tf.common import IS_PYTHON3
 from onnx_tf.handlers.frontend_handler import FrontendHandler
+from onnx_tf.pb_wrapper import TensorflowGraph
 from onnx_tf.pb_wrapper import TensorflowNode
 from onnx_tf.pb_wrapper import OnnxGraph
 
@@ -30,22 +29,17 @@ class TensorflowFrontend(object):
 
   @classmethod
   def tensorflow_graph_to_onnx_graph(cls,
-                                     graph_def,
-                                     output,
+                                     tf_graph,
                                      opset=((defs.ONNX_DOMAIN,
                                              defs.onnx_opset_version()),),
-                                     name="graph",
                                      ignore_unimplemented=False):
-    """Converts a Tensorflow Graph Proto to an ONNX graph
+    """Converts a TensorflowGraph to an ONNX graph
 
-    This function converts a Tensorflow Graph proto to an equivalent
+    This function converts a TensorflowGraph to an equivalent
     representation of ONNX graph.
 
-    :param graph_def: Tensorflow Graph Proto object.
-    :param output: List of Tensorflow NodeDef object specifying which nodes
-      to be taken as outputs of the ONNX graph.
+    :param tf_graph: TensorflowGraph object.
     :param opset: Opset, which should be ((str domain: int version number),).
-    :param name: The name of the output ONNX Graph.
     :param ignore_unimplemented: Convert to ONNX model and ignore all the operators
       that are not currently supported by onnx-tensorflow.
       This is an experimental feature. By enabling this feature,
@@ -53,7 +47,7 @@ class TensorflowFrontend(object):
 
     :returns: The equivalent ONNX Graph Proto object.
     """
-    onnx_graph = OnnxGraph(name)
+    onnx_graph = OnnxGraph(tf_graph.graph_name)
     exception.IGNORE_UNIMPLEMENTED = ignore_unimplemented
 
     opset_dict = {}
@@ -64,7 +58,7 @@ class TensorflowFrontend(object):
 
     handlers = get_all_frontend_handlers(opset_dict)
 
-    node_tup = [(node.name, TensorflowNode(node)) for node in graph_def.node]
+    node_tup = tuple(tf_graph.nodes_dict.items())
     for name, node in node_tup:
 
       if node.op_type == "Placeholder":
@@ -93,8 +87,8 @@ class TensorflowFrontend(object):
               node, op_type=node.op_type, should_check=False)
         onnx_graph.add_node_proto(node_proto)
 
-    for o in output:
-      output_node = TensorflowNode(o)
+    for o in tf_graph.outputs:
+      output_node = TensorflowNode(tf_graph.get_node_by_name(o))
       onnx_graph.add_output_proto(output_node)
 
     return onnx_graph.make_graph_proto()
@@ -132,13 +126,6 @@ class TensorflowFrontend(object):
     :returns: The equivalent ONNX Model Proto object.
     """
 
-    def get_node_by_name(nodes, name):
-      for node in nodes:
-        if node.name == name:
-          return node
-      raise ValueError(
-          "Node {} is not found in the graph provided".format(name))
-
     if not isinstance(opset, (int, long, list, tuple)):
       raise TypeError("opset is expected to int, list or tuple, but {}.".format(
           type(opset)))
@@ -149,15 +136,9 @@ class TensorflowFrontend(object):
     if not isinstance(output, (list, tuple)):
       output = [output]
 
-    output_nodes = [get_node_by_name(graph_def.node, o) for o in output]
-
-    if "_output_shapes" not in output_nodes[0].attr:
-      # Add infer_shapes to GraphDef
-      graph_def = cls._add_infer_shapes(graph_def)
-      output_nodes = [get_node_by_name(graph_def.node, o) for o in output]
-
-    onnx_graph = cls.tensorflow_graph_to_onnx_graph(
-        graph_def, output_nodes, opset, graph_name, ignore_unimplemented)
+    tf_graph = TensorflowGraph(graph_def, output, graph_name)
+    onnx_graph = cls.tensorflow_graph_to_onnx_graph(tf_graph, opset,
+                                                    ignore_unimplemented)
     onnx_model = make_model(
         onnx_graph, producer_name=producer_name, opset_imports=opset_imports)
 
@@ -165,15 +146,6 @@ class TensorflowFrontend(object):
       onnx_model = optimize(onnx_model, optimizer_passes)
 
     return onnx_model
-
-  @staticmethod
-  def _add_infer_shapes(graph_def):
-    with tf.Graph().as_default():
-      with tf.Session(
-          config=tf.ConfigProto(
-              graph_options=tf.GraphOptions(infer_shapes=True))) as sess:
-        tf.import_graph_def(graph_def, name="")
-      return sess.graph_def
 
 
 convert_graph = TensorflowFrontend.tensorflow_graph_to_onnx_graph

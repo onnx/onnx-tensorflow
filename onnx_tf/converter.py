@@ -8,7 +8,7 @@ import tensorflow as tf
 from tensorflow.core.framework import graph_pb2
 
 import onnx_tf.backend as backend
-from onnx_tf.common import get_output_node_names
+from onnx_tf.pb_wrapper import TensorflowGraph
 import onnx_tf.frontend as frontend
 
 logging.basicConfig(level=logging.DEBUG)
@@ -172,7 +172,8 @@ def convert(infile, outfile, convert_to, **kwargs):
             tf.local_variables_initializer()
         ])
         saver.restore(sess, latest_ckpt)
-        output_node_names = get_output_node_names(sess.graph.as_graph_def())
+        output_node_names = TensorflowGraph.get_output_node_names(
+            sess.graph.as_graph_def())
         graph_def = tf.graph_util.convert_variables_to_constants(
             sess, sess.graph.as_graph_def(add_shapes=True), output_node_names)
     else:
@@ -180,6 +181,6 @@ def convert(infile, outfile, convert_to, **kwargs):
           "Input file is not supported. Should be .pb or .ckpt, but get {}".
           format(ext))
     onnx_model = frontend.tensorflow_graph_to_onnx_model(
-        graph_def, get_output_node_names(graph_def), **kwargs)
+        graph_def, TensorflowGraph.get_output_node_names(graph_def), **kwargs)
     onnx.save(onnx_model, outfile)
   logger.info("Converting completes successfully.")
