@@ -64,13 +64,9 @@ class TensorflowGraph(object):
   def __init__(self, graph_def, outputs=(), graph_name="graph"):
     self._graph_name = graph_name
     self._nodes = graph_def.node
-    self._nodes_dict = {n.name: n for n in graph_def.node}
+    self._nodes_dict = {n.name: TensorflowNode(n) for n in graph_def.node}
     self._outputs = outputs or self.get_output_node_names(graph_def)
-
-    self._graph_def = graph_def
-    if self._outputs and "_output_shapes" not in self.get_node_by_name(
-        self._outputs[0]).attr:
-      self._graph_def = self._add_infer_shapes(graph_def)
+    self._graph_def = self._process_graph_def(graph_def)
 
   def get_node_by_name(self, name):
     node = self._nodes_dict.get(name, None)
@@ -78,6 +74,12 @@ class TensorflowGraph(object):
       raise ValueError(
           "Node {} is not found in the graph provided".format(name))
     return node
+
+  def _process_graph_def(self, graph_def):
+    if self._outputs and "_output_shapes" not in self.get_node_by_name(
+        self._outputs[0]).attr:
+      graph_def = self._add_infer_shapes(graph_def)
+    return graph_def
 
   @staticmethod
   def _add_infer_shapes(graph_def):

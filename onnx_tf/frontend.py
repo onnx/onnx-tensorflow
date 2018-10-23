@@ -88,7 +88,7 @@ class TensorflowFrontend(object):
         onnx_graph.add_node_proto(node_proto)
 
     for o in tf_graph.outputs:
-      output_node = TensorflowNode(tf_graph.get_node_by_name(o))
+      output_node = tf_graph.get_node_by_name(o)
       onnx_graph.add_output_proto(output_node)
 
     return onnx_graph.make_graph_proto()
