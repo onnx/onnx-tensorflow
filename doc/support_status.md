@@ -132,79 +132,80 @@ ______
 
 | Tensorflow Op        | Supported ONNX Version  |
 | -------------- |:------------------:|
-|abs|1, 6|
-|acos|7|
-|add|1, 6, 7|
-|add_n|1, 6|
-|arg_max|1|
-|arg_min|1|
-|asin|7|
-|atan|7|
-|avg_pool|1, 7|
-|batch_norm|1, 6, 7|
-|bias_add|1, 6, 7|
-|cast|1, 6|
-|ceil|1, 6|
-|concat_v2|1, 4|
-|conv1_d|1|
-|conv2_d|1|
-|conv3_d|1|
-|cos|7|
-|depthwise_conv2d_native|1|
-|equal|1, 7|
-|exp|1, 6|
-|expand_dims|1|
-|fill|1|
-|floor|1, 6|
-|fused_batch_norm|1, 6, 7|
-|greater|1, 7|
-|identity|1|
-|less|1, 7, 9|
-|log|1, 6|
-|log_softmax|1|
-|logical_and|1, 7|
-|logical_not|1|
-|logical_or|1, 7|
-|logical_xor|1, 7|
-|mat_mul|1|
-|max|1|
-|max_pool|1, 8|
-|max_pool_with_argmax|8|
-|maximum|1, 6|
-|mean|1|
-|min|1|
-|minimum|1, 6|
-|mul|1, 6, 7|
-|neg|1, 6|
-|pack|1|
-|pad|1, 2|
-|pow|1, 7|
-|prod|1|
-|random_standard_normal|1|
-|random_uniform|1|
-|real_div|1, 6, 7|
-|reciprocal|1, 6|
-|relu|1, 6|
-|relu6|1, 6|
-|reshape|1, 5|
-|selu|1, 6|
-|shape|1|
-|sigmoid|1, 6|
-|sin|7|
-|slice|1|
-|softmax|1|
-|softplus|1|
-|softsign|1|
-|space_to_depth|1|
-|split|1, 2|
-|split_v|1, 2|
-|sqrt|1, 6|
-|squeeze|1|
-|sub|1, 6, 7|
-|sum|1|
-|tan|7|
-|tanh|1, 6|
-|tile|6|
-|top_k_v2|1|
-|transpose|1|
-|unpack|1|
+|Abs|1, 6|
+|Acos|7|
+|Add|1, 6, 7|
+|AddN|1, 6|
+|ArgMax|1|
+|ArgMin|1|
+|Asin|7|
+|Atan|7|
+|AvgPool|1, 7|
+|BatchNorm|1, 6, 7|
+|BiasAdd|1, 6, 7|
+|Cast|1, 6|
+|Ceil|1, 6|
+|ConcatV2|1, 4|
+|Conv1D|1|
+|Conv2D|1|
+|Conv3D|1|
+|Cos|7|
+|DepthwiseConv2dNative|1|
+|Equal|1, 7|
+|Exp|1, 6|
+|ExpandDims|1|
+|Fill|1|
+|Floor|1, 6|
+|FusedBatchNorm|1, 6, 7|
+|Greater|1, 7, 9|
+|Identity|1|
+|Less|1, 7, 9|
+|Log|1, 6|
+|LogSoftmax|1|
+|LogicalAnd|1, 7|
+|LogicalNot|1|
+|LogicalOr|1, 7|
+|LogicalXor|1, 7|
+|MatMul|1, 9|
+|Max|1|
+|MaxPool|1, 8|
+|MaxPoolWithArgmax|8|
+|Maximum|1, 6|
+|Mean|1|
+|Min|1|
+|Minimum|1, 6|
+|Mul|1, 6, 7|
+|Neg|1, 6|
+|Pack|1|
+|Pad|1, 2|
+|Pow|1, 7|
+|Prod|1|
+|RandomStandardNormal|1|
+|RandomUniform|1|
+|RealDiv|1, 6, 7|
+|Reciprocal|1, 6|
+|Relu|1, 6|
+|Relu6|1, 6|
+|Reshape|1, 5|
+|Selu|1, 6|
+|Shape|1|
+|Sigmoid|1, 6|
+|Sin|7|
+|Slice|1|
+|Softmax|1|
+|Softplus|1|
+|Softsign|1|
+|SpaceToDepth|1|
+|Split|1, 2|
+|SplitV|1, 2|
+|Sqrt|1, 6|
+|Squeeze|1|
+|StridedSlice|9|
+|Sub|1, 6, 7|
+|Sum|1|
+|Tan|7|
+|Tanh|1, 6|
+|Tile|6|
+|TopKV2|1|
+|Transpose|1|
+|Unpack|1|
