@@ -16,7 +16,6 @@ from tensorflow.core.framework.node_def_pb2 import NodeDef
 from onnx_tf.common import attr_converter
 from onnx_tf.common import attr_translator
 from onnx_tf.common import IS_PYTHON3
-from onnx_tf.graph_parser import MultiRNNParser
 
 
 class TensorflowNode(object):
@@ -64,11 +63,10 @@ class TensorflowGraph(object):
 
   def __init__(self, graph_def, outputs=(), graph_name="graph"):
     self._graph_name = graph_name
-    graph_def = self._parse_graph_def(graph_def)
-    self._nodes = graph_def.node
-    self._nodes_dict = {n.name: TensorflowNode(n) for n in graph_def.node}
+    self._nodes_dict = {n.name: n for n in self._parse_nodes(graph_def.node)}
     self._outputs = outputs or self.get_output_node_names(graph_def)
     self._graph_def = self._process_graph_def(graph_def)
+
 
   def get_node_by_name(self, name):
     node = self._nodes_dict.get(name, None)
@@ -102,17 +100,18 @@ class TensorflowGraph(object):
     Returns:
       List of output node names.
     """
-    nodes, input_names = dict(), set()
+    input_names, output_names = set(), set()
     for node in graph_def.node:
-      nodes[node.name] = node
+      output_names.add(node.name)
       input_names.update(set(node.input))
-    return list(set(nodes) - input_names)
+    return list(output_names - input_names)
 
   @staticmethod
-  def _parse_graph_def(graph_def):
+  def _parse_nodes(nodes):
+    from onnx_tf.graph_parser import MultiRNNParser
     for parser in [MultiRNNParser]:
-      graph_def = parser.parse(graph_def)
-    return graph_def
+      nodes = parser.parse(nodes)
+    return nodes
 
   @property
   def graph_def(self):

@@ -1,12 +1,18 @@
+import collections
+
+from onnx_tf.pb_wrapper import TensorflowNode
+from onnx_tf.common import attr_translator
+
+
 class Parser(object):
 
   @classmethod
-  def parse(cls, graph_def):
-    return graph_def
+  def parse(cls, nodes):
+    return nodes
 
 
 def get_input_output_node_names(nodes):
-  input_names, output_names= set(), set()
+  input_names, output_names = set(), set()
   extension_output_names = set()
   for node in nodes:
     output_names.add(node.name)
@@ -37,13 +43,15 @@ class MultiRNNParser(Parser):
 
     def __init__(self):
       self.scopes = set()
-      self.nodes = dict()
-      self.cell_dict = dict()
+      self.nodes = collections.defaultdict(list)
+      self.cell_dict = collections.defaultdict(dict)
+      self.nodes_keep = collections.defaultdict(set)
 
   @classmethod
-  def parse(cls, graph_def):
+  def parse(cls, nodes):
     node_info_holder = cls.NodeInfoHolder()
-    for n in graph_def.node:
+    node_dict = {n.name: n for n in nodes}
+    for n in nodes:
       scopes = n.name.split("/")
       if "multi_rnn_cell" in scopes:
         idx_multi_rnn_cell = scopes.index("multi_rnn_cell")
@@ -54,19 +62,73 @@ class MultiRNNParser(Parser):
         scope = "/".join(scopes[:min(idx_multi_rnn_cell, idx_while)])
         node_info_holder.scopes.add(scope)
         cell_no = int(scopes[idx_cell_name].replace("cell_", ""))
-        node_info_holder.cell_dict.setdefault(cell_no, {})["type"] = scopes[idx_cell_type]
-        if "read" in scopes:
-          if "kernel" in scopes:
-            node_info_holder.cell_dict[cell_no]["kernel"] = n
-          if "bias" in scopes:
-            node_info_holder.cell_dict[cell_no]["bias"] = n
+        node_info_holder.cell_dict[cell_no]["type"] = scopes[
+            idx_cell_type].replace("_cell", "")
+        for key in ["kernel", "bias"]:
+          if key in scopes[-2:]:
+            if key == scopes[-2] and "read" == scopes[-1]:
+              node_info_holder.cell_dict[cell_no][key] = n.name
+            node_info_holder.nodes_keep[scope].add(n.name)
+        prev_c = [i for i in n.input if "cell_{}".format(cell_no - 1) in i]
+        if prev_c:
+          node_info_holder.cell_dict[cell_no]["prev_c"] = prev_c[0]
+          node_info_holder.nodes_keep[scope].add(prev_c[0])
 
-    for n in graph_def.node:
-      for s in node_info_holder.scopes:
-        if s in n.name:
-          node_info_holder.nodes.setdefault(s, []).append(n)
-    for k in node_info_holder.nodes:
-      inputs, outputs = get_input_output_node_names(node_info_holder.nodes[k])
-      print(inputs)
-      print(outputs)
-    return graph_def
+    group_nodes = [[]]
+    new_cell_nodes = collections.defaultdict(list)
+    for n in nodes:
+      for scope in node_info_holder.scopes:
+        if scope in n.name:
+          if group_nodes[-1]:
+            group_nodes.append(scope)
+            group_nodes.append([])
+          node_info_holder.nodes[scope].append(n)
+          if n.name in node_info_holder.nodes_keep[scope]:
+            new_cell_nodes[scope].append(n)
+        else:
+          group_nodes[-1].append(n)
+
+    for scope in node_info_holder.nodes:
+      inputs, outputs = get_input_output_node_names(
+          node_info_holder.nodes[scope])
+      inputs = [i for i in inputs if scope not in i]
+      input_nodes = [node_dict[i] for i in inputs]
+      for cell_no, cell_info in node_info_holder.cell_dict.items():
+        cell_node = cls.make_rnn_node(cell_info)
+        if cell_no == 0:
+          cell_node.inputs[0] = input_nodes[0].name
+        else:
+          new_cell_nodes[scope][-1].name = cell_info["prev_c"]
+          prev_c_output_shapes = attr_translator.translate_tf(
+              "_output_shapes",
+              node_dict[cell_info["prev_c"]].attr["_output_shapes"])
+          new_cell_nodes[scope][-1].attr[
+              "_output_shapes"] = prev_c_output_shapes
+
+        new_cell_nodes[scope].append(cell_node)
+      scope_output_shapes = attr_translator.translate_tf(
+          "_output_shapes", node_dict[outputs[0]].attr["_output_shapes"])
+      new_cell_nodes[scope][-1].attr["_output_shapes"] = scope_output_shapes
+      new_cell_nodes[scope][-1].name = outputs[0]
+
+    res_nodes = []
+    for g in group_nodes:
+      if isinstance(g, list):
+        res_nodes.extend(g)
+      else:
+        res_nodes.extend(new_cell_nodes[g])
+    return [
+        n if isinstance(n, TensorflowNode) else TensorflowNode(n)
+        for n in res_nodes
+    ]
+
+  @staticmethod
+  def make_rnn_node(cell_info):
+    node = TensorflowNode()
+    node.op_type = cell_info["type"].upper()
+    node.inputs = [
+        cell_info.get("prev_c", None),
+        cell_info.get("kernel", None),
+        cell_info.get("bias", None)
+    ]
+    return node
