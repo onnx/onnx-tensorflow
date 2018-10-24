@@ -16,7 +16,7 @@ from tensorflow.core.framework.node_def_pb2 import NodeDef
 from onnx_tf.common import attr_converter
 from onnx_tf.common import attr_translator
 from onnx_tf.common import IS_PYTHON3
-from onnx_tf.graph_parser import MultiRNNPaser
+from onnx_tf.graph_parser import MultiRNNParser
 
 
 class TensorflowNode(object):
@@ -110,7 +110,7 @@ class TensorflowGraph(object):
 
   @staticmethod
   def _parse_graph_def(graph_def):
-    for parser in [MultiRNNPaser]:
+    for parser in [MultiRNNParser]:
       graph_def = parser.parse(graph_def)
     return graph_def
 
