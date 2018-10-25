@@ -1,3 +1,5 @@
+import numpy as np
+
 from onnx_tf.common import exception
 from .broadcast_mixin import BroadcastMixin
 
@@ -30,6 +32,9 @@ class ReductionMixin(object):
   def reduction_op(cls, node, **kwargs):
     consts = kwargs["consts"]
     axes = consts[node.inputs[1]]
+    # Expand dim if axes is a 0-d array
+    if len(np.shape(axes)) == 0:
+      axes = np.expand_dims(axes, 0)
     return cls.make_node_from_tf_node(
         node, [node.inputs[0]],
         axes=axes,
