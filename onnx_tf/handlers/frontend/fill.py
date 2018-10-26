@@ -28,7 +28,8 @@ class Fill(FrontendHandler):
 
   @classmethod
   def version_9(cls, node, **kwargs):
+    output_shape = node.attr["_output_shapes"][0]
     value = float(np.asscalar(kwargs["consts"][node.inputs[1]]))
     outputs = cls.get_outputs_names(node)
-    return cls.make_node(
-        "ConstantLike", node, outputs, shape=output_shape, value=value)
+    return cls.make_node_from_tf_node(
+        node, [], outputs, op_type="ConstantLike", shape=output_shape, value=value)
