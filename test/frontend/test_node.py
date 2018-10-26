@@ -95,6 +95,7 @@ def create_test(test_data):
 
   return do_test_expected
 
+
 # yapf: disable
 # organized as a tuple of the format:
 # (test_name, tensorflow_op, output_node_name, LIST of inputs, MAP of attributes)
@@ -153,6 +154,7 @@ test_cases = [
 ("test_concat", tf.concat, "concat", [[get_rnd([1, 10]),get_rnd([10, 10]),get_rnd([20, 10])], 0], {}),
 ("test_bias_add_nchw", tf.nn.bias_add, "BiasAdd", [get_rnd([10, 32, 10, 10]),get_rnd([32])], {"data_format":"NCHW"}),
 ("test_bias_add_nhwc", tf.nn.bias_add, "BiasAdd", [get_rnd([10, 10, 10, 32]),get_rnd([32])], {"data_format":"NHWC"}),
+("test_fill", tf.fill, "Fill", [[3, 10], 5], {}),
 ]
 
 if not legacy_opset_pre_ver(6):
