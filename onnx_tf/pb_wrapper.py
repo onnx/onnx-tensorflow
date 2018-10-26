@@ -175,6 +175,11 @@ class OnnxGraph(object):
     input_proto = make_tensor_value_info(node.name, onnx_type, shape)
     self._inputs_proto.append(input_proto)
 
+  def add_input_proto_explicit(self, name, value, onnx_dtype):
+    shape = value.shape
+    input_proto = make_tensor_value_info(name, onnx_dtype, shape)
+    self._inputs_proto.append(input_proto)
+
   def add_output_proto(self, node):
     output_onnx_type = node.attr.get("T", TensorProto.BOOL)
     for i, output_shape in enumerate(node.attr["_output_shapes"]):
@@ -187,8 +192,16 @@ class OnnxGraph(object):
       node_proto = [node_proto]
     self._nodes_proto.extend(node_proto)
 
+  def remove_node_proto(self, names):
+    if not isinstance(names, (list, tuple)):
+      names = [names]
+    self._nodes_proto = filter(lambda x: x.name not in names, self._nodes_proto)
+
   def add_const(self, node):
     self._consts[node.name] = node.attr["value"]
+
+  def add_const_explicit(self, name, value):
+    self._consts[name] = value
 
   def add_const_proto(self, node):
     const_dim = len(node.attr["value"].shape)
@@ -206,6 +219,21 @@ class OnnxGraph(object):
         data_type=node.attr["dtype"],
         dims=shape,
         vals=raw_values)
+    self._consts_proto.append(const_proto)
+
+  def add_const_proto_explicit(self, name, value, onnx_dtype):
+    const_dim = len(value.shape)
+
+    if const_dim == 0:
+      raw_values = [value.tolist()]
+      values = [value]
+    else:
+      raw_values = value.flatten().tolist()
+      values = value
+
+    shape = np.array(values).shape
+    const_proto = make_tensor(
+        name=name, data_type=onnx_dtype, dims=shape, vals=raw_values)
     self._consts_proto.append(const_proto)
 
   def add_value_info_proto(self, node):

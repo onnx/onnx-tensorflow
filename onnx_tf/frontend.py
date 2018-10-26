@@ -7,6 +7,7 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 from onnx import defs
+from onnx import mapping
 from onnx.helper import make_model
 from onnx.helper import make_opsetid
 from onnx.optimizer import optimize
@@ -18,6 +19,7 @@ from onnx_tf.common import IS_PYTHON3
 from onnx_tf.handlers.frontend_handler import FrontendHandler
 from onnx_tf.pb_wrapper import TensorflowNode
 from onnx_tf.pb_wrapper import OnnxGraph
+from onnx_tf.backend import run_node
 
 # Define long type for Python 3:
 if IS_PYTHON3:
@@ -27,6 +29,37 @@ if IS_PYTHON3:
 class TensorflowFrontend(object):
   """ Tensorflow Frontend for ONNX
   """
+
+  @classmethod
+  def fold_constant(cls, onnx_graph):
+    """Fold constant nodes within an ONNX graph
+    TODO(tjingrant): do we need a special case to prevent folding identity?
+    """
+    for node in onnx_graph.nodes_proto:
+      # See if all inputs are present as contant tensors.
+      inclusion_mask = map(lambda x: x in onnx_graph.consts, node.input)
+      all_constant = all(inclusion_mask)
+      # If all inputs are constant, then fold this constant node.
+      if all_constant:
+        const_inputs = map(lambda x: onnx_graph.consts[x], node.input)
+        outputs = run_node(node, const_inputs)
+        # Make output tensors appear as graph initializers.
+        for index, output_name in enumerate(node.output):
+          output_content = outputs[index]
+          output_onnx_type = mapping.NP_TYPE_TO_TENSOR_TYPE[
+              output_content.dtype]
+          onnx_graph.add_const_explicit(name=output_name, value=output_content)
+          onnx_graph.add_const_proto_explicit(
+              name=output_name,
+              value=output_content,
+              onnx_dtype=output_onnx_type)
+          onnx_graph.add_input_proto_explicit(
+              name=output_name,
+              value=output_content,
+              onnx_dtype=output_onnx_type)
+        # Remove this folded constant node from graph.
+        onnx_graph.remove_node_proto(node.name)
+    return onnx_graph
 
   @classmethod
   def tensorflow_graph_to_onnx_graph(cls,
@@ -70,6 +103,7 @@ class TensorflowFrontend(object):
       if node.op_type == "Placeholder":
         onnx_graph.add_input_proto(node)
       elif node.op_type == "Const":
+        print(node.attr.get("dtype"))
         onnx_graph.add_const(node)
         onnx_graph.add_const_proto(node)
         onnx_graph.add_input_proto(node)
@@ -96,6 +130,8 @@ class TensorflowFrontend(object):
     for o in output:
       output_node = TensorflowNode(o)
       onnx_graph.add_output_proto(output_node)
+
+    onnx_graph = cls.fold_constant(onnx_graph)
 
     return onnx_graph.make_graph_proto()
 
