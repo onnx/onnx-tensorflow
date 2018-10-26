@@ -41,7 +41,7 @@ class TensorflowFrontend(object):
       all_constant = all(inclusion_mask)
       # If all inputs are constant, then fold this constant node.
       if all_constant:
-        const_inputs = map(lambda x: onnx_graph.consts[x], node.input)
+        const_inputs = list(map(lambda x: onnx_graph.consts[x], node.input))
         outputs = run_node(node, const_inputs)
         # Make output tensors appear as graph initializers.
         for index, output_name in enumerate(node.output):
