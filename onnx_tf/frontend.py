@@ -103,7 +103,6 @@ class TensorflowFrontend(object):
       if node.op_type == "Placeholder":
         onnx_graph.add_input_proto(node)
       elif node.op_type == "Const":
-        print(node.attr.get("dtype"))
         onnx_graph.add_const(node)
         onnx_graph.add_const_proto(node)
         onnx_graph.add_input_proto(node)
