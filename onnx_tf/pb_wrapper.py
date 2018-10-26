@@ -67,7 +67,6 @@ class TensorflowGraph(object):
     self._outputs = outputs or self.get_output_node_names(graph_def)
     self._graph_def = self._process_graph_def(graph_def)
 
-
   def get_node_by_name(self, name):
     node = self._nodes_dict.get(name, None)
     if node is None:

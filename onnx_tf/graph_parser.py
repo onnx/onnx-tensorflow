@@ -54,16 +54,16 @@ class MultiRNNParser(Parser):
     group_nodes = [[]]
     new_cell_nodes = collections.defaultdict(list)
     for n in nodes:
-      for scope in node_info_holder.scopes:
-        if scope in n.name:
-          if group_nodes[-1]:
-            group_nodes.append(scope)
-            group_nodes.append([])
-          node_info_holder.nodes[scope].append(n)
-          if n.name in node_info_holder.nodes_keep[scope]:
-            new_cell_nodes[scope].append(n)
-        else:
-          group_nodes[-1].append(n)
+      scope = [s for s in node_info_holder.scopes if s in n.name]
+      if scope:
+        if group_nodes[-1]:
+          group_nodes.append(scope[0])
+          group_nodes.append([])
+        node_info_holder.nodes[scope].append(n)
+        if n.name in node_info_holder.nodes_keep[scope]:
+          new_cell_nodes[scope].append(n)
+      else:
+        group_nodes[-1].append(n)
 
     for scope in node_info_holder.nodes:
       inputs, outputs = cls.get_input_output_node_names(
