@@ -95,7 +95,6 @@ def create_test(test_data):
 
   return do_test_expected
 
-
 # yapf: disable
 # organized as a tuple of the format:
 # (test_name, tensorflow_op, output_node_name, LIST of inputs, MAP of attributes)
