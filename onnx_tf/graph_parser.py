@@ -18,6 +18,8 @@ class Parser(object):
 class MultiRNNParser(Parser):
 
   class NodeInfoHolder(object):
+    """Helper class for holding node info.
+    """
 
     def __init__(self):
       self.scopes = set()
@@ -26,22 +28,30 @@ class MultiRNNParser(Parser):
       self.nodes_keep = collections.defaultdict(set)
 
   @classmethod
-  def parse(cls, nodes):
+  def _make_node_info(cls, nodes):
+    """Make NodeInfoHolder object.
+
+    Args:
+      nodes: List of NodeDef.
+
+    Returns:
+      NodeInfoHolder object.
+
+    """
     node_info_holder = cls.NodeInfoHolder()
-    node_dict = {n.name: TensorflowNode(n) for n in nodes}
     for n in nodes:
       scopes = n.name.split("/")
       if "multi_rnn_cell" in scopes:
         idx_multi_rnn_cell = scopes.index("multi_rnn_cell")
         idx_while = scopes.index(
-            "while") if "while" in scopes else len(scopes) - 1
+          "while") if "while" in scopes else len(scopes) - 1
         idx_cell_name = idx_multi_rnn_cell + 1
         idx_cell_type = idx_multi_rnn_cell + 2
         scope = "/".join(scopes[:min(idx_multi_rnn_cell, idx_while)])
         node_info_holder.scopes.add(scope)
         cell_no = int(scopes[idx_cell_name].replace("cell_", ""))
         node_info_holder.cell_dict[cell_no]["type"] = scopes[
-            idx_cell_type].replace("_cell", "")
+          idx_cell_type].replace("_cell", "")
         for key in ["kernel", "bias"]:
           if key in scopes[-2:]:
             if key == scopes[-2] and "read" == scopes[-1]:
@@ -50,7 +60,21 @@ class MultiRNNParser(Parser):
         prev_c = [i for i in n.input if "cell_{}".format(cell_no - 1) in i]
         if prev_c:
           node_info_holder.cell_dict[cell_no]["prev_c"] = prev_c[0]
+    return node_info_holder
 
+  @classmethod
+  def _group_nodes(cls, nodes, node_info_holder):
+    """Grouping nodes into [nodes, cell_nodes_key, nodes].
+
+    Args:
+      nodes: List of NodeDef.
+      node_info_holder: NodeInfoHolder object.
+
+    Returns:
+      Grouped nodes list.
+      Cell nodes dict.
+
+    """
     group_nodes = [[]]
     new_cell_nodes = collections.defaultdict(list)
     for n in nodes:
@@ -64,9 +88,25 @@ class MultiRNNParser(Parser):
           new_cell_nodes[scope].append(n)
       else:
         group_nodes[-1].append(n)
+    return group_nodes, new_cell_nodes
+
+  @classmethod
+  def parse(cls, nodes):
+    """Parse nodes.
+
+    Args:
+      nodes: List of NodeDef.
+
+    Returns:
+      Parsed nodes of TensorflowNode.
+
+    """
+    node_info_holder = cls._make_node_info(nodes)
+    node_dict = {n.name: TensorflowNode(n) for n in nodes}
+    group_nodes, new_cell_nodes = cls._group_nodes(nodes, node_info_holder)
 
     for scope in node_info_holder.nodes:
-      inputs, outputs = cls.get_input_output_node_names(
+      inputs, outputs = cls._get_input_output_node_names(
           node_info_holder.nodes[scope])
       inputs = [i for i in inputs if scope not in i]
       input_nodes = [node_dict[i] for i in inputs]
@@ -116,7 +156,21 @@ class MultiRNNParser(Parser):
     ]
 
   @staticmethod
-  def _make_major_transpose_nodes(inputs, scope, node_dict, last_node, post):
+  def _make_major_transpose_nodes(inputs, scope, node_dict, prev_node, post):
+    """Make major transpose nodes if is batch major.
+
+    Args:
+      inputs: Inputs names.
+      scope: Name scope.
+      node_dict: Node dict.
+      prev_node: Previous node.
+      post: If post transpose flag.
+
+    Returns:
+      Perm node.
+      Transpose node.
+
+    """
     input_shape = node_dict[inputs[0]].attr["_output_shapes"][0]
     input_rank = len(input_shape)
 
@@ -131,13 +185,13 @@ class MultiRNNParser(Parser):
 
     if post:
       input_shape = [input_shape[i] for i in perm_node.attr["value"]]
-      last_node.attr["_output_shapes"] = [input_shape]
+      prev_node.attr["_output_shapes"] = [input_shape]
 
     trans_node = TensorflowNode()
     trans_node.op_type = "Transpose"
     trans_node.name = "/".join([scope, "transpose", get_unique_suffix()])
     trans_node.inputs = [
-        inputs[0] if not post else last_node.name, perm_node.name
+        inputs[0] if not post else prev_node.name, perm_node.name
     ]
     trans_node.attr["T"] = node_dict[inputs[0]].attr["T"]
     trans_node.attr["_output_shapes"] = [[
@@ -147,6 +201,18 @@ class MultiRNNParser(Parser):
 
   @staticmethod
   def _make_rnn_node(cell_no, cell_info, scope, **kwargs):
+    """Make RNN node.
+
+    Args:
+      cell_no: Cell No.
+      cell_info: Cell info obj.
+      scope: Name scope.
+      **kwargs: Other args.
+
+    Returns:
+      RNN node.
+
+    """
     node = TensorflowNode()
     node.op_type = cell_info["type"].upper()
     node.name = "/".join([
@@ -163,11 +229,21 @@ class MultiRNNParser(Parser):
     return node
 
   @staticmethod
-  def get_input_output_node_names(nodes):
+  def _get_input_output_node_names(nodes):
+    """Get input and output node names by given nodes.
+
+    Args:
+      nodes:
+
+    Returns:
+      Input node names.
+      Output node names.
+    """
     input_names, output_names = set(), set()
     extension_output_names = set()
     for node in nodes:
       output_names.add(node.name)
+      # Add outputs for Split, Switch TensorArrayV3
       if node.op == "Split":
         for i in range(1, node.attr["num_split"].i):
           output_names.add(node.name + ":{}".format(i))
