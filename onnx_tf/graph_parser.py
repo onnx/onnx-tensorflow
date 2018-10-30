@@ -83,14 +83,14 @@ class MultiRNNParser(Parser):
         raise ValueError(
             "More than one scope {} contained in node name {}.".format(
                 str(scope), n.name))
-      scope = scope[0]
       if scope:
+        curr_scope = scope[0]
         if group_nodes[-1]:
-          group_nodes.append(scope)
+          group_nodes.append(curr_scope)
           group_nodes.append([])
-        node_info_holder.nodes[scope].append(n)
-        if n.name in node_info_holder.nodes_keep[scope]:
-          new_cell_nodes[scope].append(n)
+        node_info_holder.nodes[curr_scope].append(n)
+        if n.name in node_info_holder.nodes_keep[curr_scope]:
+          new_cell_nodes[curr_scope].append(n)
       else:
         group_nodes[-1].append(n)
     return group_nodes, new_cell_nodes
