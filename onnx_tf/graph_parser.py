@@ -44,14 +44,14 @@ class MultiRNNParser(Parser):
       if "multi_rnn_cell" in scopes:
         idx_multi_rnn_cell = scopes.index("multi_rnn_cell")
         idx_while = scopes.index(
-          "while") if "while" in scopes else len(scopes) - 1
+            "while") if "while" in scopes else len(scopes) - 1
         idx_cell_name = idx_multi_rnn_cell + 1
         idx_cell_type = idx_multi_rnn_cell + 2
         scope = "/".join(scopes[:min(idx_multi_rnn_cell, idx_while)])
         node_info_holder.scopes.add(scope)
         cell_no = int(scopes[idx_cell_name].replace("cell_", ""))
         node_info_holder.cell_dict[cell_no]["type"] = scopes[
-          idx_cell_type].replace("_cell", "")
+            idx_cell_type].replace("_cell", "")
         for key in ["kernel", "bias"]:
           if key in scopes[-2:]:
             if key == scopes[-2] and "read" == scopes[-1]:
