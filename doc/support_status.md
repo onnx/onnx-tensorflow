@@ -191,6 +191,7 @@ ______
 |Shape|1|
 |Sigmoid|1, 6|
 |Sin|7|
+|Size|1|
 |Slice|1|
 |Softmax|1|
 |Softplus|1|
