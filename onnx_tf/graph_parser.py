@@ -79,7 +79,7 @@ class MultiRNNParser(Parser):
     new_cell_nodes = collections.defaultdict(list)
     for n in nodes:
       scope = [s for s in node_info_holder.scopes if s in n.name]
-      if len(scope) != 1:
+      if len(scope) > 1:
         raise ValueError(
             "More than one scope {} contained in node name {}.".format(
                 str(scope), n.name))
