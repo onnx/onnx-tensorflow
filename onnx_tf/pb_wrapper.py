@@ -14,6 +14,7 @@ from tensorflow.core.framework.node_def_pb2 import NodeDef
 
 from onnx_tf.common import attr_converter
 from onnx_tf.common import attr_translator
+from onnx_tf.common import data_type
 from onnx_tf.common import IS_PYTHON3
 
 
@@ -168,17 +169,16 @@ class OnnxGraph(object):
   def value_info_proto(self):
     return self._value_info_proto
 
-  def add_input_proto(self, node):
-    onnx_type = node.attr["dtype"]
-    shape = node.attr["shape"] if node.op_type != "Const" else node.attr[
-        'value'].shape
-    input_proto = make_tensor_value_info(node.name, onnx_type, shape)
-    self._inputs_proto.append(input_proto)
-
-  def add_input_proto_explicit(self, name, value, onnx_dtype):
-    shape = value.shape
+  def add_input_proto_explicit(self, name, shape, onnx_dtype):
     input_proto = make_tensor_value_info(name, onnx_dtype, shape)
     self._inputs_proto.append(input_proto)
+
+  def add_input_proto(self, node):
+    name = node.name
+    onnx_dtype = node.attr["dtype"]
+    shape = node.attr["shape"] if node.op_type != "Const" else node.attr[
+        'value'].shape
+    self.add_input_proto_explicit(name, shape, onnx_dtype)
 
   def add_output_proto(self, node):
     output_onnx_type = node.attr.get("T", TensorProto.BOOL)
@@ -195,33 +195,32 @@ class OnnxGraph(object):
   def remove_node_proto(self, names):
     if not isinstance(names, (list, tuple)):
       names = [names]
-    self._nodes_proto = filter(lambda x: x.name not in names, self._nodes_proto)
-
-  def add_const(self, node):
-    self._consts[node.name] = node.attr["value"]
+    self._nodes_proto = list(
+        filter(lambda x: x.name not in names, self._nodes_proto))
 
   def add_const_explicit(self, name, value):
     self._consts[name] = value
 
-  def add_const_proto(self, node):
-    const_dim = len(node.attr["value"].shape)
+  def add_const(self, node):
+    self.add_const_explicit(node.name, node.attr["value"])
 
-    if const_dim == 0:
-      raw_values = [node.attr["value"].tolist()]
-      values = [node.attr["value"]]
-    else:
-      raw_values = node.attr["value"].flatten().tolist()
-      values = node.attr["value"]
+  def add_const_proto_explicit(self,
+                               name,
+                               value,
+                               np_dtype=None,
+                               tf_dtype=None,
+                               onnx_dtype=None):
+    only_one_set = [1 if val else 0 for val in [np_dtype, tf_dtype, onnx_dtype]]
+    assert sum(
+        only_one_set
+    ) == 1, "One and only one type must be set. However, {} set.".format(
+        sum(only_one_set))
 
-    shape = np.array(values).shape
-    const_proto = make_tensor(
-        name=node.name,
-        data_type=node.attr["dtype"],
-        dims=shape,
-        vals=raw_values)
-    self._consts_proto.append(const_proto)
+    if np_dtype:
+      onnx_dtype = mapping.NP_TYPE_TO_TENSOR_TYPE[np_dtype]
+    if tf_dtype:
+      onnx_dtype = data_type.tf2onnx(tf_dtype)
 
-  def add_const_proto_explicit(self, name, value, onnx_dtype):
     const_dim = len(value.shape)
 
     if const_dim == 0:
@@ -235,6 +234,10 @@ class OnnxGraph(object):
     const_proto = make_tensor(
         name=name, data_type=onnx_dtype, dims=shape, vals=raw_values)
     self._consts_proto.append(const_proto)
+
+  def add_const_proto(self, node):
+    self.add_const_proto_explicit(
+        node.name, node.attr["value"], onnx_dtype=node.attr["dtype"])
 
   def add_value_info_proto(self, node):
     node_onnx_type = node.attr.get("T", TensorProto.BOOL)

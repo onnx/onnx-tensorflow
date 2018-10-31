@@ -13,13 +13,13 @@ from onnx.helper import make_opsetid
 from onnx.optimizer import optimize
 import tensorflow as tf
 
+from onnx_tf.backend import run_node
 from onnx_tf.common import exception
 from onnx_tf.common.handler_helper import get_all_frontend_handlers
 from onnx_tf.common import IS_PYTHON3
 from onnx_tf.handlers.frontend_handler import FrontendHandler
 from onnx_tf.pb_wrapper import TensorflowNode
 from onnx_tf.pb_wrapper import OnnxGraph
-from onnx_tf.backend import run_node
 
 # Define long type for Python 3:
 if IS_PYTHON3:
@@ -46,8 +46,6 @@ class TensorflowFrontend(object):
         # Make output tensors appear as graph initializers.
         for index, output_name in enumerate(node.output):
           output_content = outputs[index]
-          output_onnx_type = mapping.NP_TYPE_TO_TENSOR_TYPE[
-              output_content.dtype]
           onnx_graph.add_const_explicit(name=output_name, value=output_content)
           onnx_graph.add_const_proto_explicit(
               name=output_name,
@@ -55,7 +53,7 @@ class TensorflowFrontend(object):
               onnx_dtype=output_onnx_type)
           onnx_graph.add_input_proto_explicit(
               name=output_name,
-              value=output_content,
+              shape=output_content.shape,
               onnx_dtype=output_onnx_type)
         # Remove this folded constant node from graph.
         onnx_graph.remove_node_proto(node.name)
@@ -68,7 +66,8 @@ class TensorflowFrontend(object):
                                      opset=((defs.ONNX_DOMAIN,
                                              defs.onnx_opset_version()),),
                                      name="graph",
-                                     ignore_unimplemented=False):
+                                     ignore_unimplemented=False,
+                                     fold_constant=False):
     """Converts a Tensorflow Graph Proto to an ONNX graph
 
     This function converts a Tensorflow Graph proto to an equivalent
@@ -83,6 +82,7 @@ class TensorflowFrontend(object):
       that are not currently supported by onnx-tensorflow.
       This is an experimental feature. By enabling this feature,
       the graph would not be guaranteed to match the ONNX specifications.
+    :param fold_constant: Whether to fold (optimize away by evaluating statically) constant operations/tensors.
 
     :returns: The equivalent ONNX Graph Proto object.
     """
@@ -130,7 +130,8 @@ class TensorflowFrontend(object):
       output_node = TensorflowNode(o)
       onnx_graph.add_output_proto(output_node)
 
-    onnx_graph = cls.fold_constant(onnx_graph)
+    if fold_constant:
+      onnx_graph = cls.fold_constant(onnx_graph)
 
     return onnx_graph.make_graph_proto()
 
@@ -142,7 +143,8 @@ class TensorflowFrontend(object):
                                      producer_name="onnx-tensorflow",
                                      graph_name="graph",
                                      ignore_unimplemented=False,
-                                     optimizer_passes=None):
+                                     optimizer_passes=None,
+                                     fold_constant=False):
     """Converts a Tensorflow Graph Proto to an ONNX model
 
     This function converts a Tensorflow Graph proto to an equivalent
@@ -163,6 +165,7 @@ class TensorflowFrontend(object):
     :param optimizer_passes: List of optimization names c.f.
       https://github.com/onnx/onnx/blob/master/onnx/optimizer.py for available
       optimization passes.
+    :param fold_constant: Whether to fold (optimize away by evaluating statically) constant operations/tensors.
 
     :returns: The equivalent ONNX Model Proto object.
     """
@@ -192,7 +195,8 @@ class TensorflowFrontend(object):
       output_nodes = [get_node_by_name(graph_def.node, o) for o in output]
 
     onnx_graph = cls.tensorflow_graph_to_onnx_graph(
-        graph_def, output_nodes, opset, graph_name, ignore_unimplemented)
+        graph_def, output_nodes, opset, graph_name, ignore_unimplemented,
+        fold_constant)
     onnx_model = make_model(
         onnx_graph, producer_name=producer_name, opset_imports=opset_imports)
 
