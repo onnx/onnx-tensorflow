@@ -210,11 +210,10 @@ class OnnxGraph(object):
                                np_dtype=None,
                                tf_dtype=None,
                                onnx_dtype=None):
-    only_one_set = [1 if val else 0 for val in [np_dtype, tf_dtype, onnx_dtype]]
-    assert sum(
-        only_one_set
-    ) == 1, "One and only one type must be set. However, {} set.".format(
-        sum(only_one_set))
+    dtype_mask = [1 if val else 0 for val in [np_dtype, tf_dtype, onnx_dtype]]
+    num_type_set = sum(dtype_mask)
+    assert num_type_set == 1, "One and only one type must be set. However, {} set.".format(
+        sum(num_type_set))
 
     if np_dtype:
       onnx_dtype = mapping.NP_TYPE_TO_TENSOR_TYPE[np_dtype]
