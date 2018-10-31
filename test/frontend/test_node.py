@@ -6,6 +6,7 @@ from __future__ import unicode_literals
 import unittest
 import numpy as np
 import tensorflow as tf
+from collections import Iterable
 
 from onnx_tf.frontend import tensorflow_graph_to_onnx_model
 from onnx import checker
@@ -86,6 +87,12 @@ def create_test(test_data):
       with tf.Session() as sess:
         tf_output = sess.run(test_op, tf_feed_dict)
 
+      # make sure backend_output and tf_output are Iterable
+      if backend_output.ndim == 0:
+        backend_output = backend_output.reshape(1)
+      if isinstance(tf_output, Iterable) == False:
+        tf_output = [tf_output]
+
       # skip comparison if test_option specifies that
       # the test is call only.
       if test_option.get("call_only", False):
@@ -94,6 +101,7 @@ def create_test(test_data):
         np.testing.assert_allclose(backend_o, tf_o, rtol=1e-3, atol=1e-7)
 
   return do_test_expected
+
 
 # yapf: disable
 # organized as a tuple of the format:
@@ -106,6 +114,7 @@ test_cases = [
 ("test_arg_max", tf.argmax, "ArgMax", [get_rnd([1, 2, 3, 4])], {"axis": -1}),
 ("test_arg_min", tf.argmin, "ArgMin", [get_rnd([1, 2, 3, 4])], {"axis": -1}),
 ("test_cast", tf.cast, "Cast", [get_rnd([10, 10]), tf.float16], {}),
+("test_size", tf.size, "Size", [get_rnd([5, 5])], {}),
 ("test_ceil", tf.ceil, "Ceil", [get_rnd([10, 10], -10, 10)], {}),
 ("test_constant_fill", tf.fill, "Fill", [[1, 2, 3], 1], {}),
 ("test_exp", tf.exp, "Exp", [get_rnd([10, 10])], {}),
