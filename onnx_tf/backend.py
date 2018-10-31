@@ -6,7 +6,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
-
+import re
 try:
   from itertools import izip as zip
 except ImportError:  # will be 3.x series
@@ -108,7 +108,7 @@ class TensorflowBackend(Backend):
             for d in value_info.type.tensor_type.shape.dim)
         x = tf.placeholder(
             data_type.onnx2tf(value_info.type.tensor_type.elem_type),
-            name=value_info.name,
+            name=re.sub(r':.*$', "",value_info.name),
             shape=shape)
         input_dict_items.append((value_info.name, x))
 
