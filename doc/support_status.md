@@ -157,6 +157,7 @@ ______
 |Fill|1|
 |Floor|1, 6|
 |FusedBatchNorm|1, 6, 7|
+|GatherV2|1|
 |Greater|1, 7, 9|
 |Identity|1|
 |Less|1, 7, 9|
