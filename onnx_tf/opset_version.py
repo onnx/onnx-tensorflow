@@ -270,6 +270,7 @@ frontend_tf_opset_version = {
     'ExpandDims': [1],
     'Fill': [1],
     'Floor': [1, 6],
+    'FloorDiv': [1],
     'FusedBatchNorm': [1, 6, 7],
     'GatherV2': [1],
     'Greater': [1, 7, 9],
