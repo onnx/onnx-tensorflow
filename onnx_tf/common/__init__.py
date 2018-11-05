@@ -3,9 +3,11 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
+import inspect
 import re
 import sys
 import uuid
+import warnings
 
 from onnx.backend.base import DeviceType
 from tensorflow.python.client import device_lib
@@ -98,3 +100,51 @@ def get_output_node_names(graph_def):
     nodes[node.name] = node
     input_names.update(set(node.input))
   return list(set(nodes) - input_names)
+
+
+class Deprecated:
+  """Add deprecated message when function is called.
+
+  Usage:
+    from onnx_tf.common import deprecated
+
+    @deprecated
+    def func():
+      pass
+
+    UserWarning: func is deprecated. It will be removed in future release.
+
+    @deprecated({"arg": "Message", "arg_1": deprecated.REMOVE})
+    def func(arg, arg_1, arg_2):
+      pass
+
+    UserWarning: arg of func is deprecated. Message
+    UserWarning: arg_1 of func is deprecated. It will be removed in future release.
+  """
+
+  REMOVE = " It will be removed in future release."
+
+  def __call__(self, *args, **kwargs):
+    return self.deprecated_decorator(*args, **kwargs)
+
+  @staticmethod
+  def deprecated_decorator(arg=None):
+    arg = arg or {}
+
+    if inspect.isfunction(arg):
+      warnings.warn("{} is deprecated.{}".format(
+          arg.__module__ + "." + arg.__name__, Deprecated.REMOVE))
+      return arg
+    else:
+      name_message_dict = arg
+
+      def deco(func):
+        for name, message in name_message_dict.items():
+          warnings.warn("{} of {} is deprecated.{}".format(
+              name, func.__module__ + "." + func.__name__, message))
+        return func
+
+      return deco
+
+
+deprecated = Deprecated()
