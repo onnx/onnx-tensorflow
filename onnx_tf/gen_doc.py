@@ -59,8 +59,8 @@ def main(docs_dir):
     status_file.write('| -------------- |:------------------:|\n')
     for key, val in sorted(opset_version.backend_opset_version.items()):
       version_str = str(val)[1:-1]
-      status_file.write("|{}|{}|\n".format(key, version_str
-                                           if len(version_str) else "N/A"))
+      status_file.write("|{}|{}|\n".format(
+          key, version_str if len(version_str) else "N/A"))
 
     status_file.write('\n\n')
 
@@ -71,8 +71,8 @@ def main(docs_dir):
     status_file.write('| -------------- |:------------------:|\n')
     for key, val in sorted(opset_version.frontend_tf_opset_version.items()):
       version_str = str(val)[1:-1]
-      status_file.write("|{}|{}|\n".format(key, version_str
-                                           if len(version_str) else "N/A"))
+      status_file.write("|{}|{}|\n".format(
+          key, version_str if len(version_str) else "N/A"))
 
 
 if __name__ == '__main__':

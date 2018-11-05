@@ -1,5 +1,6 @@
 import inspect
 from itertools import chain
+import warnings
 
 import numpy as np
 from onnx import NodeProto
@@ -25,6 +26,7 @@ class TensorflowNode(object):
       self.node = None
       self.name = ""
       self.inputs = []
+      self.outputs = []
       self.attr = {}
       self.domain = ""
       self.op_type = ""
@@ -38,6 +40,7 @@ class TensorflowNode(object):
       node = OnnxNode(node)
     self.name = node.name
     self.inputs = node.inputs
+    self.outputs = node.outputs
     self.attr = node.attrs
     self.domain = node.domain
     self.op_type = node.op_type
@@ -56,6 +59,26 @@ class TensorflowNode(object):
     self.domain = "" if len(splitted_op_name) == 1 else ".".join(
         splitted_op_name[:-1])
     self.op_type = splitted_op_name[-1]
+    self.outputs = self.get_outputs_names()
+
+  def get_outputs_names(self, num=None):
+    """ Helper method to get outputs names.
+    e.g. tf.split: [Split, Split:1, Split:2]
+
+    :param num: Force to get `num` outputs names.
+    :return: List of outputs names.
+    """
+    if num is None:
+      if "_output_shapes" in self.attr:
+        num = len(self.attr["_output_shapes"])
+      else:
+        num = 1
+        warnings.warn("_output_shapes is not in node.attr. "
+                      "The num of output is set to 1 for commonly. "
+                      "It will cause problem with case of multiple outputs.")
+    return [
+        self.name + ":{}".format(i) if i > 0 else self.name for i in range(num)
+    ]
 
 
 # TODO: Move this into ONNX main library

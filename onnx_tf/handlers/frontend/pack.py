@@ -23,7 +23,7 @@ class Pack(FrontendHandler):
     concat = cls.make_node(
         "Concat",
         unsqueeze_outputs,
-        cls.get_outputs_names(node),
+        node.outputs,
         node.name,
         axis=axis,
         version=4)

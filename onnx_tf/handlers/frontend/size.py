@@ -18,7 +18,7 @@ class Size(FrontendHandler):
     need_cast = node.attr['out_type'] == tf.int32
 
     size_suffix = "_" + get_unique_suffix() if need_cast else ""
-    size_output_name = cls.get_outputs_names(node)[0] + size_suffix
+    size_output_name = node.outputs[0] + size_suffix
     size_node = cls.make_node_from_tf_node(
         node, [node.inputs[0]],
         outputs=[size_output_name],
@@ -30,7 +30,7 @@ class Size(FrontendHandler):
     cast_node = Cast.handle(
         make_node(
             "Cast", [size_output_name],
-            outputs=cls.get_outputs_names(node),
+            outputs=node.outputs,
             name=node.name,
             DstT=node.attr['out_type']))
     return [size_node, cast_node]

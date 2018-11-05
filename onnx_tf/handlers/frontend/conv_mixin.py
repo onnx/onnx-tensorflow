@@ -33,7 +33,7 @@ class ConvMixin(object):
                         output_shape, strides, kernel_shape)
 
     w_unique_suffix = get_unique_suffix()
-    w_transpose_node = Transpose.handle(
+    w_transpose_node = Transpose.handle_node_proto(
         make_node(
             "Transpose", [node.inputs[1], "perm"],
             [node.inputs[1] + "_T_" + w_unique_suffix],
@@ -46,7 +46,8 @@ class ConvMixin(object):
         group=n_groups,
         kernel_shape=kernel_shape,
         strides=strides,
-        dilations=dilations)
+        dilations=dilations,
+        data_format_compatible=True)
 
     if not isinstance(conv_node, list):
       conv_node = [conv_node]

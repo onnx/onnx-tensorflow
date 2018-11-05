@@ -39,4 +39,5 @@ class PoolMixin(object):
         pads=pads,
         kernel_shape=kernel_shape,
         strides=strides,
+        data_format_compatible=True,
         **node_kwargs)
