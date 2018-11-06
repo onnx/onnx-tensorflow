@@ -23,16 +23,23 @@ from onnx_tf.common import IS_PYTHON3
 
 class TensorflowNode(object):
 
-  def __init__(self, node=None):
+  def __init__(self,
+               node=None,
+               name=None,
+               inputs=None,
+               outputs=None,
+               attr=None,
+               domain=None,
+               op_type=None):
     # storing a reference to the original protobuf object
     if node is None:
       self.node = None
-      self.name = ""
-      self.inputs = []
-      self.outputs = []
-      self.attr = {}
-      self.domain = ""
-      self.op_type = ""
+      self.name = name or ""
+      self.inputs = inputs or []
+      self.outputs = outputs or []
+      self.attr = attr or {}
+      self.domain = domain or ""
+      self.op_type = op_type or ""
     elif isinstance(node, (OnnxNode, NodeProto)):
       self._load_onnx_node(node)
     elif isinstance(node, NodeDef):

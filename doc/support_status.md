@@ -203,6 +203,7 @@ ______
 |Split|1, 2|
 |SplitV|1, 2|
 |Sqrt|1, 6|
+|Square|1|
 |Squeeze|1|
 |StridedSlice|9|
 |Sub|1, 6, 7|
