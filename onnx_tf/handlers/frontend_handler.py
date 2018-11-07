@@ -10,6 +10,7 @@ from onnx import checker
 from onnx import helper
 
 from .handler import Handler
+from onnx_tf.common import deprecated
 from onnx_tf.common import get_perm_from_formats
 from onnx_tf.common import get_unique_suffix
 from onnx_tf.pb_wrapper import TensorflowNode
@@ -176,6 +177,8 @@ class FrontendHandler(Handler):
     checker.check_node(node, ctx=ctx)
 
   @classmethod
+  @deprecated("FrontendHandler.get_outputs_names is deprecated.{}. {}".format(
+      deprecated.MSG_WILL_REMOVE, "Use node.outputs instead."))
   def get_outputs_names(cls, node, num=None):
     """ Helper method to get outputs names.
     e.g. tf.split: [Split, Split:1, Split:2]
