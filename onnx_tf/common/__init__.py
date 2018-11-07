@@ -33,12 +33,15 @@ class Deprecated:
 
     UserWarning: Message
 
-    @deprecated({"arg": " Message", "arg_1": deprecated.MSG_WILL_REMOVE})
+    @deprecated({"arg": "Message",
+                 "arg_1": deprecated.MSG_WILL_REMOVE,
+                 "arg_2": "",})
     def func(arg, arg_1, arg_2):
       pass
 
-    UserWarning: arg of func is deprecated. Message
+    UserWarning: Message
     UserWarning: arg_1 of func is deprecated. It will be removed in future release.
+    UserWarning: arg_2 of func is deprecated.
   """
 
   MSG_WILL_REMOVE = " It will be removed in future release."
