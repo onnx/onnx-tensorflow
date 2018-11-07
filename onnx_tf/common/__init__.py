@@ -31,13 +31,13 @@ class Deprecated:
     def func():
       pass
 
-    UserWarning: func is deprecated.Message
+    UserWarning: Message
 
-    @deprecated({"arg": "Message", "arg_1": deprecated.MSG_WILL_REMOVE})
+    @deprecated({"arg": " Message", "arg_1": deprecated.MSG_WILL_REMOVE})
     def func(arg, arg_1, arg_2):
       pass
 
-    UserWarning: arg of func is deprecated.Message
+    UserWarning: arg of func is deprecated. Message
     UserWarning: arg_1 of func is deprecated. It will be removed in future release.
   """
 
@@ -47,7 +47,13 @@ class Deprecated:
     return self.deprecated_decorator(*args, **kwargs)
 
   @staticmethod
+  def messages():
+    return {v for k, v in inspect.getmembers(Deprecated) if k.startswith("MSG")}
+
+  @staticmethod
   def deprecated_decorator(arg=None):
+    # deprecate function with default message MSG_WILL_REMOVE
+    # @deprecated
     if inspect.isfunction(arg):
 
       def wrapper(*args, **kwargs):
@@ -60,13 +66,22 @@ class Deprecated:
     deprecated_arg = arg if arg is not None else Deprecated.MSG_WILL_REMOVE
 
     def deco(func):
+      # deprecate arg
+      # @deprecated({...})
       if isinstance(deprecated_arg, dict):
         for name, message in deprecated_arg.items():
-          warnings.warn("{} of {} is deprecated.{}".format(
-              name, func.__module__ + "." + func.__name__, message))
+          if message in Deprecated.messages():
+            message = "{} of {} is deprecated.{}".format(
+                name, func.__module__ + "." + func.__name__, message or "")
+          warnings.warn(message)
+      # deprecate function with message
+      # @deprecated("message")
       elif isinstance(deprecated_arg, str):
-        warnings.warn("{} is deprecated.{}".format(
-            func.__module__ + "." + func.__name__, deprecated_arg))
+        message = deprecated_arg
+        if message in Deprecated.messages():
+          message = "{} is deprecated.{}".format(
+              func.__module__ + "." + func.__name__, message)
+        warnings.warn(message)
       return func
 
     return deco
