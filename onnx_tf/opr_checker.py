@@ -53,7 +53,6 @@ def check_opr_support(graph_def):
               str(len(node_dict)))
 
   frontend_coverage, frontend_tf_coverage = get_frontend_coverage()
-  frontend_tf_opset_dict = {}
   frontend_tf_opset_dict = frontend_tf_coverage.get(defs.ONNX_DOMAIN, {})
   for k in node_dict:
     if k not in frontend_tf_opset_dict:
