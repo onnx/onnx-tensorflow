@@ -47,7 +47,7 @@ class ConvMixin(object):
         kernel_shape=kernel_shape,
         strides=strides,
         dilations=dilations,
-        data_format_compatible=True)
+        data_format_auto_convert=True)
 
     if not isinstance(conv_node, list):
       conv_node = [conv_node]

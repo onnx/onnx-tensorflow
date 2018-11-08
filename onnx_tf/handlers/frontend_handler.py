@@ -86,7 +86,7 @@ class FrontendHandler(Handler):
                              doc_string=None,
                              version=0,
                              should_check=True,
-                             data_format_compatible=False,
+                             data_format_auto_convert=False,
                              **kwargs):
     """ Helper method to make node.
     The main api is almost same to onnx.helper.make_node with default value
@@ -101,7 +101,7 @@ class FrontendHandler(Handler):
     :param version: Version used for check node. Default is cls.VERSION.
     :param should_check: Should check flag.
     Should set to False if is an unimplemented customized op.
-    :param data_format_compatible: Pre and post transpose if data format is channel last.
+    :param data_format_auto_convert: Pre and post transpose if data format is channel last.
     :param kwargs: Other args.
     :return: NodeProto.
     """
@@ -110,7 +110,7 @@ class FrontendHandler(Handler):
     inputs = inputs if inputs is not None else node.inputs
     outputs = outputs if outputs is not None else node.outputs
     data_format = node.attr.get("data_format", b"").decode("UTF-8")
-    need_transpose = data_format_compatible and data_format.find("C") not in (
+    need_transpose = data_format_auto_convert and data_format.find("C") not in (
         -1, 1)
 
     nodes = []
