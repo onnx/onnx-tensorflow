@@ -8,7 +8,7 @@ More information: `onnx-tf -h`
 ```
 usage: onnx-tf [-h] {convert}
 
-onnx-tensorflow command line interface
+ONNX-Tensorflow Command Line Interface
 
 positional arguments:
   {convert}   Available commands.
