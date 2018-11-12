@@ -76,7 +76,7 @@ def __convert_onnx_attribute_proto(attr_proto):
   elif attr_proto.strings:
     str_list = list(attr_proto.strings)
     if IS_PYTHON3:
-      str_list = map(lambda x: str(x, 'utf-8'), str_list)
+      str_list = list(map(lambda x: str(x, 'utf-8'), str_list))
     return str_list
   else:
     raise ValueError("Unsupported ONNX attribute: {}".format(attr_proto))
