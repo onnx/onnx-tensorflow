@@ -6,6 +6,7 @@ from onnx_tf.handlers.frontend_handler import FrontendHandler
 from onnx_tf.handlers.handler import onnx_op
 from onnx_tf.handlers.handler import tf_op
 
+
 @onnx_op("DynamicSlice")
 @tf_op("StridedSlice")
 class StridedSlice(FrontendHandler):
@@ -43,7 +44,7 @@ class StridedSlice(FrontendHandler):
                             new_axis_mask > 0 or shrink_axis_mask > 0)
 
     slice_suffix = "_" + get_unique_suffix() if need_post_processing else ""
-    slice_output_name = cls.get_outputs_names(node)[0]
+    slice_output_name = node.outputs[0]
     slice_node = cls.make_node("DynamicSlice", node.inputs[0:3],
                                [slice_output_name + slice_suffix],
                                node.name + slice_suffix)
@@ -54,7 +55,7 @@ class StridedSlice(FrontendHandler):
     shrink_axis = cls._int_to_set_pos_list(shrink_axis_mask)
     squeeze_node = cls.make_node(
         "Squeeze", [slice_output_name + slice_suffix],
-        cls.get_outputs_names(node),
+        node.outputs,
         node.name,
         axes=shrink_axis)
     return [slice_node, squeeze_node]
