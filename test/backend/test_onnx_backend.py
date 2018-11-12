@@ -51,9 +51,6 @@ if legacy_onnx_pre_ver(1, 2):
   backend_test.exclude(r'test_operator_lstm_cpu')
   backend_test.exclude(r'test_operator_rnn_single_layer_cpu')
 
-if legacy_opset_pre_ver(9):
-  backend_test.exclude(r'test_compress')
-
 # import all test cases at global scope to make them visible to python.unittest
 globals().update(backend_test.enable_report().test_cases)
 

@@ -174,6 +174,10 @@ class TestNode(unittest.TestCase):
     np.testing.assert_almost_equal(output["Y"], np.ceil(x))
 
   def test_compress(self):
+    if defs.onnx_opset_version() < 9:
+      raise unittest.SkipTest(
+          "ONNX version {} doesn't support Compress.".format(
+              defs.onnx_opset_version()))
     axis = 1
     node_def = helper.make_node(
         "Compress", inputs=['X', 'condition'], outputs=['Y'], axis=axis)
