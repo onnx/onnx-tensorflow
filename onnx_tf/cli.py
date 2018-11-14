@@ -3,13 +3,14 @@ import sys
 
 import onnx_tf.converter
 import onnx_tf.opr_checker
+import onnx_tf.optimizer
 
 def main():
   args = sys.argv[1:]
   parser = argparse.ArgumentParser(
       description="ONNX-Tensorflow Command Line Interface")
   parser.add_argument(
-      "command", choices=["convert", "check"], help="Available commands.")
+      "command", choices=["convert", "check", "optimize"], help="Available commands.")
 
   if len(args) == 0:
     parser.parse_args(["-h"])
@@ -18,6 +19,8 @@ def main():
     return onnx_tf.converter.main(args[1:])
   elif cli_tool.command == "check":
     return onnx_tf.opr_checker.main(args[1:])
+  elif cli_tool.command == "optimize":
+    return onnx_tf.optimizer.main(args[1:])
 
 
 if __name__ == '__main__':
