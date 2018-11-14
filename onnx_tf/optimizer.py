@@ -32,6 +32,8 @@ def parse_args(args):
 
 
 def constant_folding(onnx_graph):
+  """ Remove constant nodes by evaluating them offline.
+  """
   for node in onnx_graph.nodes_proto:
     # See if all inputs are present as contant tensors.
     inclusion_mask = map(lambda x: x in onnx_graph.consts, node.input)
@@ -63,7 +65,7 @@ all_optimization_pass_names = all_optimization_passes.keys()
 
 
 def optimize(onnx_model, passes=all_optimization_pass_names):
-  """Optimize ONNX graph.
+  """Optimize ONNX model (only graph for now).
   """
   onnx_graph = OnnxGraph(graph_proto=onnx_model.graph)
   for opt_pass in passes:
