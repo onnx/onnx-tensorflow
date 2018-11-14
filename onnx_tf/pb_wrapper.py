@@ -3,6 +3,7 @@ from itertools import chain
 import warnings
 
 import numpy as np
+import tensorflow as tf
 from onnx import NodeProto
 from onnx import TensorProto
 from onnx import ValueInfoProto
@@ -13,7 +14,6 @@ from onnx.helper import make_tensor_value_info
 from onnx.helper import mapping
 from tensorflow.core.framework.attr_value_pb2 import AttrValue
 from tensorflow.core.framework.node_def_pb2 import NodeDef
-import tensorflow as tf
 
 from onnx_tf.common import attr_converter
 from onnx_tf.common import attr_translator
@@ -108,6 +108,7 @@ class OnnxGraph(object):
   """ A helper class for making ONNX graph.
   This class holds all information ONNX graph needs.
   """
+
   def __init__(self, name=None, graph_proto=None):
     if graph_proto:
       self._name = graph_proto.name
@@ -117,7 +118,7 @@ class OnnxGraph(object):
       self._consts_proto = list(graph_proto.initializer)
       self._value_info_proto = list(graph_proto.value_info)
       self._consts = dict([(init.name, numpy_helper.to_array(init))
-                      for init in graph_proto.initializer])
+                           for init in graph_proto.initializer])
     else:
       self._name = "" or name
       self._inputs_proto = []
@@ -126,7 +127,7 @@ class OnnxGraph(object):
       self._consts = {}
       self._consts_proto = []
       self._value_info_proto = []
-    # Either way, this attribute is empty.
+    # Either way, data_type_cast_map is empty when initialized.
     self._data_type_cast_map = {}
 
   # This list holds the protobuf objects of type ValueInfoProto
