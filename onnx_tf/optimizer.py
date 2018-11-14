@@ -3,8 +3,9 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-import tensorflow as tf
 import argparse
+import logging
+import tensorflow as tf
 
 import onnx
 from onnx import mapping
@@ -13,6 +14,7 @@ from onnx import GraphProto
 from onnx_tf.backend import run_node
 from onnx_tf.pb_wrapper import OnnxGraph
 
+logger = logging.getLogger()
 
 def parse_args(args):
   # TODO: allow selective enablement of optimization passes
@@ -40,7 +42,7 @@ def constant_folding(onnx_graph):
     all_constant = all(inclusion_mask)
     # If all inputs are constant, then fold this constant node.
     if all_constant:
-      print("Folding ", node.name, node.op_type)
+      logger.info("Folding a {} op with name {}".format(node.op_type, node.name))
       const_inputs = list(map(lambda x: onnx_graph.consts[x], node.input))
       outputs = run_node(node, const_inputs)
       # Make output tensors appear as graph initializers.

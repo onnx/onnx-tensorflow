@@ -120,7 +120,7 @@ class OnnxGraph(object):
       self._consts = dict([(init.name, numpy_helper.to_array(init))
                            for init in graph_proto.initializer])
     else:
-      self._name = "" or name
+      self._name = name or ""
       self._inputs_proto = []
       self._outputs_proto = []
       self._nodes_proto = []
