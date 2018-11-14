@@ -7,13 +7,11 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 from onnx import defs
-from onnx import mapping
 from onnx.helper import make_model
 from onnx.helper import make_opsetid
 from onnx.optimizer import optimize
 import tensorflow as tf
 
-from onnx_tf.backend import run_node
 from onnx_tf.common import exception
 from onnx_tf.common.handler_helper import get_all_frontend_handlers
 from onnx_tf.common import IS_PYTHON3
@@ -31,43 +29,13 @@ class TensorflowFrontend(object):
   """
 
   @classmethod
-  def fold_constant(cls, onnx_graph):
-    """Fold constant nodes within an ONNX graph
-    TODO(tjingrant): do we need a special case to prevent folding identity?
-    """
-    for node in onnx_graph.nodes_proto:
-      # See if all inputs are present as contant tensors.
-      inclusion_mask = map(lambda x: x in onnx_graph.consts, node.input)
-      all_constant = all(inclusion_mask)
-      # If all inputs are constant, then fold this constant node.
-      if all_constant:
-        const_inputs = list(map(lambda x: onnx_graph.consts[x], node.input))
-        outputs = run_node(node, const_inputs)
-        # Make output tensors appear as graph initializers.
-        for index, output_name in enumerate(node.output):
-          output_content = outputs[index]
-          onnx_graph.add_const_explicit(name=output_name, value=output_content)
-          onnx_graph.add_const_proto_explicit(
-              name=output_name,
-              value=output_content,
-              onnx_dtype=output_onnx_type)
-          onnx_graph.add_input_proto_explicit(
-              name=output_name,
-              shape=output_content.shape,
-              onnx_dtype=output_onnx_type)
-        # Remove this folded constant node from graph.
-        onnx_graph.remove_node_proto(node.name)
-    return onnx_graph
-
-  @classmethod
   def tensorflow_graph_to_onnx_graph(cls,
                                      graph_def,
                                      output,
                                      opset=((defs.ONNX_DOMAIN,
                                              defs.onnx_opset_version()),),
                                      name="graph",
-                                     ignore_unimplemented=False,
-                                     fold_constant=False):
+                                     ignore_unimplemented=False):
     """Converts a Tensorflow Graph Proto to an ONNX graph
 
     This function converts a Tensorflow Graph proto to an equivalent
@@ -82,7 +50,6 @@ class TensorflowFrontend(object):
       that are not currently supported by onnx-tensorflow.
       This is an experimental feature. By enabling this feature,
       the graph would not be guaranteed to match the ONNX specifications.
-    :param fold_constant: Whether to fold (optimize away by evaluating statically) constant operations/tensors.
 
     :returns: The equivalent ONNX Graph Proto object.
     """
@@ -130,9 +97,6 @@ class TensorflowFrontend(object):
       output_node = TensorflowNode(o)
       onnx_graph.add_output_proto(output_node)
 
-    if fold_constant:
-      onnx_graph = cls.fold_constant(onnx_graph)
-
     return onnx_graph.make_graph_proto()
 
   @classmethod
@@ -143,8 +107,7 @@ class TensorflowFrontend(object):
                                      producer_name="onnx-tensorflow",
                                      graph_name="graph",
                                      ignore_unimplemented=False,
-                                     optimizer_passes=None,
-                                     fold_constant=False):
+                                     optimizer_passes=None):
     """Converts a Tensorflow Graph Proto to an ONNX model
 
     This function converts a Tensorflow Graph proto to an equivalent
@@ -165,7 +128,6 @@ class TensorflowFrontend(object):
     :param optimizer_passes: List of optimization names c.f.
       https://github.com/onnx/onnx/blob/master/onnx/optimizer.py for available
       optimization passes.
-    :param fold_constant: Whether to fold (optimize away by evaluating statically) constant operations/tensors.
 
     :returns: The equivalent ONNX Model Proto object.
     """
@@ -195,8 +157,7 @@ class TensorflowFrontend(object):
       output_nodes = [get_node_by_name(graph_def.node, o) for o in output]
 
     onnx_graph = cls.tensorflow_graph_to_onnx_graph(
-        graph_def, output_nodes, opset, graph_name, ignore_unimplemented,
-        fold_constant)
+        graph_def, output_nodes, opset, graph_name, ignore_unimplemented)
     onnx_model = make_model(
         onnx_graph, producer_name=producer_name, opset_imports=opset_imports)
 
