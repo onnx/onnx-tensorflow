@@ -7,18 +7,10 @@ import tensorflow as tf
 import argparse
 
 import onnx
-from onnx import defs
 from onnx import mapping
 from onnx import GraphProto
-from onnx.helper import make_model
-from onnx.helper import make_opsetid
 
 from onnx_tf.backend import run_node
-from onnx_tf.common import exception
-from onnx_tf.common.handler_helper import get_all_frontend_handlers
-from onnx_tf.common import IS_PYTHON3
-from onnx_tf.handlers.frontend_handler import FrontendHandler
-from onnx_tf.pb_wrapper import TensorflowNode
 from onnx_tf.pb_wrapper import OnnxGraph
 
 
