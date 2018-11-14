@@ -21,6 +21,7 @@ ______
 |Cast|1, 6|
 |Ceil|1, 6|
 |Clip|1, 6|
+|Compress|9|
 |Concat|1, 4|
 |Constant|1, 9|
 |ConstantFill|1|
@@ -68,6 +69,7 @@ ______
 |Max|1, 6, 8|
 |MaxPool|1, 8|
 |MaxRoiPool|N/A|
+|MaxUnpool|N/A|
 |Mean|1, 6, 8|
 |MeanVarianceNormalization|1|
 |Min|1, 6, 8|
@@ -157,6 +159,7 @@ ______
 |Fill|1|
 |Floor|1, 6|
 |FusedBatchNorm|1, 6, 7|
+|GatherV2|1|
 |Greater|1, 7, 9|
 |Identity|1|
 |Less|1, 7, 9|

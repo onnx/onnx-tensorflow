@@ -8,9 +8,11 @@ import warnings
 import onnx
 from onnx import checker
 from onnx import helper
-from onnx import NodeProto
 
 from .handler import Handler
+from onnx_tf.common import deprecated
+from onnx_tf.common import get_perm_from_formats
+from onnx_tf.common import get_unique_suffix
 from onnx_tf.pb_wrapper import TensorflowNode
 
 
@@ -36,9 +38,11 @@ class FrontendHandler(Handler):
 
   @classmethod
   def handle(cls, node, **kwargs):
-    if isinstance(node, NodeProto):
-      node = TensorflowNode(node)
     return super(FrontendHandler, cls).handle(node, **kwargs)
+
+  @classmethod
+  def handle_node_proto(cls, node, **kwargs):
+    return super(FrontendHandler, cls).handle(TensorflowNode(node), **kwargs)
 
   @classmethod
   def make_node(cls,
@@ -82,6 +86,7 @@ class FrontendHandler(Handler):
                              doc_string=None,
                              version=0,
                              should_check=True,
+                             data_format_auto_convert=False,
                              **kwargs):
     """ Helper method to make node.
     The main api is almost same to onnx.helper.make_node with default value
@@ -89,30 +94,77 @@ class FrontendHandler(Handler):
 
     :param node: TensorflowNode object.
     :param inputs: Inputs names. Default is node.inputs.
-    :param outputs: Outputs name. Default is cls.get_outputs_names(node).
+    :param outputs: Outputs name. Default is node.outputs.
     :param op_type: ONNX op name. Default is cls.ONNX_OP.
     :param name: Node name. Default is node.name.
     :param doc_string: optional documentation string.
     :param version: Version used for check node. Default is cls.VERSION.
     :param should_check: Should check flag.
     Should set to False if is an unimplemented customized op.
+    :param data_format_auto_convert: Pre and post transpose if data format is channel last.
     :param kwargs: Other args.
     :return: NodeProto.
     """
+    from .frontend.transpose import Transpose
+
     inputs = inputs if inputs is not None else node.inputs
-    outputs = outputs if outputs is not None else cls.get_outputs_names(node)
-    node = helper.make_node(
+    outputs = outputs if outputs is not None else node.outputs
+    data_format = node.attr.get("data_format", b"").decode("UTF-8")
+    need_transpose = data_format_auto_convert and data_format.find("C") not in (
+        -1, 1)
+
+    nodes = []
+
+    if need_transpose:
+      # Add pre transpose
+      c_first_data_format = data_format[0] + "C" + data_format[1:-1]
+      pre_unique_suffix = get_unique_suffix()
+      pre_transpose_node = Transpose.handle_node_proto(
+          helper.make_node(
+              "Transpose", [node.inputs[0], "perm"],
+              [node.inputs[0] + "_T_" + pre_unique_suffix],
+              name=node.inputs[0] + "_T_" + pre_unique_suffix),
+          consts={
+              "perm": get_perm_from_formats(data_format, c_first_data_format)
+          })
+      nodes.append(pre_transpose_node)
+      inputs[0] = pre_transpose_node.output[0]
+
+      # Process inputs, outputs name
+      # Assume real input is always the first
+      onnx_node_suffix = get_unique_suffix()
+      onnx_node_output = node.outputs[0]
+      inputs = [pre_transpose_node.output[0]] + inputs[1:]
+      outputs = [onnx_node_output + "_" + onnx_node_suffix] + outputs[1:]
+
+    onnx_node = helper.make_node(
         op_type if op_type is not None else cls.ONNX_OP,
         inputs,
         outputs,
         name=name if name is not None else node.name,
         doc_string=doc_string,
         **kwargs)
+
     if should_check:
-      cls.check_node(node, version)
+      cls.check_node(onnx_node, version)
     else:
       warnings.warn("Skipped check for {}.".format(node.op_type))
-    return node
+
+    if need_transpose:
+      nodes.append(onnx_node)
+      # Add post transpose
+      post_unique_suffix = get_unique_suffix()
+      post_transpose_node = Transpose.handle_node_proto(
+          helper.make_node(
+              "Transpose", [onnx_node.output[0], "perm"], [onnx_node_output],
+              name=onnx_node_output + "_" + onnx_node_suffix + "_T_" +
+              post_unique_suffix),
+          consts={
+              "perm": get_perm_from_formats(c_first_data_format, data_format)
+          })
+      nodes.append(post_transpose_node)
+      return nodes
+    return onnx_node
 
   @classmethod
   def check_node(cls, node, version=0):
@@ -125,6 +177,8 @@ class FrontendHandler(Handler):
     checker.check_node(node, ctx=ctx)
 
   @classmethod
+  @deprecated("FrontendHandler.get_outputs_names is deprecated.{}. {}".format(
+      deprecated.MSG_WILL_REMOVE, "Use node.outputs instead."))
   def get_outputs_names(cls, node, num=None):
     """ Helper method to get outputs names.
     e.g. tf.split: [Split, Split:1, Split:2]
