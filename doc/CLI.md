@@ -6,15 +6,16 @@ ONNX-Tensorflow Command Line Interface
 
 More information: `onnx-tf -h`
 ```
-usage: onnx-tf [-h] {convert}
+usage: onnx-tf [-h] {convert,check,optimize}
 
 ONNX-Tensorflow Command Line Interface
 
 positional arguments:
-  {convert}   Available commands.
+  {convert,check,optimize}
+                        Available commands.
 
 optional arguments:
-  -h, --help  show this help message and exit
+  -h, --help            show this help message and exit
 ```
 
 ## Usage:

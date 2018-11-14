@@ -100,9 +100,6 @@ https://github.com/onnx/onnx/blob/master/onnx/optimizer.py for available
 optimization passes.
 
 
-`fold_constant` : Whether to fold (optimize away by evaluating statically) constant operations/tensors.
-
-
 _returns_:
 
 The equivalent ONNX Model Proto object.
