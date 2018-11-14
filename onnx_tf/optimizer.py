@@ -9,6 +9,7 @@ import argparse
 import onnx
 from onnx import defs
 from onnx import mapping
+from onnx import GraphProto
 from onnx.helper import make_model
 from onnx.helper import make_opsetid
 
@@ -20,19 +21,23 @@ from onnx_tf.handlers.frontend_handler import FrontendHandler
 from onnx_tf.pb_wrapper import TensorflowNode
 from onnx_tf.pb_wrapper import OnnxGraph
 
+
 def parse_args(args):
+  # TODO: allow selective enablement of optimization passes
   parser = argparse.ArgumentParser(
-      description=
-      "onnx-tensorflow optimization passes."
-  )
+      description="onnx-tensorflow optimization passes.")
   parser.add_argument(
       "--infile",
       "-i",
       help="Path to the ONNX model being optimized.",
       required=True)
   parser.add_argument(
-      "--outfile", "-o", help="Output file path for the optimized ONNX model.", required=True)
+      "--outfile",
+      "-o",
+      help="Output file path for the optimized ONNX model.",
+      required=True)
   return parser.parse_args(args)
+
 
 def constant_folding(onnx_graph):
   for node in onnx_graph.nodes_proto:
@@ -50,9 +55,7 @@ def constant_folding(onnx_graph):
         output_onnx_type = mapping.NP_TYPE_TO_TENSOR_TYPE[output_content.dtype]
         onnx_graph.add_const_explicit(name=output_name, value=output_content)
         onnx_graph.add_const_proto_explicit(
-            name=output_name,
-            value=output_content,
-            onnx_dtype=output_onnx_type)
+            name=output_name, value=output_content, onnx_dtype=output_onnx_type)
         onnx_graph.add_input_proto_explicit(
             name=output_name,
             shape=output_content.shape,
@@ -61,27 +64,26 @@ def constant_folding(onnx_graph):
       onnx_graph.remove_node_proto(node.name)
   return onnx_graph
 
-all_optimization_passes = {
-  "CONSTANT_FOLDING": constant_folding
-}
+
+all_optimization_passes = {"CONSTANT_FOLDING": constant_folding}
 
 all_optimization_pass_names = all_optimization_passes.keys()
 
-def optimize(onnx_graph, passes=all_optimization_pass_names):
+
+def optimize(onnx_model, passes=all_optimization_pass_names):
   """Optimize ONNX graph.
   """
+  onnx_graph = OnnxGraph(graph_proto=onnx_model.graph)
   for opt_pass in passes:
     assert opt_pass in all_optimization_passes.keys()
     opt_func = all_optimization_passes[opt_pass]
     onnx_graph = opt_func(onnx_graph)
-    return onnx_graph
+  onnx_model.graph.CopyFrom(onnx_graph.make_graph_proto())
+  return onnx_model
+
 
 def main(args):
   args = parse_args(args)
-  passes = ["CONSTANT_FOLDING"]
   onnx_model = onnx.load(args.infile)
-  onnx_graph = OnnxGraph(graph_proto=onnx_model.graph)
-  onnx_graph = optimize(onnx_graph, passes)
-  onnx_model.graph.CopyFrom(onnx_graph.make_graph_proto())
+  onnx_model = optimize(onnx_model)
   onnx.save(onnx_model, args.outfile)
-
