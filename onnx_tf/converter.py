@@ -176,6 +176,7 @@ def convert(infile, outfile, convert_to, **kwargs):
       saver = tf.train.import_meta_graph(latest_ckpt + ".meta")
       output_node_names = []
       temp_file_suffix = get_unique_suffix()
+      workdir = 'onnx-tf_workdir_{}'.format(temp_file_suffix)
       with tf.Session() as sess:
         sess.run([
             tf.global_variables_initializer(),
@@ -189,28 +190,25 @@ def convert(infile, outfile, convert_to, **kwargs):
         # Save the graph to disk for freezing.
         tf.train.write_graph(
             sess.graph.as_graph_def(add_shapes=True),
-            'onnx-tf_workdir_{}'.format(temp_file_suffix),
-            'input_model.pb',
+            workdir,
+            "input_model.pb",
             as_text=False)
 
       # Freeze graph:
       freeze_graph.freeze_graph(
-          input_graph='onnx-tf_workdir_{}/input_model.pb'.format(
-              temp_file_suffix),
+          input_graph=workdir + "/input_model.pb",
           input_saver="",
           input_binary=True,
           input_checkpoint=latest_ckpt,
           output_node_names=",".join(kwargs["output"]),
           restore_op_name="",
           filename_tensor_name="",
-          output_graph="onnx-tf_workdir_{}/frozen_model.pb".format(
-              temp_file_suffix),
+          output_graph=workdir + "/frozen_model.pb",
           clear_devices=True,
           initializer_nodes="")
 
       # Load back the frozen graph.
-      with open("onnx-tf_workdir_{}/frozen_model.pb".format(temp_file_suffix),
-                "rb") as f:
+      with open(workdir + "frozen_model.pb", "rb") as f:
         graph_def = graph_pb2.GraphDef()
         graph_def.ParseFromString(f.read())
     else:
