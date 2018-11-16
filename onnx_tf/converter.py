@@ -167,8 +167,6 @@ def convert(infile, outfile, convert_to, **kwargs):
   elif convert_to == "onnx":
     ext = os.path.splitext(infile)[1]
     logger.info("Start converting tf pb to onnx pb:")
-    kwargs["output"] = kwargs.get("output", None) or get_output_node_names(
-        sess.graph.as_graph_def())
     if ext == ".pb":
       with open(infile, "rb") as f:
         graph_def = graph_pb2.GraphDef()
@@ -184,28 +182,35 @@ def convert(infile, outfile, convert_to, **kwargs):
             tf.local_variables_initializer()
         ])
         saver.restore(sess, latest_ckpt)
+        # Take users' hint or deduce output node automatically.
+        kwargs["output"] = kwargs.get("output", None) or get_output_node_names(
+            sess.graph.as_graph_def())
+
         # Save the graph to disk for freezing.
         tf.train.write_graph(
             sess.graph.as_graph_def(add_shapes=True),
-            'input_model_tmp_{}.pb'.format(temp_file_suffix),
-            'model.pb',
+            'onnx-tf_workdir_{}'.format(temp_file_suffix),
+            'input_model.pb',
             as_text=False)
 
       # Freeze graph:
       freeze_graph.freeze_graph(
-          input_graph='input_model_tmp_{}.pb'.format(temp_file_suffix),
+          input_graph='onnx-tf_workdir_{}/input_model.pb'.format(
+              temp_file_suffix),
           input_saver="",
           input_binary=True,
           input_checkpoint=latest_ckpt,
           output_node_names=",".join(kwargs["output"]),
           restore_op_name="",
           filename_tensor_name="",
-          output_graph="frozen_graph_temp_{}.pb".format(temp_file_suffix),
+          output_graph="onnx-tf_workdir_{}/frozen_model.pb".format(
+              temp_file_suffix),
           clear_devices=True,
           initializer_nodes="")
 
       # Load back the frozen graph.
-      with open("frozen_graph_temp_{}.pb".format(temp_file_suffix), "rb") as f:
+      with open("onnx-tf_workdir_{}/frozen_model.pb".format(temp_file_suffix),
+                "rb") as f:
         graph_def = graph_pb2.GraphDef()
         graph_def.ParseFromString(f.read())
     else:
