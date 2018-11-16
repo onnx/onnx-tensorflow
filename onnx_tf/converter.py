@@ -208,7 +208,7 @@ def convert(infile, outfile, convert_to, **kwargs):
           initializer_nodes="")
 
       # Load back the frozen graph.
-      with open(workdir + "frozen_model.pb", "rb") as f:
+      with open(workdir + "/frozen_model.pb", "rb") as f:
         graph_def = graph_pb2.GraphDef()
         graph_def.ParseFromString(f.read())
     else:
