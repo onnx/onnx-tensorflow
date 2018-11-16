@@ -6,9 +6,11 @@ import os
 import onnx
 import tensorflow as tf
 from tensorflow.core.framework import graph_pb2
+from tensorflow.python.tools import freeze_graph
 
 import onnx_tf.backend as backend
 from onnx_tf.common import get_output_node_names
+from onnx_tf.common import get_unique_suffix
 import onnx_tf.frontend as frontend
 
 logging.basicConfig(level=logging.DEBUG)
@@ -115,6 +117,7 @@ def parse_args(args):
       group.add_argument("--{}".format(k), help=v["doc"], **v["params"])
 
   # backend args
+  # Args must be named consistently with respect to backend.prepare.
   add_argument_group(parser, "backend arguments (onnx -> tf)",
                      [(backend.prepare, {
                          "device": {},
@@ -122,8 +125,13 @@ def parse_args(args):
                      })])
 
   # frontend args
+  # Args must be named consistently with respect to frontend.tensorflow_graph_to_onnx_model.
   add_argument_group(parser, "frontend arguments (tf -> onnx)",
                      [(frontend.tensorflow_graph_to_onnx_model, {
+                         "output": {
+                             "action": ListAction,
+                             "dest": "output"
+                         },
                          "opset": {
                              "action": OpsetAction,
                          },
@@ -159,6 +167,8 @@ def convert(infile, outfile, convert_to, **kwargs):
   elif convert_to == "onnx":
     ext = os.path.splitext(infile)[1]
     logger.info("Start converting tf pb to onnx pb:")
+    kwargs["output"] = kwargs.get("output", None) or get_output_node_names(
+        sess.graph.as_graph_def())
     if ext == ".pb":
       with open(infile, "rb") as f:
         graph_def = graph_pb2.GraphDef()
@@ -166,20 +176,42 @@ def convert(infile, outfile, convert_to, **kwargs):
     elif ext == ".ckpt":
       latest_ckpt = tf.train.latest_checkpoint(os.path.dirname(infile))
       saver = tf.train.import_meta_graph(latest_ckpt + ".meta")
+      output_node_names = []
+      temp_file_suffix = get_unique_suffix()
       with tf.Session() as sess:
         sess.run([
             tf.global_variables_initializer(),
             tf.local_variables_initializer()
         ])
         saver.restore(sess, latest_ckpt)
-        output_node_names = get_output_node_names(sess.graph.as_graph_def())
-        graph_def = tf.graph_util.convert_variables_to_constants(
-            sess, sess.graph.as_graph_def(add_shapes=True), output_node_names)
+        # Save the graph to disk for freezing.
+        tf.train.write_graph(
+            sess.graph.as_graph_def(add_shapes=True),
+            'input_model_tmp_{}.pb'.format(temp_file_suffix),
+            'model.pb',
+            as_text=False)
+
+      # Freeze graph:
+      freeze_graph.freeze_graph(
+          input_graph='input_model_tmp_{}.pb'.format(temp_file_suffix),
+          input_saver="",
+          input_binary=True,
+          input_checkpoint=latest_ckpt,
+          output_node_names=",".join(kwargs["output"]),
+          restore_op_name="",
+          filename_tensor_name="",
+          output_graph="frozen_graph_temp_{}.pb".format(temp_file_suffix),
+          clear_devices=True,
+          initializer_nodes="")
+
+      # Load back the frozen graph.
+      with open("frozen_graph_temp_{}.pb".format(temp_file_suffix), "rb") as f:
+        graph_def = graph_pb2.GraphDef()
+        graph_def.ParseFromString(f.read())
     else:
       raise ValueError(
           "Input file is not supported. Should be .pb or .ckpt, but get {}".
           format(ext))
-    onnx_model = frontend.tensorflow_graph_to_onnx_model(
-        graph_def, get_output_node_names(graph_def), **kwargs)
+    onnx_model = frontend.tensorflow_graph_to_onnx_model(graph_def, **kwargs)
     onnx.save(onnx_model, outfile)
   logger.info("Converting completes successfully.")
