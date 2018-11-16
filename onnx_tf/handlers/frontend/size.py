@@ -1,11 +1,11 @@
 import tensorflow as tf
 
-from onnx.helper import make_node
 from onnx_tf.common import get_unique_suffix
 from onnx_tf.handlers.frontend_handler import FrontendHandler
 from onnx_tf.handlers.handler import onnx_op
 from onnx_tf.handlers.handler import tf_op
 from onnx_tf.handlers.frontend.cast import Cast
+from onnx_tf.pb_wrapper import TensorflowNode
 
 
 @onnx_op("Size")
@@ -27,10 +27,14 @@ class Size(FrontendHandler):
     if not need_cast:
       return [size_node]
 
+    attrs = {}
+    attrs['DstT'] = node.attr['out_type']
+
     cast_node = Cast.handle(
-        make_node(
-            "Cast", [size_output_name],
-            outputs=node.outputs,
+        TensorflowNode(
             name=node.name,
-            DstT=node.attr['out_type']))
+            inputs=[size_output_name],
+            outputs=node.outputs,
+            op_type='Cast',
+            attr=attrs))
     return [size_node, cast_node]
