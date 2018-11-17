@@ -152,6 +152,7 @@ test_cases = [
 ("test_split_v", tf.split, "split", [get_rnd([10, 10]), [2, 3, 5]], {}),
 ("test_split", tf.split, "split", [get_rnd([10, 10]), 2], {}),
 ("test_sqrt", tf.sqrt, "Sqrt", [get_rnd([10, 10])], {}),
+("test_square", tf.square, "Square", [get_rnd([10, 10])], {}),
 ("test_squeeze", tf.squeeze, "Squeeze", [get_rnd([1, 1, 10, 10])], {"axis":[0, 1]}),
 ("test_subtract", tf.subtract, "Sub", [get_rnd([10, 10]), get_rnd([10, 10])], {}),
 ("test_tanh", tf.tanh, "Tanh", [get_rnd([10, 10])], {}),
