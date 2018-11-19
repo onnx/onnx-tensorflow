@@ -6,6 +6,9 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
+import re
+import logging
+
 from onnx import defs
 from onnx.helper import make_model
 from onnx.helper import make_opsetid
@@ -55,6 +58,7 @@ class TensorflowFrontend(object):
     """
     onnx_graph = OnnxGraph(name)
     exception.IGNORE_UNIMPLEMENTED = ignore_unimplemented
+    training_ops_to_remove = ["RandomShuffleQueueV2"]
 
     opset_dict = {}
     for domain, version in opset:
@@ -73,6 +77,17 @@ class TensorflowFrontend(object):
         onnx_graph.add_const(node)
         onnx_graph.add_const_proto(node)
         onnx_graph.add_input_proto(node)
+      elif node.op_type in training_ops_to_remove:
+        logger.info("A training op with name {} type {} has been removed.", node.name, node.op_type)
+      elif node.op_type == "QueueDequeueManyV2":
+        num_output = len(node.attr["_output_shapes"])
+        for index, shape, onnx_type in zip(range(num_output),node.attr["_output_shapes"], node.attr["component_types"]):
+          onnx_graph.add_input_proto_explicit(node.name + ":" + str(index),
+                                     shape,
+                                     onnx_dtype=onnx_type)
+        print(node.attr["_output_shapes"])
+        print(node.attr["component_types"])
+        print(node.node)
       else:
         onnx_graph.add_value_info_proto(node)
         handler = handlers.get(node.domain, {}).get(node.op_type, None)
@@ -84,6 +99,7 @@ class TensorflowFrontend(object):
               node_dict=dict(node_tup),
               data_type_cast_map=onnx_graph.data_type_cast_map)
         else:
+          print(node.op_type)
           exception.OP_UNIMPLEMENTED_EXCEPT(
               node.op_type,
               domain=None if node.domain in handlers else node.domain)
