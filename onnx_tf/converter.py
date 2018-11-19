@@ -2,6 +2,7 @@ import argparse
 import inspect
 import logging
 import os
+import shutil
 
 import onnx
 import tensorflow as tf
@@ -211,6 +212,9 @@ def convert(infile, outfile, convert_to, **kwargs):
       with open(workdir + "/frozen_model.pb", "rb") as f:
         graph_def = graph_pb2.GraphDef()
         graph_def.ParseFromString(f.read())
+
+      # Remove work directory.
+      shutil.rmtree(workdir)
     else:
       raise ValueError(
           "Input file is not supported. Should be .pb or .ckpt, but get {}".
