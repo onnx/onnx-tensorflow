@@ -110,6 +110,12 @@ def parse_args(args):
       choices=["onnx", "tf"],
       help="Format converted to.",
       required=True)
+  parser.add_argument(
+      "--graph",
+      "-g",
+      help=
+      "Inference graph, which is obtained by optimizing or editing the training graph for better training usability."
+  )
 
   def add_argument_group(parser, group_name, funcs):
     group = parser.add_argument_group(group_name)
@@ -148,13 +154,14 @@ def parse_args(args):
   return parser.parse_args(args)
 
 
-def convert(infile, outfile, convert_to, **kwargs):
+def convert(infile, outfile, convert_to, graph, **kwargs):
   """Convert pb.
 
   Args:
     infile: Input path.
     outfile: Output path.
     convert_to: Format converted to.
+    graph: Inference graph.
     **kwargs: Other args for converting.
 
   Returns:
@@ -197,7 +204,7 @@ def convert(infile, outfile, convert_to, **kwargs):
 
       # Freeze graph:
       freeze_graph.freeze_graph(
-          input_graph=workdir + "/input_model.pb",
+          input_graph=graph or workdir + "/input_model.pb",
           input_saver="",
           input_binary=True,
           input_checkpoint=latest_ckpt,
