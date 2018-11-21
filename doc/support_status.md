@@ -21,6 +21,7 @@ ______
 |Cast|1, 6|
 |Ceil|1, 6|
 |Clip|1, 6|
+|Compress|9|
 |Concat|1, 4|
 |Constant|1, 9|
 |ConstantFill|1|
@@ -37,7 +38,7 @@ ______
 |Equal|1, 7|
 |Exp|1, 6|
 |Expand|8|
-|EyeLike|N/A|
+|EyeLike|9|
 |Flatten|1, 9|
 |Floor|1, 6|
 |GRU|1, 3, 7|
@@ -68,6 +69,7 @@ ______
 |Max|1, 6, 8|
 |MaxPool|1, 8|
 |MaxRoiPool|N/A|
+|MaxUnpool|N/A|
 |Mean|1, 6, 8|
 |MeanVarianceNormalization|1|
 |Min|1, 6, 8|
@@ -157,6 +159,7 @@ ______
 |Fill|1|
 |Floor|1, 6|
 |FusedBatchNorm|1, 6, 7|
+|GatherV2|1|
 |Greater|1, 7, 9|
 |Identity|1|
 |Less|1, 7, 9|
@@ -191,6 +194,7 @@ ______
 |Shape|1|
 |Sigmoid|1, 6|
 |Sin|7|
+|Size|1|
 |Slice|1|
 |Softmax|1|
 |Softplus|1|
@@ -199,6 +203,7 @@ ______
 |Split|1, 2|
 |SplitV|1, 2|
 |Sqrt|1, 6|
+|Square|1|
 |Squeeze|1|
 |StridedSlice|9|
 |Sub|1, 6, 7|

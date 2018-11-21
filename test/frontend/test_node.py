@@ -6,6 +6,7 @@ from __future__ import unicode_literals
 import unittest
 import numpy as np
 import tensorflow as tf
+from collections import Iterable
 
 from onnx_tf.frontend import tensorflow_graph_to_onnx_model
 from onnx import checker
@@ -86,6 +87,12 @@ def create_test(test_data):
       with tf.Session() as sess:
         tf_output = sess.run(test_op, tf_feed_dict)
 
+      # make sure backend_output and tf_output are Iterable
+      if backend_output.ndim == 0:
+        backend_output = backend_output.reshape(1)
+      if isinstance(tf_output, Iterable) == False:
+        tf_output = [tf_output]
+
       # skip comparison if test_option specifies that
       # the test is call only.
       if test_option.get("call_only", False):
@@ -94,6 +101,7 @@ def create_test(test_data):
         np.testing.assert_allclose(backend_o, tf_o, rtol=1e-3, atol=1e-7)
 
   return do_test_expected
+
 
 # yapf: disable
 # organized as a tuple of the format:
@@ -106,11 +114,13 @@ test_cases = [
 ("test_arg_max", tf.argmax, "ArgMax", [get_rnd([1, 2, 3, 4])], {"axis": -1}),
 ("test_arg_min", tf.argmin, "ArgMin", [get_rnd([1, 2, 3, 4])], {"axis": -1}),
 ("test_cast", tf.cast, "Cast", [get_rnd([10, 10]), tf.float16], {}),
+("test_size", tf.size, "Size", [get_rnd([5, 5])], {}),
 ("test_ceil", tf.ceil, "Ceil", [get_rnd([10, 10], -10, 10)], {}),
 ("test_constant_fill", tf.fill, "Fill", [[1, 2, 3], 1], {}),
 ("test_exp", tf.exp, "Exp", [get_rnd([10, 10])], {}),
 ("test_expand_dims", tf.expand_dims, "ExpandDims", [get_rnd([1, 2, 3, 4])], {"axis": 1}),
 ("test_floor", tf.floor, "Floor", [get_rnd([10, 10], -10, 10)], {}),
+("test_gatherV2", tf.gather, "GatherV2", [get_rnd([3, 3]), [0, 2]], {"axis": 1}),
 ("test_identity", tf.identity, "Identity", [get_rnd([10, 10])], {}),
 ("test_log", tf.log, "Log", [get_rnd([10, 10])], {}),
 ("test_log_softmax", tf.nn.log_softmax, "LogSoftmax", [get_rnd([10, 10])], {}),
@@ -126,6 +136,7 @@ test_cases = [
 ("test_reduce_min", tf.reduce_min, "Min", [get_rnd([10, 10])], {"keep_dims": True}),
 ("test_reduce_prod", tf.reduce_prod, "Prod", [get_rnd([10, 10])], {"keep_dims": True}),
 ("test_reduce_sum", tf.reduce_sum, "Sum", [get_rnd([10, 10])], {"keep_dims": True}),
+("test_reduce_sum_scalar_axes", tf.reduce_sum, "Sum", [get_rnd([10, 10]), 0], {"keep_dims": True}),
 ("test_relu", tf.nn.relu, "Relu", [get_rnd([10, 10])], {}),
 ("test_relu6", tf.nn.relu6, "Relu6", [get_rnd([10, 10])], {}),
 ("test_reshape", tf.reshape, "Reshape", [get_rnd([10, 10]), [4, 25]], {}),
@@ -140,6 +151,7 @@ test_cases = [
 ("test_split_v", tf.split, "split", [get_rnd([10, 10]), [2, 3, 5]], {}),
 ("test_split", tf.split, "split", [get_rnd([10, 10]), 2], {}),
 ("test_sqrt", tf.sqrt, "Sqrt", [get_rnd([10, 10])], {}),
+("test_square", tf.square, "Square", [get_rnd([10, 10])], {}),
 ("test_squeeze", tf.squeeze, "Squeeze", [get_rnd([1, 1, 10, 10])], {"axis":[0, 1]}),
 ("test_subtract", tf.subtract, "Sub", [get_rnd([10, 10]), get_rnd([10, 10])], {}),
 ("test_tanh", tf.tanh, "Tanh", [get_rnd([10, 10])], {}),

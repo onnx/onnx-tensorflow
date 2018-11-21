@@ -173,6 +173,19 @@ class TestNode(unittest.TestCase):
     output = run_node(node_def, [x])
     np.testing.assert_almost_equal(output["Y"], np.ceil(x))
 
+  def test_compress(self):
+    if legacy_opset_pre_ver(9):
+      raise unittest.SkipTest(
+          "ONNX version {} doesn't support Compress.".format(
+              defs.onnx_opset_version()))
+    axis = 1
+    node_def = helper.make_node(
+        "Compress", inputs=['X', 'condition'], outputs=['Y'], axis=axis)
+    x = self._get_rnd([5, 5, 5])
+    cond = np.array([1, 0, 1])
+    output = run_node(node_def, inputs=[x, cond])
+    np.testing.assert_almost_equal(output['Y'], np.compress(cond, x, axis=axis))
+
   def test_concat(self):
     shape = [10, 20, 5]
     for axis in range(len(shape)):
@@ -348,6 +361,19 @@ class TestNode(unittest.TestCase):
     x = x - 3.6
     output = run_node(node_def, [x])
     np.testing.assert_almost_equal(output["Y"], np.exp(x))
+
+  def test_eye_like(self):
+    if legacy_opset_pre_ver(9):
+      raise unittest.SkipTest("ONNX version {} doesn't support EyeLike.".format(
+          defs.onnx_opset_version()))
+    for shape in [[6, 10], [10, 6]]:
+      for off_diagonal_offset in [-10, -6, -3, 0, 3, 6, 7, 10]:
+        node_def = helper.make_node(
+            "EyeLike", ['x'], ['y'], dtype=1, k=off_diagonal_offset)
+        x = np.random.randint(0, 100, size=shape, dtype=np.int32)
+        y = np.eye(shape[0], shape[1], k=off_diagonal_offset, dtype=np.float32)
+        output = run_node(node_def, [x])
+        np.testing.assert_equal(output['y'], y)
 
   def test_flatten(self):
     # If input tensor has shape (d_0, d_1, ... d_n) then the

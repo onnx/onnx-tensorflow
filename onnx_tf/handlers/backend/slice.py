@@ -24,8 +24,8 @@ class Slice(BackendHandler):
     axes = node.attrs.get("axes", list(range(slice_len)))
 
     for i in range(slice_len):
-      starts[i] = full_sizes[
-          axes[i]] + starts[i] if starts[i] < 0 else starts[i]
+      starts[i] = full_sizes[axes[i]] + starts[i] if starts[i] < 0 else starts[
+          i]
       ends[i] = full_sizes[axes[i]] + ends[i] if ends[i] < 0 else ends[i]
       if full_sizes[axes[i]] is not None:
         ends[i] = np.min([full_sizes[axes[i]], ends[i]])

@@ -9,7 +9,7 @@ class Unpack(FrontendHandler):
   @classmethod
   def version_1(cls, node, **kwargs):
     axis = node.attr.get("axis", 0)
-    outputs = cls.get_outputs_names(node)
+    outputs = node.outputs
     split_outputs = [o + "_Split_" + get_unique_suffix() for o in outputs]
     splited = cls.make_node(
         "Split",
