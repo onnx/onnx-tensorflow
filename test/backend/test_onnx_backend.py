@@ -9,7 +9,7 @@ import unittest
 import onnx.backend.test
 
 from onnx_tf.backend import TensorflowBackend
-from onnx_tf.common.legacy import legacy_onnx_pre_ver
+from onnx_tf.common.legacy import legacy_onnx_pre_ver, legacy_opset_pre_ver
 
 # This is a pytest magic variable to load extra plugins
 pytest_plugins = 'onnx.backend.test.report',
@@ -30,6 +30,9 @@ backend_test.exclude(
 
 # PRelu OnnxBackendPyTorchConvertedModelTest has wrong dim for broadcasting
 backend_test.exclude(r'[a-z,_]*PReLU_[0-9]d_multiparam[a-z,_]*')
+
+if legacy_opset_pre_ver(7):
+  backend_test.exclude(r'[a-z,_]*Upsample[a-z,_]*')
 
 if 'TRAVIS' in os.environ:
   backend_test.exclude('test_vgg19')
