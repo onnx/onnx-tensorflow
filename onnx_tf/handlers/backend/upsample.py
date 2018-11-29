@@ -54,12 +54,12 @@ class Upsample(BackendHandler):
     attrs = copy.deepcopy(node.attrs)
     scales = kwargs["tensor_dict"][node.inputs[1]]
 
-    assert_n_c_scale_is_one = tf.Assert(tf.logical_and(tf.equal(scales[0], 1), tf.equal(scales[3], 1)))
-    
+    assert_n_c_scale_is_one = tf.Assert(tf.logical_and(tf.equal(scales[0], 1), tf.equal(scales[1], 1)), [scales])
+
     with tf.control_dependencies([assert_n_c_scale_is_one]):
-      h_w_scale = scales[1:3]
+      h_w_scale = scales[2:]
       h_w_shape = x_shape[2:]
-      new_h_w_shape = h_w_scale * h_w_shape
+      new_h_w_shape = tf.cast(h_w_scale, tf.int32) * h_w_shape
 
       mode = attrs.get("mode", "nearest")
       if mode.lower() == "bilinear":
@@ -67,10 +67,13 @@ class Upsample(BackendHandler):
       else:
         mode = tf.image.ResizeMethod.NEAREST_NEIGHBOR
 
-      attrs["size"] = np.array((new_height, new_weight), dtype=np.int32)
+      attrs["size"] = new_h_w_shape
       attrs["method"] = mode
 
+      # return [tf.image.resize_images(x, new_h_w_shape)]
+      upsample_node = copy.deepcopy(node)
+      del upsample_node.inputs[1]
       return [
         cls.make_tensor_from_onnx_node(
-          node, attrs=attrs, c_last_only=True, size = new_h_w_shape, **kwargs)
+          upsample_node, attrs=attrs, c_last_only=True, **kwargs)
       ]
