@@ -141,6 +141,7 @@ test_cases = [
 ("test_relu", tf.nn.relu, "Relu", [get_rnd([10, 10])], {}),
 ("test_relu6", tf.nn.relu6, "Relu6", [get_rnd([10, 10])], {}),
 ("test_reshape", tf.reshape, "Reshape", [get_rnd([10, 10]), [4, 25]], {}),
+("test_rsqrt", tf.rsqrt, "Rsqrt", [get_rnd([3, 3])], {}),
 ("test_selu", tf.nn.selu, "Selu", [get_rnd([10, 10])], {}),
 ("test_shape", tf.shape, "Shape", [get_rnd([1, 2, 3, 4])], {}),
 ("test_sigmoid", tf.sigmoid, "Sigmoid", [get_rnd([10, 10])], {}),

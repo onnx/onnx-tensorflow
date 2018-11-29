@@ -303,6 +303,7 @@ frontend_tf_opset_version = {
     'Relu': [1, 6],
     'Relu6': [1, 6],
     'Reshape': [1, 5],
+    'Rsqrt': [1],
     'Selu': [1, 6],
     'Shape': [1],
     'Sigmoid': [1, 6],
