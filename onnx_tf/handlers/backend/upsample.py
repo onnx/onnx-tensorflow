@@ -46,3 +46,31 @@ class Upsample(BackendHandler):
         cls.make_tensor_from_onnx_node(
             node, attrs=attrs, c_last_only=True, **kwargs)
     ]
+
+  @classmethod
+  def version_9(cls, node, **kwargs):
+    x = kwargs["tensor_dict"][node.inputs[0]]
+    x_shape = x.get_shape().as_list()
+    attrs = copy.deepcopy(node.attrs)
+    scales = kwargs["tensor_dict"][node.inputs[1]]
+
+    assert_n_c_scale_is_one = tf.Assert(tf.logical_and(tf.equal(scales[0], 1), tf.equal(scales[3], 1)))
+    
+    with tf.control_dependencies([assert_n_c_scale_is_one]):
+      h_w_scale = scales[1:3]
+      h_w_shape = x_shape[2:]
+      new_h_w_shape = h_w_scale * h_w_shape
+
+      mode = attrs.get("mode", "nearest")
+      if mode.lower() == "bilinear":
+        mode = tf.image.ResizeMethod.BILINEAR
+      else:
+        mode = tf.image.ResizeMethod.NEAREST_NEIGHBOR
+
+      attrs["size"] = np.array((new_height, new_weight), dtype=np.int32)
+      attrs["method"] = mode
+
+      return [
+        cls.make_tensor_from_onnx_node(
+          node, attrs=attrs, c_last_only=True, size = new_h_w_shape, **kwargs)
+      ]
