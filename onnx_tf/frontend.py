@@ -100,7 +100,6 @@ class TensorflowFrontend(object):
               node_dict=dict(node_tup),
               data_type_cast_map=onnx_graph.data_type_cast_map)
         else:
-          print(node.op_type)
           exception.OP_UNIMPLEMENTED_EXCEPT(
               node.op_type,
               domain=None if node.domain in handlers else node.domain)
