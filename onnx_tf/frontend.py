@@ -74,14 +74,16 @@ class TensorflowFrontend(object):
 
     # Add a few useful utility constants:
     utility_constants = [
-      ("_onnx_tf_internal_one_fp32", np.array([1.0]).astype(np.float32)),
+        ("_onnx_tf_internal_one_fp32", np.array([1.0]).astype(np.float32)),
     ]
 
     for name, value in utility_constants:
-      print("add const proto", name)
-      onnx_graph.add_const_explicit(name=name, value=value);
-      onnx_graph.add_const_proto_explicit(name=name, value=value, np_dtype=value.dtype)
-      onnx_graph.add_input_proto_explicit(name=name, shape=value.shape, np_dtype=value.dtype)
+      onnx_graph.add_const_explicit(
+          name=name, value=value)
+      onnx_graph.add_const_proto_explicit(
+          name=name, value=value, np_dtype=value.dtype)
+      onnx_graph.add_input_proto_explicit(
+          name=name, shape=value.shape, np_dtype=value.dtype)
 
     for name, node in node_tup:
 

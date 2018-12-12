@@ -176,7 +176,5 @@ class BackendHandler(Handler):
         params = inspect.getargspec(tf_func).args
 
     attrs = cls._process_attrs(attrs)
-    print(attrs)
-    print(inputs)
     return tf_func(*inputs,
                    **dict([(p, attrs[p]) for p in params if p in attrs]))
