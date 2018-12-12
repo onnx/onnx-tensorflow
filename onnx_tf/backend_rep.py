@@ -75,8 +75,7 @@ class TensorflowRep(BackendRep):
           feed_dict = dict([(self.inputs[0], inputs)])
 
         feed_dict = {
-            self.tensor_dict[key]: feed_dict[key]
-            for key in self.inputs
+            self.tensor_dict[key]: feed_dict[key] for key in self.inputs
         }
 
         sess.run(tf.global_variables_initializer())

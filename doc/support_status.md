@@ -21,6 +21,7 @@ ______
 |Cast|1, 6|
 |Ceil|1, 6|
 |Clip|1, 6|
+|Compress|9|
 |Concat|1, 4|
 |Constant|1, 9|
 |ConstantFill|1|
@@ -68,6 +69,7 @@ ______
 |Max|1, 6, 8|
 |MaxPool|1, 8|
 |MaxRoiPool|N/A|
+|MaxUnpool|N/A|
 |Mean|1, 6, 8|
 |MeanVarianceNormalization|1|
 |Min|1, 6, 8|
@@ -201,6 +203,7 @@ ______
 |Split|1, 2|
 |SplitV|1, 2|
 |Sqrt|1, 6|
+|Square|1|
 |Squeeze|1|
 |StridedSlice|9|
 |Sub|1, 6, 7|

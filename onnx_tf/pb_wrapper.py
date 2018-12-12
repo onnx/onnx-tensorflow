@@ -1,10 +1,13 @@
 import inspect
 from itertools import chain
+import warnings
 
 import numpy as np
+import tensorflow as tf
 from onnx import NodeProto
 from onnx import TensorProto
 from onnx import ValueInfoProto
+from onnx import numpy_helper
 from onnx.helper import make_graph
 from onnx.helper import make_tensor
 from onnx.helper import make_tensor_value_info
@@ -15,20 +18,29 @@ from tensorflow.core.framework.node_def_pb2 import NodeDef
 
 from onnx_tf.common import attr_converter
 from onnx_tf.common import attr_translator
+from onnx_tf.common import data_type
 from onnx_tf.common import IS_PYTHON3
 
 
 class TensorflowNode(object):
 
-  def __init__(self, node=None):
+  def __init__(self,
+               node=None,
+               name=None,
+               inputs=None,
+               outputs=None,
+               attr=None,
+               domain=None,
+               op_type=None):
     # storing a reference to the original protobuf object
     if node is None:
       self.node = None
-      self.name = ""
-      self.inputs = []
-      self.attr = {}
-      self.domain = ""
-      self.op_type = ""
+      self.name = name or ""
+      self.inputs = inputs or []
+      self.outputs = outputs or []
+      self.attr = attr or {}
+      self.domain = domain or ""
+      self.op_type = op_type or ""
     elif isinstance(node, (OnnxNode, NodeProto)):
       self._load_onnx_node(node)
     elif isinstance(node, NodeDef):
@@ -39,6 +51,7 @@ class TensorflowNode(object):
       node = OnnxNode(node)
     self.name = node.name
     self.inputs = node.inputs
+    self.outputs = node.outputs
     self.attr = node.attrs
     self.domain = node.domain
     self.op_type = node.op_type
@@ -57,6 +70,26 @@ class TensorflowNode(object):
     self.domain = "" if len(splitted_op_name) == 1 else ".".join(
         splitted_op_name[:-1])
     self.op_type = splitted_op_name[-1]
+    self.outputs = self.get_outputs_names()
+
+  def get_outputs_names(self, num=None):
+    """ Helper method to get outputs names.
+    e.g. tf.split: [Split, Split:1, Split:2]
+
+    :param num: Force to get `num` outputs names.
+    :return: List of outputs names.
+    """
+    if num is None:
+      if "_output_shapes" in self.attr:
+        num = len(self.attr["_output_shapes"])
+      else:
+        num = 1
+        warnings.warn("_output_shapes is not in node.attr. "
+                      "The num of output is set to 1 for commonly. "
+                      "It will cause problem with case of multiple outputs.")
+    return [
+        self.name + ":{}".format(i) if i > 0 else self.name for i in range(num)
+    ]
 
 
 class TensorflowGraph(object):
@@ -159,14 +192,25 @@ class OnnxGraph(object):
   This class holds all information ONNX graph needs.
   """
 
-  def __init__(self, name):
-    self._name = name
-    self._inputs_proto = []
-    self._outputs_proto = []
-    self._nodes_proto = []
-    self._consts = {}
-    self._consts_proto = []
-    self._value_info_proto = []
+  def __init__(self, name=None, graph_proto=None):
+    if graph_proto:
+      self._name = graph_proto.name
+      self._inputs_proto = list(graph_proto.input)
+      self._outputs_proto = list(graph_proto.output)
+      self._nodes_proto = list(graph_proto.node)
+      self._consts_proto = list(graph_proto.initializer)
+      self._value_info_proto = list(graph_proto.value_info)
+      self._consts = dict([(init.name, numpy_helper.to_array(init))
+                           for init in graph_proto.initializer])
+    else:
+      self._name = name or ""
+      self._inputs_proto = []
+      self._outputs_proto = []
+      self._nodes_proto = []
+      self._consts = {}
+      self._consts_proto = []
+      self._value_info_proto = []
+    # Either way, data_type_cast_map is empty when initialized.
     self._data_type_cast_map = {}
 
   # This list holds the protobuf objects of type ValueInfoProto
@@ -244,12 +288,16 @@ class OnnxGraph(object):
   def value_info_proto(self):
     return self._value_info_proto
 
+  def add_input_proto_explicit(self, name, shape, onnx_dtype):
+    input_proto = make_tensor_value_info(name, onnx_dtype, shape)
+    self._inputs_proto.append(input_proto)
+
   def add_input_proto(self, node):
-    onnx_type = node.attr["dtype"]
+    name = node.name
+    onnx_dtype = node.attr["dtype"]
     shape = node.attr["shape"] if node.op_type != "Const" else node.attr[
         'value'].shape
-    input_proto = make_tensor_value_info(node.name, onnx_type, shape)
-    self._inputs_proto.append(input_proto)
+    self.add_input_proto_explicit(name, shape, onnx_dtype)
 
   def add_output_proto(self, node):
     output_onnx_type = node.attr.get("T", TensorProto.BOOL)
@@ -263,26 +311,51 @@ class OnnxGraph(object):
       node_proto = [node_proto]
     self._nodes_proto.extend(node_proto)
 
-  def add_const(self, node):
-    self._consts[node.name] = node.attr["value"]
+  def remove_node_proto(self, names):
+    if not isinstance(names, (list, tuple)):
+      names = [names]
+    self._nodes_proto = list(
+        filter(lambda x: x.name not in names, self._nodes_proto))
 
-  def add_const_proto(self, node):
-    const_dim = len(node.attr["value"].shape)
+  def add_const_explicit(self, name, value):
+    self._consts[name] = value
+
+  def add_const(self, node):
+    self.add_const_explicit(node.name, node.attr["value"])
+
+  def add_const_proto_explicit(self,
+                               name,
+                               value,
+                               np_dtype=None,
+                               tf_dtype=None,
+                               onnx_dtype=None):
+    dtype_mask = [1 if val else 0 for val in [np_dtype, tf_dtype, onnx_dtype]]
+    num_type_set = sum(dtype_mask)
+    assert num_type_set == 1, "One and only one type must be set. However, {} set.".format(
+        sum(num_type_set))
+
+    if np_dtype:
+      onnx_dtype = mapping.NP_TYPE_TO_TENSOR_TYPE[np_dtype]
+    if tf_dtype:
+      onnx_dtype = data_type.tf2onnx(tf_dtype)
+
+    const_dim = len(value.shape)
 
     if const_dim == 0:
-      raw_values = [node.attr["value"].tolist()]
-      values = [node.attr["value"]]
+      raw_values = [value.tolist()]
+      values = [value]
     else:
-      raw_values = node.attr["value"].flatten().tolist()
-      values = node.attr["value"]
+      raw_values = value.flatten().tolist()
+      values = value
 
     shape = np.array(values).shape
     const_proto = make_tensor(
-        name=node.name,
-        data_type=node.attr["dtype"],
-        dims=shape,
-        vals=raw_values)
+        name=name, data_type=onnx_dtype, dims=shape, vals=raw_values)
     self._consts_proto.append(const_proto)
+
+  def add_const_proto(self, node):
+    self.add_const_proto_explicit(
+        node.name, node.attr["value"], onnx_dtype=node.attr["dtype"])
 
   def add_value_info_proto(self, node):
     node_onnx_type = node.attr.get("T", TensorProto.BOOL)

@@ -173,6 +173,19 @@ class TestNode(unittest.TestCase):
     output = run_node(node_def, [x])
     np.testing.assert_almost_equal(output["Y"], np.ceil(x))
 
+  def test_compress(self):
+    if legacy_opset_pre_ver(9):
+      raise unittest.SkipTest(
+          "ONNX version {} doesn't support Compress.".format(
+              defs.onnx_opset_version()))
+    axis = 1
+    node_def = helper.make_node(
+        "Compress", inputs=['X', 'condition'], outputs=['Y'], axis=axis)
+    x = self._get_rnd([5, 5, 5])
+    cond = np.array([1, 0, 1])
+    output = run_node(node_def, inputs=[x, cond])
+    np.testing.assert_almost_equal(output['Y'], np.compress(cond, x, axis=axis))
+
   def test_concat(self):
     shape = [10, 20, 5]
     for axis in range(len(shape)):
