@@ -13,6 +13,7 @@ from onnx.helper import make_model
 from onnx.helper import make_opsetid
 from onnx.optimizer import optimize
 import tensorflow as tf
+import numpy as np
 
 from onnx_tf.common import exception
 from onnx_tf.common.handler_helper import get_all_frontend_handlers
@@ -70,6 +71,18 @@ class TensorflowFrontend(object):
     handlers = get_all_frontend_handlers(opset_dict)
 
     node_tup = [(node.name, TensorflowNode(node)) for node in graph_def.node]
+
+    # Add a few useful utility constants:
+    utility_constants = [
+      ("_onnx_tf_internal_one_fp32", np.array([1.0]).astype(np.float32)),
+    ]
+
+    for name, value in utility_constants:
+      print("add const proto", name)
+      onnx_graph.add_const_explicit(name=name, value=value);
+      onnx_graph.add_const_proto_explicit(name=name, value=value, np_dtype=value.dtype)
+      onnx_graph.add_input_proto_explicit(name=name, shape=value.shape, np_dtype=value.dtype)
+
     for name, node in node_tup:
 
       if node.op_type == "Placeholder":

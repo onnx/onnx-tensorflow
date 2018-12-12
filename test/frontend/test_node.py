@@ -120,7 +120,6 @@ test_cases = [
 ("test_exp", tf.exp, "Exp", [get_rnd([10, 10])], {}),
 ("test_expand_dims", tf.expand_dims, "ExpandDims", [get_rnd([1, 2, 3, 4])], {"axis": 1}),
 ("test_floor", tf.floor, "Floor", [get_rnd([10, 10], -10, 10)], {}),
-("test_floor_div", tf.floordiv, "floordiv", [get_rnd([10, 10], -10, 10), get_rnd([10, 10], -10, 10)], {}),
 ("test_gatherV2", tf.gather, "GatherV2", [get_rnd([3, 3]), [0, 2]], {"axis": 1}),
 ("test_identity", tf.identity, "Identity", [get_rnd([10, 10])], {}),
 ("test_log", tf.log, "Log", [get_rnd([10, 10])], {}),
@@ -166,6 +165,7 @@ test_cases = [
 ("test_concat", tf.concat, "concat", [[get_rnd([1, 10]),get_rnd([10, 10]),get_rnd([20, 10])], 0], {}),
 ("test_bias_add_nchw", tf.nn.bias_add, "BiasAdd", [get_rnd([10, 32, 10, 10]),get_rnd([32])], {"data_format":"NCHW"}),
 ("test_bias_add_nhwc", tf.nn.bias_add, "BiasAdd", [get_rnd([10, 10, 10, 32]),get_rnd([32])], {"data_format":"NHWC"}),
+("test_resize_bilinear", tf.image.resize_bilinear, "ResizeBilinear", [get_rnd([10, 10, 10, 32]), [2, 2]], {}),
 ]
 
 if not legacy_opset_pre_ver(6):
