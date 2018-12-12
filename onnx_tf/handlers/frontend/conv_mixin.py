@@ -1,6 +1,5 @@
 from onnx.helper import make_node
 
-from onnx_tf.common import get_perm_from_formats
 from onnx_tf.common import get_unique_suffix
 from onnx_tf.handlers.frontend.transpose import Transpose
 
