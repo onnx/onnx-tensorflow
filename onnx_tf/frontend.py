@@ -5,6 +5,8 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
+import logging
+
 from onnx import defs
 from onnx.helper import make_model
 from onnx.helper import make_opsetid
@@ -20,6 +22,8 @@ from onnx_tf.pb_wrapper import OnnxGraph
 # Define long type for Python 3:
 if IS_PYTHON3:
   long = int
+
+logger = logging.getLogger()
 
 
 class TensorflowFrontend(object):
@@ -48,6 +52,7 @@ class TensorflowFrontend(object):
     """
     onnx_graph = OnnxGraph(tf_graph.graph_name)
     exception.IGNORE_UNIMPLEMENTED = ignore_unimplemented
+    training_ops_to_remove = ["RandomShuffleQueueV2"]
 
     opset_dict = {}
     for domain, version in opset:
@@ -65,6 +70,17 @@ class TensorflowFrontend(object):
         onnx_graph.add_const(node)
         onnx_graph.add_const_proto(node)
         onnx_graph.add_input_proto(node)
+      elif node.op_type in training_ops_to_remove:
+        logger.info(
+            "A training op with name {} type {} has been removed.".format(
+                node.name, node.op_type))
+      elif node.op_type == "QueueDequeueManyV2":
+        num_output = len(node.attr["_output_shapes"])
+        for index, shape, onnx_type in zip(
+            range(num_output), node.attr["_output_shapes"],
+            node.attr["component_types"]):
+          onnx_graph.add_input_proto_explicit(
+              node.name + ":" + str(index), shape, onnx_dtype=onnx_type)
       else:
         onnx_graph.add_value_info_proto(node)
         handler = handlers.get(node.domain, {}).get(node.op_type, None)
