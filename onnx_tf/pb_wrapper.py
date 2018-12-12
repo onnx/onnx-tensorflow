@@ -19,6 +19,7 @@ from onnx_tf.common import attr_converter
 from onnx_tf.common import attr_translator
 from onnx_tf.common import data_type
 from onnx_tf.common import IS_PYTHON3
+from onnx_tf.common.data_type import any_dtype_to_onnx_dtype
 
 
 class TensorflowNode(object):
@@ -212,7 +213,14 @@ class OnnxGraph(object):
   def value_info_proto(self):
     return self._value_info_proto
 
-  def add_input_proto_explicit(self, name, shape, onnx_dtype):
+  def add_input_proto_explicit(self,
+                               name,
+                               shape,
+                               np_dtype=None,
+                               tf_dtype=None,
+                               onnx_dtype=None):
+    onnx_dtype = any_dtype_to_onnx_dtype(
+        np_dtype=np_dtype, tf_dtype=tf_dtype, onnx_dtype=onnx_dtype)
     input_proto = make_tensor_value_info(name, onnx_dtype, shape)
     self._inputs_proto.append(input_proto)
 
@@ -221,7 +229,7 @@ class OnnxGraph(object):
     onnx_dtype = node.attr["dtype"]
     shape = node.attr["shape"] if node.op_type != "Const" else node.attr[
         'value'].shape
-    self.add_input_proto_explicit(name, shape, onnx_dtype)
+    self.add_input_proto_explicit(name, shape, onnx_dtype=onnx_dtype)
 
   def add_output_proto(self, node):
     output_onnx_type = node.attr.get("T", TensorProto.BOOL)
@@ -253,15 +261,8 @@ class OnnxGraph(object):
                                np_dtype=None,
                                tf_dtype=None,
                                onnx_dtype=None):
-    dtype_mask = [1 if val else 0 for val in [np_dtype, tf_dtype, onnx_dtype]]
-    num_type_set = sum(dtype_mask)
-    assert num_type_set == 1, "One and only one type must be set. However, {} set.".format(
-        sum(num_type_set))
-
-    if np_dtype:
-      onnx_dtype = mapping.NP_TYPE_TO_TENSOR_TYPE[np_dtype]
-    if tf_dtype:
-      onnx_dtype = data_type.tf2onnx(tf_dtype)
+    onnx_dtype = any_dtype_to_onnx_dtype(
+        np_dtype=np_dtype, tf_dtype=tf_dtype, onnx_dtype=onnx_dtype)
 
     const_dim = len(value.shape)
 

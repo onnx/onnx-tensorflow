@@ -8,6 +8,7 @@ __tf_attr_translator = {
     "shape": lambda x: get_tf_shape_as_list(x.shape.dim),
     "T": lambda x: data_type.tf2onnx(list(x.list.type) or x.type),
     "dtype": lambda x: data_type.tf2onnx(list(x.list.type) or x.type),
+    "component_types": lambda x: data_type.tf2onnx(list(x.list.type) or x.type),
     "value": lambda x: MakeNdarray(x.tensor),
     "seed2": lambda x: float(x.i),
     "seed": lambda x: float(x.i),
