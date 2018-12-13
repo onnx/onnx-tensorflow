@@ -13,7 +13,6 @@ class DynamicSlice(BackendHandler):
   def version_9(cls, node, **kwargs):
     tensor_dict = kwargs["tensor_dict"]
     input_tensor = tensor_dict[node.inputs[0]]
-    input_tensor_shape = input_tensor.get_shape().as_list()
     starts = tensor_dict[node.inputs[1]]
     ends = tensor_dict[node.inputs[2]]
     l = list(range(starts.shape[0]))
@@ -23,13 +22,14 @@ class DynamicSlice(BackendHandler):
     # first of all, compute sparse shape, that is:
     # for (axis in axes):
     #   sparse_shape[axis] = input_tensor.shape[axis]
+    input_tensor_shape = tf.constant(input_tensor.shape.dims, ends.dtype)
 
     # expand a dimension of 1 at the end
     sparse_indices = tf.expand_dims(axes, -1)
 
     # build the indexed dimension sizes as sparse_shape
     sparse_shape = tf.gather_nd(
-        params=input_tensor_shape, indices=sparse_indices)
+        params=input_tensor.shape, indices=sparse_indices)
     sparse_shape = tf.cast(sparse_shape, ends.dtype)
 
     # take care of starts, ends that are larger than the dim size.
@@ -60,7 +60,7 @@ class DynamicSlice(BackendHandler):
     # replace -1 with respective dimension sizes
     dense_ends = tf.where(
         tf.equal(dense_ends, tf.constant(-1, dtype=dense_begins.dtype)),
-        tf.constant(input_tensor_shape, ends.dtype), dense_ends)
+        input_tensor_shape, dense_ends)
     dense_sizes = dense_ends - dense_begins
 
     return [
