@@ -18,12 +18,9 @@ class Slice(FrontendHandler):
   @classmethod
   def version_1(cls, node, **kwargs):
     consts = kwargs["consts"]
-    if node.attr.get("axes", None):
-      axes = node.attr["axes"]
-    else:
-      axes = list(range(len(kwargs["node_dict"][node.inputs[0]].attr["shape"])))
     return cls.make_node_from_tf_node(
         node, [node.inputs[0]],
         starts=consts[node.inputs[1]],
         ends=consts[node.inputs[1]] + consts[node.inputs[2]],
-        axes=axes)
+        axes=list(
+            range(len(kwargs["node_dict"][node.inputs[0]].attr["shape"]))))

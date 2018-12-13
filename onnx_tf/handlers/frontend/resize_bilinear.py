@@ -1,19 +1,22 @@
 import tensorflow as tf
 import numpy as np
 
-from onnx_tf.common import exception
+from onnx.helper import make_node
+from onnx.helper import make_tensor
+
 from onnx_tf.common import get_unique_suffix
+from onnx_tf.common.data_type import any_dtype_to_onnx_dtype
 from onnx_tf.handlers.frontend_handler import FrontendHandler
 from onnx_tf.handlers.frontend.shape import Shape
-from onnx_tf.handlers.frontend.slice import Slice
+from onnx_tf.handlers.frontend.strided_slice import StridedSlice
 from onnx_tf.handlers.frontend.cast import Cast
 from onnx_tf.handlers.frontend.concat import Concat
 from onnx_tf.handlers.frontend.div import Div
-from onnx_tf.handlers.frontend.fill import Fill
 from onnx_tf.handlers.frontend.transpose import Transpose
 from onnx_tf.handlers.handler import onnx_op
 from onnx_tf.handlers.handler import tf_op
 from onnx_tf.pb_wrapper import TensorflowNode
+from onnx_tf.pb_wrapper import OnnxGraph
 
 
 @onnx_op("Upsample")
@@ -29,19 +32,18 @@ class ResizeBilinear(FrontendHandler):
         TensorflowNode(
             name='Transpose_In_' + unique_suffix,
             inputs=node.inputs[:1] + ["perm"],
-            outputs=["transposed_input" + unique_suffix]),
+            outputs=["transposed_input_" + unique_suffix]),
         consts={"perm": [0, 3, 1, 2]})
 
     # Get shape of NCHW input tensor:
     input_shape_node = Shape.handle(
         TensorflowNode(
             name='Input_Shape',
-            inputs=["transposed_input" + unique_suffix],
-            outputs=["input_shape"],
-            attr=node.attr,
-            op_type='Shape'))
+            inputs=transpose_node.output,
+            outputs=["input_shape_" + unique_suffix],
+            attr=node.attr))
 
-    util_one = "_onnx_tf_internal_one_fp32"
+    util_one = OnnxGraph.CONST_ONE_FP32
 
     output_shape_tensor = node.inputs[1]
 
@@ -57,39 +59,51 @@ class ResizeBilinear(FrontendHandler):
     in_shape_cast = Cast.handle(
         TensorflowNode(
             name='In_shape_Cast',
-            inputs=["input_shape"],
+            inputs=input_shape_node.output,
             outputs=["input_shape_float_" + unique_suffix],
             attr={"DstT": tf.float32}))
 
-    # Get input shape in spatial dimensions only.
-    in_shape_slice = Slice.handle(
+    slice_const = {
+        "begin": np.array([2]).astype(np.int32),
+        "end": np.array([4]).astype(np.int32),
+        "strides": np.array([1]).astype(np.int32),
+    }
+
+    slice_const_proto = {}
+
+    for k, v in slice_const.items():
+      const_name = "{}_".format(k) + unique_suffix
+      slice_const_proto[k] = make_node(
+          "Constant", [], [const_name],
+          value=make_tensor(const_name,
+                            any_dtype_to_onnx_dtype(np_dtype=v.dtype), v.shape,
+                            v))
+
+    in_shape_slice = StridedSlice.handle(
         TensorflowNode(
-            name="Slice",
-            inputs=["input_shape_float_" + unique_suffix, "begin", "size"],
-            outputs=["sliced_input_shape_" + unique_suffix],
-            attr={"axes": [0]}),
+            name="In_Shape_StridedSlice",
+            inputs=list(in_shape_cast.output) +
+            [v.output[0] for k, v in slice_const_proto.items()],
+            outputs=["sliced_input_shape_" + unique_suffix]),
         consts={
-            "begin": np.array([2]),
-            "size": np.array([2])
-        })
+            slice_const_proto[k].output[0]: v for k, v in slice_const.items()
+        },
+        add_consts=True)
 
     # Divide input shape with output shape to get scaling factor:
     div_node = Div.handle(
         TensorflowNode(
             name='Div',
-            inputs=[
-                "output_shape_float_partial_" + unique_suffix,
-                "sliced_input_shape_" + unique_suffix
-            ],
+            inputs=list(out_shape_float.output) + list(
+                in_shape_slice[-1].output),
             outputs=["hw_scale_" + unique_suffix]))
 
     # Prepend 1's in the N, C dimension:
     full_scale = Concat.handle(
         TensorflowNode(
             name='Scale_Concat',
-            inputs=[
-                util_one, util_one, "hw_scale_" + unique_suffix, "concat_axis"
-            ],
+            inputs=[util_one, util_one] + list(div_node.output) +
+            ["concat_axis"],
             outputs=["scale_" + unique_suffix]),
         consts={"concat_axis": 0})
 
@@ -98,19 +112,19 @@ class ResizeBilinear(FrontendHandler):
         node,
         op_type="Upsample",
         mode="bilinear",
-        inputs=["transposed_input" + unique_suffix, "scale_" + unique_suffix],
-        outputs=["upsample_to_tranpose" + unique_suffix])
+        inputs=list(transpose_node.output) + list(full_scale.output),
+        outputs=["upsample_to_tranpose_" + unique_suffix])
 
     # Transpose back to NHWC:
     transpose_output_node = Transpose.handle(
         TensorflowNode(
             name='Transpose',
-            inputs=["upsample_to_tranpose" + unique_suffix, "perm"],
+            inputs=list(upsample_node.output) + ["perm"],
             outputs=node.outputs),
         consts={"perm": [0, 2, 3, 1]})
 
     return [
         transpose_node, input_shape_node, out_shape_float, in_shape_cast,
-        in_shape_slice, div_node, full_scale, upsample_node,
-        transpose_output_node
+        *slice_const_proto.values(), *in_shape_slice, div_node, full_scale,
+        upsample_node, transpose_output_node
     ]
