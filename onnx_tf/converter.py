@@ -182,7 +182,6 @@ def convert(infile, outfile, convert_to, graph, **kwargs):
     elif ext == ".ckpt":
       latest_ckpt = tf.train.latest_checkpoint(os.path.dirname(infile))
       saver = tf.train.import_meta_graph(latest_ckpt + ".meta")
-      output_node_names = []
       temp_file_suffix = get_unique_suffix()
       workdir = 'onnx-tf_workdir_{}'.format(temp_file_suffix)
       with tf.Session() as sess:

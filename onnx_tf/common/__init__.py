@@ -162,3 +162,20 @@ def supports_device(device):
   elif device == "CPU":
     return True
   return False
+
+
+@deprecated("onnx_tf.common.get_outputs_names is deprecated.{}. {}".format(
+    deprecated.MSG_WILL_REMOVE,
+    "Use TensorflowGraph.get_outputs_names instead."))
+def get_output_node_names(graph_def):
+  """Get output node names from GraphDef.
+  Args:
+    graph_def: GraphDef object.
+  Returns:
+    List of output node names.
+  """
+  nodes, input_names = dict(), set()
+  for node in graph_def.node:
+    nodes[node.name] = node
+    input_names.update(set(node.input))
+  return list(set(nodes) - input_names)

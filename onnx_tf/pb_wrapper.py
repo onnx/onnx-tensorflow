@@ -3,7 +3,6 @@ from itertools import chain
 import warnings
 
 import numpy as np
-import tensorflow as tf
 from onnx import NodeProto
 from onnx import TensorProto
 from onnx import ValueInfoProto
@@ -18,7 +17,6 @@ from tensorflow.core.framework.node_def_pb2 import NodeDef
 
 from onnx_tf.common import attr_converter
 from onnx_tf.common import attr_translator
-from onnx_tf.common import data_type
 from onnx_tf.common import IS_PYTHON3
 from onnx_tf.common.data_type import any_dtype_to_onnx_dtype
 
@@ -142,8 +140,10 @@ class TensorflowGraph(object):
 
   @staticmethod
   def _parse_nodes(nodes):
-    from onnx_tf.graph_parser import MultiRNNParser
-    for parser in [MultiRNNParser]:
+    from onnx_tf.graph_parser import RNNScopeParser
+    from onnx_tf.graph_parser import GRUScopeParser
+    from onnx_tf.graph_parser import MultiRNNScopeParser
+    for parser in [GRUScopeParser]:
       nodes = parser.parse(nodes)
     return nodes
 
