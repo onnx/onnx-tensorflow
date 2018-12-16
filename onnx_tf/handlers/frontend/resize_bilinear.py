@@ -75,9 +75,9 @@ class ResizeBilinear(FrontendHandler):
       const_name = "{}_".format(k) + unique_suffix
       slice_const_proto[k] = make_node(
           "Constant", [], [const_name],
-          value=make_tensor(const_name,
-                            any_dtype_to_onnx_dtype(np_dtype=v.dtype), v.shape,
-                            v))
+          value=make_tensor(
+              const_name, any_dtype_to_onnx_dtype(np_dtype=v.dtype), v.shape,
+              v))
 
     in_shape_slices = StridedSlice.handle(
         TensorflowNode(
@@ -123,4 +123,12 @@ class ResizeBilinear(FrontendHandler):
             outputs=node.outputs),
         consts={"perm": [0, 2, 3, 1]})
 
-    return [transpose_node, input_shape_node, out_shape_float, in_shape_cast] + slice_const_proto.values() + in_shape_slices + [div_node, full_scale, upsample_node, transpose_output_node]
+    transpose_and_get_shapes = [
+        transpose_node, input_shape_node, out_shape_float, in_shape_cast
+    ]
+    slice_shape = slice_const_proto.values() + in_shape_slices
+    get_scale_and_upsample_and_transpose = [
+        div_node, full_scale, upsample_node, transpose_output_node
+    ]
+
+    return transpose_and_get_shapes + slice_shape + get_scale_and_upsample_and_transpose
