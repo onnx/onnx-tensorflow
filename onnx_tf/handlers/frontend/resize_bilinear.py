@@ -63,15 +63,15 @@ class ResizeBilinear(FrontendHandler):
             outputs=["input_shape_float_" + unique_suffix],
             attr={"DstT": tf.float32}))
 
-    slice_const = {
-        "begin": np.array([2]).astype(np.int32),
-        "end": np.array([4]).astype(np.int32),
-        "strides": np.array([1]).astype(np.int32),
-    }
+    slice_const_items = [
+        ("begin", np.array([2]).astype(np.int32)),
+        ("end", np.array([4]).astype(np.int32)),
+        ("strides", np.array([1]).astype(np.int32)),
+    ]
 
     slice_const_proto = {}
 
-    for k, v in slice_const.items():
+    for k, v in slice_const_items:
       const_name = "{}_".format(k) + unique_suffix
       slice_const_proto[k] = make_node(
           "Constant", [], [const_name],
@@ -83,10 +83,10 @@ class ResizeBilinear(FrontendHandler):
         TensorflowNode(
             name="In_Shape_StridedSlice",
             inputs=list(in_shape_cast.output) +
-            [v.output[0] for k, v in slice_const_proto.items()],
+            [slice_const_proto[k].output[0] for k, v in slice_const_items],
             outputs=["sliced_input_shape_" + unique_suffix]),
         consts={
-            slice_const_proto[k].output[0]: v for k, v in slice_const.items()
+            slice_const_proto[k].output[0]: v for k, v in slice_const_items
         },
         add_consts=True)
 
@@ -122,9 +122,6 @@ class ResizeBilinear(FrontendHandler):
             inputs=list(upsample_node.output) + ["perm"],
             outputs=node.outputs),
         consts={"perm": [0, 2, 3, 1]})
-
-    return [
-        transpose_node, input_shape_node, out_shape_float, in_shape_cast,
-        *slice_const_proto.values(), *in_shape_slice, div_node, full_scale,
-        upsample_node, transpose_output_node
-    ]
+    print("hey")
+    print([transpose_node, input_shape_node, out_shape_float, in_shape_cast] + slice_const_proto.values() + in_shape_slice + [div_node, full_scale, upsample_node, transpose_output_node])
+    return [transpose_node, input_shape_node, out_shape_float, in_shape_cast] + slice_const_proto.values() + in_shape_slice + [div_node, full_scale, upsample_node, transpose_output_node]
