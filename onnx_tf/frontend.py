@@ -70,7 +70,6 @@ class TensorflowFrontend(object):
     handlers = get_all_frontend_handlers(opset_dict)
 
     node_tup = [(node.name, TensorflowNode(node)) for node in graph_def.node]
-
     for name, node in node_tup:
       if node.op_type == "Placeholder":
         onnx_graph.add_input_proto(node)
