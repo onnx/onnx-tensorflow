@@ -58,7 +58,7 @@ def _onnx_dtype(dtype):
 
 
 # TODO (tjingrant) unify _onnx_dtype into any_dtype_to_onnx_dtype
-def any_dtype_to_onnx_dtype(np_dtype, tf_dtype, onnx_dtype):
+def any_dtype_to_onnx_dtype(np_dtype=None, tf_dtype=None, onnx_dtype=None):
   dtype_mask = [1 if val else 0 for val in [np_dtype, tf_dtype, onnx_dtype]]
   num_type_set = sum(dtype_mask)
   assert num_type_set == 1, "One and only one type must be set. However, {} set.".format(

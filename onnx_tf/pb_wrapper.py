@@ -36,10 +36,10 @@ class TensorflowNode(object):
       self.node = None
       self.name = name or ""
       self.inputs = inputs or []
-      self.outputs = outputs or []
       self.attr = attr or {}
       self.domain = domain or ""
       self.op_type = op_type or ""
+      self.outputs = outputs or self.get_outputs_names()
     elif isinstance(node, (OnnxNode, NodeProto)):
       self._load_onnx_node(node)
     elif isinstance(node, NodeDef):
@@ -95,7 +95,10 @@ class TensorflowGraph(object):
 
   def __init__(self, graph_def, outputs=(), graph_name="graph"):
     self._graph_name = graph_name
-    self._nodes = self._parse_nodes(graph_def.node)
+    self._nodes = [
+        node if isinstance(node, TensorflowNode) else TensorflowNode(node)
+        for node in self._parse_nodes(graph_def.node)
+    ]
     self._nodes_dict = {n.name: n for n in self._nodes}
     self._outputs = outputs or self.get_output_node_names(graph_def)
     self._graph_def = self._process_graph_def(graph_def)
@@ -140,12 +143,8 @@ class TensorflowGraph(object):
 
   @staticmethod
   def _parse_nodes(nodes):
-    from onnx_tf.graph_parser import RNNScopeParser
-    from onnx_tf.graph_parser import GRUScopeParser
-    from onnx_tf.graph_parser import MultiRNNScopeParser
-    for parser in [GRUScopeParser]:
-      nodes = parser.parse(nodes)
-    return nodes
+    from onnx_tf.scope_parser import ScopeParser
+    return ScopeParser.parse(nodes)
 
   @property
   def graph_def(self):
