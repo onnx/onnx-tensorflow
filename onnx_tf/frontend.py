@@ -12,7 +12,6 @@ from onnx import defs
 from onnx.helper import make_model
 from onnx.helper import make_opsetid
 from onnx.optimizer import optimize
-import numpy as np
 import tensorflow as tf
 
 from onnx_tf.common import exception
@@ -73,7 +72,6 @@ class TensorflowFrontend(object):
     node_tup = [(node.name, TensorflowNode(node)) for node in graph_def.node]
 
     for name, node in node_tup:
-
       if node.op_type == "Placeholder":
         onnx_graph.add_input_proto(node)
       elif node.op_type == "Const":
