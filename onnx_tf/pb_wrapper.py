@@ -3,7 +3,6 @@ from itertools import chain
 import warnings
 
 import numpy as np
-import tensorflow as tf
 from onnx import NodeProto
 from onnx import TensorProto
 from onnx import ValueInfoProto
@@ -17,7 +16,6 @@ from tensorflow.core.framework.node_def_pb2 import NodeDef
 
 from onnx_tf.common import attr_converter
 from onnx_tf.common import attr_translator
-from onnx_tf.common import data_type
 from onnx_tf.common import IS_PYTHON3
 from onnx_tf.common.data_type import any_dtype_to_onnx_dtype
 
@@ -117,6 +115,8 @@ class OnnxGraph(object):
   This class holds all information ONNX graph needs.
   """
 
+  CONST_ONE_FP32 = "_onnx_tf_internal_one_fp32"
+
   def __init__(self, name=None, graph_proto=None):
     if graph_proto:
       self._name = graph_proto.name
@@ -137,6 +137,18 @@ class OnnxGraph(object):
       self._value_info_proto = []
     # Either way, data_type_cast_map is empty when initialized.
     self._data_type_cast_map = {}
+
+    self._add_utility_constants()
+
+  def _add_utility_constants(self):
+    util_consts = {self.CONST_ONE_FP32: np.array([1.0]).astype(np.float32)}
+    # Add a few useful utility constants:
+    for name, value in util_consts.items():
+      self.add_const_explicit(name=name, value=value)
+      self.add_const_proto_explicit(
+          name=name, value=value, np_dtype=value.dtype)
+      self.add_input_proto_explicit(
+          name=name, shape=value.shape, np_dtype=value.dtype)
 
   # This list holds the protobuf objects of type ValueInfoProto
   # representing the input to the converted ONNX graph.
