@@ -51,7 +51,6 @@ class Upsample(BackendHandler):
   def version_9(cls, node, **kwargs):
     x = kwargs["tensor_dict"][node.inputs[0]]
     x_shape = x.get_shape().as_list()
-    print("upsample backend has shape", x_shape)
     attrs = copy.deepcopy(node.attrs)
     scales = kwargs["tensor_dict"][node.inputs[1]]
 

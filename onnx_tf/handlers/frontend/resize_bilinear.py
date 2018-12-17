@@ -126,7 +126,7 @@ class ResizeBilinear(FrontendHandler):
     transpose_and_get_shapes = [
         transpose_node, input_shape_node, out_shape_float, in_shape_cast
     ]
-    slice_shape = slice_const_proto.values() + in_shape_slices
+    slice_shape = list(slice_const_proto.values()) + in_shape_slices
     get_scale_and_upsample_and_transpose = [
         div_node, full_scale, upsample_node, transpose_output_node
     ]
