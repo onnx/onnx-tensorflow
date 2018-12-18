@@ -95,8 +95,8 @@ class TensorflowGraph(object):
 
   def __init__(self, graph_def, outputs=(), graph_name="graph"):
     self._graph_name = graph_name
-    self._nodes = [TensorflowNode(node) for node in graph_def.node]
-    self._nodes = self._parse_nodes(self._nodes)
+    self._nodes = self._parse_nodes(
+        [TensorflowNode(node) for node in graph_def.node])
     self._nodes_dict = {n.name: n for n in self._nodes}
     self._outputs = outputs or self.get_output_node_names(graph_def)
     self._graph_def = self._process_graph_def(graph_def)

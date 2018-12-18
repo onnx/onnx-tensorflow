@@ -76,7 +76,8 @@ class RNNScopeParser(ScopeParser):
       for key in ["kernel", "bias"]:
         if key not in scopes:
           continue
-        if key == scopes[-2] and "read" == scopes[-1]:
+        if cls.CELL_NAME in scopes and key == scopes[-2] and "read" == scopes[
+            -1]:
           node_info_holder.cell_dict[key] = n.name
         node_info_holder.nodes_keep.add(n.name)
       if "while" in scopes and cls.CELL_NAME in scopes:
@@ -193,6 +194,10 @@ class RNNScopeParser(ScopeParser):
             outputs, scope, node_dict, new_cell_nodes[scope][-1], True)
         new_cell_nodes[scope].extend([perm_node, trans_node])
 
+      new_cell_nodes[scope][-1].outputs = [
+          output.replace(new_cell_nodes[scope][-1].name, outputs[0])
+          for output in new_cell_nodes[scope][-1].outputs
+      ]
       new_cell_nodes[scope][-1].name = outputs[0]
 
     res_nodes = kb_nodes
