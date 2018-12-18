@@ -67,6 +67,6 @@ def any_dtype_to_onnx_dtype(np_dtype=None, tf_dtype=None, onnx_dtype=None):
   if np_dtype:
     onnx_dtype = mapping.NP_TYPE_TO_TENSOR_TYPE[np_dtype]
   if tf_dtype:
-    onnx_dtype = data_type.tf2onnx(tf_dtype)
+    onnx_dtype = tf2onnx(tf_dtype)
 
   return onnx_dtype

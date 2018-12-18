@@ -174,6 +174,7 @@ if not legacy_opset_pre_ver(6):
 if not legacy_opset_pre_ver(9):
   test_cases.append(("test_strided_slice", tf.strided_slice, "StridedSlice", [get_rnd([5, 5]), [0, 0], [1, 5], [1, 1]], {}))
   test_cases.append(("test_strided_slice_shrink", tf.strided_slice, "StridedSlice", [get_rnd([5, 5]), [0, 0], [1, 3], [1, 1]], {"shrink_axis_mask":1}))
+  test_cases.append(("test_resize_bilinear", tf.image.resize_bilinear, "ResizeBilinear", [get_rnd([2, 5, 5, 8]), [10, 10]], {}))
 
 # yapf: enable
 
