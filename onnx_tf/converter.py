@@ -154,7 +154,7 @@ def parse_args(args):
   return parser.parse_args(args)
 
 
-def convert(infile, outfile, convert_to, graph, **kwargs):
+def convert(infile, outfile, convert_to, graph=None, **kwargs):
   """Convert pb.
 
   Args:
