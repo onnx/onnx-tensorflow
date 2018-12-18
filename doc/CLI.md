@@ -37,9 +37,10 @@ optional arguments:
 More information: `onnx-tf convert -h`
 ```
 usage: onnx-tf [-h] --infile INFILE --outfile OUTFILE --convert_to {onnx,tf}
-               [--device DEVICE] [--strict STRICT] [--opset OPSET]
+               [--graph GRAPH] [--device DEVICE] [--strict STRICT]
                [--ignore_unimplemented IGNORE_UNIMPLEMENTED]
-               [--optimizer_passes OPTIMIZER_PASSES]
+               [--optimizer_passes OPTIMIZER_PASSES] [--opset OPSET]
+               [--output OUTPUT]
 
 This is the converter for converting protocol buffer between tf and onnx.
 
@@ -51,6 +52,10 @@ optional arguments:
                         Output file path.
   --convert_to {onnx,tf}, -t {onnx,tf}
                         Format converted to.
+  --graph GRAPH, -g GRAPH
+                        Inference graph, which is obtained by optimizing or
+                        editing the training graph for better training
+                        usability.
 
 backend arguments (onnx -> tf):
   --device DEVICE       The device to execute this model on. (from
@@ -63,11 +68,6 @@ backend arguments (onnx -> tf):
                         and AveragePool ops. (from onnx_tf.backend.prepare)
 
 frontend arguments (tf -> onnx):
-  --opset OPSET         Opset version number, list or tuple. Default is 0
-                        means using latest version with domain ''. List or
-                        tuple items should be (str domain, int version
-                        number). (from
-                        onnx_tf.frontend.tensorflow_graph_to_onnx_model)
   --ignore_unimplemented IGNORE_UNIMPLEMENTED
                         Convert to ONNX model and ignore all the operators
                         that are not currently supported by onnx-tensorflow.
@@ -79,5 +79,13 @@ frontend arguments (tf -> onnx):
                         List of optimization names c.f. https://github.com/onn
                         x/onnx/blob/master/onnx/optimizer.py for available
                         optimization passes. (from
+                        onnx_tf.frontend.tensorflow_graph_to_onnx_model)
+  --opset OPSET         Opset version number, list or tuple. Default is 0
+                        means using latest version with domain ''. List or
+                        tuple items should be (str domain, int version
+                        number). (from
+                        onnx_tf.frontend.tensorflow_graph_to_onnx_model)
+  --output OUTPUT       List of string or a string specifying the name of the
+                        output graph node. (from
                         onnx_tf.frontend.tensorflow_graph_to_onnx_model)
 ```
