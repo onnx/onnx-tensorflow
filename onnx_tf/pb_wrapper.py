@@ -96,10 +96,27 @@ class TensorflowGraph(object):
   def __init__(self, graph_def, outputs=(), graph_name="graph"):
     self._graph_name = graph_name
     self._nodes = self._parse_nodes(
+        self._create_util_nodes() +
         [TensorflowNode(node) for node in graph_def.node])
     self._nodes_dict = {n.name: n for n in self._nodes}
     self._outputs = outputs or self.get_output_node_names(graph_def)
     self._graph_def = self._process_graph_def(graph_def)
+
+  @staticmethod
+  def _create_util_nodes():
+    util_nodes = [("const_minus_one", np.array([-1]).astype(np.int32)),
+                  ("const_zero", np.array([0]).astype(np.int32)),
+                  ("const_one", np.array([1]).astype(np.int32))]
+    return [
+        TensorflowNode(
+            op_type="Const",
+            name="_onnx_tf_util_{}".format(name),
+            attr={
+                "value": value,
+                "dtype": any_dtype_to_onnx_dtype(value.dtype),
+                "_output_shapes": [value.shape]
+            }) for name, value in util_nodes
+    ]
 
   def get_node_by_name(self, name):
     node = self._nodes_dict.get(name, None)

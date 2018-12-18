@@ -27,22 +27,6 @@ class ScopeParser(object):
             trigger = ""
     return nodes
 
-  @classmethod
-  def _add_util_nodes(cls, nodes):
-    util_nodes = [("const_minus_one", np.array([-1]).astype(np.int32)),
-                  ("const_zero", np.array([0]).astype(np.int32)),
-                  ("const_one", np.array([1]).astype(np.int32))]
-    for name, value in util_nodes:
-      util_node = TensorflowNode(
-          op_type="Const",
-          name="_onnx_tf_util_{}".format(name),
-          attr={
-              "value": value,
-              "dtype": data_type.any_dtype_to_onnx_dtype(value.dtype),
-              "_output_shapes": [value.shape]
-          })
-      nodes.insert(0, util_node)
-
 
 class RNNScopeParser(ScopeParser):
 
@@ -76,9 +60,8 @@ class RNNScopeParser(ScopeParser):
       for key in ["kernel", "bias"]:
         if key not in scopes:
           continue
-        if cls.CELL_NAME in scopes and key == scopes[-2] and "read" == scopes[
-            -1]:
-          node_info_holder.cell_dict[key] = n.name
+        if cls.CELL_NAME in scopes and key == scopes[-2] and "read" == scopes[-1]:
+          node_info_holder.cell_dict.setdefault(key, []).append(n.name)
         node_info_holder.nodes_keep.add(n.name)
       if "while" in scopes and cls.CELL_NAME in scopes:
         idx_while = scopes.index("while")
@@ -164,12 +147,6 @@ class RNNScopeParser(ScopeParser):
 
       w_kernel, r_kernel, bias = cls.add_kernel_and_bias_concat(
           new_cell_nodes[scope], node_info_holder.cell_dict, node_dict)
-      node_info_holder.cell_dict["inputs"] = {
-          "prev_c": input_nodes[0].outputs[0],
-          "w_kernel": w_kernel,
-          "r_kernel": r_kernel,
-          "bias": bias,
-      }
 
       batch_major = [
           n for n in node_info_holder.nodes[scope] if inputs[0] in n.inputs
@@ -178,8 +155,15 @@ class RNNScopeParser(ScopeParser):
       if batch_major:
         perm_node, trans_node = cls._make_major_transpose_nodes(
             sorted_inputs, scope, node_dict, new_cell_nodes[scope][-1], False)
-        input_nodes = [trans_node]
+        input_nodes[0] = trans_node
         new_cell_nodes[scope].extend([perm_node, trans_node])
+
+      node_info_holder.cell_dict["inputs"] = {
+          "prev_c": input_nodes[0].outputs[0],
+          "w_kernel": w_kernel,
+          "r_kernel": r_kernel,
+          "bias": bias,
+      }
 
       dtype = input_nodes[0].attr["dtype"]
       cell_node = cls._make_rnn_node(
@@ -201,7 +185,6 @@ class RNNScopeParser(ScopeParser):
       new_cell_nodes[scope][-1].name = outputs[0]
 
     res_nodes = kb_nodes
-    cls._add_util_nodes(res_nodes)
     for g in group_nodes:
       if isinstance(g, list):
         res_nodes.extend(g)
@@ -248,7 +231,7 @@ class RNNScopeParser(ScopeParser):
                        get_unique_suffix()]),
         inputs=[inputs[0] if not post else prev_node.name, perm_node.name],
         attr={
-            "T": node_dict[inputs[0]].attr["T"],
+            "dtype": data_type.tf2onnx(node_dict[inputs[0]].attr["T"]),
             "_output_shapes":
             [[input_shape[i] for i in perm_node.attr["value"]]]
         })
@@ -271,8 +254,8 @@ class RNNScopeParser(ScopeParser):
     node = TensorflowNode()
     node.op_type = cell_info["type"].upper()
     node.name = "/".join([
-        scope,
-        node.op_type if cell_no == 0 else node.op_type + "_{}".format(cell_no)
+        scope, node.op_type
+        if cell_no == 0 else node.op_type + "_{}".format(cell_no)
     ])
     node.inputs = [
         cell_info["inputs"]["prev_c"], cell_info["inputs"]["w_kernel"],
@@ -335,8 +318,8 @@ class BasicRNNScopeParser(RNNScopeParser):
     new_bias = None
     scopes = cell_dict["kernel"].split("/")
     scope = "/".join(scopes[:scopes.index("kernel")])
-    for key, value in [("kernel", node_dict[cell_dict["kernel"]]),
-                       ("bias", node_dict[cell_dict["bias"]])]:
+    for key, value in [("kernel", node_dict[cell_dict["kernel"][0]]),
+                       ("bias", node_dict[cell_dict["bias"][0]])]:
       output_shape = node_dict[value.name].attr["_output_shapes"][0]
       if key == "kernel":
         hidden_size = output_shape[1]
@@ -385,14 +368,14 @@ class GRUScopeParser(RNNScopeParser):
   def add_kernel_and_bias_concat(cls, nodes, cell_dict, node_dict):
     new_kernel = None
     new_bias = None
-    scopes = cell_dict["kernel"].split("/")
+    scopes = cell_dict["kernel"][0].split("/")
     scope = "/".join(scopes[:scopes.index("kernel")])
-    for key, value in [("kernel", node_dict[cell_dict["kernel"]]),
-                       ("bias", node_dict[cell_dict["bias"]])]:
-      gate_output_shape = node_dict[value["gates"].
-                                    name].attr["_output_shapes"][0]
-      candidate_output_shape = node_dict[value["candidate"].
-                                         name].attr["_output_shapes"][0]
+    for key, value in [[
+        "kernel", [node_dict[kernel] for kernel in cell_dict["kernel"]]
+    ], ["bias", [node_dict[bias] for bias in cell_dict["bias"]]]]:
+      gate_output_shape = node_dict[value[0].name].attr["_output_shapes"][0]
+      candidate_output_shape = node_dict[value[1].name].attr["_output_shapes"][
+          0]
       last_idx = range(len(gate_output_shape))[-1]
       concat_output_shapes = [
           g if i != last_idx else g + c for i, (
@@ -402,9 +385,7 @@ class GRUScopeParser(RNNScopeParser):
       concat_node = TensorflowNode(
           op_type="ConcatV2",
           name="/".join([scope, key, "concat_" + get_unique_suffix()]),
-          inputs=[
-              value["gates"].name, value["candidate"].name, cls.CONST_MINUS_ONE
-          ],
+          inputs=[value[0].name, value[1].name, cls.CONST_MINUS_ONE],
           attr={"_output_shapes": [concat_output_shapes]})
       nodes.append(concat_node)
 
@@ -470,8 +451,8 @@ class BasicLSTMScopeParser(RNNScopeParser):
     new_bias = None
     scopes = cell_dict["kernel"].split("/")
     scope = "/".join(scopes[:scopes.index("kernel")])
-    for key, value in [("kernel", node_dict[cell_dict["kernel"]]),
-                       ("bias", node_dict[cell_dict["bias"]])]:
+    for key, value in [("kernel", node_dict[cell_dict["kernel"][0]]),
+                       ("bias", node_dict[cell_dict["bias"][0]])]:
       output_shape = node_dict[value.name].attr["_output_shapes"][0]
       if key == "kernel":
         hidden_size = output_shape[1] // 4
@@ -588,7 +569,8 @@ class MultiRNNScopeParser(RNNScopeParser):
         for key in ["kernel", "bias"]:
           if key in scopes[-2:]:
             if key == scopes[-2] and "read" == scopes[-1]:
-              node_info_holder.cell_dict[cell_no][key] = n.name
+              node_info_holder.cell_dict[cell_no].setdefault(key,
+                                                             []).append(n.name)
             node_info_holder.nodes_keep[scope].add(n.name)
         prev_c = [i for i in n.input if "cell_{}".format(cell_no - 1) in i]
         if prev_c:
@@ -636,11 +618,10 @@ class MultiRNNScopeParser(RNNScopeParser):
           cell_node.inputs[0] = input_nodes[0].name
         else:
           cell_node.inputs[0] = new_cell_nodes[scope][-1].name + ":2"
-          prev_c_output_shapes = node_dict[
-              cell_info["prev_c"]].attr["_output_shapes"]
-          new_cell_nodes[scope][-1].attr["_output_shapes"] = [
-              "", ""
-          ] + prev_c_output_shapes
+          prev_c_output_shapes = node_dict[cell_info["prev_c"]].attr[
+              "_output_shapes"]
+          new_cell_nodes[scope][-1].attr[
+              "_output_shapes"] = ["", ""] + prev_c_output_shapes
 
         new_cell_nodes[scope].append(cell_node)
       scope_output_shapes = node_dict[outputs[0]].attr["_output_shapes"]
