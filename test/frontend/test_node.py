@@ -120,6 +120,7 @@ test_cases = [
 ("test_exp", tf.exp, "Exp", [get_rnd([10, 10])], {}),
 ("test_expand_dims", tf.expand_dims, "ExpandDims", [get_rnd([1, 2, 3, 4])], {"axis": 1}),
 ("test_floor", tf.floor, "Floor", [get_rnd([10, 10], -10, 10)], {}),
+("test_floor_div", tf.floordiv, "floordiv", [get_rnd([10, 10], -10, 10), get_rnd([10, 10], -10, 10)], {}),
 ("test_gatherV2", tf.gather, "GatherV2", [get_rnd([3, 3]), [0, 2]], {"axis": 1}),
 ("test_identity", tf.identity, "Identity", [get_rnd([10, 10])], {}),
 ("test_log", tf.log, "Log", [get_rnd([10, 10])], {}),
@@ -140,6 +141,7 @@ test_cases = [
 ("test_relu", tf.nn.relu, "Relu", [get_rnd([10, 10])], {}),
 ("test_relu6", tf.nn.relu6, "Relu6", [get_rnd([10, 10])], {}),
 ("test_reshape", tf.reshape, "Reshape", [get_rnd([10, 10]), [4, 25]], {}),
+("test_rsqrt", tf.rsqrt, "Rsqrt", [get_rnd([3, 3])], {}),
 ("test_selu", tf.nn.selu, "Selu", [get_rnd([10, 10])], {}),
 ("test_shape", tf.shape, "Shape", [get_rnd([1, 2, 3, 4])], {}),
 ("test_sigmoid", tf.sigmoid, "Sigmoid", [get_rnd([10, 10])], {}),
@@ -174,6 +176,7 @@ if not legacy_opset_pre_ver(6):
 if not legacy_opset_pre_ver(9):
   test_cases.append(("test_strided_slice", tf.strided_slice, "StridedSlice", [get_rnd([5, 5]), [0, 0], [1, 5], [1, 1]], {}))
   test_cases.append(("test_strided_slice_shrink", tf.strided_slice, "StridedSlice", [get_rnd([5, 5]), [0, 0], [1, 3], [1, 1]], {"shrink_axis_mask":1}))
+  test_cases.append(("test_resize_bilinear", tf.image.resize_bilinear, "ResizeBilinear", [get_rnd([2, 5, 5, 8]), [10, 10]], {}))
 
 # yapf: enable
 

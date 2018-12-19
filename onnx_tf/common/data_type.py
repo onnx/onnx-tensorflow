@@ -33,8 +33,8 @@ def tf2onnx(dtype):
   finally:
     if onnx_dtype is None:
       warnings.warn(
-          "Can't convert tf dtype {} to ONNX dtype. Return 0 (TensorProto.UNDEFINED).".
-          format(tf_dype))
+          "Can't convert tf dtype {} to ONNX dtype. Return 0 (TensorProto.UNDEFINED)."
+          .format(tf_dype))
       onnx_dtype = TensorProto.UNDEFINED
     return onnx_dtype
 
@@ -55,3 +55,18 @@ def _onnx_dtype(dtype):
   else:
     raise RuntimeError("dtype should be number or str.")
   return onnx_dype
+
+
+# TODO (tjingrant) unify _onnx_dtype into any_dtype_to_onnx_dtype
+def any_dtype_to_onnx_dtype(np_dtype=None, tf_dtype=None, onnx_dtype=None):
+  dtype_mask = [1 if val else 0 for val in [np_dtype, tf_dtype, onnx_dtype]]
+  num_type_set = sum(dtype_mask)
+  assert num_type_set == 1, "One and only one type must be set. However, {} set.".format(
+      sum(num_type_set))
+
+  if np_dtype:
+    onnx_dtype = mapping.NP_TYPE_TO_TENSOR_TYPE[np_dtype]
+  if tf_dtype:
+    onnx_dtype = tf2onnx(tf_dtype)
+
+  return onnx_dtype

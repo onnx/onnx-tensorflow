@@ -158,6 +158,7 @@ ______
 |ExpandDims|1|
 |Fill|1|
 |Floor|1, 6|
+|FloorDiv|1|
 |FusedBatchNorm|1, 6, 7|
 |GatherV2|1|
 |Greater|1, 7, 9|
@@ -190,6 +191,7 @@ ______
 |Relu|1, 6|
 |Relu6|1, 6|
 |Reshape|1, 5|
+|Rsqrt|1|
 |Selu|1, 6|
 |Shape|1|
 |Sigmoid|1, 6|
