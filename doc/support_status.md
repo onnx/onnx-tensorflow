@@ -9,13 +9,16 @@ ______
 |ATen|N/A|
 |Abs|1, 6|
 |Acos|7|
+|Acosh|9|
 |Add|1, 6, 7|
 |Affine|N/A|
 |And|1, 7|
 |ArgMax|1|
 |ArgMin|1|
 |Asin|7|
+|Asinh|9|
 |Atan|7|
+|Atanh|9|
 |AveragePool|1, 7|
 |BatchNormalization|1, 6, 7|
 |Cast|1, 6|
@@ -29,6 +32,7 @@ ______
 |Conv|1|
 |ConvTranspose|1|
 |Cos|7|
+|Cosh|9|
 |Crop|N/A|
 |DepthToSpace|1|
 |Div|1, 6, 7|
@@ -36,6 +40,7 @@ ______
 |DynamicSlice|9|
 |Elu|1, 6|
 |Equal|1, 7|
+|Erf|N/A|
 |Exp|1, 6|
 |Expand|8|
 |EyeLike|9|
@@ -56,6 +61,7 @@ ______
 |If|N/A|
 |ImageScaler|1|
 |InstanceNormalization|1, 6|
+|IsNaN|N/A|
 |LRN|1|
 |LSTM|1, 7|
 |LeakyRelu|1, 6|
@@ -77,6 +83,7 @@ ______
 |Multinomial|N/A|
 |Neg|1, 6|
 |Not|1|
+|OneHot|N/A|
 |Or|1, 7|
 |PRelu|1, 6, 7, 9|
 |Pad|1, 2|
@@ -103,10 +110,13 @@ ______
 |Scale|N/A|
 |ScaledTanh|N/A|
 |Scan|N/A|
+|Scatter|N/A|
 |Selu|1, 6|
 |Shape|1|
 |Sigmoid|1, 6|
+|Sign|N/A|
 |Sin|7|
+|Sinh|9|
 |Size|1|
 |Slice|1|
 |Softmax|1|
@@ -125,7 +135,7 @@ ______
 |TopK|1|
 |Transpose|1|
 |Unsqueeze|1|
-|Upsample|7|
+|Upsample|7, 9|
 |Xor|1, 7|
 
 
@@ -136,12 +146,15 @@ ______
 | -------------- |:------------------:|
 |Abs|1, 6|
 |Acos|7|
+|Acosh|9|
 |Add|1, 6, 7|
-|AddN|1, 6|
+|AddN|1, 6, 8|
 |ArgMax|1|
 |ArgMin|1|
 |Asin|7|
+|Asinh|9|
 |Atan|7|
+|Atanh|9|
 |AvgPool|1, 7|
 |BatchNorm|1, 6, 7|
 |BiasAdd|1, 6, 7|
@@ -152,6 +165,7 @@ ______
 |Conv2D|1|
 |Conv3D|1|
 |Cos|7|
+|Cosh|9|
 |DepthwiseConv2dNative|1|
 |Equal|1, 7|
 |Exp|1, 6|
@@ -191,11 +205,13 @@ ______
 |Relu|1, 6|
 |Relu6|1, 6|
 |Reshape|1, 5|
+|ResizeBilinear|9|
 |Rsqrt|1|
 |Selu|1, 6|
 |Shape|1|
 |Sigmoid|1, 6|
 |Sin|7|
+|Sinh|9|
 |Size|1|
 |Slice|1|
 |Softmax|1|

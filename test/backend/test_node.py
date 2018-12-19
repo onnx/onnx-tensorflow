@@ -43,6 +43,16 @@ class TestNode(unittest.TestCase):
     output = run_node(node_def, [x])
     np.testing.assert_almost_equal(output["Y"], np.abs(x))
 
+  def test_acosh(self):
+    if legacy_opset_pre_ver(9):
+      raise unittest.SkipTest(
+          "ONNX version {} doesn't support Acosh.".format(
+              defs.onnx_opset_version()))
+    node_def = helper.make_node("Acosh", ["X"], ["Y"])
+    x = self._get_rnd([3, 4, 5])
+    output = run_node(node_def, [x])
+    np.testing.assert_almost_equal(output["Y"], np.arccosh(x))
+
   def test_add(self):
     node_def = helper.make_node("Add", ["X", "Y"], ["Z"])
     x = self._get_rnd([5, 10, 5, 5])
@@ -84,6 +94,26 @@ class TestNode(unittest.TestCase):
       output = run_node(node_def, [data])
       np.testing.assert_almost_equal(output["reduced"],
                                      np.argmin(data, axis=axis))
+
+  def test_asinh(self):
+    if legacy_opset_pre_ver(9):
+      raise unittest.SkipTest(
+          "ONNX version {} doesn't support Asinh.".format(
+              defs.onnx_opset_version()))
+    node_def = helper.make_node("Asinh", ["X"], ["Y"])
+    x = self._get_rnd([3, 4, 5])
+    output = run_node(node_def, [x])
+    np.testing.assert_almost_equal(output["Y"], np.arcsinh(x))
+
+  def test_atanh(self):
+    if legacy_opset_pre_ver(9):
+      raise unittest.SkipTest(
+          "ONNX version {} doesn't support Atanh.".format(
+              defs.onnx_opset_version()))
+    node_def = helper.make_node("Atanh", ["X"], ["Y"])
+    x = self._get_rnd([3, 4, 5])
+    output = run_node(node_def, [x])
+    np.testing.assert_almost_equal(output["Y"], np.arctanh(x))
 
   def test_average_pool(self):
     # TODO: fix this test
@@ -289,6 +319,16 @@ class TestNode(unittest.TestCase):
               v += x[b][c][k] * weights[c][m][k - h]
           test_output[b][m][h] = v
     np.testing.assert_almost_equal(output["Y"], test_output, decimal=5)
+
+  def test_cosh(self):
+    if legacy_opset_pre_ver(9):
+      raise unittest.SkipTest(
+          "ONNX version {} doesn't support Cosh.".format(
+              defs.onnx_opset_version()))
+    node_def = helper.make_node("Cosh", ["X"], ["Y"])
+    x = self._get_rnd([3, 4, 5])
+    output = run_node(node_def, [x])
+    np.testing.assert_almost_equal(output["Y"], np.cosh(x))
 
   def test_depth_to_space(self):
     node_def = helper.make_node("DepthToSpace", ["X"], ["Y"], blocksize=2)
@@ -755,6 +795,16 @@ class TestNode(unittest.TestCase):
     x = self._get_rnd([1000])
     output = run_node(node_def, [x])
     np.testing.assert_almost_equal(output["Y"], 1 / (1 + np.exp(-x)))
+
+  def test_sinh(self):
+    if legacy_opset_pre_ver(9):
+      raise unittest.SkipTest(
+          "ONNX version {} doesn't support Sinh.".format(
+              defs.onnx_opset_version()))
+    node_def = helper.make_node("Sinh", ["X"], ["Y"])
+    x = self._get_rnd([3, 4, 5])
+    output = run_node(node_def, [x])
+    np.testing.assert_almost_equal(output["Y"], np.sinh(x))
 
   def test_size(self):
     node_def = helper.make_node("Size", ["X"], ["Y"])
