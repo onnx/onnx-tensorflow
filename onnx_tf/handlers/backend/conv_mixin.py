@@ -5,6 +5,8 @@ from onnx_tf.common import get_perm_from_formats
 from onnx_tf.common import supports_device
 from .broadcast_mixin import BroadcastMixin
 from .pad_mixin import PadMixin
+from .pool_mixin import PAD_TF_INCOMPATIBLE
+from .pool_mixin import PoolMixin
 
 
 class ConvMixin(BroadcastMixin):
@@ -39,22 +41,38 @@ class ConvMixin(BroadcastMixin):
       # Translate weights from (M x C x KH x KW) to (KH x KW X C X M)
       perm = list(range(2, weights_rank)) + [1, 0]
 
+    kernel_shape = in_weights.get_shape().as_list()[2:]
     if "kernel_shape" in node.attrs.keys():
-      kernel_shape = node.attrs["kernel_shape"]
-      assert in_weights.get_shape().as_list()[2:] == kernel_shape, (
+      assert kernel_shape == node.attrs["kernel_shape"], (
           "kernel_shape "
           "attr of convolution does not match the actual weight "
           "passed to this operation, attr {}, actual {}").format(
-              kernel_shape,
-              in_weights.get_shape().as_list())
+              node.attrs["kernel_shape"], kernel_shape)
 
     weights = tf.transpose(in_weights, perm)
     dilations = node.attrs.get("dilations", [1] * spatial_size)
     strides = node.attrs.get("strides", [1] * spatial_size)
 
-    pads = node.attrs.get("pads", [0, 0] * spatial_size)
+    pads = node.attrs.get("pads", None)
+    pad = PAD_TF_INCOMPATIBLE
+    if pads is not None:
+      pad = PoolMixin._get_tf_pad(x_shape[2:], kernel_shape, strides, pads)
+    else:
+      pads = [0] * spatial_size * 2
+      # Neither pad nor auto_pad is specified, assume no padding.
+      if "auto_pad" not in node.attrs:
+        pad = "VALID"
+      # We consult auto_pad if pad is not specified and auto_pad
+      # is available.
+      else:
+        if node.attrs["auto_pad"] == "SAME_UPPER":
+          pad = "SAME"
+        elif node.attrs["auto_pad"] == "VALID":
+          pad = "VALID"
+        elif node.attrs["auto_pad"] == "SAME_LOWER":
+          pad = PAD_TF_INCOMPATIBLE
 
-    if not transpose:
+    if not transpose and pads != [0] * spatial_size * 2:
       x = PadMixin.get_padding_as_op(x, pads)
 
     group = node.attrs.get("group", 1)
@@ -143,7 +161,7 @@ class ConvMixin(BroadcastMixin):
           tf.nn.convolution(
               x,
               weight,
-              "VALID",
+              pad,
               strides=strides,
               dilation_rate=dilations,
               data_format=compute_format)

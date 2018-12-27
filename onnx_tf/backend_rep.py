@@ -95,7 +95,7 @@ class TensorflowRep(BackendRep):
 
     :returns: none.
     """
-    graph_proto = self.graph.as_graph_def()
+    graph_proto = self.graph.as_graph_def(add_shapes=True)
     file = open(path, "wb")
     file.write(graph_proto.SerializeToString())
     file.close()
