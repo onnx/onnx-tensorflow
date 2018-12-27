@@ -1,4 +1,5 @@
 import collections
+from enum import Enum, auto
 
 import numpy as np
 import tensorflow as tf
@@ -8,27 +9,24 @@ from onnx_tf.common import get_unique_suffix
 from onnx_tf.pb_wrapper import TensorflowNode
 
 
+class RNNType(Enum):
+  RNN = auto()
+  GRU = auto()
+  LSTM = auto()
+
+
 class ScopeParser(object):
-
-  CONST_MINUS_ONE = "_onnx_tf_util_const_minus_one"
-  CONST_ZERO = "_onnx_tf_util_const_zero"
-  CONST_ONE = "_onnx_tf_util_const_one"
-
-  TRIGGER = {}
 
   @classmethod
   def parse(cls, nodes):
-    while cls.TRIGGER:
-      trigger, parser = cls.TRIGGER.popitem()
-      for node in nodes:
-        for scope in node.name.split("/"):
-          if scope == trigger:
-            nodes = parser.parse(nodes)
-            trigger = ""
     return nodes
 
 
 class RNNScopeParser(ScopeParser):
+
+  CONST_MINUS_ONE_INT32 = "_onnx_tf_util_const_minus_one_int32"
+  CONST_ZERO_INT32 = "_onnx_tf_util_const_zero_int32"
+  CONST_ONE_INT32 = "_onnx_tf_util_const_one_int32"
 
   CELL_NAME = ""
   OP_TYPE = ""
@@ -344,7 +342,7 @@ class BasicRNNScopeParser(RNNScopeParser):
             op_type="SplitV",
             name="/".join([scope, key, "split_" + get_unique_suffix()]),
             inputs=transpose_node.outputs + split_const_node.outputs +
-            [cls.CONST_ONE],
+            [cls.CONST_ONE_INT32],
             attr={
                 "num_split":
                 2,
@@ -385,7 +383,7 @@ class GRUScopeParser(RNNScopeParser):
       concat_node = TensorflowNode(
           op_type="ConcatV2",
           name="/".join([scope, key, "concat_" + get_unique_suffix()]),
-          inputs=[value[0].name, value[1].name, cls.CONST_MINUS_ONE],
+          inputs=[value[0].name, value[1].name, cls.CONST_MINUS_ONE_INT32],
           attr={"_output_shapes": [concat_output_shapes]})
       nodes.append(concat_node)
 
@@ -411,7 +409,7 @@ class GRUScopeParser(RNNScopeParser):
         split_node = TensorflowNode(
             op_type="Split",
             name="/".join([scope, key, "split_" + get_unique_suffix()]),
-            inputs=[cls.CONST_ZERO] + transpose_node.outputs,
+            inputs=[cls.CONST_ZERO_INT32] + transpose_node.outputs,
             attr={
                 "num_split":
                 3,
@@ -424,7 +422,8 @@ class GRUScopeParser(RNNScopeParser):
             op_type="ConcatV2",
             name="/".join([scope, key, "re_concat_" + get_unique_suffix()]),
             inputs=[
-                split_node.outputs[1], split_node.outputs[0], cls.CONST_ZERO
+                split_node.outputs[1], split_node.outputs[0],
+                cls.CONST_ZERO_INT32
             ],
             attr={
                 "_output_shapes":
@@ -467,7 +466,7 @@ class BasicLSTMScopeParser(RNNScopeParser):
         split_node = TensorflowNode(
             op_type="Split",
             name="/".join([scope, key, "split_" + get_unique_suffix()]),
-            inputs=[cls.CONST_ZERO] + transpose_node.outputs,
+            inputs=[cls.CONST_ZERO_INT32] + transpose_node.outputs,
             attr={
                 "num_split":
                 4,
@@ -480,7 +479,8 @@ class BasicLSTMScopeParser(RNNScopeParser):
             name="/".join([scope, key, "concat_" + get_unique_suffix()]),
             inputs=[
                 split_node.outputs[0], split_node.outputs[3],
-                split_node.outputs[2], split_node.outputs[1], cls.CONST_ZERO
+                split_node.outputs[2], split_node.outputs[1],
+                cls.CONST_ZERO_INT32
             ],
             attr={"_output_shapes": [transposed_shape]})
 
@@ -498,7 +498,7 @@ class BasicLSTMScopeParser(RNNScopeParser):
             op_type="SplitV",
             name="/".join([scope, key, "re_split_" + get_unique_suffix()]),
             inputs=concat_node.outputs + re_split_const_node.outputs +
-            [cls.CONST_ONE],
+            [cls.CONST_ONE_INT32],
             attr={
                 "num_split":
                 2,
@@ -515,7 +515,7 @@ class BasicLSTMScopeParser(RNNScopeParser):
         split_node = TensorflowNode(
             op_type="Split",
             name="/".join([scope, key, "split_" + get_unique_suffix()]),
-            inputs=[cls.CONST_ZERO, value.name],
+            inputs=[cls.CONST_ZERO_INT32, value.name],
             attr={
                 "num_split": 4,
                 "_output_shapes": [[int(output_shape[0] / 4)] for _ in range(4)]
@@ -526,7 +526,8 @@ class BasicLSTMScopeParser(RNNScopeParser):
             name="/".join([scope, key, "concat_" + get_unique_suffix()]),
             inputs=[
                 split_node.outputs[0], split_node.outputs[3],
-                split_node.outputs[2], split_node.outputs[1], cls.CONST_ZERO
+                split_node.outputs[2], split_node.outputs[1],
+                cls.CONST_ZERO_INT32
             ],
             attr={"_output_shapes": [output_shape]})
         nodes.extend([split_node, concat_node])
@@ -646,5 +647,12 @@ class MultiRNNScopeParser(RNNScopeParser):
     ]
 
 
-for parser in (BasicRNNScopeParser, BasicLSTMScopeParser, GRUScopeParser):
-  ScopeParser.TRIGGER[parser.CELL_NAME] = parser
+def get_rnn_scope_parser(rnn_type):
+  if rnn_type == RNNType.RNN:
+    return BasicRNNScopeParser
+  elif rnn_type == RNNType.GRU:
+    return GRUScopeParser
+  elif rnn_type == RNNType.LSTM:
+    return BasicLSTMScopeParser
+  else:
+    return None

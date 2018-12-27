@@ -95,18 +95,16 @@ class TensorflowGraph(object):
 
   def __init__(self, graph_def, outputs=(), graph_name="graph"):
     self._graph_name = graph_name
-    self._nodes = self._parse_nodes(
-        self._create_util_nodes() +
-        [TensorflowNode(node) for node in graph_def.node])
+    self._nodes = [TensorflowNode(node) for node in graph_def.node]
     self._nodes_dict = {n.name: n for n in self._nodes}
     self._outputs = outputs or self.get_output_node_names(graph_def)
     self._graph_def = self._process_graph_def(graph_def)
 
   @staticmethod
   def _create_util_nodes():
-    util_nodes = [("const_minus_one", np.array([-1]).astype(np.int32)),
-                  ("const_zero", np.array([0]).astype(np.int32)),
-                  ("const_one", np.array([1]).astype(np.int32))]
+    util_nodes = [("const_minus_one_int32", np.array([-1]).astype(np.int32)),
+                  ("const_zero_int32", np.array([0]).astype(np.int32)),
+                  ("const_one_int32", np.array([1]).astype(np.int32))]
     return [
         TensorflowNode(
             op_type="Const",
@@ -156,10 +154,9 @@ class TensorflowGraph(object):
       input_names.update(set(node.input))
     return list(output_names - input_names)
 
-  @staticmethod
-  def _parse_nodes(nodes):
-    from onnx_tf.scope_parser import ScopeParser
-    return ScopeParser.parse(nodes)
+  def update_nodes(self, nodes):
+    self._nodes = nodes
+    self._nodes_dict = {n.name: n for n in self._nodes}
 
   @property
   def graph_def(self):

@@ -140,19 +140,23 @@ class TensorflowFrontend(object):
     :returns: The equivalent ONNX Model Proto object.
     """
 
-    if not isinstance(opset, (int, long, list, tuple)):
-      raise TypeError("opset is expected to int, list or tuple, but {}.".format(
-          type(opset)))
-    if isinstance(opset, (int, long)):
-      opset = [(defs.ONNX_DOMAIN, opset or defs.onnx_opset_version())]
-    opset_imports = [make_opsetid(item[0], item[1]) for item in opset]
+    tf_graph = cls._make_tf_graph(graph_def, output, graph_name)
+    return cls._make_onnx_model(tf_graph, opset, producer_name,
+                                ignore_unimplemented, optimizer_passes)
 
+  @classmethod
+  def _make_tf_graph(cls, graph_def, output, graph_name):
     if not isinstance(output, (list, tuple)):
       output = [output]
+    return TensorflowGraph(graph_def, output, graph_name)
 
-    tf_graph = TensorflowGraph(graph_def, output, graph_name)
+  @classmethod
+  def _make_onnx_model(cls, tf_graph, opset, producer_name,
+                       ignore_unimplemented, optimizer_passes):
+    opset = cls._process_opset(opset)
     onnx_graph = cls.tensorflow_graph_to_onnx_graph(tf_graph, opset,
                                                     ignore_unimplemented)
+    opset_imports = [make_opsetid(item[0], item[1]) for item in opset]
     onnx_model = make_model(
         onnx_graph, producer_name=producer_name, opset_imports=opset_imports)
 
@@ -160,6 +164,15 @@ class TensorflowFrontend(object):
       onnx_model = optimize(onnx_model, optimizer_passes)
 
     return onnx_model
+
+  @classmethod
+  def _process_opset(cls, opset):
+    if not isinstance(opset, (int, long, list, tuple)):
+      raise TypeError("opset is expected to int, list or tuple, but {}.".format(
+          type(opset)))
+    if isinstance(opset, (int, long)):
+      opset = [(defs.ONNX_DOMAIN, opset or defs.onnx_opset_version())]
+    return opset
 
 
 convert_graph = TensorflowFrontend.tensorflow_graph_to_onnx_graph
