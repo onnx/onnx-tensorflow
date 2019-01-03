@@ -37,9 +37,11 @@ optional arguments:
 More information: `onnx-tf convert -h`
 ```
 usage: onnx-tf [-h] --infile INFILE --outfile OUTFILE --convert_to {onnx,tf}
-               [--device DEVICE] [--strict STRICT] [--opset OPSET]
+               [--graph GRAPH] [--device DEVICE] [--strict STRICT]
+               [--output OUTPUT] [--opset OPSET]
                [--ignore_unimplemented IGNORE_UNIMPLEMENTED]
                [--optimizer_passes OPTIMIZER_PASSES]
+               [--rnn_type {GRU,LSTM,RNN}]
 
 This is the converter for converting protocol buffer between tf and onnx.
 
@@ -51,6 +53,10 @@ optional arguments:
                         Output file path.
   --convert_to {onnx,tf}, -t {onnx,tf}
                         Format converted to.
+  --graph GRAPH, -g GRAPH
+                        Inference graph, which is obtained by optimizing or
+                        editing the training graph for better training
+                        usability.
 
 backend arguments (onnx -> tf):
   --device DEVICE       The device to execute this model on. (from
@@ -63,6 +69,9 @@ backend arguments (onnx -> tf):
                         and AveragePool ops. (from onnx_tf.backend.prepare)
 
 frontend arguments (tf -> onnx):
+  --output OUTPUT       List of string or a string specifying the name of the
+                        output graph node. (from
+                        onnx_tf.frontend.tensorflow_graph_to_onnx_model)
   --opset OPSET         Opset version number, list or tuple. Default is 0
                         means using latest version with domain ''. List or
                         tuple items should be (str domain, int version
@@ -80,4 +89,9 @@ frontend arguments (tf -> onnx):
                         x/onnx/blob/master/onnx/optimizer.py for available
                         optimization passes. (from
                         onnx_tf.frontend.tensorflow_graph_to_onnx_model)
+
+EXPERIMENTAL ARGUMENTS:
+  --rnn_type {GRU,LSTM,RNN}
+                        RNN graph type if using experimental feature: convert
+                        rnn graph to onnx.
 ```

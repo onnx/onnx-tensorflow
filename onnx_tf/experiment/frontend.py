@@ -17,6 +17,7 @@ class ExperimentTensorflowFrontend(TensorflowFrontend):
                                  opset=0,
                                  producer_name="onnx-tensorflow",
                                  graph_name="graph",
+                                 ignore_unimplemented=False,
                                  optimizer_passes=None):
     """EXPERIMENTAL
     Converts a RNN Tensorflow Graph Proto to an ONNX model
@@ -35,6 +36,10 @@ class ExperimentTensorflowFrontend(TensorflowFrontend):
     :param rnn_type: The rnn type contained in graph, should be one of GRU, LSTM, RNN.
     :param producer_name: The name of the producer.
     :param graph_name: The name of the output ONNX Graph.
+    :param ignore_unimplemented: Convert to ONNX model and ignore all the operators
+      that are not currently supported by onnx-tensorflow.
+      This is an experimental feature. By enabling this feature,
+      the model would not be guaranteed to match the ONNX specifications.
     :param optimizer_passes: List of optimization names c.f.
       https://github.com/onnx/onnx/blob/master/onnx/optimizer.py for available
       optimization passes.
@@ -47,8 +52,8 @@ class ExperimentTensorflowFrontend(TensorflowFrontend):
     nodes = parser.parse(tf_graph.nodes)
     tf_graph.update_nodes(nodes)
 
-    return cls._make_onnx_model(tf_graph, opset, producer_name, True,
-                                optimizer_passes)
+    return cls._make_onnx_model(tf_graph, opset, producer_name,
+                                ignore_unimplemented, optimizer_passes)
 
 
 rnn_tf_graph_to_onnx_model = ExperimentTensorflowFrontend.rnn_tf_graph_to_onnx_model
