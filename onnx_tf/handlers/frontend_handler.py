@@ -177,7 +177,7 @@ class FrontendHandler(Handler):
     checker.check_node(node, ctx=ctx)
 
   @classmethod
-  @deprecated("FrontendHandler.get_outputs_names is deprecated.{}. {}".format(
+  @deprecated("FrontendHandler.get_outputs_names is deprecated.{} {}".format(
       deprecated.MSG_WILL_REMOVE, "Use node.outputs instead."))
   def get_outputs_names(cls, node, num=None):
     """ Helper method to get outputs names.

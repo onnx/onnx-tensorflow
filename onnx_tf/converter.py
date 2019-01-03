@@ -11,6 +11,7 @@ from tensorflow.python.tools import freeze_graph
 
 import onnx_tf.backend as backend
 from onnx_tf.common import get_unique_suffix
+import onnx_tf.experiment.frontend as experiment_frontend
 import onnx_tf.frontend as frontend
 from onnx_tf.pb_wrapper import TensorflowGraph
 
@@ -123,6 +124,15 @@ def parse_args(args):
     for k, v in param_doc_dict.items():
       group.add_argument("--{}".format(k), help=v["doc"], **v["params"])
 
+  def add_experimental_args(parser):
+    group = parser.add_argument_group("EXPERIMENTAL ARGUMENTS")
+    group.add_argument(
+        "--rnn_type",
+        choices=["GRU", "LSTM", "RNN"],
+        help=
+        "RNN graph type if using experimental feature: convert rnn graph to onnx."
+    )
+
   # backend args
   # Args must be named consistently with respect to backend.prepare.
   add_argument_group(parser, "backend arguments (onnx -> tf)",
@@ -150,6 +160,8 @@ def parse_args(args):
                              "dest": "optimizer_passes"
                          }
                      })])
+
+  add_experimental_args(parser)
 
   return parser.parse_args(args)
 
@@ -226,6 +238,10 @@ def convert(infile, outfile, convert_to, graph=None, **kwargs):
       raise ValueError(
           "Input file is not supported. Should be .pb or .ckpt, but get {}".
           format(ext))
-    onnx_model = frontend.tensorflow_graph_to_onnx_model(graph_def, **kwargs)
+
+    if "rnn_type" in kwargs:
+      onnx_model = experiment_frontend.rnn_tf_graph_to_onnx_model(graph_def, **kwargs)
+    else:
+      onnx_model = frontend.tensorflow_graph_to_onnx_model(graph_def, **kwargs)
     onnx.save(onnx_model, outfile)
   logger.info("Converting completes successfully.")

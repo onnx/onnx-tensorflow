@@ -17,6 +17,10 @@ from tensorflow.core.framework.node_def_pb2 import NodeDef
 
 from onnx_tf.common import attr_converter
 from onnx_tf.common import attr_translator
+from onnx_tf.common import CONST_MINUS_ONE_INT32
+from onnx_tf.common import CONST_ONE_FP32
+from onnx_tf.common import CONST_ONE_INT32
+from onnx_tf.common import CONST_ZERO_INT32
 from onnx_tf.common import IS_PYTHON3
 from onnx_tf.common.data_type import any_dtype_to_onnx_dtype
 
@@ -95,20 +99,22 @@ class TensorflowGraph(object):
 
   def __init__(self, graph_def, outputs=(), graph_name="graph"):
     self._graph_name = graph_name
-    self._nodes = [TensorflowNode(node) for node in graph_def.node]
+    self._nodes = self._create_util_nodes() + [
+        TensorflowNode(node) for node in graph_def.node
+    ]
     self._nodes_dict = {n.name: n for n in self._nodes}
     self._outputs = outputs or self.get_output_node_names(graph_def)
     self._graph_def = self._process_graph_def(graph_def)
 
   @staticmethod
   def _create_util_nodes():
-    util_nodes = [("const_minus_one_int32", np.array([-1]).astype(np.int32)),
-                  ("const_zero_int32", np.array([0]).astype(np.int32)),
-                  ("const_one_int32", np.array([1]).astype(np.int32))]
+    util_nodes = [(CONST_MINUS_ONE_INT32, np.array([-1]).astype(np.int32)),
+                  (CONST_ZERO_INT32, np.array([0]).astype(np.int32)),
+                  (CONST_ONE_INT32, np.array([1]).astype(np.int32))]
     return [
         TensorflowNode(
             op_type="Const",
-            name="_onnx_tf_util_{}".format(name),
+            name=name,
             attr={
                 "value": value,
                 "dtype": any_dtype_to_onnx_dtype(value.dtype),
@@ -204,8 +210,6 @@ class OnnxGraph(object):
   This class holds all information ONNX graph needs.
   """
 
-  CONST_ONE_FP32 = "_onnx_tf_internal_one_fp32"
-
   def __init__(self, name=None, graph_proto=None):
     if graph_proto:
       self._name = graph_proto.name
@@ -230,7 +234,7 @@ class OnnxGraph(object):
     self._add_utility_constants()
 
   def _add_utility_constants(self):
-    util_consts = {self.CONST_ONE_FP32: np.array([1.0]).astype(np.float32)}
+    util_consts = {CONST_ONE_FP32: np.array([1.0]).astype(np.float32)}
     # Add a few useful utility constants:
     for name, value in util_consts.items():
       self.add_const_explicit(name=name, value=value)

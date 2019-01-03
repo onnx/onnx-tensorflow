@@ -6,6 +6,9 @@ import tensorflow as tf
 
 from onnx_tf.common import data_type
 from onnx_tf.common import get_unique_suffix
+from onnx_tf.common import CONST_MINUS_ONE_INT32
+from onnx_tf.common import CONST_ONE_INT32
+from onnx_tf.common import CONST_ZERO_INT32
 from onnx_tf.pb_wrapper import TensorflowNode
 
 
@@ -23,10 +26,6 @@ class ScopeParser(object):
 
 
 class RNNScopeParser(ScopeParser):
-
-  CONST_MINUS_ONE_INT32 = "_onnx_tf_util_const_minus_one_int32"
-  CONST_ZERO_INT32 = "_onnx_tf_util_const_zero_int32"
-  CONST_ONE_INT32 = "_onnx_tf_util_const_one_int32"
 
   CELL_NAME = ""
   OP_TYPE = ""
@@ -108,7 +107,7 @@ class RNNScopeParser(ScopeParser):
     return group_nodes, kb_nodes
 
   @classmethod
-  def add_kernel_and_bias_concat(cls, nodes, cell_dict, node_dict):
+  def process_kernel_and_bias(cls, nodes, cell_dict, node_dict):
     return None, None, None
 
   @classmethod
@@ -143,7 +142,7 @@ class RNNScopeParser(ScopeParser):
           sorted_inputs[0] = inp
       input_nodes = [node_dict[i] for i in sorted_inputs if i in node_dict]
 
-      w_kernel, r_kernel, bias = cls.add_kernel_and_bias_concat(
+      w_kernel, r_kernel, bias = cls.process_kernel_and_bias(
           new_cell_nodes[scope], node_info_holder.cell_dict, node_dict)
 
       batch_major = [
@@ -311,7 +310,7 @@ class BasicRNNScopeParser(RNNScopeParser):
   OP_TYPE = "RNN"
 
   @classmethod
-  def add_kernel_and_bias_concat(cls, nodes, cell_dict, node_dict):
+  def process_kernel_and_bias(cls, nodes, cell_dict, node_dict):
     new_kernel = None
     new_bias = None
     scopes = cell_dict["kernel"].split("/")
@@ -342,7 +341,7 @@ class BasicRNNScopeParser(RNNScopeParser):
             op_type="SplitV",
             name="/".join([scope, key, "split_" + get_unique_suffix()]),
             inputs=transpose_node.outputs + split_const_node.outputs +
-            [cls.CONST_ONE_INT32],
+            [CONST_ONE_INT32],
             attr={
                 "num_split":
                 2,
@@ -363,7 +362,7 @@ class GRUScopeParser(RNNScopeParser):
   OP_TYPE = "GRU"
 
   @classmethod
-  def add_kernel_and_bias_concat(cls, nodes, cell_dict, node_dict):
+  def process_kernel_and_bias(cls, nodes, cell_dict, node_dict):
     new_kernel = None
     new_bias = None
     scopes = cell_dict["kernel"][0].split("/")
@@ -383,7 +382,7 @@ class GRUScopeParser(RNNScopeParser):
       concat_node = TensorflowNode(
           op_type="ConcatV2",
           name="/".join([scope, key, "concat_" + get_unique_suffix()]),
-          inputs=[value[0].name, value[1].name, cls.CONST_MINUS_ONE_INT32],
+          inputs=[value[0].name, value[1].name, CONST_MINUS_ONE_INT32],
           attr={"_output_shapes": [concat_output_shapes]})
       nodes.append(concat_node)
 
@@ -409,7 +408,7 @@ class GRUScopeParser(RNNScopeParser):
         split_node = TensorflowNode(
             op_type="Split",
             name="/".join([scope, key, "split_" + get_unique_suffix()]),
-            inputs=[cls.CONST_ZERO_INT32] + transpose_node.outputs,
+            inputs=[CONST_ZERO_INT32] + transpose_node.outputs,
             attr={
                 "num_split":
                 3,
@@ -422,8 +421,7 @@ class GRUScopeParser(RNNScopeParser):
             op_type="ConcatV2",
             name="/".join([scope, key, "re_concat_" + get_unique_suffix()]),
             inputs=[
-                split_node.outputs[1], split_node.outputs[0],
-                cls.CONST_ZERO_INT32
+                split_node.outputs[1], split_node.outputs[0], CONST_ZERO_INT32
             ],
             attr={
                 "_output_shapes":
@@ -445,7 +443,7 @@ class BasicLSTMScopeParser(RNNScopeParser):
   OP_TYPE = "LSTM"
 
   @classmethod
-  def add_kernel_and_bias_concat(cls, nodes, cell_dict, node_dict):
+  def process_kernel_and_bias(cls, nodes, cell_dict, node_dict):
     new_kernel = None
     new_bias = None
     scopes = cell_dict["kernel"].split("/")
@@ -466,7 +464,7 @@ class BasicLSTMScopeParser(RNNScopeParser):
         split_node = TensorflowNode(
             op_type="Split",
             name="/".join([scope, key, "split_" + get_unique_suffix()]),
-            inputs=[cls.CONST_ZERO_INT32] + transpose_node.outputs,
+            inputs=[CONST_ZERO_INT32] + transpose_node.outputs,
             attr={
                 "num_split":
                 4,
@@ -479,8 +477,7 @@ class BasicLSTMScopeParser(RNNScopeParser):
             name="/".join([scope, key, "concat_" + get_unique_suffix()]),
             inputs=[
                 split_node.outputs[0], split_node.outputs[3],
-                split_node.outputs[2], split_node.outputs[1],
-                cls.CONST_ZERO_INT32
+                split_node.outputs[2], split_node.outputs[1], CONST_ZERO_INT32
             ],
             attr={"_output_shapes": [transposed_shape]})
 
@@ -498,7 +495,7 @@ class BasicLSTMScopeParser(RNNScopeParser):
             op_type="SplitV",
             name="/".join([scope, key, "re_split_" + get_unique_suffix()]),
             inputs=concat_node.outputs + re_split_const_node.outputs +
-            [cls.CONST_ONE_INT32],
+            [CONST_ONE_INT32],
             attr={
                 "num_split":
                 2,
@@ -515,7 +512,7 @@ class BasicLSTMScopeParser(RNNScopeParser):
         split_node = TensorflowNode(
             op_type="Split",
             name="/".join([scope, key, "split_" + get_unique_suffix()]),
-            inputs=[cls.CONST_ZERO_INT32, value.name],
+            inputs=[CONST_ZERO_INT32, value.name],
             attr={
                 "num_split": 4,
                 "_output_shapes": [[int(output_shape[0] / 4)] for _ in range(4)]
@@ -526,8 +523,7 @@ class BasicLSTMScopeParser(RNNScopeParser):
             name="/".join([scope, key, "concat_" + get_unique_suffix()]),
             inputs=[
                 split_node.outputs[0], split_node.outputs[3],
-                split_node.outputs[2], split_node.outputs[1],
-                cls.CONST_ZERO_INT32
+                split_node.outputs[2], split_node.outputs[1], CONST_ZERO_INT32
             ],
             attr={"_output_shapes": [output_shape]})
         nodes.extend([split_node, concat_node])
@@ -648,6 +644,8 @@ class MultiRNNScopeParser(RNNScopeParser):
 
 
 def get_rnn_scope_parser(rnn_type):
+  if isinstance(rnn_type, str):
+    rnn_type = RNNType[rnn_type]
   if rnn_type == RNNType.RNN:
     return BasicRNNScopeParser
   elif rnn_type == RNNType.GRU:
