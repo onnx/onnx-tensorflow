@@ -164,12 +164,13 @@ def supports_device(device):
   return False
 
 
+@deprecated("onnx_tf.common.get_outputs_names is deprecated.{} {}".format(
+    deprecated.MSG_WILL_REMOVE,
+    "Use TensorflowGraph.get_outputs_names instead."))
 def get_output_node_names(graph_def):
   """Get output node names from GraphDef.
-
   Args:
     graph_def: GraphDef object.
-
   Returns:
     List of output node names.
   """
@@ -178,3 +179,9 @@ def get_output_node_names(graph_def):
     nodes[node.name] = node
     input_names.update(set(node.input))
   return list(set(nodes) - input_names)
+
+
+CONST_MINUS_ONE_INT32 = "_onnx_tf_internal_minus_one_int32"
+CONST_ZERO_INT32 = "_onnx_tf_internal_zero_int32"
+CONST_ONE_INT32 = "_onnx_tf_internal_one_int32"
+CONST_ONE_FP32 = "_onnx_tf_internal_one_fp32"

@@ -11,11 +11,16 @@ from onnx.helper import make_graph
 from onnx.helper import make_tensor
 from onnx.helper import make_tensor_value_info
 from onnx.helper import mapping
+import tensorflow as tf
 from tensorflow.core.framework.attr_value_pb2 import AttrValue
 from tensorflow.core.framework.node_def_pb2 import NodeDef
 
 from onnx_tf.common import attr_converter
 from onnx_tf.common import attr_translator
+from onnx_tf.common import CONST_MINUS_ONE_INT32
+from onnx_tf.common import CONST_ONE_FP32
+from onnx_tf.common import CONST_ONE_INT32
+from onnx_tf.common import CONST_ZERO_INT32
 from onnx_tf.common import IS_PYTHON3
 from onnx_tf.common.data_type import any_dtype_to_onnx_dtype
 
@@ -35,10 +40,10 @@ class TensorflowNode(object):
       self.node = None
       self.name = name or ""
       self.inputs = inputs or []
-      self.outputs = outputs or []
       self.attr = attr or {}
       self.domain = domain or ""
       self.op_type = op_type or ""
+      self.outputs = outputs or self.get_outputs_names()
     elif isinstance(node, (OnnxNode, NodeProto)):
       self._load_onnx_node(node)
     elif isinstance(node, NodeDef):
@@ -90,6 +95,96 @@ class TensorflowNode(object):
     ]
 
 
+class TensorflowGraph(object):
+
+  def __init__(self, graph_def, outputs=(), graph_name="graph"):
+    self._graph_name = graph_name
+    self._nodes = self._create_util_nodes() + [
+        TensorflowNode(node) for node in graph_def.node
+    ]
+    self._nodes_dict = {n.name: n for n in self._nodes}
+    self._outputs = outputs or self.get_output_node_names(graph_def)
+    self._graph_def = self._process_graph_def(graph_def)
+
+  @staticmethod
+  def _create_util_nodes():
+    util_nodes = [(CONST_MINUS_ONE_INT32, np.array([-1]).astype(np.int32)),
+                  (CONST_ZERO_INT32, np.array([0]).astype(np.int32)),
+                  (CONST_ONE_INT32, np.array([1]).astype(np.int32))]
+    return [
+        TensorflowNode(
+            op_type="Const",
+            name=name,
+            attr={
+                "value": value,
+                "dtype": any_dtype_to_onnx_dtype(value.dtype),
+                "_output_shapes": [value.shape]
+            }) for name, value in util_nodes
+    ]
+
+  def get_node_by_name(self, name):
+    node = self._nodes_dict.get(name, None)
+    if node is None:
+      raise ValueError(
+          "Node {} is not found in the graph provided".format(name))
+    return node
+
+  def _process_graph_def(self, graph_def):
+    if self._outputs and "_output_shapes" not in self.get_node_by_name(
+        self._outputs[0]).attr:
+      graph_def = self._add_infer_shapes(graph_def)
+    return graph_def
+
+  @staticmethod
+  def _add_infer_shapes(graph_def):
+    with tf.Graph().as_default():
+      with tf.Session(
+          config=tf.ConfigProto(
+              graph_options=tf.GraphOptions(infer_shapes=True))) as sess:
+        tf.import_graph_def(graph_def, name="")
+      return sess.graph_def
+
+  @staticmethod
+  def get_output_node_names(graph_def):
+    """Get output node names from GraphDef.
+
+    Args:
+      graph_def: GraphDef object.
+
+    Returns:
+      List of output node names.
+    """
+    input_names, output_names = set(), set()
+    for node in graph_def.node:
+      output_names.add(node.name)
+      input_names.update(set(node.input))
+    return list(output_names - input_names)
+
+  def update_nodes(self, nodes):
+    self._nodes = nodes
+    self._nodes_dict = {n.name: n for n in self._nodes}
+
+  @property
+  def graph_def(self):
+    return self._graph_def
+
+  @property
+  def graph_name(self):
+    return self._graph_name
+
+  @property
+  def nodes(self):
+    return self._nodes
+
+  @property
+  def nodes_dict(self):
+    return self._nodes_dict
+
+  @property
+  def outputs(self):
+    return self._outputs
+
+
 # TODO: Move this into ONNX main library
 class OnnxNode(object):
   """
@@ -115,8 +210,6 @@ class OnnxGraph(object):
   This class holds all information ONNX graph needs.
   """
 
-  CONST_ONE_FP32 = "_onnx_tf_internal_one_fp32"
-
   def __init__(self, name=None, graph_proto=None):
     if graph_proto:
       self._name = graph_proto.name
@@ -141,7 +234,7 @@ class OnnxGraph(object):
     self._add_utility_constants()
 
   def _add_utility_constants(self):
-    util_consts = {self.CONST_ONE_FP32: np.array([1.0]).astype(np.float32)}
+    util_consts = {CONST_ONE_FP32: np.array([1.0]).astype(np.float32)}
     # Add a few useful utility constants:
     for name, value in util_consts.items():
       self.add_const_explicit(name=name, value=value)
