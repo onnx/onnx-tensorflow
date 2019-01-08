@@ -176,5 +176,7 @@ class BackendHandler(Handler):
         params = inspect.getargspec(tf_func).args
 
     attrs = cls._process_attrs(attrs)
+    if "name" in attrs.keys():
+      attrs["name"] = "onnx_tf_prefix_" + attrs["name"]
     return tf_func(*inputs,
                    **dict([(p, attrs[p]) for p in params if p in attrs]))
