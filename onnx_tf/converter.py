@@ -239,8 +239,12 @@ def convert(infile, outfile, convert_to, graph=None, **kwargs):
           "Input file is not supported. Should be .pb or .ckpt, but get {}".
           format(ext))
 
+    kwargs["output"] = kwargs.get(
+        "output", None) or TensorflowGraph.get_output_node_names(graph_def)
+
     if "rnn_type" in kwargs:
-      onnx_model = experiment_frontend.rnn_tf_graph_to_onnx_model(graph_def, **kwargs)
+      onnx_model = experiment_frontend.rnn_tf_graph_to_onnx_model(
+          graph_def, **kwargs)
     else:
       onnx_model = frontend.tensorflow_graph_to_onnx_model(graph_def, **kwargs)
     onnx.save(onnx_model, outfile)
