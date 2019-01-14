@@ -99,12 +99,12 @@ class TensorflowGraph(object):
 
   def __init__(self, graph_def, outputs=(), graph_name="graph"):
     self._graph_name = graph_name
+    self._graph_def = self._process_graph_def(graph_def)
     self._nodes = self._create_util_nodes() + [
-        TensorflowNode(node) for node in graph_def.node
+        TensorflowNode(node) for node in self.graph_def.node
     ]
     self._nodes_dict = {n.name: n for n in self._nodes}
-    self._outputs = outputs or self.get_output_node_names(graph_def)
-    self._graph_def = self._process_graph_def(graph_def)
+    self._outputs = outputs or self.get_output_node_names(self.graph_def)
 
   @staticmethod
   def _create_util_nodes():
@@ -130,8 +130,7 @@ class TensorflowGraph(object):
     return node
 
   def _process_graph_def(self, graph_def):
-    if self._outputs and "_output_shapes" not in self.get_node_by_name(
-        self._outputs[0]).attr:
+    if "_output_shapes" not in TensorflowNode(graph_def.node[0]).attr:
       graph_def = self._add_infer_shapes(graph_def)
     return graph_def
 
