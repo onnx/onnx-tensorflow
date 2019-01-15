@@ -12,7 +12,6 @@ from onnx_tf.backend import TensorflowBackend
 from onnx_tf.common.legacy import legacy_onnx_pre_ver
 from onnx_tf.common.legacy import legacy_opset_pre_ver
 
-
 # This is a pytest magic variable to load extra plugins
 pytest_plugins = 'onnx.backend.test.report',
 

@@ -5,12 +5,15 @@ import onnx_tf.converter
 import onnx_tf.opr_checker
 import onnx_tf.optimizer
 
+
 def main():
   args = sys.argv[1:]
   parser = argparse.ArgumentParser(
       description="ONNX-Tensorflow Command Line Interface")
   parser.add_argument(
-      "command", choices=["convert", "check", "optimize"], help="Available commands.")
+      "command",
+      choices=["convert", "check", "optimize"],
+      help="Available commands.")
 
   if len(args) == 0:
     parser.parse_args(["-h"])

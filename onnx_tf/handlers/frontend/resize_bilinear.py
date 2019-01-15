@@ -4,6 +4,7 @@ import numpy as np
 from onnx.helper import make_node
 from onnx.helper import make_tensor
 
+from onnx_tf.common import CONST_ONE_FP32
 from onnx_tf.common import get_unique_suffix
 from onnx_tf.common.data_type import any_dtype_to_onnx_dtype
 from onnx_tf.handlers.frontend_handler import FrontendHandler
@@ -16,7 +17,6 @@ from onnx_tf.handlers.frontend.transpose import Transpose
 from onnx_tf.handlers.handler import onnx_op
 from onnx_tf.handlers.handler import tf_op
 from onnx_tf.pb_wrapper import TensorflowNode
-from onnx_tf.pb_wrapper import OnnxGraph
 
 
 @onnx_op("Upsample")
@@ -43,7 +43,7 @@ class ResizeBilinear(FrontendHandler):
             outputs=["input_shape_" + unique_suffix],
             attr=node.attr))
 
-    util_one = OnnxGraph.CONST_ONE_FP32
+    util_one = CONST_ONE_FP32
 
     output_shape_tensor = node.inputs[1]
 
