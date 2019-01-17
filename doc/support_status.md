@@ -28,8 +28,7 @@ ______
 |Concat|1, 4|
 |Constant|1, 9|
 |ConstantFill|1|
-|ConstantLike|9|
-|ConstantOfShape|N/A|
+|ConstantOfShape|9|
 |Conv|1|
 |ConvTranspose|1|
 |Cos|7|
