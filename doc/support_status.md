@@ -84,7 +84,7 @@ ______
 |Neg|1, 6|
 |NonZero|9|
 |Not|1|
-|OneHot|N/A|
+|OneHot|9|
 |Or|1, 7|
 |PRelu|1, 6, 7, 9|
 |Pad|1, 2|
@@ -202,6 +202,7 @@ ______
 |Minimum|1, 6|
 |Mul|1, 6, 7|
 |Neg|1, 6|
+|OneHot|9|
 |Pack|1|
 |Pad|1, 2|
 |Pow|1, 7|

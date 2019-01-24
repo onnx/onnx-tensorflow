@@ -188,6 +188,7 @@ if not legacy_opset_pre_ver(9):
   test_cases.append(("test_erf", tf.erf, "Erf", [get_rnd([2, 3, 8])], {}))
   test_cases.append(("test_select", tf.where, "Select", [np.array([[1, 0], [1, 1]], dtype=np.bool), get_rnd([2, 2]), get_rnd([2, 2])], {}))
   test_cases.remove(("test_constant_fill", tf.fill, "Fill", [[1, 2, 3], 1], {}))
+  test_cases.append(("test_onehot", tf.one_hot, "one_hot", [get_rnd([2, 3], -1, 4, tf.int32), np.random.randint(1, 10, dtype=np.int32), np.random.randint(5, 10, dtype=np.int32), np.random.randint(1, 5, dtype=np.int32)], {"axis":-1}))
 
 # yapf: enable
 
