@@ -29,6 +29,7 @@ ______
 |Constant|1, 9|
 |ConstantFill|1|
 |ConstantLike|9|
+|ConstantOfShape|N/A|
 |Conv|1|
 |ConvTranspose|1|
 |Cos|7|
@@ -82,6 +83,7 @@ ______
 |Mul|1, 6, 7|
 |Multinomial|N/A|
 |Neg|1, 6|
+|NonZero|N/A|
 |Not|1|
 |OneHot|N/A|
 |Or|1, 7|
@@ -113,6 +115,7 @@ ______
 |Scatter|N/A|
 |Selu|1, 6|
 |Shape|1|
+|Shrink|N/A|
 |Sigmoid|1, 6|
 |Sign|N/A|
 |Sin|7|
@@ -130,12 +133,14 @@ ______
 |Sum|1, 6, 8|
 |Tan|7|
 |Tanh|1, 6|
+|TfIdfVectorizer|N/A|
 |ThresholdedRelu|1|
 |Tile|1, 6|
 |TopK|1|
 |Transpose|1|
 |Unsqueeze|1|
 |Upsample|7, 9|
+|Where|N/A|
 |Xor|1, 7|
 
 
@@ -174,9 +179,11 @@ ______
 |Floor|1, 6|
 |FloorDiv|1|
 |FusedBatchNorm|1, 6, 7|
+|GRU|1, 3, 7|
 |GatherV2|1|
 |Greater|1, 7, 9|
 |Identity|1|
+|LSTM|1, 7|
 |Less|1, 7, 9|
 |Log|1, 6|
 |LogSoftmax|1|
@@ -198,6 +205,7 @@ ______
 |Pad|1, 2|
 |Pow|1, 7|
 |Prod|1|
+|RNN|1, 7|
 |RandomStandardNormal|1|
 |RandomUniform|1|
 |RealDiv|1, 6, 7|
