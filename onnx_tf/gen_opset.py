@@ -21,12 +21,15 @@ def main():
     backend_opset_dict[op_name] = []
     frontend_opset_dict[op_name] = []
 
-  backend_onnx_coverage = get_backend_coverage()
+  backend_onnx_coverage, backend_experimental_op = get_backend_coverage()
   backend_opset_dict.update(backend_onnx_coverage.get(defs.ONNX_DOMAIN, {}))
-  frontend_onnx_coverage, frontend_tf_coverage, experimental_op = get_frontend_coverage()
+  frontend_onnx_coverage, frontend_tf_coverage, frontend_experimental_op = get_frontend_coverage()
   frontend_opset_dict.update(frontend_onnx_coverage.get(defs.ONNX_DOMAIN, {}))
 
-  for exp_op in experimental_op:
+  for exp_op in backend_experimental_op:
+    backend_opset_dict["{} [EXPERIMENTAL]".format(exp_op)] = backend_opset_dict.pop(exp_op)
+
+  for exp_op in frontend_experimental_op:
     frontend_opset_dict["{} [EXPERIMENTAL]".format(exp_op)] = frontend_opset_dict.pop(exp_op)
 
   with open('opset_version.py', 'w') as version_file:

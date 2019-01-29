@@ -3,12 +3,14 @@ import numpy as np
 from onnx_tf.common import exception
 from onnx_tf.common import get_unique_suffix
 from onnx_tf.handlers.frontend_handler import FrontendHandler
+from onnx_tf.handlers.handler import experimental
 from onnx_tf.handlers.handler import onnx_op
 from onnx_tf.handlers.handler import tf_op
 
 
 @onnx_op("DynamicSlice")
 @tf_op("StridedSlice")
+@experimental
 class StridedSlice(FrontendHandler):
 
   @classmethod
@@ -24,7 +26,7 @@ class StridedSlice(FrontendHandler):
     return np.where([bool(num & (1 << n)) for n in range(num_bit)])[0].tolist()
 
   @classmethod
-  def version_9(cls, node, **kwargs):
+  def version_1(cls, node, **kwargs):
     begin_mask = node.attr.get("begin_mask", 0)
     end_mask = node.attr.get("end_mask", 0)
     ellipsis_mask = node.attr.get("ellipsis_mask", 0)

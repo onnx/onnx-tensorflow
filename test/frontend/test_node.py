@@ -172,6 +172,8 @@ if not legacy_opset_pre_ver(6):
   test_cases.append(("test_tile", tf.tile, "Tile", [get_rnd([1, 2, 3, 4]), np.random.randint(1, 10, (4,), dtype=np.int32)], {}))
 
 if not legacy_opset_pre_ver(9):
+  # Dynamic Slice is an experimental op added to ONNX 1.4 and defined under opset version 1.
+  # We should only test it when opset version>=9 to maintain backward compatibility
   test_cases.append(("test_strided_slice", tf.strided_slice, "StridedSlice", [get_rnd([5, 5]), [0, 0], [1, 5], [1, 1]], {}))
   test_cases.append(("test_strided_slice_shrink", tf.strided_slice, "StridedSlice", [get_rnd([5, 5]), [0, 0], [1, 3], [1, 1]], {"shrink_axis_mask":1}))
   test_cases.append(("test_resize_bilinear", tf.image.resize_bilinear, "ResizeBilinear", [get_rnd([2, 5, 5, 8]), [10, 10]], {}))

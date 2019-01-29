@@ -1,16 +1,18 @@
 import tensorflow as tf
 
 from onnx_tf.handlers.backend_handler import BackendHandler
+from onnx_tf.handlers.handler import experimental
 from onnx_tf.handlers.handler import onnx_op
 from onnx_tf.handlers.handler import tf_func
 
 
 @onnx_op("DynamicSlice")
 @tf_func(tf.slice)
+@experimental
 class DynamicSlice(BackendHandler):
 
   @classmethod
-  def version_9(cls, node, **kwargs):
+  def version_1(cls, node, **kwargs):
     tensor_dict = kwargs["tensor_dict"]
     input_tensor = tensor_dict[node.inputs[0]]
     starts = tensor_dict[node.inputs[1]]
