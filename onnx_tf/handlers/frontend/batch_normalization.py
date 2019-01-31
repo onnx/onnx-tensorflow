@@ -30,3 +30,10 @@ class BatchNormalization(FrontendHandler):
         node,
         epsilon=node.attr.get("epsilon", 1e-5),
         data_format_auto_convert=True)
+
+  @classmethod
+  def version_9(cls, node, **kwargs):
+    return cls.make_node_from_tf_node(
+        node,
+        epsilon=node.attr.get("epsilon", 1e-5),
+        data_format_auto_convert=True)
