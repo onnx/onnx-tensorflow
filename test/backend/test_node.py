@@ -193,10 +193,21 @@ class TestNode(unittest.TestCase):
                     (TensorProto.DOUBLE,
                      tf.float64), (TensorProto.COMPLEX64,
                                    tf.complex64), (TensorProto.COMPLEX128,
-                                                   tf.complex128)]
+                                                   tf.complex128),
+                    (TensorProto.STRING, tf.string)]
     for ty, tf_type in test_cases:
       node_def = helper.make_node("Cast", ["input"], ["output"], to=ty)
       vector = [2, 3]
+      output = run_node(node_def, [vector])
+      np.testing.assert_equal(output["output"].dtype, tf_type)
+
+    test_cases2 = [(TensorProto.FLOAT, tf.float32),
+                   (TensorProto.INT32, tf.int32),
+                   (TensorProto.INT64, tf.int64),
+                   (TensorProto.DOUBLE, tf.float64)]
+    for ty, tf_type in test_cases2:
+      node_def = helper.make_node("Cast", ["input"], ["output"], to=ty)
+      vector = ['2', '3']
       output = run_node(node_def, [vector])
       np.testing.assert_equal(output["output"].dtype, tf_type)
 

@@ -21,7 +21,7 @@ ______
 |Atanh|9|
 |AveragePool|1, 7|
 |BatchNormalization|1, 6, 7, 9|
-|Cast|1, 6|
+|Cast|1, 6, 9|
 |Ceil|1, 6|
 |Clip|1, 6|
 |Compress|9|
@@ -162,7 +162,7 @@ ______
 |AvgPool|1, 7|
 |BatchNorm|1, 6, 7, 9|
 |BiasAdd|1, 6, 7|
-|Cast|1, 6|
+|Cast|1, 6, 9|
 |Ceil|1, 6|
 |ConcatV2|1, 4|
 |Conv1D|1|
