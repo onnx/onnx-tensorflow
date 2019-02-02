@@ -815,6 +815,16 @@ class TestNode(unittest.TestCase):
     output = run_node(node_def, [x])
     np.testing.assert_almost_equal(output["Y"], 1 / (1 + np.exp(-x)))
 
+  def test_sign(self):
+    if legacy_opset_pre_ver(9):
+      raise unittest.SkipTest(
+          "ONNX version {} doesn't support Sign.".format(
+              defs.onnx_opset_version()))
+    node_def = helper.make_node("Sign", ["X"], ["Y"])
+    x = self._get_rnd([3, 5], -10, 10)
+    output = run_node(node_def, [x])
+    np.testing.assert_almost_equal(output["Y"], np.sign(x))
+
   def test_sinh(self):
     if legacy_opset_pre_ver(9):
       raise unittest.SkipTest(
