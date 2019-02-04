@@ -516,6 +516,17 @@ class TestNode(unittest.TestCase):
     test_out = np.transpose(test_out, [0, 3, 1, 2])
     np.testing.assert_almost_equal(output["Y"], test_out)
 
+  def test_isnan(self):
+    if legacy_opset_pre_ver(9):
+      raise unittest.SkipTest(
+          "ONNX version {} doesn't support IsNaN.".format(
+              defs.onnx_opset_version()))
+    node_def = helper.make_node("IsNaN", ["X"], ["Y"])
+    x = self._get_rnd([3, 3])
+    x[0][1] = x[1][0] = x[2][2] = np.nan
+    output = run_node(node_def, [x])
+    np.testing.assert_almost_equal(output["Y"], np.isnan(x))
+
   def test_global_lp_pool(self):
     #   Image case:  (N x C x H x W), where N is the batch size,
     # C is the number of channels, and H and W are the height
