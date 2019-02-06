@@ -259,6 +259,10 @@ class TestNode(unittest.TestCase):
     np.testing.assert_equal(output["Y"], y)
 
   def test_constant_of_shape(self):
+    if defs.onnx_opset_version() < 9:
+      raise unittest.SkipTest(
+          "ONNX version {} doesn't support ConstantOfShape.".format(
+              defs.onnx_opset_version()))
     v=helper.make_tensor("value", TensorProto.FLOAT, [1], [1])
     node_def = helper.make_node("ConstantOfShape", ["X"], ["Y"], value=v)
     x = np.array([4, 3, 2])
