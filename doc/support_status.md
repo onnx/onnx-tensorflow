@@ -20,7 +20,7 @@ ______
 |Atan|7|
 |Atanh|9|
 |AveragePool|1, 7|
-|BatchNormalization|1, 6, 7|
+|BatchNormalization|1, 6, 7, 9|
 |Cast|1, 6|
 |Ceil|1, 6|
 |Clip|1, 6|
@@ -160,7 +160,7 @@ ______
 |Atan|7|
 |Atanh|9|
 |AvgPool|1, 7|
-|BatchNorm|1, 6, 7|
+|BatchNorm|1, 6, 7, 9|
 |BiasAdd|1, 6, 7|
 |Cast|1, 6|
 |Ceil|1, 6|
@@ -177,7 +177,7 @@ ______
 |Fill|1|
 |Floor|1, 6|
 |FloorDiv|1|
-|FusedBatchNorm|1, 6, 7|
+|FusedBatchNorm|1, 6, 7, 9|
 |GRU|1, 3, 7|
 |GatherV2|1|
 |Greater|1, 7, 9|
@@ -239,3 +239,4 @@ ______
 |TopKV2|1|
 |Transpose|1|
 |Unpack|1|
+|ZerosLike|9|
