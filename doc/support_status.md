@@ -227,6 +227,7 @@ ______
 |Softmax|1|
 |Softplus|1|
 |Softsign|1|
+|SpaceToBatchND|9|
 |SpaceToDepth|1|
 |Split|1, 2|
 |SplitV|1, 2|
