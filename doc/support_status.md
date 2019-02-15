@@ -116,7 +116,7 @@ ______
 |Shape|1|
 |Shrink|N/A|
 |Sigmoid|1, 6|
-|Sign|N/A|
+|Sign|9|
 |Sin|7|
 |Sinh|9|
 |Size|1|
@@ -218,6 +218,7 @@ ______
 |Selu|1, 6|
 |Shape|1|
 |Sigmoid|1, 6|
+|Sign|9|
 |Sin|7|
 |Sinh|9|
 |Size|1|
