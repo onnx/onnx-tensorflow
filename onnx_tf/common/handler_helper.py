@@ -85,6 +85,7 @@ def get_frontend_coverage():
 
   tf_coverage = {}
   onnx_coverage = {}
+  experimental_op = set()
   for handler in FrontendHandler.__subclasses__():
     handler.check_cls()
     versions = handler.get_versions()
@@ -92,8 +93,11 @@ def get_frontend_coverage():
     for tf_op in handler.TF_OP:
       _update_coverage(tf_coverage, domain, tf_op, versions)
     if handler.ONNX_OP:
-      _update_coverage(onnx_coverage, domain, handler.ONNX_OP, versions)
-  return onnx_coverage, tf_coverage
+      onnx_op = handler.ONNX_OP
+      if getattr(handler, "EXPERIMENTAL", False):
+        experimental_op.add(handler.ONNX_OP)
+      _update_coverage(onnx_coverage, domain, onnx_op, versions)
+  return onnx_coverage, tf_coverage, experimental_op
 
 
 def get_backend_coverage():

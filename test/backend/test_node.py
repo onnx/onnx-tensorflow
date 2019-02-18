@@ -258,6 +258,22 @@ class TestNode(unittest.TestCase):
     np.testing.assert_equal(output["Y"].dtype, tf.float32)
     np.testing.assert_equal(output["Y"], y)
 
+  def test_constant_of_shape(self):
+    if defs.onnx_opset_version() < 9:
+      raise unittest.SkipTest(
+          "ONNX version {} doesn't support ConstantOfShape.".format(
+              defs.onnx_opset_version()))
+    v=helper.make_tensor("value", TensorProto.FLOAT, [1], [1])
+    node_def = helper.make_node("ConstantOfShape", ["X"], ["Y"], value=v)
+    x = np.array([4, 3, 2])
+    output = run_node(node_def, inputs=[x])
+    np.testing.assert_almost_equal(output["Y"], np.ones(x, dtype=np.float32))
+    v=helper.make_tensor("value", TensorProto.INT32, [1], [0])
+    node_def = helper.make_node("ConstantOfShape", ["X"], ["Y"], value=v)
+    x = np.array([10, 6])
+    output = run_node(node_def, inputs=[x])
+    np.testing.assert_almost_equal(output["Y"], np.zeros(x, dtype=np.int32))
+
   def test_conv(self):
     device = "CUDA"
     if not supports_device(device):
@@ -798,6 +814,16 @@ class TestNode(unittest.TestCase):
     x = self._get_rnd([1000])
     output = run_node(node_def, [x])
     np.testing.assert_almost_equal(output["Y"], 1 / (1 + np.exp(-x)))
+
+  def test_sign(self):
+    if legacy_opset_pre_ver(9):
+      raise unittest.SkipTest(
+          "ONNX version {} doesn't support Sign.".format(
+              defs.onnx_opset_version()))
+    node_def = helper.make_node("Sign", ["X"], ["Y"])
+    x = self._get_rnd([3, 5], -10, 10)
+    output = run_node(node_def, [x])
+    np.testing.assert_almost_equal(output["Y"], np.sign(x))
 
   def test_sinh(self):
     if legacy_opset_pre_ver(9):

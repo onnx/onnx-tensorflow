@@ -20,7 +20,7 @@ ______
 |Atan|7|
 |Atanh|9|
 |AveragePool|1, 7|
-|BatchNormalization|1, 6, 7|
+|BatchNormalization|1, 6, 7, 9|
 |Cast|1, 6|
 |Ceil|1, 6|
 |Clip|1, 6|
@@ -28,7 +28,7 @@ ______
 |Concat|1, 4|
 |Constant|1, 9|
 |ConstantFill|1|
-|ConstantLike|9|
+|ConstantOfShape|9|
 |Conv|1|
 |ConvTranspose|1|
 |Cos|7|
@@ -82,6 +82,7 @@ ______
 |Mul|1, 6, 7|
 |Multinomial|N/A|
 |Neg|1, 6|
+|NonZero|N/A|
 |Not|1|
 |OneHot|N/A|
 |Or|1, 7|
@@ -113,8 +114,9 @@ ______
 |Scatter|N/A|
 |Selu|1, 6|
 |Shape|1|
+|Shrink|N/A|
 |Sigmoid|1, 6|
-|Sign|N/A|
+|Sign|9|
 |Sin|7|
 |Sinh|9|
 |Size|1|
@@ -130,12 +132,14 @@ ______
 |Sum|1, 6, 8|
 |Tan|7|
 |Tanh|1, 6|
+|TfIdfVectorizer|N/A|
 |ThresholdedRelu|1|
 |Tile|1, 6|
 |TopK|1|
 |Transpose|1|
 |Unsqueeze|1|
 |Upsample|7, 9|
+|Where|N/A|
 |Xor|1, 7|
 
 
@@ -156,7 +160,7 @@ ______
 |Atan|7|
 |Atanh|9|
 |AvgPool|1, 7|
-|BatchNorm|1, 6, 7|
+|BatchNorm|1, 6, 7, 9|
 |BiasAdd|1, 6, 7|
 |Cast|1, 6|
 |Ceil|1, 6|
@@ -173,10 +177,12 @@ ______
 |Fill|1|
 |Floor|1, 6|
 |FloorDiv|1|
-|FusedBatchNorm|1, 6, 7|
+|FusedBatchNorm|1, 6, 7, 9|
+|GRU|1, 3, 7|
 |GatherV2|1|
 |Greater|1, 7, 9|
 |Identity|1|
+|LSTM|1, 7|
 |Less|1, 7, 9|
 |Log|1, 6|
 |LogSoftmax|1|
@@ -198,6 +204,7 @@ ______
 |Pad|1, 2|
 |Pow|1, 7|
 |Prod|1|
+|RNN|1, 7|
 |RandomStandardNormal|1|
 |RandomUniform|1|
 |RealDiv|1, 6, 7|
@@ -210,6 +217,7 @@ ______
 |Selu|1, 6|
 |Shape|1|
 |Sigmoid|1, 6|
+|Sign|9|
 |Sin|7|
 |Sinh|9|
 |Size|1|
@@ -232,3 +240,4 @@ ______
 |TopKV2|1|
 |Transpose|1|
 |Unpack|1|
+|ZerosLike|9|
