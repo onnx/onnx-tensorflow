@@ -61,7 +61,7 @@ ______
 |If|N/A|
 |ImageScaler|1|
 |InstanceNormalization|1, 6|
-|IsNaN|N/A|
+|IsNaN|9|
 |LRN|1|
 |LSTM|1, 7|
 |LeakyRelu|1, 6|
@@ -182,6 +182,7 @@ ______
 |GatherV2|1|
 |Greater|1, 7, 9|
 |Identity|1|
+|IsNan|9|
 |LSTM|1, 7|
 |Less|1, 7, 9|
 |Log|1, 6|

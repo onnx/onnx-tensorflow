@@ -181,6 +181,7 @@ if not legacy_opset_pre_ver(9):
   test_cases.append(("test_acosh", tf.acosh, "Acosh", [get_rnd([10, 10])], {}))
   test_cases.append(("test_tanh", tf.tanh, "Tanh", [get_rnd([10, 10])], {}))
   test_cases.append(("test_zeros_like", tf.zeros_like, "zeros_like", [get_rnd([5, 5])], {}))
+  test_cases.append(("test_is_nan", tf.is_nan, "IsNan", [[[1.0, 3.0, 5.0], [6.0, np.nan, 0.0], [np.nan, 11.0, 12.0]]], {}))
   test_cases.append(("test_sign", tf.sign, "Sign", [get_rnd([10, 10], -10, 10)], {}))
 
 # yapf: enable
