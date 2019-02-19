@@ -2,6 +2,7 @@ import argparse
 import warnings
 import logging
 import os
+from imp import reload
 
 from google.protobuf import text_format
 from onnx import defs
@@ -13,6 +14,7 @@ from onnx_tf.common.handler_helper import get_frontend_coverage
 from onnx_tf.pb_wrapper import TensorflowNode
 
 warnings.filterwarnings('ignore')
+reload(logging)
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger()
 
@@ -52,7 +54,7 @@ def check_opr_support(graph_def):
   logger.info('There are %s unique operators in the model file.',
               str(len(node_dict)))
 
-  frontend_coverage, frontend_tf_coverage = get_frontend_coverage()
+  frontend_tf_coverage = get_frontend_coverage().get('tf_coverage')
   frontend_tf_opset_dict = frontend_tf_coverage.get(defs.ONNX_DOMAIN, {})
   for k in node_dict:
     if k not in frontend_tf_opset_dict:
