@@ -30,7 +30,7 @@ backend_opset_version = {
     'DepthToSpace': [1],
     'Div': [1, 6, 7],
     'Dropout': [1, 6, 7],
-    'DynamicSlice [EXPERIMENTAL]': [1],
+    'DynamicSlice': [1],
     'Elu': [1, 6],
     'Equal': [1, 7],
     'Erf': [9],
@@ -132,7 +132,7 @@ backend_opset_version = {
     'Transpose': [1],
     'Unsqueeze': [1],
     'Upsample': [7, 9],
-    'Where': [],
+    'Where': [9],
     'Xor': [1, 7]
 }
 
@@ -269,7 +269,7 @@ frontend_opset_version = {
     'Transpose': [1],
     'Unsqueeze': [1],
     'Upsample': [9],
-    'Where': [],
+    'Where': [9],
     'Xor': [1, 7]
 }
 
@@ -342,6 +342,7 @@ frontend_tf_opset_version = {
     'Reshape': [1, 5],
     'ResizeBilinear': [9],
     'Rsqrt': [1],
+    'Select': [9],
     'Selu': [1, 6],
     'Shape': [1],
     'Sigmoid': [1, 6],
