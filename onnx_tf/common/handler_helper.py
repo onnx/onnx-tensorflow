@@ -79,8 +79,10 @@ def get_all_backend_handlers(opset_dict):
 def get_frontend_coverage():
   """ Get frontend coverage for document.
 
-  :return: onnx_coverage: e.g. {'domain': {'ONNX_OP': [versions], ...}, ...}
+  :return: dict of frontend coverages
+  onnx_coverage: e.g. {'domain': {'ONNX_OP': [versions], ...}, ...}
   tf_coverage: e.g. {'domain': {'TF_OP': [versions], ...}, ...}
+  experimental_op: e.g. {'ONNX_OP'...}
   """
 
   tf_coverage = {}
@@ -97,7 +99,10 @@ def get_frontend_coverage():
       if getattr(handler, "EXPERIMENTAL", False):
         experimental_op.add(handler.ONNX_OP)
       _update_coverage(onnx_coverage, domain, onnx_op, versions)
-  return onnx_coverage, tf_coverage, experimental_op
+  return dict(
+      onnx_coverage=onnx_coverage,
+      tf_coverage=tf_coverage,
+      experimental_op=experimental_op)
 
 
 def get_backend_coverage():
