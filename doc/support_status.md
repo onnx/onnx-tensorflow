@@ -37,7 +37,7 @@ ______
 |DepthToSpace|1|
 |Div|1, 6, 7|
 |Dropout|1, 6, 7|
-|DynamicSlice|9|
+|DynamicSlice|1|
 |Elu|1, 6|
 |Equal|1, 7|
 |Erf|N/A|
@@ -232,7 +232,7 @@ ______
 |Sqrt|1, 6|
 |Square|1|
 |Squeeze|1|
-|StridedSlice|9|
+|StridedSlice|1|
 |Sub|1, 6, 7|
 |Sum|1|
 |Tan|7|

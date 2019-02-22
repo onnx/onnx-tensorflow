@@ -377,6 +377,9 @@ class TestNode(unittest.TestCase):
     np.testing.assert_almost_equal(output["Z"], np.dot(x, y))
 
   def test_dynamic_slice(self):
+    # This is an experimental op added in ONNX 1.4 and defined under
+    # opset version 1. The following "if" statement is use to
+    # maintain backward compatibility
     if defs.onnx_opset_version() < 9:
       raise unittest.SkipTest(
           "ONNX version {} doesn't support DynamicSlice.".format(

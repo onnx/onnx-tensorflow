@@ -112,13 +112,16 @@ def get_backend_coverage():
   """
 
   onnx_coverage = {}
+  experimental_op = set()
   for handler in BackendHandler.__subclasses__():
     handler.check_cls()
 
     versions = handler.get_versions()
     domain = handler.DOMAIN
+    if getattr(handler, "EXPERIMENTAL", False):
+      experimental_op.add(handler.ONNX_OP)
     _update_coverage(onnx_coverage, domain, handler.ONNX_OP, versions)
-  return onnx_coverage
+  return onnx_coverage, experimental_op
 
 
 def _update_coverage(coverage, domain, key, versions):

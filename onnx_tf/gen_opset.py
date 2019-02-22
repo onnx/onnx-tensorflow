@@ -21,7 +21,7 @@ def main():
     backend_opset_dict[op_name] = []
     frontend_opset_dict[op_name] = []
 
-  backend_onnx_coverage = get_backend_coverage()
+  backend_onnx_coverage, backend_experimental_op = get_backend_coverage()
   backend_opset_dict.update(backend_onnx_coverage.get(defs.ONNX_DOMAIN, {}))
   frontend_coverages = get_frontend_coverage()
   frontend_onnx_coverage = frontend_coverages.get('onnx_coverage')
