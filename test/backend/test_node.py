@@ -3,6 +3,7 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
+import math
 import unittest
 import numpy as np
 import tensorflow as tf
@@ -427,6 +428,17 @@ class TestNode(unittest.TestCase):
     output = run_node(node_def, [x, y])
     np.testing.assert_equal(output["Z"], np.equal(x, np.reshape(
         y, [1, 3, 3, 1])))
+
+  def test_erf(self):
+    if legacy_opset_pre_ver(9):
+      raise unittest.SkipTest(
+          "ONNX version {} doesn't support Erf.".format(
+              defs.onnx_opset_version()))
+    node_def = helper.make_node("Erf", ["X"], ["Y"])
+    x = self._get_rnd([3, 4, 5])
+    output = run_node(node_def, [x])
+    exp_output = np.vectorize(math.erf)(x).astype(np.float32)
+    np.testing.assert_almost_equal(output["Y"], exp_output)
 
   def test_exp(self):
     node_def = helper.make_node("Exp", ["X"], ["Y"])

@@ -40,7 +40,7 @@ ______
 |DynamicSlice|1|
 |Elu|1, 6|
 |Equal|1, 7|
-|Erf|N/A|
+|Erf|9|
 |Exp|1, 6|
 |Expand|8|
 |EyeLike|9|
@@ -172,6 +172,7 @@ ______
 |Cosh|9|
 |DepthwiseConv2dNative|1|
 |Equal|1, 7|
+|Erf|9|
 |Exp|1, 6|
 |ExpandDims|1|
 |Fill|1|
