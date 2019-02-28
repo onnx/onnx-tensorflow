@@ -8,7 +8,7 @@ from onnx_tf.handlers.frontend.cast import Cast
 from onnx_tf.handlers.handler import experimental
 from onnx_tf.handlers.handler import onnx_op
 from onnx_tf.handlers.handler import tf_op
-
+from onnx_tf.pb_wrapper import TensorflowNode
 
 @onnx_op("DynamicSlice")
 @tf_op("StridedSlice")
