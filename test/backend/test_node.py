@@ -989,6 +989,10 @@ class TestNode(unittest.TestCase):
     np.testing.assert_almost_equal(output["Y"], np.transpose(x, (0, 2, 1)))
 
   def test_scatter(self):
+    if legacy_opset_pre_ver(9):
+      raise unittest.SkipTest(
+          "ONNX version {} doesn't support Scatter.".format(
+              defs.onnx_opset_version()))
     node_def = helper.make_node("Scatter", ["X", "indices", "updates"], ["Y"])
     x = [[1.0, 2.0], [3.0, 4.0]]
     indices = [[0, 0], [1, 1]]
