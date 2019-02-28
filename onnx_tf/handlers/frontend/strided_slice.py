@@ -82,7 +82,7 @@ class StridedSlice(FrontendHandler):
     slice_suffix = "_" + get_unique_suffix() if need_post_processing else ""
     slice_output_name = node.outputs[0]
     slice_node = cls.make_node(
-        "DynamicSlice", [node.inputs[0], begin_node_name, node.inputs[2]],
+        "DynamicSlice", [node.inputs[0], begin_node_name, end_node_name],
         [slice_output_name + slice_suffix], node.name + slice_suffix)
 
     if not need_post_processing:
