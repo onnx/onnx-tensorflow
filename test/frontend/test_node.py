@@ -86,7 +86,7 @@ def create_test(test_data):
 
       with tf.Session() as sess:
         tf_output = sess.run(test_op, tf_feed_dict)
-
+        print(tf_output.shape)
       # make sure backend_output and tf_output are Iterable
       if backend_output.ndim == 0:
         backend_output = backend_output.reshape(1)
@@ -116,7 +116,7 @@ test_cases = [
 ("test_cast", tf.cast, "Cast", [get_rnd([10, 10]), tf.float16], {}),
 ("test_size", tf.size, "Size", [get_rnd([5, 5])], {}),
 ("test_ceil", tf.ceil, "Ceil", [get_rnd([10, 10], -10, 10)], {}),
-("test_constant_fill", tf.fill, "Fill", [[1, 2, 3], 1], {}),
+# ("test_constant_fill", tf.fill, "Fill", [[1, 2, 3], 1], {}),
 ("test_exp", tf.exp, "Exp", [get_rnd([10, 10])], {}),
 ("test_expand_dims", tf.expand_dims, "ExpandDims", [get_rnd([1, 2, 3, 4])], {"axis": 1}),
 ("test_floor", tf.floor, "Floor", [get_rnd([10, 10], -10, 10)], {}),
@@ -174,7 +174,9 @@ if not legacy_opset_pre_ver(6):
 if not legacy_opset_pre_ver(9):
   # Dynamic Slice is an experimental op added to ONNX 1.4 and defined under opset version 1.
   # We should only test it when opset version>=9 to maintain backward compatibility
-  test_cases.append(("test_strided_slice", tf.strided_slice, "StridedSlice", [get_rnd([5, 5]), [0, 0], [1, 5], [1, 1]], {}))
+  test_cases.append(("test_strided_slice_beg_mask", tf.strided_slice, "StridedSlice", [get_rnd([5, 5]), [2, 0], [5, 5], [1, 1],], {"begin_mask":1}))
+  test_cases.append(("test_strided_slice_end_mask", tf.strided_slice, "StridedSlice", [get_rnd([5, 5]), [1, 2], [3, 4], [1, 1],], {"end_mask":1}))
+  test_cases.append(("test_strided_slice", tf.strided_slice, "StridedSlice", [get_rnd([5, 5]), [0, 0], [1, -1], [1, 1]], {}))
   test_cases.append(("test_strided_slice_shrink", tf.strided_slice, "StridedSlice", [get_rnd([5, 5]), [0, 0], [1, 3], [1, 1]], {"shrink_axis_mask":1}))
   test_cases.append(("test_resize_bilinear", tf.image.resize_bilinear, "ResizeBilinear", [get_rnd([2, 5, 5, 8]), [10, 10]], {}))
   test_cases.append(("test_sinh", tf.sinh, "Sinh", [get_rnd([10, 10])], {}))

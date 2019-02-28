@@ -33,26 +33,60 @@ class StridedSlice(FrontendHandler):
     new_axis_mask = node.attr.get("new_axis_mask", 0)
     shrink_axis_mask = node.attr.get("shrink_axis_mask", 0)
 
-    only_support = (int(begin_mask) is 0 and int(end_mask) is 0 and
-                    int(ellipsis_mask) is 0 and int(new_axis_mask) is 0)
+    only_support = (int(ellipsis_mask) is 0 and int(new_axis_mask) is 0)
+
+    preprocessing_node = []
+
+    begin_node_name = node.inputs[1]
+    end_node_name = node.inputs[2]
+
+    def process_range_mask(mask, range_array, begin_or_end_str,
+                           preprocessing_node):
+      if mask == 0:
+        return range_array
+
+      axes_name = "{}_{}_axes".format(node.name, begin_or_end_str)
+      values_name = "{}_{}_values".format(node.name, begin_or_end_str)
+
+      kwargs["additional_constants"][axes_name] = np.array(
+          map(lambda x: [x], cls._int_to_set_pos_list(mask))).astype(np.int32)
+
+      if begin_or_end_str == "begin":
+        kwargs["additional_constants"][values_name] = np.array(
+            [0 for i in cls._int_to_set_pos_list(mask)]).astype(np.int32)
+      else:
+        kwargs["additional_constants"][values_name] = np.array(
+            [-1 for i in cls._int_to_set_pos_list(mask)]).astype(np.int32)
+
+      range_masked_node_name = "{}_{}_masked".format(node.name,
+                                                     begin_or_end_str)
+      range_masked_node = cls.make_node(
+          "Scatter", [range_array, axes_name, values_name],
+          [range_masked_node_name], range_masked_node_name)
+      preprocessing_node.append(range_masked_node)
+      return range_masked_node_name
+
+    begin_node_name = process_range_mask(begin_mask, begin_node_name, "begin",
+                                         preprocessing_node)
+    end_node_name = process_range_mask(end_mask, end_node_name, "end",
+                                       preprocessing_node)
+
     assert only_support, "limited strided slice support"
 
     # Assert that strides are all ones, since we have limited support.
     const_strides = kwargs["consts"][node.inputs[3]]
     np.testing.assert_array_equal(np.ones_like(const_strides), const_strides)
 
-    need_post_processing = (shrink_axis_mask > 0 or begin_mask > 0 or
-                            end_mask > 0 or ellipsis_mask > 0 or
-                            new_axis_mask > 0 or shrink_axis_mask > 0)
+    need_post_processing = (ellipsis_mask > 0 or new_axis_mask > 0)
 
     slice_suffix = "_" + get_unique_suffix() if need_post_processing else ""
     slice_output_name = node.outputs[0]
-    slice_node = cls.make_node("DynamicSlice", node.inputs[0:3],
-                               [slice_output_name + slice_suffix],
-                               node.name + slice_suffix)
+    slice_node = cls.make_node(
+        "DynamicSlice", [node.inputs[0], begin_node_name, node.inputs[2]],
+        [slice_output_name + slice_suffix], node.name + slice_suffix)
 
     if not need_post_processing:
-      return [slice_node]
+      return preprocessing_node + [slice_node]
 
     shrink_axis = cls._int_to_set_pos_list(shrink_axis_mask)
     squeeze_node = cls.make_node(
@@ -60,4 +94,4 @@ class StridedSlice(FrontendHandler):
         node.outputs,
         node.name,
         axes=shrink_axis)
-    return [slice_node, squeeze_node]
+    return preprocessing_node + [slice_node, squeeze_node]

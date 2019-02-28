@@ -229,18 +229,31 @@ class OnnxGraph(object):
       self._value_info_proto = []
     # Either way, data_type_cast_map is empty when initialized.
     self._data_type_cast_map = {}
+    # Additional constants added by handlers.
+    # Content is constant name to constant value.
+    self._additional_constants = {}
 
     self._add_utility_constants()
+
+  def add_constant(self, name, value):
+    self.add_const_explicit(name=name, value=value)
+    self.add_const_proto_explicit(name=name, value=value, np_dtype=value.dtype)
+    self.add_input_proto_explicit(
+        name=name, shape=value.shape, np_dtype=value.dtype)
 
   def _add_utility_constants(self):
     util_consts = {CONST_ONE_FP32: np.array([1.0]).astype(np.float32)}
     # Add a few useful utility constants:
     for name, value in util_consts.items():
-      self.add_const_explicit(name=name, value=value)
-      self.add_const_proto_explicit(
-          name=name, value=value, np_dtype=value.dtype)
-      self.add_input_proto_explicit(
-          name=name, shape=value.shape, np_dtype=value.dtype)
+      self.add_constant(name, value)
+
+  @property
+  def additional_constants(self):
+    return self._additional_constants
+
+  def add_additional_constants(self):
+    for name, value in self._additional_constants.items():
+      self.add_constant(name, value)
 
   # This list holds the protobuf objects of type ValueInfoProto
   # representing the input to the converted ONNX graph.

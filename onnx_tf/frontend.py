@@ -90,7 +90,8 @@ class TensorflowFrontend(object):
               node,
               consts=onnx_graph.consts,
               node_dict=dict(node_tup),
-              data_type_cast_map=onnx_graph.data_type_cast_map)
+              data_type_cast_map=onnx_graph.data_type_cast_map,
+              additional_constants=onnx_graph.additional_constants)
         else:
           exception.OP_UNIMPLEMENTED_EXCEPT(
               node.op_type,
@@ -105,6 +106,7 @@ class TensorflowFrontend(object):
       output_node = tf_graph.get_node_by_name(o)
       onnx_graph.add_output_proto(output_node)
 
+    onnx_graph.add_additional_constants()
     return onnx_graph.make_graph_proto()
 
   @classmethod
