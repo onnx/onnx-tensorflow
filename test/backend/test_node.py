@@ -252,6 +252,9 @@ class TestNode(unittest.TestCase):
     np.testing.assert_almost_equal(output["Y"].flatten(), values)
 
   def test_constant_fill(self):
+    # deprecated, skip
+    raise unittest.SkipTest(
+          "ConstantFill is deprecated")
     shape = [1, 2, 3, 4]
     extra_shape = [5, 6]
     value = 3.
@@ -985,6 +988,13 @@ class TestNode(unittest.TestCase):
     output = run_node(node_def, [x])
     np.testing.assert_almost_equal(output["Y"], np.transpose(x, (0, 2, 1)))
 
+  def test_scatter(self):
+    node_def = helper.make_node("Scatter", ["X", "indices", "updates"], ["Y"])
+    x = [[1.0, 2.0], [3.0, 4.0]]
+    indices = [[0, 0], [1, 1]]
+    updates = [3.0, 6.0]
+    output = run_node(node_def, [x, indices, updates])
+    np.testing.assert_almost_equal(output["Y"], np.array([[3.0, 2.0], [3.0, 6.0]]))
 
 if __name__ == '__main__':
   unittest.main()

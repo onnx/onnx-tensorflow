@@ -88,7 +88,8 @@ class ResizeBilinear(FrontendHandler):
         consts={
             slice_const_proto[k].output[0]: v for k, v in slice_const_items
         },
-        add_consts=True)
+        add_consts=True,
+        additional_constants=kwargs["additional_constants"])
 
     # Divide input shape with output shape to get scaling factor:
     div_node = Div.handle(
