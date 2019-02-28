@@ -19,11 +19,6 @@ class Scatter(BackendHandler):
     indices = tensor_dict[node.inputs[1]]
     updates = tensor_dict[node.inputs[2]]
 
-    with tf.Session() as sess:
-      print(data.eval())
-      print(indices.eval())
-      print(updates.eval())
-
     data_shape = tf.cast(tf.shape(data), indices.dtype)
     dense_update = tf.scatter_nd(indices, updates, data_shape)
     update_mask = tf.scatter_nd(indices, tf.ones_like(updates), data_shape)

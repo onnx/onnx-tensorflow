@@ -1,4 +1,5 @@
 import numpy as np
+import tensorflow as tf
 
 from onnx_tf.common import exception
 from onnx_tf.common import get_unique_suffix
@@ -40,8 +41,20 @@ class StridedSlice(FrontendHandler):
     begin_node_name = node.inputs[1]
     end_node_name = node.inputs[2]
 
+    # Process to begin or end mask.
     def process_range_mask(mask, range_array, begin_or_end_str,
                            preprocessing_node):
+      """
+        Args:
+            mask (int): The begin or end mask
+            range_array (str): Onnx tensor name corresponding to the begin or end tensor.
+            begin_or_end_str (str): "begin" or "end".
+            preprocessing_node (list): Array corresponding to the list of preprocessing nodes.
+        Returns:
+            str: returns Onnx tensor name corresponding to the processed begin or end tensor.
+            In case where no processing is needed, the original begin or end tensor is returned.
+      """
+
       if mask == 0:
         return range_array
 
@@ -53,17 +66,26 @@ class StridedSlice(FrontendHandler):
 
       if begin_or_end_str == "begin":
         kwargs["additional_constants"][values_name] = np.array(
-            [0 for i in cls._int_to_set_pos_list(mask)]).astype(np.int32)
+            [0 for i in cls._int_to_set_pos_list(mask)]).astype(np.int64)
       else:
         kwargs["additional_constants"][values_name] = np.array(
-            [-1 for i in cls._int_to_set_pos_list(mask)]).astype(np.int32)
+            [-1 for i in cls._int_to_set_pos_list(mask)]).astype(np.int64)
+
+      range_cast_node_name = "{}_{}_range_casted".format(node.name, begin_or_end_str)
+      range_cast_node = Cast.handle(
+        TensorflowNode(
+            name=range_cast_node_name,
+            inputs=[range_array],
+            outputs=[range_cast_node_name],
+            attr={"DstT": tf.int64}))
 
       range_masked_node_name = "{}_{}_masked".format(node.name,
                                                      begin_or_end_str)
+
       range_masked_node = cls.make_node(
-          "Scatter", [range_array, axes_name, values_name],
+          "Scatter", [range_cast_node_name, axes_name, values_name],
           [range_masked_node_name], range_masked_node_name)
-      preprocessing_node.append(range_masked_node)
+      preprocessing_node.extend([range_masked_node, range_cast_node])
       return range_masked_node_name
 
     begin_node_name = process_range_mask(begin_mask, begin_node_name, "begin",
@@ -77,7 +99,8 @@ class StridedSlice(FrontendHandler):
     const_strides = kwargs["consts"][node.inputs[3]]
     np.testing.assert_array_equal(np.ones_like(const_strides), const_strides)
 
-    need_post_processing = (ellipsis_mask > 0 or new_axis_mask > 0)
+    need_post_processing = (ellipsis_mask > 0 or new_axis_mask > 0 or
+                            shrink_axis_mask > 0)
 
     slice_suffix = "_" + get_unique_suffix() if need_post_processing else ""
     slice_output_name = node.outputs[0]
