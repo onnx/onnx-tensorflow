@@ -4,6 +4,7 @@ import tensorflow as tf
 from onnx_tf.common import exception
 from onnx_tf.common import get_unique_suffix
 from onnx_tf.handlers.frontend_handler import FrontendHandler
+from onnx_tf.handlers.frontend.cast import Cast
 from onnx_tf.handlers.handler import experimental
 from onnx_tf.handlers.handler import onnx_op
 from onnx_tf.handlers.handler import tf_op
