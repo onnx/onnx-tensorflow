@@ -4,6 +4,7 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import inspect
+import warnings
 
 from onnx import defs
 
@@ -28,7 +29,7 @@ class Handler(object):
   @classmethod
   def check_cls(cls):
     if not cls.ONNX_OP:
-      raise ValueError(
+      warnings.warn(
           "{} doesn't have ONNX_OP. "
           "Please use Handler.onnx_op decorator to register ONNX_OP.".format(
               cls.__name__))
@@ -88,6 +89,10 @@ class Handler(object):
     return Handler.property_register("TF_FUNC", func)
 
   @staticmethod
+  def experimental(func):
+    return Handler.property_register("EXPERIMENTAL", True)(func)
+
+  @staticmethod
   def domain(d):
     return Handler.property_register("DOMAIN", d)
 
@@ -105,11 +110,8 @@ class Handler(object):
 
 
 domain = Handler.domain
-
+experimental = Handler.experimental
 onnx_op = Handler.onnx_op
-
 tf_op = Handler.tf_op
-
 tf_func = Handler.tf_func
-
 property_register = Handler.property_register

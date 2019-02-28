@@ -27,8 +27,8 @@ class BatchNormalization(BackendHandler):
     x_shape = x.get_shape().as_list()
     x_rank = len(x_shape)
 
-    params_shape_broadcast = list(
-        [1, x_shape[1]] + [1 for _ in range(2, x_rank)])
+    params_shape_broadcast = list([1, x_shape[1]] +
+                                  [1 for _ in range(2, x_rank)])
 
     total_num_dim = len(x.get_shape())
     scale = tf.reshape(tensor_dict[node.inputs[1]], params_shape_broadcast)
@@ -62,4 +62,8 @@ class BatchNormalization(BackendHandler):
 
   @classmethod
   def version_7(cls, node, **kwargs):
+    return cls._common(node, **kwargs)
+
+  @classmethod
+  def version_9(cls, node, **kwargs):
     return cls._common(node, **kwargs)

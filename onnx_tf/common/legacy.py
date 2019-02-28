@@ -5,15 +5,17 @@ from __future__ import unicode_literals
 
 import onnx
 
-def get_onnx_version():
-	return map(int, onnx.version.version.split("."))
 
-# Returns whether onnx version is prior to 1.2.
-def legacy_onnx_pre_1_2():
-	major, minor, revision = get_onnx_version()
-	return major == 1 and minor < 2
+def get_onnx_version():
+  return tuple(map(int, onnx.version.version.split(".")))
+
+
+# Returns whether onnx version is prior to major.minor.patch
+def legacy_onnx_pre_ver(major=0, minor=0, patch=0):
+  return get_onnx_version() < (major, minor, patch)
+
 
 # Returns whether the opset version accompanying the
-# onnx installation is prior to 6.
-def legacy_opset_pre_6():
-	return onnx.defs.onnx_opset_version() < 6
+# onnx installation is prior to version passed.
+def legacy_opset_pre_ver(version):
+  return onnx.defs.onnx_opset_version() < version

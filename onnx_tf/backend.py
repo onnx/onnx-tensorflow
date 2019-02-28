@@ -21,33 +21,12 @@ from onnx.helper import make_opsetid
 import tensorflow as tf
 
 from onnx_tf.backend_rep import TensorflowRep
-from onnx_tf.common import attr_converter
-from onnx_tf.common import attr_translator
 from onnx_tf.common import data_type
 from onnx_tf.common import exception
 from onnx_tf.common import get_device_option
 from onnx_tf.common import supports_device as common_supports_device
 from onnx_tf.common.handler_helper import get_all_backend_handlers
-
-
-# TODO: Move this into ONNX main library
-class OnnxNode(object):
-  """
-  Reimplementation of NodeProto from ONNX, but in a form
-  more convenient to work with from Python.
-  """
-
-  def __init__(self, node):
-    self.name = str(node.name)
-    self.op_type = str(node.op_type)
-    self.domain = str(node.domain)
-    self.attrs = dict([(attr.name,
-                        attr_translator.translate_onnx(
-                            attr.name, attr_converter.convert_onnx(attr)))
-                       for attr in node.attribute])
-    self.inputs = list(node.input)
-    self.outputs = list(node.output)
-    self.node_proto = node
+from onnx_tf.pb_wrapper import OnnxNode
 
 
 class TensorflowBackend(Backend):
@@ -84,7 +63,16 @@ class TensorflowBackend(Backend):
       and the converted tensorflow model.
     :return: TensorflowRep object.
     """
-    return cls._onnx_graph_to_tensorflow_rep(model.graph, model.opset_import, strict)
+
+    # Models with IR_VERSION less than 3 does not have opset_import set.
+    # We default to minimum opset, this behavior is consistent with
+    # onnx checker.
+    # c.f. https://github.com/onnx/onnx/blob/427ac0c1b792363d373e3d7e4eef97fa46458420/onnx/checker.cc#L478
+    if model.ir_version < 3:
+      opset_import = [make_opsetid(defs.ONNX_DOMAIN, 1)]
+    else:
+      opset_import = model.opset_import
+    return cls._onnx_graph_to_tensorflow_rep(model.graph, opset_import, strict)
 
   @classmethod
   def _onnx_graph_to_tensorflow_rep(cls, graph_def, opset, strict):

@@ -1,0 +1,10 @@
+name: mnist_tutorial
+asset_url: https://s3-api.us-geo.objectstorage.softlayer.net/onnx-tensorflow/public_tutorial_assets.zip
+input_name: Placeholder
+graph_proto_path: tutorial_assets/graph.proto
+checkpoint_path: tutorial_assets/ckpt/model.ckpt
+devices: [CUDA]
+inputs:
+  Placeholder: [1, 784]
+outputs:
+  - fc2/add

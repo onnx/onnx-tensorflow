@@ -1,16 +1,37 @@
 # Tensorflow Backend and Frontend for ONNX
 [![Build Status](https://travis-ci.org/onnx/onnx-tensorflow.svg?branch=master)](https://travis-ci.org/onnx/onnx-tensorflow)
 
-[ONNX-Tensorflow API](https://github.com/onnx/onnx-tensorflow/blob/master/doc/API.md)
+## To convert models between Tensorflow and ONNX:
 
-[ONNX-Tensorflow Op Coverage Status](https://github.com/onnx/onnx-tensorflow/blob/master/doc/support_status.md)
+### Use CLI:
 
-## Tutorials:
+[Command Line Interface Documentation](https://github.com/onnx/onnx-tensorflow/blob/master/doc/CLI.md)
+
+From Tensorflow to ONNX: `onnx-tf convert -t onnx -i /path/to/input.pb -o /path/to/output.onnx`
+
+From ONNX to Tensorflow: `onnx-tf convert -t tf -i /path/to/input.onnx -o /path/to/output.pb`
+
+### Convert programmatically:
+
+[From Tensorflow to ONNX](https://github.com/onnx/onnx-tensorflow/blob/master/example/tf_to_onnx.py)
+
+[From ONNX to Tensorflow](https://github.com/onnx/onnx-tensorflow/blob/master/example/onnx_to_tf.py)
+
+## ONNX model inference with Tensorflow backend:
+```
+import onnx
+from onnx_tf.backend import prepare
+
+onnx_model = onnx.load("input_path")  # load onnx model
+output = prepare(onnx_model).run(input)  # run the loaded model
+```
+
+## More tutorials:
 [Running an ONNX model using Tensorflow](https://github.com/onnx/tutorials/blob/master/tutorials/OnnxTensorflowImport.ipynb)
 
 [Exporting a Tensorflow Model to ONNX](https://github.com/onnx/tutorials/blob/master/tutorials/OnnxTensorflowExport.ipynb)
 
-## To install:
+## Production Installation:
 ONNX-TF requires ONNX (Open Neural Network Exchange) as an external dependency, for any issues related to ONNX installation, we refer our users to [ONNX project repository](https://github.com/onnx/onnx) for documentation and help. Notably, please ensure that protoc is available if you plan to install ONNX via pip.
 
 The specific ONNX release version that we support in the master branch of ONNX-TF can be found [here](https://github.com/onnx/onnx-tensorflow/blob/master/ONNX_VERSION_NUMBER). This information about ONNX version requirement is automatically encoded in `setup.py`, therefore users needn't worry about ONNX version requirement when installing ONNX-TF.
@@ -19,33 +40,25 @@ To install the latest version of ONNX-TF via pip, run `pip install onnx-tf`.
 
 Because users often have their own preferences for which variant of Tensorflow to install (i.e., a GPU version instead of a CPU version), we do not explicitly require tensorflow in the installation script. It is therefore users' responsibility to ensure that the proper variant of Tensorflow is available to ONNX-TF. Moreoever, we require Tensorflow version >= 1.5.0.
 
-## To test:
-For backend, run `python -m unittest discover test`.
+## Development:
 
-## Example:
-In this example, we will define and run a Relu node and print the result.
-This example is available as a python script at example/relu.py .
-```python
-from onnx_tf.backend import run_node
-from onnx import helper
+### Coverage Status:
+[ONNX-Tensorflow Op Coverage Status](https://github.com/onnx/onnx-tensorflow/blob/master/doc/support_status.md)
 
-node_def = helper.make_node("Relu", ["X"], ["Y"])
-output = run_node(node_def, [[-0.1, 0.1]])
-print(output["Y"])
-```
-The result is `[ 0.   0.1]`
+### API:
+[ONNX-Tensorflow API](https://github.com/onnx/onnx-tensorflow/blob/master/doc/API.md)
 
-## Development Install:
+### Installation:
 - Install ONNX master branch from source.
 - Install Tensorflow>=1.5.0.
 - Run `git clone git@github.com:onnx/onnx-tensorflow.git && cd onnx-tensorflow`.
 - Run `pip install -e .`.
 
-## Folder Structure:
+### Folder Structure:
 - __onnx_tf__ main source code file.
 - __test__ test files.
 
-## Code Standard:
+### Code Standard:
 - Format code:
 ```
 pip install yapf
@@ -61,10 +74,14 @@ wget -O /tmp/pylintrc https://raw.githubusercontent.com/tensorflow/tensorflow/ma
 pylint --rcfile=/tmp/pylintrc myfile.py
 ```
 
-## Documentation Standard:
+### Documentation Standard:
 http://sphinxcontrib-napoleon.readthedocs.io/en/latest/example_google.html
 
-## Test Help:
+### To test:
+To perfom unit tests, run `python -m unittest discover test`.
+Testing requires significant hardware resources, but nonetheless, we highly recommend that users run through the complete test suite before deploying onnx-tf. The complete test suite typically takes between 15 and 45 minutes to complete, depending on hardware configurations.
+
+#### Test Help:
 https://docs.python.org/2/library/unittest.html
 
 ## Authors:

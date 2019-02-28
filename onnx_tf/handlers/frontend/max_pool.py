@@ -11,3 +11,7 @@ class MaxPool(PoolMixin, FrontendHandler):
   @classmethod
   def version_1(cls, node, **kwargs):
     return cls.pool_op(node, **kwargs)
+
+  @classmethod
+  def version_8(cls, node, **kwargs):
+    return cls.pool_op(node, **kwargs)
