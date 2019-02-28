@@ -86,7 +86,6 @@ def create_test(test_data):
 
       with tf.Session() as sess:
         tf_output = sess.run(test_op, tf_feed_dict)
-        print(tf_output.shape)
       # make sure backend_output and tf_output are Iterable
       if backend_output.ndim == 0:
         backend_output = backend_output.reshape(1)
