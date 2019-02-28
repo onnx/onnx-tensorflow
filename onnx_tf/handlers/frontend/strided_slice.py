@@ -47,44 +47,58 @@ class StridedSlice(FrontendHandler):
       """
         Args:
             mask (int): The begin or end mask
-            range_array (str): Onnx tensor name corresponding to the begin or end tensor.
+            range_array (str): Onnx tensor name corresponding to the
+              begin or end tensor.
             begin_or_end_str (str): "begin" or "end".
-            preprocessing_node (list): Array corresponding to the list of preprocessing nodes.
+            preprocessing_node (list): Array corresponding to the list
+              of preprocessing nodes.
         Returns:
-            str: returns Onnx tensor name corresponding to the processed begin or end tensor.
-            In case where no processing is needed, the original begin or end tensor is returned.
+            str: returns Onnx tensor name corresponding to the processed
+            begin or end tensor. In case where no processing is needed,
+            the original begin or end tensor is returned.
       """
 
+      # If there's no mask, return original range array.
       if mask == 0:
         return range_array
 
-      axes_name = "{}_{}_axes".format(node.name, begin_or_end_str)
+      # Indices and values for scatter to upadate begin or end array.
+      # For instance if begin array is [1, 2, 3] and set axes in mask is
+      # [1, 2], then we need to update begin array to [1, 0, 0].
+      # To do so we construct Scatter operator with:
+      # - data = [1, 2, 3]
+      # - indices = [[1, 2]]
+      # - updates = [0, 0]
+      indices_name = "{}_{}_indices".format(node.name, begin_or_end_str)
       values_name = "{}_{}_values".format(node.name, begin_or_end_str)
+      kwargs["additional_constants"][indices_name] = np.array(
+          map(lambda x: [x], cls._int_to_set_pos_list(mask))).astype(np.int64)
 
-      kwargs["additional_constants"][axes_name] = np.array(
-          map(lambda x: [x], cls._int_to_set_pos_list(mask))).astype(np.int32)
+      # Value to replace is 0 for begin array (slice from the very beginning of
+      # this dimension) and -1 for end array (slice till the very end of
+      # this dimension)
+      value = 0 if begin_or_end_str == "begin" else -1
+      kwargs["additional_constants"][values_name] = np.array(
+            [value for i in cls._int_to_set_pos_list(mask)]).astype(np.int64)
 
-      if begin_or_end_str == "begin":
-        kwargs["additional_constants"][values_name] = np.array(
-            [0 for i in cls._int_to_set_pos_list(mask)]).astype(np.int64)
-      else:
-        kwargs["additional_constants"][values_name] = np.array(
-            [-1 for i in cls._int_to_set_pos_list(mask)]).astype(np.int64)
-
-      range_cast_node_name = "{}_{}_range_casted".format(node.name, begin_or_end_str)
+      # We cast range array to int64.
+      range_cast_node_name = "{}_{}_range_casted".format(
+          node.name, begin_or_end_str)
       range_cast_node = Cast.handle(
-        TensorflowNode(
-            name=range_cast_node_name,
-            inputs=[range_array],
-            outputs=[range_cast_node_name],
-            attr={"DstT": tf.int64}))
+          TensorflowNode(
+              name=range_cast_node_name,
+              inputs=[range_array],
+              outputs=[range_cast_node_name],
+              attr={"DstT": tf.int64}))
 
+      # Create processed(masked) range array.
       range_masked_node_name = "{}_{}_masked".format(node.name,
                                                      begin_or_end_str)
-
       range_masked_node = cls.make_node(
-          "Scatter", [range_cast_node_name, axes_name, values_name],
+          "Scatter", [range_cast_node_name, indices_name, values_name],
           [range_masked_node_name], range_masked_node_name)
+
+      # Include cast and scatter node as preprocessing nodes.
       preprocessing_node.extend([range_masked_node, range_cast_node])
       return range_masked_node_name
 
@@ -117,4 +131,5 @@ class StridedSlice(FrontendHandler):
         node.outputs,
         node.name,
         axes=shrink_axis)
+
     return preprocessing_node + [slice_node, squeeze_node]
