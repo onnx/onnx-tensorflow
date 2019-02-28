@@ -115,7 +115,6 @@ test_cases = [
 ("test_cast", tf.cast, "Cast", [get_rnd([10, 10]), tf.float16], {}),
 ("test_size", tf.size, "Size", [get_rnd([5, 5])], {}),
 ("test_ceil", tf.ceil, "Ceil", [get_rnd([10, 10], -10, 10)], {}),
-# ("test_constant_fill", tf.fill, "Fill", [[1, 2, 3], 1], {}),
 ("test_exp", tf.exp, "Exp", [get_rnd([10, 10])], {}),
 ("test_expand_dims", tf.expand_dims, "ExpandDims", [get_rnd([1, 2, 3, 4])], {"axis": 1}),
 ("test_floor", tf.floor, "Floor", [get_rnd([10, 10], -10, 10)], {}),
