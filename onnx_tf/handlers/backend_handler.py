@@ -171,7 +171,7 @@ class BackendHandler(Handler):
     else:
       # use closure to get args for function using decorator
       if tf_func.__closure__ is not None:
-        params = tf_func.__closure__[1].cell_contents.args
+        params = tf_func.__closure__[0].cell_contents.args
       else:
         params = inspect.getargspec(tf_func).args
 
