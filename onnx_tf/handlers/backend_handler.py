@@ -171,7 +171,9 @@ class BackendHandler(Handler):
     else:
       # use closure to get args for function using decorator
       if tf_func.__closure__ is not None:
-        params = inspect.getargspec(tf_func.func_dict["__wrapped__"]).args
+        while "__wrapped__" in tf_func.func_dict:
+          tf_func = tf_func.func_dict["__wrapped__"]
+        params = inspect.getargspec(tf_func).args
       else:
         params = inspect.getargspec(tf_func).args
 
