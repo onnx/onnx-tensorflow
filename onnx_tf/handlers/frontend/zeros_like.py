@@ -5,7 +5,7 @@ from onnx_tf.handlers.frontend_handler import FrontendHandler
 from onnx_tf.handlers.frontend.shape import Shape
 from onnx_tf.handlers.handler import onnx_op
 from onnx_tf.handlers.handler import tf_op
-
+from onnx_tf.pb_wrapper import TensorflowNode
 
 @onnx_op("Constant")
 @tf_op("ZerosLike")
@@ -25,7 +25,7 @@ class ZerosLike(FrontendHandler):
     input_tensor_shape_node = Shape.handle(
           TensorflowNode(
               name=input_tensor_shape,
-              inputs=[range_array],
+              inputs=[input_tensor],
               outputs=[input_tensor_shape]))
 
     zeros_name = "zeros_" + get_unique_suffix()
