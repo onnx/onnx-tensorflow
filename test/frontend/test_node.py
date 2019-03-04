@@ -4,6 +4,7 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import unittest
+import onnx
 import numpy as np
 import tensorflow as tf
 from collections import Iterable
@@ -15,6 +16,7 @@ from onnx import checker
 from onnx_tf.backend import prepare
 from onnx_tf.common.legacy import legacy_opset_pre_ver
 
+SAVE_ONNX_TEST_MODEL = False
 
 def get_node_by_name(nodes, name):
   for node in nodes:
@@ -46,6 +48,7 @@ def create_test(test_data):
 
   def do_test_expected(self):
     tf.reset_default_graph()
+    test_name = test_data[0]
     tf_op = test_data[1]
     output_name = test_data[2]
     inputs = test_data[3]
@@ -73,6 +76,9 @@ def create_test(test_data):
         tf_graph,
         output_name,
         ignore_unimplemented=test_option.get("ignore_unimplemented", False))
+    # Save onnx model as a debugging utility.
+    if SAVE_ONNX_TEST_MODEL:
+      onnx.save(onnx_model, "{}.onnx".format(test_name))
     if not test_option.get("ignore_unimplemented", False):
       checker.check_model(onnx_model)
       backend_rep = prepare(onnx_model)

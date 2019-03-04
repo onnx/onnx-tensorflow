@@ -56,12 +56,22 @@ class StridedSlice(FrontendHandler):
         Returns:
             str: returns Onnx tensor name corresponding to the processed
             begin or end tensor. In case where no processing is needed,
-            the original begin or end tensor is returned.
+            the casted (to int64) begin or end tensor is returned.
       """
 
-      # If there's no mask, return original range array.
-      if mask == 0:
-        return range_array
+      # If there's no mask, we cast range array to int64 and return.
+      range_cast_node_name = "{}_{}_range_casted".format(
+          node.name, begin_or_end_str)
+      range_cast_node = Cast.handle(
+          TensorflowNode(
+              name=range_cast_node_name,
+              inputs=[range_array],
+              outputs=[range_cast_node_name],
+              attr={"DstT": tf.int64}))
+      preprocessing_node.append(range_cast_node)
+
+      if mask == 0 or mask is None:
+        return range_cast_node_name
 
       # Indices and values for scatter to upadate begin or end array.
       # For instance if begin array is [1, 2, 3] and set axes in mask is
@@ -82,16 +92,6 @@ class StridedSlice(FrontendHandler):
       kwargs["additional_constants"][values_name] = np.array(
             [value for i in cls._int_to_set_pos_list(mask)]).astype(np.int64)
 
-      # We cast range array to int64.
-      range_cast_node_name = "{}_{}_range_casted".format(
-          node.name, begin_or_end_str)
-      range_cast_node = Cast.handle(
-          TensorflowNode(
-              name=range_cast_node_name,
-              inputs=[range_array],
-              outputs=[range_cast_node_name],
-              attr={"DstT": tf.int64}))
-
       # Create processed(masked) range array.
       range_masked_node_name = "{}_{}_masked".format(node.name,
                                                      begin_or_end_str)
@@ -100,7 +100,7 @@ class StridedSlice(FrontendHandler):
           [range_masked_node_name], range_masked_node_name)
 
       # Include cast and scatter node as preprocessing nodes.
-      preprocessing_node.extend([range_masked_node, range_cast_node])
+      preprocessing_node.append(range_masked_node)
       return range_masked_node_name
 
     begin_node_name = process_range_mask(begin_mask, begin_node_name, "begin",
