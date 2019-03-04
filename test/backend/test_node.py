@@ -202,15 +202,16 @@ class TestNode(unittest.TestCase):
       output = run_node(node_def, [vector])
       np.testing.assert_equal(output["output"].dtype, tf_type)
 
-    test_cases2 = [(TensorProto.FLOAT, tf.float32),
+    if not legacy_opset_pre_ver(9):
+      test_cases2 = [(TensorProto.FLOAT, tf.float32),
                    (TensorProto.INT32, tf.int32),
                    (TensorProto.INT64, tf.int64),
                    (TensorProto.DOUBLE, tf.float64)]
-    for ty, tf_type in test_cases2:
-      node_def = helper.make_node("Cast", ["input"], ["output"], to=ty)
-      vector = ['2', '3']
-      output = run_node(node_def, [vector])
-      np.testing.assert_equal(output["output"].dtype, tf_type)
+      for ty, tf_type in test_cases2:
+        node_def = helper.make_node("Cast", ["input"], ["output"], to=ty)
+        vector = ['2', '3']
+        output = run_node(node_def, [vector])
+        np.testing.assert_equal(output["output"].dtype, tf_type)
 
   def test_ceil(self):
     node_def = helper.make_node("Ceil", ["X"], ["Y"])
