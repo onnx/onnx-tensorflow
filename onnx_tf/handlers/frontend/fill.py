@@ -18,11 +18,19 @@ class Fill(FrontendHandler):
       exception.CONST_NOT_FOUND_EXCEPT(node.inputs[1], node.op_type)
 
   @classmethod
+  def version_1(cls, node, **kwargs):
+    value = float(np.asscalar(kwargs["consts"][node.inputs[1]]))
+    return cls.make_node_from_tf_node(
+        node, [node.inputs[0]],
+        op_type="ConstantFill",
+        input_as_shape=1,
+        value=value)
+
+  @classmethod
   def version_9(cls, node, **kwargs):
     value_np_dtype = kwargs["consts"][node.inputs[1]].dtype
     value = np.asscalar(kwargs["consts"][node.inputs[1]])
     onnx_type = any_dtype_to_onnx_dtype(np_dtype=value_np_dtype)
-    tensor_value = onnx.helper.make_tensor("value", onnx_type, [1],
-                                           [value])
+    tensor_value = onnx.helper.make_tensor("value", onnx_type, [1], [value])
     return cls.make_node_from_tf_node(
         node, [node.inputs[0]], value=tensor_value)
