@@ -10,6 +10,7 @@ from onnx_tf.handlers.handler import onnx_op
 from onnx_tf.handlers.handler import tf_op
 from onnx_tf.pb_wrapper import TensorflowNode
 
+
 @onnx_op("DynamicSlice")
 @tf_op("StridedSlice")
 @experimental
@@ -83,14 +84,15 @@ class StridedSlice(FrontendHandler):
       indices_name = "{}_{}_indices".format(node.name, begin_or_end_str)
       values_name = "{}_{}_values".format(node.name, begin_or_end_str)
       kwargs["additional_constants"][indices_name] = np.array(
-          map(lambda x: [x], cls._int_to_set_pos_list(mask))).astype(np.int64)
+          list(map(lambda x: [x],
+                   cls._int_to_set_pos_list(mask)))).astype(np.int64)
 
       # Value to replace is 0 for begin array (slice from the very beginning of
       # this dimension) and -1 for end array (slice till the very end of
       # this dimension)
       value = 0 if begin_or_end_str == "begin" else -1
       kwargs["additional_constants"][values_name] = np.array(
-            [value for i in cls._int_to_set_pos_list(mask)]).astype(np.int64)
+          [value for i in cls._int_to_set_pos_list(mask)]).astype(np.int64)
 
       # Create processed(masked) range array.
       range_masked_node_name = "{}_{}_masked".format(node.name,
