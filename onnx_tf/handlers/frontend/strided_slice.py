@@ -90,7 +90,7 @@ class StridedSlice(FrontendHandler):
       # Value to replace is 0 for begin array (slice from the very beginning of
       # this dimension) and -1 for end array (slice till the very end of
       # this dimension)
-      value = 0 if begin_or_end_str == "begin" else -1
+      value = 0 if begin_or_end_str == "begin" else 99999
       kwargs["additional_constants"][values_name] = np.array(
           [value for i in cls._int_to_set_pos_list(mask)]).astype(np.int64)
 

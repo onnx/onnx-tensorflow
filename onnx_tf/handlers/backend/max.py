@@ -31,4 +31,8 @@ class Max(BackendHandler):
 
   @classmethod
   def version_8(cls, node, **kwargs):
-    return cls._common(node, **kwargs)
+    if len(node.inputs) == 2:
+      values = [kwargs["tensor_dict"][inp] for inp in node.inputs]
+      return [tf.maximum(*values)]
+    else:
+      return cls._common(node, **kwargs)
