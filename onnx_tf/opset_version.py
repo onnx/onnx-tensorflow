@@ -107,7 +107,7 @@ backend_opset_version = {
     'Scatter': [],
     'Selu': [1, 6],
     'Shape': [1],
-    'Shrink': [],
+    'Shrink': [9],
     'Sigmoid': [1, 6],
     'Sign': [9],
     'Sin': [7],
