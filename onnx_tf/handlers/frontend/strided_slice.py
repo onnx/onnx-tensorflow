@@ -3,11 +3,14 @@ import numpy as np
 from onnx_tf.common import exception
 from onnx_tf.common import get_unique_suffix
 from onnx_tf.handlers.frontend_handler import FrontendHandler
+from onnx_tf.handlers.handler import experimental
 from onnx_tf.handlers.handler import onnx_op
 from onnx_tf.handlers.handler import tf_op
 
+
 @onnx_op("DynamicSlice")
 @tf_op("StridedSlice")
+@experimental
 class StridedSlice(FrontendHandler):
 
   @classmethod
@@ -23,7 +26,7 @@ class StridedSlice(FrontendHandler):
     return np.where([bool(num & (1 << n)) for n in range(num_bit)])[0].tolist()
 
   @classmethod
-  def version_9(cls, node, **kwargs):
+  def version_1(cls, node, **kwargs):
     begin_mask = node.attr.get("begin_mask", 0)
     end_mask = node.attr.get("end_mask", 0)
     ellipsis_mask = node.attr.get("ellipsis_mask", 0)
@@ -43,7 +46,7 @@ class StridedSlice(FrontendHandler):
                             new_axis_mask > 0 or shrink_axis_mask > 0)
 
     slice_suffix = "_" + get_unique_suffix() if need_post_processing else ""
-    slice_output_name = cls.get_outputs_names(node)[0]
+    slice_output_name = node.outputs[0]
     slice_node = cls.make_node("DynamicSlice", node.inputs[0:3],
                                [slice_output_name + slice_suffix],
                                node.name + slice_suffix)
@@ -54,7 +57,7 @@ class StridedSlice(FrontendHandler):
     shrink_axis = cls._int_to_set_pos_list(shrink_axis_mask)
     squeeze_node = cls.make_node(
         "Squeeze", [slice_output_name + slice_suffix],
-        cls.get_outputs_names(node),
+        node.outputs,
         node.name,
         axes=shrink_axis)
     return [slice_node, squeeze_node]

@@ -20,3 +20,20 @@ class Cast(BackendHandler):
   @classmethod
   def version_6(cls, node, **kwargs):
     return [cls.make_tensor_from_onnx_node(node, **kwargs)]
+
+  @classmethod
+  def version_9(cls, node, **kwargs):
+    inp = kwargs["tensor_dict"][node.inputs[0]]
+    to_type = node.attrs.get("to")
+
+    if to_type == tf.string:
+      return [tf.as_string(inp)]
+
+    if inp.dtype == tf.string:
+      if to_type not in [tf.float32, tf.float64, tf.int32, tf.int64]:
+        raise RuntimeError(
+            "Cast string to type {} is not supported in Tensorflow.".format(
+                to_type))
+      return [tf.strings.to_number(inp, to_type)]
+
+    return [cls.make_tensor_from_onnx_node(node, **kwargs)]

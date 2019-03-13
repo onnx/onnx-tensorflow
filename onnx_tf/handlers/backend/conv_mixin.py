@@ -113,7 +113,7 @@ class ConvMixin(BroadcastMixin):
         # use raw input x to do transposed conv
         conv_rs = conv_func(
             x,
-            weights,
+            weight,
             conv_output_shape,
             strides_full,
             padding="VALID",

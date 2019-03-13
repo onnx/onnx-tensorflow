@@ -35,8 +35,8 @@ class InstanceNormalization(BackendHandler):
     inputs_rank = inputs.shape.ndims
 
     moments_axes = list(range(inputs_rank))[2:]
-    params_shape_broadcast = list(
-        [1, inputs_shape[1].value] + [1 for _ in range(2, inputs_rank)])
+    params_shape_broadcast = list([1, inputs_shape[1].value] +
+                                  [1 for _ in range(2, inputs_rank)])
 
     beta = tf.reshape(beta, params_shape_broadcast)
     gamma = tf.reshape(gamma, params_shape_broadcast)

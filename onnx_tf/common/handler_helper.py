@@ -79,12 +79,15 @@ def get_all_backend_handlers(opset_dict):
 def get_frontend_coverage():
   """ Get frontend coverage for document.
 
-  :return: onnx_coverage: e.g. {'domain': {'ONNX_OP': [versions], ...}, ...}
+  :return: dict of frontend coverages
+  onnx_coverage: e.g. {'domain': {'ONNX_OP': [versions], ...}, ...}
   tf_coverage: e.g. {'domain': {'TF_OP': [versions], ...}, ...}
+  experimental_op: e.g. {'ONNX_OP'...}
   """
 
   tf_coverage = {}
   onnx_coverage = {}
+  experimental_op = set()
   for handler in FrontendHandler.__subclasses__():
     handler.check_cls()
     versions = handler.get_versions()
@@ -92,8 +95,14 @@ def get_frontend_coverage():
     for tf_op in handler.TF_OP:
       _update_coverage(tf_coverage, domain, tf_op, versions)
     if handler.ONNX_OP:
-      _update_coverage(onnx_coverage, domain, handler.ONNX_OP, versions)
-  return onnx_coverage, tf_coverage
+      onnx_op = handler.ONNX_OP
+      if getattr(handler, "EXPERIMENTAL", False):
+        experimental_op.add(handler.ONNX_OP)
+      _update_coverage(onnx_coverage, domain, onnx_op, versions)
+  return dict(
+      onnx_coverage=onnx_coverage,
+      tf_coverage=tf_coverage,
+      experimental_op=experimental_op)
 
 
 def get_backend_coverage():
@@ -103,13 +112,16 @@ def get_backend_coverage():
   """
 
   onnx_coverage = {}
+  experimental_op = set()
   for handler in BackendHandler.__subclasses__():
     handler.check_cls()
 
     versions = handler.get_versions()
     domain = handler.DOMAIN
+    if getattr(handler, "EXPERIMENTAL", False):
+      experimental_op.add(handler.ONNX_OP)
     _update_coverage(onnx_coverage, domain, handler.ONNX_OP, versions)
-  return onnx_coverage
+  return onnx_coverage, experimental_op
 
 
 def _update_coverage(coverage, domain, key, versions):

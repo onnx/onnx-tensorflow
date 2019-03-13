@@ -54,8 +54,9 @@ class RNNMixin(object):
   @classmethod
   def rnn_get_activation(cls, name, alpha, beta):
     if name not in cls.ONNX_ACTIVATION_MAPPING:
-      exception.OP_UNSUPPORTED_EXCEPT("Activation function {} for {}".format(
-          name, cls.__name__), "Tensorflow")
+      exception.OP_UNSUPPORTED_EXCEPT(
+          "Activation function {} for {}".format(name, cls.__name__),
+          "Tensorflow")
     activation = cls.ONNX_ACTIVATION_MAPPING[name]
     kwargs = {}
     if name == "affine":
