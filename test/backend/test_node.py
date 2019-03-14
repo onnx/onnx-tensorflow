@@ -194,8 +194,9 @@ class TestNode(unittest.TestCase):
                     (TensorProto.DOUBLE,
                      tf.float64), (TensorProto.COMPLEX64,
                                    tf.complex64), (TensorProto.COMPLEX128,
-                                                   tf.complex128),
-                    (TensorProto.STRING, tf.string)]
+                                                   tf.complex128)]
+      if not legacy_opset_pre_ver(9):
+         test_cases.append((TensorProto.STRING, tf.string))
     for ty, tf_type in test_cases:
       node_def = helper.make_node("Cast", ["input"], ["output"], to=ty)
       vector = [2, 3]
