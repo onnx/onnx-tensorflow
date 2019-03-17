@@ -82,7 +82,7 @@ ______
 |Mul|1, 6, 7|
 |Multinomial|N/A|
 |Neg|1, 6|
-|NonZero|N/A|
+|NonZero|9|
 |Not|1|
 |OneHot|N/A|
 |Or|1, 7|

@@ -75,7 +75,7 @@ backend_opset_version = {
     'Mul': [1, 6, 7],
     'Multinomial': [],
     'Neg': [1, 6],
-    'NonZero': [],
+    'NonZero': [9],
     'Not': [1],
     'OneHot': [],
     'Or': [1, 7],

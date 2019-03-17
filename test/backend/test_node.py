@@ -194,8 +194,9 @@ class TestNode(unittest.TestCase):
                     (TensorProto.DOUBLE,
                      tf.float64), (TensorProto.COMPLEX64,
                                    tf.complex64), (TensorProto.COMPLEX128,
-                                                   tf.complex128),
-                    (TensorProto.STRING, tf.string)]
+                                                   tf.complex128)]
+      if not legacy_opset_pre_ver(9):
+         test_cases.append((TensorProto.STRING, tf.string))
     for ty, tf_type in test_cases:
       node_def = helper.make_node("Cast", ["input"], ["output"], to=ty)
       vector = [2, 3]
@@ -720,6 +721,17 @@ class TestNode(unittest.TestCase):
     x = self._get_rnd([1000])
     output = run_node(node_def, [x])
     np.testing.assert_almost_equal(output["Y"], np.negative(x))
+
+  def test_non_zero(self):
+    if legacy_opset_pre_ver(9):
+      raise unittest.SkipTest(
+          "ONNX version {} doesn't support NonZero.".format(
+              defs.onnx_opset_version()))
+    node_def = helper.make_node("NonZero", ["x"], ["y"])
+    x = self._get_rnd([3, 4, 5])
+    y = np.array(np.nonzero(x))
+    output = run_node(node_def, [x])
+    np.testing.assert_equal(output["y"], y)
 
   def test_relu(self):
     node_def = helper.make_node("Relu", ["X"], ["Y"])
