@@ -16,9 +16,4 @@ before_install:
   - docker pull winnietsang/onnx-tensoflow:onnx1.3.0-tf1.13.1
 
 script:
-  - docker run -it --name=onnx-tf-travis winnietsang/onnx-tensoflow:onnx1.3.0-tf1.13.1 /bin/bash
-  - git clone https://github.com/YOUR-USERNAME/onnx-tensorflow.git
-  - cd onnx-tensorflow
-  - # git checkout -b YOUR-BRANCH --track remotes/origin/YOUR-BRANCH
-  - pip3 install -e .
-  - python3 -m unittest discover test
+  - docker run winnietsang/onnx-tensoflow:onnx1.3.0-tf1.13.1 /bin/sh -c "git clone https://github.com/onnx/onnx-tensorflow.git;cd onnx-tensorflow;pip install -e .;python3 -m unittest discover test"
