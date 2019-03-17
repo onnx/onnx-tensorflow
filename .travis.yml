@@ -16,7 +16,7 @@ before_install:
   - source ./.travis/setup.sh
 
 script:
-  - docker run -it -d --name=test winnietsang/${DOCKER_CONTAINER_NAME} /bin/bash
+  - docker run -it -d --name=test winnietsang/onnx-tensoflow:${DOCKER_CONTAINER_NAME} /bin/bash
   - docker cp onnx-tensorflow test:/root/programs/
   - docker exec test pip install -e ./onnx-tensorflow
   - docker exec test python -m unittest discover test
