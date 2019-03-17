@@ -4,22 +4,21 @@ os:
 dist: trusty
 sudo: required
 language: python
+services:
+  - docker
+
 cache: pip
 python:
   - "2.7"
   - "3.6"
 
-install:
-  - ./.travis/install.sh
+before_install:
+  - docker pull winnietsang/onnx-tensoflow:onnx1.3.0-tf1.13.1
 
 script:
-  - ./.travis/build.sh
-
-cache:
-  - directories:
-    - $HOME/.build_cache
-    - $HOME/.ccache
-
-env:
-  - PB_VERSION=2.6.1 ONNX_BUILD_FROM=MASTER
-  - PB_VERSION=2.6.1 ONNX_BUILD_FROM=RELEASE
+  - docker run -it --name=onnx-tf-travis winnietsang/onnx-tensoflow:onnx1.3.0-tf1.13.1 /bin/bash
+  - git clone https://github.com/YOUR-USERNAME/onnx-tensorflow.git
+  - cd onnx-tensorflow
+  - # git checkout -b YOUR-BRANCH --track remotes/origin/YOUR-BRANCH
+  - pip3 install -e .
+  - python3 -m unittest discover test
