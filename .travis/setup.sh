@@ -8,7 +8,7 @@ if [ $? -eq 0 ]; then
 else
 	echo "This is a non-release test for onnx-tf."
 	# TODO: switch to a docker file that always pulls the tip of onnx and tf.
-	export DOCKER_CONTAINER_NAME="onnx1.4.1-tf1.13.1"
+	export DOCKER_CONTAINER_NAME="onnx1.3.0-tf1.13.1"
 fi
 
 echo "Docker container is determined to be ${DOCKER_CONTAINER_NAME}."
