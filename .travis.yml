@@ -13,7 +13,7 @@ python:
   - "3.6"
 
 before_install:
-  ./.travis/setup.sh
+  - source ./.travis/setup.sh
 
 script:
   - docker run -it -d --name=test winnietsang/${DOCKER_CONTAINER_NAME} /bin/bash
