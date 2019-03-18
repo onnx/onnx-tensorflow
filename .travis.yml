@@ -18,4 +18,4 @@ before_install:
 script:
   - docker run -it -d --name=test winnietsang/onnx-tensoflow:${DOCKER_CONTAINER_NAME} /bin/bash
   - cd .. && docker cp onnx-tensorflow test:/root/programs/
-  - docker exec --name=test winnietsang/onnx-tensoflow:${DOCKER_CONTAINER_NAME} /bin/sh -c "ls; cd onnx-tensorflow;pip install -e .;python -m unittest discover test"
+  - docker exec test winnietsang/onnx-tensoflow:${DOCKER_CONTAINER_NAME} /bin/sh -c "ls; cd onnx-tensorflow;pip install -e .;python -m unittest discover test"
