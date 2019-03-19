@@ -11,5 +11,5 @@ if [ $? -eq 0 ]; then
 else
 	echo "This is a non-release test for onnx-tf."
 	docker build -t=test-image ./.travis/onnx-master_tf-nightly
-	docker run -t -d --name=test test-img /bin/bash
+	docker run -t -d --name=test test-image /bin/bash
 fi
