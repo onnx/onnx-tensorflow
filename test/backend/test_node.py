@@ -254,6 +254,10 @@ class TestNode(unittest.TestCase):
     np.testing.assert_almost_equal(output["Y"].flatten(), values)
 
   def test_constant_fill(self):
+    if not legacy_opset_pre_ver(9):
+      raise unittest.SkipTest(
+          "ONNX version {} doesn't support ConstantFill.".format(
+              defs.onnx_opset_version()))
     shape = [1, 2, 3, 4]
     extra_shape = [5, 6]
     value = 3.
@@ -998,6 +1002,17 @@ class TestNode(unittest.TestCase):
     output = run_node(node_def, [x])
     np.testing.assert_almost_equal(output["Y"], np.transpose(x, (0, 2, 1)))
 
+  def test_where(self):
+    if legacy_opset_pre_ver(9):
+      raise unittest.SkipTest(
+          "ONNX version {} doesn't support Where.".format(
+              defs.onnx_opset_version()))
+    node_def = helper.make_node("Where", ["C","X","Y"], ["Z"])
+    c = np.array([[1, 0], [1, 1]], dtype=np.bool)
+    x = np.array([[1, 2], [3, 4]], dtype=np.float32)
+    y = np.array([[9, 8], [7, 6]], dtype=np.float32)
+    output = run_node(node_def, [c,x,y])
+    np.testing.assert_almost_equal(output["Z"], np.where(c,x,y))
 
 if __name__ == '__main__':
   unittest.main()

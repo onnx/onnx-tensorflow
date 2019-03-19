@@ -37,7 +37,7 @@ ______
 |DepthToSpace|1|
 |Div|1, 6, 7|
 |Dropout|1, 6, 7|
-|DynamicSlice|1|
+|DynamicSlice [EXPERIMENTAL]|1|
 |Elu|1, 6|
 |Equal|1, 7|
 |Erf|9|
@@ -139,7 +139,7 @@ ______
 |Transpose|1|
 |Unsqueeze|1|
 |Upsample|7, 9|
-|Where|N/A|
+|Where|9|
 |Xor|1, 7|
 
 
