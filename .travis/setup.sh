@@ -10,5 +10,5 @@ if [ $? -eq 0 ]; then
 	docker run -t -d --name=test winnietsang/onnx-tensoflow:${DOCKER_CONTAINER_NAME} /bin/bash
 else
 	echo "This is a non-release test for onnx-tf."
-	docker build -t test onnx-master_tf-nightly && docker run -t -d test
+	docker build -t test ./.travis/onnx-master_tf-nightly && docker run -t -d test
 fi
