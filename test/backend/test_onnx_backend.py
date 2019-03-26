@@ -37,6 +37,7 @@ if legacy_opset_pre_ver(7):
 
 if 'TRAVIS' in os.environ:
   backend_test.exclude('test_vgg19')
+  backend_test.exclude('zfnet512')
 
 if legacy_onnx_pre_ver(1, 2):
   # These following tests fails by a tiny margin with onnx<1.2:

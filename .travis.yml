@@ -4,22 +4,17 @@ os:
 dist: trusty
 sudo: required
 language: python
+services:
+  - docker
+
 cache: pip
 python:
   - "2.7"
   - "3.6"
 
-install:
-  - ./.travis/install.sh
+before_install:
+  - source ./.travis/setup.sh
 
 script:
-  - ./.travis/build.sh
-
-cache:
-  - directories:
-    - $HOME/.build_cache
-    - $HOME/.ccache
-
-env:
-  - PB_VERSION=2.6.1 ONNX_BUILD_FROM=MASTER
-  - PB_VERSION=2.6.1 ONNX_BUILD_FROM=RELEASE
+  - cd .. && docker cp onnx-tensorflow test:/root/programs/
+  - docker exec -e TRAVIS=1 -t test /bin/bash -c "cd onnx-tensorflow && pip install -e . && python -m unittest discover test"
