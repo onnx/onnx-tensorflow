@@ -863,6 +863,19 @@ class TestNode(unittest.TestCase):
     output = run_node(node_def, [x])
     np.testing.assert_allclose(output["Y"], np.shape(x))
 
+  def test_shrink(self):
+    if legacy_opset_pre_ver(9):
+      raise unittest.SkipTest(
+          "ONNX version {} doesn't support Shrink.".format(
+              defs.onnx_opset_version()))
+
+    node_def = helper.make_node("Shrink", ["X"], ["Y"], bias=1.5, lambd=1.5)
+
+    X = np.arange(-2.0, 2.1, dtype=np.float32)
+    Y = np.array([-0.5, 0, 0, 0, 0.5], dtype=np.float32)
+    output = run_node(node_def, [X])
+    np.testing.assert_almost_equal(output["Y"], Y)
+
   def test_sigmoid(self):
     node_def = helper.make_node("Sigmoid", ["X"], ["Y"])
     x = self._get_rnd([1000])
