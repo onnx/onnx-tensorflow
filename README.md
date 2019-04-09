@@ -1,21 +1,21 @@
-# Tensorflow Backend and Frontend for ONNX
+# Tensorflow Backend for ONNX
 [![Build Status](https://travis-ci.org/onnx/onnx-tensorflow.svg?branch=master)](https://travis-ci.org/onnx/onnx-tensorflow)
 
-## To convert models between Tensorflow and ONNX:
+## To convert models from ONNX to Tensorflow:
 
 ### Use CLI:
 
 [Command Line Interface Documentation](https://github.com/onnx/onnx-tensorflow/blob/master/doc/CLI.md)
 
-From Tensorflow to ONNX: `onnx-tf convert -t onnx -i /path/to/input.pb -o /path/to/output.onnx`
-
 From ONNX to Tensorflow: `onnx-tf convert -t tf -i /path/to/input.onnx -o /path/to/output.pb`
 
 ### Convert programmatically:
 
-[From Tensorflow to ONNX](https://github.com/onnx/onnx-tensorflow/blob/master/example/tf_to_onnx.py)
-
 [From ONNX to Tensorflow](https://github.com/onnx/onnx-tensorflow/blob/master/example/onnx_to_tf.py)
+
+### Migrating from `onnx-tf` to `tf-onnx`:
+We have joined force with Microsoft to co-develop ONNX Tensorflow frontend.
+For current onnx-tf frontend users, please consider migrating to use tf-onnx (https://github.com/onnx/tensorflow-onnx) where our code will be merged into.
 
 ## ONNX model inference with Tensorflow backend:
 ```
