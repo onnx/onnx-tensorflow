@@ -156,14 +156,16 @@ class LSTM(RNNMixin, BackendHandler):
       cell_kwargs["num_units"] = hidden_size
       initial_state = None
       initial_state_bw = None
-      if input_size >= 7:
+      if input_size >= 6:
         initial_h = tensor_dict.get(node.inputs[5], None)
-        initial_c = tensor_dict.get(node.inputs[6], None)
+        initial_c = tensor_dict.get(
+            node.inputs[6],
+            None) if input_size >= 7 else tf.zeros_like(initial_h)
         if initial_h is not None and initial_c is not None:
           initial_state = (tf.nn.rnn_cell.LSTMStateTuple(
               initial_c[0], initial_h[0]),)
           if num_directions == 2:
-            initial_state_bw = initial_state = (tf.nn.rnn_cell.LSTMStateTuple(
+            initial_state_bw = (tf.nn.rnn_cell.LSTMStateTuple(
                 initial_c[1], initial_h[1]),)
 
       rnn_kwargs = {}
