@@ -37,7 +37,7 @@ ______
 |DepthToSpace|1|
 |Div|1, 6, 7|
 |Dropout|1, 6, 7|
-|DynamicSlice [EXPERIMENTAL]|1|
+|DynamicSlice|1|
 |Elu|1, 6|
 |Equal|1, 7|
 |Erf|9|
@@ -114,7 +114,7 @@ ______
 |Scatter|N/A|
 |Selu|1, 6|
 |Shape|1|
-|Shrink|N/A|
+|Shrink|9|
 |Sigmoid|1, 6|
 |Sign|9|
 |Sin|7|
@@ -216,6 +216,7 @@ ______
 |Reshape|1, 5|
 |ResizeBilinear|9|
 |Rsqrt|1|
+|Select|9|
 |Selu|1, 6|
 |Shape|1|
 |Sigmoid|1, 6|
