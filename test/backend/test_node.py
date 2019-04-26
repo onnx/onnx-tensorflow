@@ -913,20 +913,38 @@ class TestNode(unittest.TestCase):
     axes = [0, 1, 2]
     starts = [0, 0, 0]
     ends = [2, 2, 2]
-    node_def = helper.make_node(
+    steps = [1, 1, 1]
+
+    if legacy_opset_pre_ver(10):
+      node_def = helper.make_node(
         "Slice", ["X"], ["S"], axes=axes, starts=starts, ends=ends)
-    x = self._get_rnd([1000]).reshape([10, 10, 10])
-    output = run_node(node_def, [x])
-    np.testing.assert_almost_equal(output["S"], x[0:2, 0:2, 0:2])
+      x = self._get_rnd([1000]).reshape([10, 10, 10])
+      output = run_node(node_def, [x])
+      np.testing.assert_almost_equal(output["S"], x[0:2, 0:2, 0:2])
+    else:
+      node_def = helper.make_node(
+        "Slice", ["X", "starts", "ends", "axes", "steps"], ["S"])
+      x = self._get_rnd([1000]).reshape([10, 10, 10])
+      output = run_node(node_def, [x, starts, ends, axes, steps])
+      np.testing.assert_almost_equal(output["S"], x[0:2, 0:2, 0:2])
+
     # test case 2 with negative, out-of-bound and default inputs
     axes = [0, 2]
     starts = [0, -7]
     ends = [-8, 20]
-    node_def = helper.make_node(
+
+    if legacy_opset_pre_ver(10):
+      node_def = helper.make_node(
         "Slice", ["X"], ["S"], axes=axes, starts=starts, ends=ends)
-    x = self._get_rnd([1000]).reshape([10, 10, 10])
-    output = run_node(node_def, [x])
-    np.testing.assert_almost_equal(output["S"], x[0:-8, :, -7:20])
+      x = self._get_rnd([1000]).reshape([10, 10, 10])
+      output = run_node(node_def, [x])
+      np.testing.assert_almost_equal(output["S"], x[0:-8, :, -7:20])
+    else:
+      node_def = helper.make_node(
+        "Slice", ["X", "starts", "ends", "axes", "steps"], ["S"])
+      x = self._get_rnd([1000]).reshape([10, 10, 10])
+      output = run_node(node_def, [x, starts, ends, axes, steps])
+      np.testing.assert_almost_equal(output["S"], x[0:-8, :, -7:20])
 
   def test_softplus(self):
     node_def = helper.make_node("Softplus", ["X"], ["Y"])
