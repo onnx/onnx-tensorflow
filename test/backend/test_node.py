@@ -1039,6 +1039,20 @@ class TestNode(unittest.TestCase):
     output = run_node(node_def, [x])
     np.testing.assert_almost_equal(output["Y"], np.transpose(x, (0, 2, 1)))
 
+  def test_topk(self):
+    x = np.arange(15, dtype=np.float32).reshape(3, 5)
+    values = np.array([[4, 3], [9, 8], [14, 13]], dtype=np.float32)
+    indices = np.array([[4, 3],[4, 3],[4, 3]], dtype=np.int64)
+    if legacy_opset_pre_ver(10): # for opset = 1
+      node_def = helper.make_node("TopK", ["x"], ["values", "indices"], k=2)
+      output = run_node(node_def, [x])
+    else: # for opset = 10
+      k = np.array([2], dtype=np.int64)
+      node_def = helper.make_node("TopK", ["x", "k"], ["values", "indices"])
+      output = run_node(node_def, [x, k])
+    np.testing.assert_almost_equal(output["values"], values)
+    np.testing.assert_almost_equal(output["indices"], indices)
+
   def test_where(self):
     if legacy_opset_pre_ver(9):
       raise unittest.SkipTest(

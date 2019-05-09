@@ -6,13 +6,6 @@ ONNX-Tensorflow Command Line Interface
 
 More information: `onnx-tf -h`
 ```
-
-WARNING: The TensorFlow contrib module will not be included in TensorFlow 2.0.
-For more information, please see:
-  * https://github.com/tensorflow/community/blob/master/rfcs/20180907-contrib-sunset.md
-  * https://github.com/tensorflow/addons
-If you depend on functionality not listed there, please file an issue.
-
 usage: onnx-tf [-h] {convert,check,optimize}
 
 ONNX-Tensorflow Command Line Interface
@@ -43,13 +36,6 @@ optional arguments:
 
 More information: `onnx-tf convert -h`
 ```
-
-WARNING: The TensorFlow contrib module will not be included in TensorFlow 2.0.
-For more information, please see:
-  * https://github.com/tensorflow/community/blob/master/rfcs/20180907-contrib-sunset.md
-  * https://github.com/tensorflow/addons
-If you depend on functionality not listed there, please file an issue.
-
 usage: onnx-tf [-h] --infile INFILE --outfile OUTFILE --convert_to {onnx,tf}
                [--graph GRAPH] [--device DEVICE] [--strict STRICT]
                [--output OUTPUT] [--opset OPSET]
