@@ -970,10 +970,23 @@ class TestNode(unittest.TestCase):
       np.testing.assert_almost_equal(output["S"], x[0:-8, :, -7:20])
     else:
       node_def = helper.make_node(
+        "Slice", ["X", "starts", "ends", "axes"], ["S"])
+      x = self._get_rnd([1000]).reshape([10, 10, 10])
+      output = run_node(node_def, [x, starts, ends, axes])
+      np.testing.assert_almost_equal(output["S"], x[0:-8, :, -7:20])
+
+    # test case 3 with non-default steps
+    axes = [0, 1, 2]
+    starts = [0, 0, 0]
+    ends = [2, 2, 2]
+    steps = [2, -2, -1]
+
+    if legacy_opset_pre_ver(10) == False:
+      node_def = helper.make_node(
         "Slice", ["X", "starts", "ends", "axes", "steps"], ["S"])
       x = self._get_rnd([1000]).reshape([10, 10, 10])
       output = run_node(node_def, [x, starts, ends, axes, steps])
-      np.testing.assert_almost_equal(output["S"], x[0:-8, :, -7:20])
+      np.testing.assert_almost_equal(output["S"], x[0:2:2, 0:2:-2, 0:2:-1])
 
   def test_softplus(self):
     node_def = helper.make_node("Softplus", ["X"], ["Y"])
