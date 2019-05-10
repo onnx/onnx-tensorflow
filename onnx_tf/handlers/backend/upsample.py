@@ -20,7 +20,7 @@ class Upsample(BackendHandler):
     if len(x_shape) != 4:
       exception.OP_UNSUPPORTED_EXCEPT("Upsample without 4D input", "Tensorflow")
 
-    if node.attrs.get("mode", "nearest").lower() not in ["nearest", "bilinear"]:
+    if node.attrs.get("mode", "nearest").lower() not in ["nearest", "bilinear", "linear"]:
       exception.OP_UNSUPPORTED_EXCEPT("Upsample without nearest or bilinear",
                                       "Tensorflow")
 
@@ -34,7 +34,7 @@ class Upsample(BackendHandler):
     new_weight = np.floor(x_shape[3] * scales[3])
 
     mode = attrs.get("mode", "nearest")
-    if mode.lower() == "bilinear":
+    if mode.lower() == "bilinear" or mode.lower() == 'linear':
       mode = tf.image.ResizeMethod.BILINEAR
     else:
       mode = tf.image.ResizeMethod.NEAREST_NEIGHBOR
@@ -64,7 +64,7 @@ class Upsample(BackendHandler):
       new_h_w_shape = tf.cast(h_w_scale * h_w_shape, tf.int32)
 
       mode = attrs.get("mode", "nearest")
-      if mode.lower() == "bilinear":
+      if mode.lower() == "bilinear" or mode.lower() == 'linear':
         mode = tf.image.ResizeMethod.BILINEAR
       else:
         mode = tf.image.ResizeMethod.NEAREST_NEIGHBOR
