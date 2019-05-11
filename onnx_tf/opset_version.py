@@ -81,7 +81,7 @@ backend_opset_version = {
     'Mean': [1, 6, 8],
     'MeanVarianceNormalization': [1],
     'Min': [1, 6, 8],
-    'Mod': [],
+    'Mod': [10],
     'Mul': [1, 6, 7],
     'Multinomial': [],
     'Neg': [1, 6],

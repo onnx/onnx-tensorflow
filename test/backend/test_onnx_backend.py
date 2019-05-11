@@ -32,6 +32,11 @@ backend_test.exclude(
 # PRelu OnnxBackendPyTorchConvertedModelTest has wrong dim for broadcasting
 backend_test.exclude(r'[a-z,_]*PReLU_[0-9]d_multiparam[a-z,_]*')
 
+# TF does not support int8, int16, uint8, uint16, uint32, uint64 for
+# tf.floormod and tf.truncatemod
+backend_test.exclude(r'test_mod_[a-z,_]*uint[0-9]+')
+backend_test.exclude(r'test_mod_[a-z,_]*int(8|(16))+')
+
 if legacy_opset_pre_ver(7):
   backend_test.exclude(r'[a-z,_]*Upsample[a-z,_]*')
 

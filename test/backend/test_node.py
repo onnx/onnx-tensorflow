@@ -736,6 +736,19 @@ class TestNode(unittest.TestCase):
     np.testing.assert_almost_equal(output["Z"],
                                    np.multiply(x, y.reshape([1, 10, 1, 1])))
 
+  def test_mod(self):
+    if legacy_opset_pre_ver(10):
+      raise unittest.SkipTest("ONNX version {} doesn't support Mod.".format(
+          defs.onnx_opset_version()))
+    x = self._get_rnd([5, 5])
+    y = self._get_rnd([5, 5])
+    node_def = helper.make_node("Mod", ["X", "Y"], ["Z"], fmod=0)
+    output = run_node(node_def, [x, y])
+    np.testing.assert_almost_equal(output["Z"], np.mod(x, y))
+    node_def = helper.make_node("Mod", ["X", "Y"], ["Z"], fmod=1)
+    output = run_node(node_def, [x, y])
+    np.testing.assert_almost_equal(output["Z"], np.fmod(x, y))
+
   def test_neg(self):
     node_def = helper.make_node("Neg", ["X"], ["Y"])
     x = self._get_rnd([1000])
