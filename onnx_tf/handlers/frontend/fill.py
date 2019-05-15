@@ -1,3 +1,5 @@
+import numbers
+
 import numpy as np
 
 from onnx_tf.common import exception
@@ -12,6 +14,9 @@ class Fill(FrontendHandler):
 
   @classmethod
   def args_check(cls, node, **kwargs):
+    output_shape = node.attr["_output_shapes"][0]
+    for dim_size in output_shape:
+      assert isinstance(dim_size, numbers.Number)
     if node.inputs[1] not in kwargs["consts"]:
       exception.CONST_NOT_FOUND_EXCEPT(node.inputs[1], node.op_type)
 
@@ -20,3 +25,11 @@ class Fill(FrontendHandler):
     value = float(np.asscalar(kwargs["consts"][node.inputs[1]]))
     return cls.make_node_from_tf_node(
         node, [node.inputs[0]], input_as_shape=1, value=value)
+
+  @classmethod
+  def version_9(cls, node, **kwargs):
+    output_shape = node.attr["_output_shapes"][0]
+    value = float(np.asscalar(kwargs["consts"][node.inputs[1]]))
+    outputs = cls.get_outputs_names(node)
+    return cls.make_node_from_tf_node(
+        node, [], outputs, op_type="ConstantLike", shape=output_shape, value=value)
