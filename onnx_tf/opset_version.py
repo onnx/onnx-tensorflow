@@ -146,7 +146,7 @@ backend_opset_version = {
     'Tan': [7],
     'Tanh': [1, 6],
     'TfIdfVectorizer': [],
-    'ThresholdedRelu': [1],
+    'ThresholdedRelu': [1, 10],
     'Tile': [1, 6],
     'TopK': [1, 10],
     'Transpose': [1],
