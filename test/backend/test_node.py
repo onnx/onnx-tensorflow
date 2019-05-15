@@ -46,9 +46,8 @@ class TestNode(unittest.TestCase):
 
   def test_acosh(self):
     if legacy_opset_pre_ver(9):
-      raise unittest.SkipTest(
-          "ONNX version {} doesn't support Acosh.".format(
-              defs.onnx_opset_version()))
+      raise unittest.SkipTest("ONNX version {} doesn't support Acosh.".format(
+          defs.onnx_opset_version()))
     node_def = helper.make_node("Acosh", ["X"], ["Y"])
     x = self._get_rnd([3, 4, 5])
     output = run_node(node_def, [x])
@@ -98,9 +97,8 @@ class TestNode(unittest.TestCase):
 
   def test_asinh(self):
     if legacy_opset_pre_ver(9):
-      raise unittest.SkipTest(
-          "ONNX version {} doesn't support Asinh.".format(
-              defs.onnx_opset_version()))
+      raise unittest.SkipTest("ONNX version {} doesn't support Asinh.".format(
+          defs.onnx_opset_version()))
     node_def = helper.make_node("Asinh", ["X"], ["Y"])
     x = self._get_rnd([3, 4, 5])
     output = run_node(node_def, [x])
@@ -108,9 +106,8 @@ class TestNode(unittest.TestCase):
 
   def test_atanh(self):
     if legacy_opset_pre_ver(9):
-      raise unittest.SkipTest(
-          "ONNX version {} doesn't support Atanh.".format(
-              defs.onnx_opset_version()))
+      raise unittest.SkipTest("ONNX version {} doesn't support Atanh.".format(
+          defs.onnx_opset_version()))
     node_def = helper.make_node("Atanh", ["X"], ["Y"])
     x = self._get_rnd([3, 4, 5])
     output = run_node(node_def, [x])
@@ -176,25 +173,24 @@ class TestNode(unittest.TestCase):
   def test_cast(self):
     if legacy_onnx_pre_ver(1, 2) or legacy_opset_pre_ver(6):
       test_cases = [("FLOAT", tf.float32), ("UINT8", tf.uint8),
-                    ("INT8", tf.int8), ("UINT16", tf.uint16), ("INT16",
-                                                               tf.int16),
+                    ("INT8", tf.int8),
+                    ("UINT16", tf.uint16), ("INT16", tf.int16),
                     ("INT32", tf.int32), ("INT64", tf.int64), ("BOOL", tf.bool),
                     ("FLOAT16", tf.float16), ("DOUBLE", tf.float64),
                     ("COMPLEX64", tf.complex64), ("COMPLEX128", tf.complex128)]
     else:
-      test_cases = [(TensorProto.FLOAT,
-                     tf.float32), (TensorProto.UINT8,
-                                   tf.uint8), (TensorProto.INT8, tf.int8),
-                    (TensorProto.UINT16,
-                     tf.uint16), (TensorProto.INT16,
-                                  tf.int16), (TensorProto.INT32, tf.int32),
-                    (TensorProto.INT64,
-                     tf.int64), (TensorProto.BOOL,
-                                 tf.bool), (TensorProto.FLOAT16, tf.float16),
-                    (TensorProto.DOUBLE,
-                     tf.float64), (TensorProto.COMPLEX64,
-                                   tf.complex64), (TensorProto.COMPLEX128,
-                                                   tf.complex128)]
+      test_cases = [(TensorProto.FLOAT, tf.float32),
+                    (TensorProto.UINT8, tf.uint8),
+                    (TensorProto.INT8, tf.int8),
+                    (TensorProto.UINT16, tf.uint16),
+                    (TensorProto.INT16, tf.int16),
+                    (TensorProto.INT32, tf.int32),
+                    (TensorProto.INT64, tf.int64),
+                    (TensorProto.BOOL, tf.bool),
+                    (TensorProto.FLOAT16, tf.float16),
+                    (TensorProto.DOUBLE, tf.float64),
+                    (TensorProto.COMPLEX64, tf.complex64),
+                    (TensorProto.COMPLEX128, tf.complex128)]
       if not legacy_opset_pre_ver(9):
          test_cases.append((TensorProto.STRING, tf.string))
     for ty, tf_type in test_cases:
@@ -205,9 +201,9 @@ class TestNode(unittest.TestCase):
 
     if not legacy_opset_pre_ver(9):
       test_cases2 = [(TensorProto.FLOAT, tf.float32),
-                   (TensorProto.INT32, tf.int32),
-                   (TensorProto.INT64, tf.int64),
-                   (TensorProto.DOUBLE, tf.float64)]
+                     (TensorProto.INT32, tf.int32),
+                     (TensorProto.INT64, tf.int64),
+                     (TensorProto.DOUBLE, tf.float64)]
       for ty, tf_type in test_cases2:
         node_def = helper.make_node("Cast", ["input"], ["output"], to=ty)
         vector = ['2', '3']
@@ -281,12 +277,12 @@ class TestNode(unittest.TestCase):
       raise unittest.SkipTest(
           "ONNX version {} doesn't support ConstantOfShape.".format(
               defs.onnx_opset_version()))
-    v=helper.make_tensor("value", TensorProto.FLOAT, [1], [1])
+    v = helper.make_tensor("value", TensorProto.FLOAT, [1], [1])
     node_def = helper.make_node("ConstantOfShape", ["X"], ["Y"], value=v)
     x = np.array([4, 3, 2])
     output = run_node(node_def, inputs=[x])
     np.testing.assert_almost_equal(output["Y"], np.ones(x, dtype=np.float32))
-    v=helper.make_tensor("value", TensorProto.INT32, [1], [0])
+    v = helper.make_tensor("value", TensorProto.INT32, [1], [0])
     node_def = helper.make_node("ConstantOfShape", ["X"], ["Y"], value=v)
     x = np.array([10, 6])
     output = run_node(node_def, inputs=[x])
@@ -359,9 +355,8 @@ class TestNode(unittest.TestCase):
 
   def test_cosh(self):
     if legacy_opset_pre_ver(9):
-      raise unittest.SkipTest(
-          "ONNX version {} doesn't support Cosh.".format(
-              defs.onnx_opset_version()))
+      raise unittest.SkipTest("ONNX version {} doesn't support Cosh.".format(
+          defs.onnx_opset_version()))
     node_def = helper.make_node("Cosh", ["X"], ["Y"])
     x = self._get_rnd([3, 4, 5])
     output = run_node(node_def, [x])
@@ -437,9 +432,8 @@ class TestNode(unittest.TestCase):
 
   def test_erf(self):
     if legacy_opset_pre_ver(9):
-      raise unittest.SkipTest(
-          "ONNX version {} doesn't support Erf.".format(
-              defs.onnx_opset_version()))
+      raise unittest.SkipTest("ONNX version {} doesn't support Erf.".format(
+          defs.onnx_opset_version()))
     node_def = helper.make_node("Erf", ["X"], ["Y"])
     x = self._get_rnd([3, 4, 5])
     output = run_node(node_def, [x])
@@ -550,9 +544,8 @@ class TestNode(unittest.TestCase):
 
   def test_isnan(self):
     if legacy_opset_pre_ver(9):
-      raise unittest.SkipTest(
-          "ONNX version {} doesn't support IsNaN.".format(
-              defs.onnx_opset_version()))
+      raise unittest.SkipTest("ONNX version {} doesn't support IsNaN.".format(
+          defs.onnx_opset_version()))
     node_def = helper.make_node("IsNaN", ["X"], ["Y"])
     x = self._get_rnd([3, 3])
     x[0][1] = x[1][0] = x[2][2] = np.nan
@@ -728,14 +721,29 @@ class TestNode(unittest.TestCase):
 
   def test_non_zero(self):
     if legacy_opset_pre_ver(9):
-      raise unittest.SkipTest(
-          "ONNX version {} doesn't support NonZero.".format(
-              defs.onnx_opset_version()))
+      raise unittest.SkipTest("ONNX version {} doesn't support NonZero.".format(
+          defs.onnx_opset_version()))
     node_def = helper.make_node("NonZero", ["x"], ["y"])
     x = self._get_rnd([3, 4, 5])
     y = np.array(np.nonzero(x))
     output = run_node(node_def, [x])
     np.testing.assert_equal(output["y"], y)
+
+  def test_onehot(self):
+    if legacy_opset_pre_ver(9):
+      raise unittest.SkipTest("ONNX version {} doesn't support OneHot.".format(
+          defs.onnx_opset_version()))
+    indices = np.array([[0, 2], [1, 2], [0, 1]])
+    depth = np.array([5], dtype=np.int32)
+    on_value = 6.0
+    off_value = 2.0
+    values = np.array([off_value, on_value])
+    node_def = helper.make_node(
+        'OneHot', inputs=['indices', 'depth', 'values'], outputs=['y'], axis=-1)
+    y = (np.arange(depth) == indices[..., None]).astype(int)
+    y = y * (on_value - off_value) + off_value
+    output = run_node(node_def, inputs=[indices, depth, values])
+    np.testing.assert_equal(output['y'], y)
 
   def test_relu(self):
     node_def = helper.make_node("Relu", ["X"], ["Y"])
@@ -884,9 +892,8 @@ class TestNode(unittest.TestCase):
 
   def test_sign(self):
     if legacy_opset_pre_ver(9):
-      raise unittest.SkipTest(
-          "ONNX version {} doesn't support Sign.".format(
-              defs.onnx_opset_version()))
+      raise unittest.SkipTest("ONNX version {} doesn't support Sign.".format(
+          defs.onnx_opset_version()))
     node_def = helper.make_node("Sign", ["X"], ["Y"])
     x = self._get_rnd([3, 5], -10, 10)
     output = run_node(node_def, [x])
@@ -894,9 +901,8 @@ class TestNode(unittest.TestCase):
 
   def test_sinh(self):
     if legacy_opset_pre_ver(9):
-      raise unittest.SkipTest(
-          "ONNX version {} doesn't support Sinh.".format(
-              defs.onnx_opset_version()))
+      raise unittest.SkipTest("ONNX version {} doesn't support Sinh.".format(
+          defs.onnx_opset_version()))
     node_def = helper.make_node("Sinh", ["X"], ["Y"])
     x = self._get_rnd([3, 4, 5])
     output = run_node(node_def, [x])
