@@ -58,7 +58,7 @@ backend_opset_version = {
     'ImageScaler': [1],
     'Imputer': [],
     'InstanceNormalization': [1, 6],
-    'IsInf': [],
+    'IsInf': [10],
     'IsNaN': [9],
     'LRN': [1],
     'LSTM': [1, 7],

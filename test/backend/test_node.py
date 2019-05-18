@@ -542,6 +542,29 @@ class TestNode(unittest.TestCase):
     test_out = np.transpose(test_out, [0, 3, 1, 2])
     np.testing.assert_almost_equal(output["Y"], test_out)
 
+  def test_is_inf(self):
+    if legacy_opset_pre_ver(10):
+      raise unittest.SkipTest(
+      "ONNX version {} doesn't support IsInf.".format(
+          defs.onnx_opset_version()))
+    input = np.array([-1.2, np.nan, np.inf, 2.8, np.NINF, np.inf],
+          dtype=np.float32)
+    expected_output = {
+      "node_def": np.isinf(input),
+      "node_def_neg_false": np.isposinf(input),
+      "node_def_pos_false": np.isneginf(input)}
+    node_defs = {
+      "node_def" :
+      helper.make_node("IsInf", ["X"], ["Y"]),
+      "node_def_neg_false" :
+      helper.make_node("IsInf", ["X"], ["Y"], detect_negative = 0),
+      "node_def_pos_false" :
+      helper.make_node("IsInf", ["X"], ["Y"], detect_positive = 0)
+    }
+    for key in node_defs:
+      output = run_node(node_defs[key], [input])
+      np.testing.assert_equal(output["Y"], expected_output[key])
+
   def test_isnan(self):
     if legacy_opset_pre_ver(9):
       raise unittest.SkipTest("ONNX version {} doesn't support IsNaN.".format(
