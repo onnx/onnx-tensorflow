@@ -379,6 +379,20 @@ class TestNode(unittest.TestCase):
     output = run_node(node_def, [x, y])
     np.testing.assert_almost_equal(output["Z"], np.divide(x, y))
 
+  def test_dropout(self):
+    # Since current ONNX only support inference and
+    # dropout at inference mode is a no-op,
+    # therefore dropout is always a no-op operator
+    # in ONNX.
+    node_def = helper.make_node("Dropout", ["X"], ["Y"])
+    if legacy_opset_pre_ver(7):
+      # at inference mode, is_test is always set to 1
+      node_def = helper.make_node("Dropout", ["X"], ["Y"], is_test=1)
+    x = self._get_rnd([3, 4, 5])
+    y = x
+    output = run_node(node_def, [x])
+    np.testing.assert_equal(output["Y"], y)
+
   def test_dot(self):
     # this op is removed
     # remove this test in the future
