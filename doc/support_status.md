@@ -124,7 +124,7 @@ ______
 |ReduceSumSquare|1|
 |Relu|1, 6|
 |Reshape|1, 5|
-|Resize|N/A|
+|Resize|10|
 |ReverseSequence|N/A|
 |RoiAlign|N/A|
 |Round|N/A|

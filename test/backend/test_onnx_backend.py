@@ -76,6 +76,9 @@ backend_test.exclude(r'test_mod_[a-z,_]*int(8|(16))+')
 # tf.one_hot
 backend_test.exclude(r'test_onehot_[a-z,_]*')
 
+# skip resize downsample with mode=linear
+backend_test.exclude(r'test_resize_downsample_linear[a-z,_]*')
+
 if legacy_opset_pre_ver(7):
   backend_test.exclude(r'[a-z,_]*Upsample[a-z,_]*')
 
