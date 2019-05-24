@@ -718,6 +718,23 @@ class TestNode(unittest.TestCase):
               max(x[i1][i2][j1][2*j2], x[i1][i2][j1][2*j2 + 1])
     np.testing.assert_almost_equal(output["Y"], test_output)
 
+  def test_mean_variance_normalization(self):
+    if legacy_opset_pre_ver(9):
+      raise unittest.SkipTest(
+      "ONNX version {} doesn't have test for MeanVarianceNormalization"
+      .format(defs.onnx_opset_version()))
+
+    input_data = self._get_rnd([2,2,2,2])
+    # Calculate expected output data using formula:
+    # (Input - Mean)/SD
+    mean = np.mean(input_data, keepdims=1, axis=(0,2,3))
+    std = np.std(input_data, keepdims=1, axis=(0,2,3))
+    expected_output = (input_data - mean) / std
+    # Testing without "axes" argument should default to axes=[0,2,3]
+    node_def = helper.make_node("MeanVarianceNormalization", ["X"], ["Y"])
+    output = run_node(node_def, [input_data])
+    np.testing.assert_almost_equal(output["Y"], expected_output, decimal=5)
+
   def test_min(self):
     node_def = helper.make_node("Min", ["X1", "X2", "X3", "X4"], ["Z"])
     x1 = self._get_rnd([10, 10])

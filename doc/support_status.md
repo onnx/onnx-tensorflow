@@ -86,7 +86,7 @@ ______
 |MaxRoiPool|N/A|
 |MaxUnpool|N/A|
 |Mean|1, 6, 8|
-|MeanVarianceNormalization|1|
+|MeanVarianceNormalization|1, 9|
 |Min|1, 6, 8|
 |Mod|10|
 |Mul|1, 6, 7|
@@ -165,3 +165,4 @@ ______
 |Where|9|
 |Xor|1, 7|
 |ZipMap|N/A|
+

@@ -79,7 +79,7 @@ backend_opset_version = {
     'MaxRoiPool': [],
     'MaxUnpool': [],
     'Mean': [1, 6, 8],
-    'MeanVarianceNormalization': [1],
+    'MeanVarianceNormalization': [1, 9],
     'Min': [1, 6, 8],
     'Mod': [10],
     'Mul': [1, 6, 7],
