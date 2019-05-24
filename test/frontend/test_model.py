@@ -22,6 +22,7 @@ from tensorflow.python.tools import freeze_graph
 from onnx_tf.frontend import tensorflow_graph_to_onnx_model
 from onnx_tf.backend import prepare
 from onnx_tf.common import supports_device
+from onnx_tf.common.legacy import legacy_opset_pre_ver
 
 
 def get_rnd(shape, low=-1.0, high=1.0, dtype=np.float32, seed=42):
@@ -144,19 +145,20 @@ def create_test(test_model):
   return do_test_expected
 
 
-dir_path = os.path.dirname(os.path.realpath(__file__))
-with open(dir_path + "/test_model.yaml", 'r') as config:
-  try:
-    for test_model in yaml.safe_load_all(config):
-      for device in test_model["devices"]:
-        if supports_device(device):
-          test_method = create_test(test_model)
-          test_name_parts = ["test", test_model["name"], device]
-          test_name = str("_".join(map(str, test_name_parts)))
-          test_method.__name__ = test_name
-          setattr(TestModel, test_method.__name__, test_method)
-  except yaml.YAMLError as exception:
-    print(exception)
+if legacy_opset_pre_ver(10):
+  dir_path = os.path.dirname(os.path.realpath(__file__))
+  with open(dir_path + "/test_model.yaml", 'r') as config:
+    try:
+      for test_model in yaml.safe_load_all(config):
+        for device in test_model["devices"]:
+          if supports_device(device):
+            test_method = create_test(test_model)
+            test_name_parts = ["test", test_model["name"], device]
+            test_name = str("_".join(map(str, test_name_parts)))
+            test_method.__name__ = test_name
+            setattr(TestModel, test_method.__name__, test_method)
+    except yaml.YAMLError as exception:
+      print(exception)
 
 if __name__ == '__main__':
   unittest.main()

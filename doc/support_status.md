@@ -6,22 +6,24 @@ ______
 
 | ONNX Op        | Supported ONNX Version  |
 | -------------- |:------------------:|
-|ATen|N/A|
 |Abs|1, 6|
 |Acos|7|
 |Acosh|9|
 |Add|1, 6, 7|
-|Affine|N/A|
 |And|1, 7|
 |ArgMax|1|
 |ArgMin|1|
+|ArrayFeatureExtractor|N/A|
 |Asin|7|
 |Asinh|9|
 |Atan|7|
 |Atanh|9|
 |AveragePool|1, 7|
 |BatchNormalization|1, 6, 7, 9|
+|Binarizer|N/A|
 |Cast|1, 6, 9|
+|CastMap|N/A|
+|CategoryMapper|N/A|
 |Ceil|1, 6|
 |Clip|1, 6|
 |Compress|9|
@@ -30,11 +32,13 @@ ______
 |ConstantFill|1|
 |ConstantOfShape|9|
 |Conv|1|
+|ConvInteger|N/A|
 |ConvTranspose|1|
 |Cos|7|
 |Cosh|9|
-|Crop|N/A|
 |DepthToSpace|1|
+|DequantizeLinear|N/A|
+|DictVectorizer|N/A|
 |Div|1, 6, 7|
 |Dropout|1, 6, 7|
 |DynamicSlice|1|
@@ -44,13 +48,12 @@ ______
 |Exp|1, 6|
 |Expand|8|
 |EyeLike|9|
+|FeatureVectorizer|N/A|
 |Flatten|1, 9|
 |Floor|1, 6|
 |GRU|1, 3, 7|
-|GRUUnit|N/A|
 |Gather|1|
 |Gemm|1, 6, 7, 9|
-|GivenTensorFill|N/A|
 |GlobalAveragePool|1|
 |GlobalLpPool|1, 2|
 |GlobalMaxPool|1|
@@ -60,18 +63,24 @@ ______
 |Identity|1|
 |If|N/A|
 |ImageScaler|1|
+|Imputer|N/A|
 |InstanceNormalization|1, 6|
+|IsInf|N/A|
 |IsNaN|9|
 |LRN|1|
 |LSTM|1, 7|
+|LabelEncoder|N/A|
 |LeakyRelu|1, 6|
 |Less|1, 7, 9|
+|LinearClassifier|N/A|
+|LinearRegressor|N/A|
 |Log|1, 6|
 |LogSoftmax|1|
 |Loop|N/A|
 |LpNormalization|1|
 |LpPool|N/A|
 |MatMul|1, 9|
+|MatMulInteger|N/A|
 |Max|1, 6, 8|
 |MaxPool|1, 8|
 |MaxRoiPool|N/A|
@@ -79,17 +88,23 @@ ______
 |Mean|1, 6, 8|
 |MeanVarianceNormalization|1|
 |Min|1, 6, 8|
+|Mod|N/A|
 |Mul|1, 6, 7|
 |Multinomial|N/A|
 |Neg|1, 6|
+|NonMaxSuppression|N/A|
 |NonZero|9|
+|Normalizer|N/A|
 |Not|1|
 |OneHot|9|
+|OneHotEncoder|N/A|
 |Or|1, 7|
 |PRelu|1, 6, 7, 9|
 |Pad|1, 2|
-|ParametricSoftplus|N/A|
 |Pow|1, 7|
+|QLinearConv|N/A|
+|QLinearMatMul|N/A|
+|QuantizeLinear|N/A|
 |RNN|1, 7|
 |RandomNormal|1|
 |RandomNormalLike|1|
@@ -108,8 +123,12 @@ ______
 |ReduceSumSquare|1|
 |Relu|1, 6|
 |Reshape|1, 5|
-|Scale|N/A|
-|ScaledTanh|N/A|
+|Resize|N/A|
+|ReverseSequence|N/A|
+|RoiAlign|N/A|
+|SVMClassifier|N/A|
+|SVMRegressor|N/A|
+|Scaler|N/A|
 |Scan|N/A|
 |Scatter|N/A|
 |Selu|1, 6|
@@ -120,7 +139,7 @@ ______
 |Sin|7|
 |Sinh|9|
 |Size|1|
-|Slice|1|
+|Slice|1, 10|
 |Softmax|1|
 |Softplus|1|
 |Softsign|1|
@@ -128,6 +147,7 @@ ______
 |Split|1, 2|
 |Sqrt|1, 6|
 |Squeeze|1|
+|StringNormalizer|N/A|
 |Sub|1, 6, 7|
 |Sum|1, 6, 8|
 |Tan|7|
@@ -135,12 +155,15 @@ ______
 |TfIdfVectorizer|N/A|
 |ThresholdedRelu|1|
 |Tile|1, 6|
-|TopK|1|
+|TopK|1, 10|
 |Transpose|1|
+|TreeEnsembleClassifier|N/A|
+|TreeEnsembleRegressor|N/A|
 |Unsqueeze|1|
 |Upsample|7, 9|
 |Where|9|
 |Xor|1, 7|
+|ZipMap|N/A|
 
 
 Frontend

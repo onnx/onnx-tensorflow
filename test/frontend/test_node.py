@@ -192,10 +192,11 @@ if not legacy_opset_pre_ver(9):
 
 # yapf: enable
 
-for k, val in enumerate(test_cases):
-  test_method = create_test(val)
-  test_method.__name__ = str(val[0])
-  setattr(TestNode, test_method.__name__, test_method)
+if legacy_opset_pre_ver(10):
+  for k, val in enumerate(test_cases):
+    test_method = create_test(val)
+    test_method.__name__ = str(val[0])
+    setattr(TestNode, test_method.__name__, test_method)
 
 if __name__ == '__main__':
   unittest.main()
