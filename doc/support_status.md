@@ -125,7 +125,7 @@ ______
 |Relu|1, 6|
 |Reshape|1, 5|
 |Resize|10|
-|ReverseSequence|N/A|
+|ReverseSequence|10|
 |RoiAlign|N/A|
 |Round|N/A|
 |SVMClassifier|N/A|
