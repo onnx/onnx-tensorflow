@@ -65,7 +65,7 @@ ______
 |ImageScaler|1|
 |Imputer|N/A|
 |InstanceNormalization|1, 6|
-|IsInf|N/A|
+|IsInf|10|
 |IsNaN|9|
 |LRN|1|
 |LSTM|1, 7|
