@@ -36,6 +36,7 @@ class Slice(BackendHandler):
     return [
         cls.make_tensor_from_onnx_node(
             node,
+            tf_func=tf.slice,
             inputs=[
                 tensor_dict[node.inputs[0]],
                 tf.constant(full_begin),
@@ -48,18 +49,15 @@ class Slice(BackendHandler):
   def version_10(cls, node, **kwargs):
     tensor_dict = kwargs["tensor_dict"]
     input_tensor = tensor_dict[node.inputs[0]]
-
     starts = tensor_dict[node.inputs[1]]
     ends = tensor_dict[node.inputs[2]]
+
+    # first of all, get the input tensor shape
+    input_tensor_shape = tf.constant(input_tensor.shape.dims, ends.dtype)
     l = list(range(starts.shape[0]))
+
     axes = tensor_dict[node.inputs[3]] if len(
         node.inputs) >= 4 else tf.constant(l, ends.dtype)
-    steps = tensor_dict[node.inputs[4]] if len(
-        node.inputs) >= 5 else tf.constant(l, ends.dtype)
-    # first of all, compute sparse shape, that is:
-    # for (axis in axes):
-    #   sparse_shape[axis] = input_tensor.shape[axis]
-    input_tensor_shape = tf.constant(input_tensor.shape.dims, ends.dtype)
 
     # expand a dimension of 1 at the end
     sparse_indices = tf.expand_dims(axes, -1)
@@ -99,11 +97,22 @@ class Slice(BackendHandler):
         tf.equal(dense_ends, tf.constant(-1, dtype=dense_begins.dtype)),
         input_tensor_shape, dense_ends)
 
+    # create dense tensor for steps if not already so
+    if len(node.inputs) >= 5:
+      dense_steps = tf.sparse_to_dense(
+          sparse_indices,
+          output_shape,
+          tensor_dict[node.inputs[4]],
+          default_value=tf.constant(1, dtype=tensor_dict[node.inputs[4]].dtype))
+    else:
+      dense_steps = tf.ones(input_tensor_shape.shape, ends.dtype)
+
     return [
         cls.make_tensor_from_onnx_node(
             node,
             inputs=[
-                tensor_dict[node.inputs[0]], dense_begins, dense_ends, steps
+                tensor_dict[node.inputs[0]], dense_begins, dense_ends,
+                dense_steps
             ],
             **kwargs)
     ]
