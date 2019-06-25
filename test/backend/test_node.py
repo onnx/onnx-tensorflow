@@ -1071,6 +1071,16 @@ class TestNode(unittest.TestCase):
     output = run_node(node_def, [x])
     np.testing.assert_almost_equal(output["Y"], np.tanh(x), decimal=5)
 
+  def test_thresholded_relu(self):
+    alpha = 2.0
+    node_def = helper.make_node(
+        "ThresholdedRelu", ["X"], ["Y"], alpha=alpha)
+    x = self._get_rnd([10], -3.0, 3.0)
+    y = np.clip(x, alpha, np.inf)
+    y[y == alpha] = 0
+    output = run_node(node_def, [x])
+    np.testing.assert_almost_equal(output["Y"], y)
+
   def test_tile(self):
     if legacy_onnx_pre_ver(1, 2):
       raise unittest.SkipTest(
