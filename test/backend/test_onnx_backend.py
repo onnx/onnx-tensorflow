@@ -37,6 +37,10 @@ backend_test.exclude(r'[a-z,_]*PReLU_[0-9]d_multiparam[a-z,_]*')
 backend_test.exclude(r'test_mod_[a-z,_]*uint[0-9]+')
 backend_test.exclude(r'test_mod_[a-z,_]*int(8|(16))+')
 
+# TF only support uint8, int32, int64 for indices and int32 for depth in
+# tf.one_hot
+backend_test.exclude(r'test_onehot_[a-z,_]*')
+
 if legacy_opset_pre_ver(7):
   backend_test.exclude(r'[a-z,_]*Upsample[a-z,_]*')
 

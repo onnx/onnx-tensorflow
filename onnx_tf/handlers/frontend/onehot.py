@@ -27,7 +27,6 @@ class OneHot(FrontendHandler):
     depth = node.inputs[1]
     axis = node.attr.get('axis', -1)
 
-    import pdb; pdb.set_trace()
     on_value = kwargs['consts'][node.inputs[2]].item(0)
     off_value = kwargs['consts'][node.inputs[3]].item(0)
     values = np.array([off_value, on_value])
