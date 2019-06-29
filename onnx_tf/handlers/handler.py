@@ -16,11 +16,10 @@ class Handler(object):
   """ This class is base handler class.
   Base backend and frontend base handler class inherit this class.
 
-  All operator handler MUST put decorator @onnx_op and @tf_op to register corresponding op.
+  All operator handler MUST put decorator @onnx_op to register corresponding op.
   """
 
   ONNX_OP = None
-  TF_OP = []
 
   DOMAIN = defs.ONNX_DOMAIN
   VERSION = 0
@@ -39,7 +38,7 @@ class Handler(object):
     """ Check args. e.g. if shape info is in graph.
     Raise exception if failed.
 
-    :param node: NodeProto for backend or TensorflowNode for frontend.
+    :param node: NodeProto for backend.
     :param kwargs: Other args.
     """
     pass
@@ -50,9 +49,9 @@ class Handler(object):
     whose name format is `version_%d`. So prefix `version_` is reserved in onnx-tensorflow.
     DON'T use it for other purpose.
 
-    :param node: NodeProto for backend or TensorflowNode for frontend.
+    :param node: NodeProto for backend.
     :param kwargs: Other args.
-    :return: NodeProto for frontend or TensorflowNode for backend.
+    :return: TensorflowNode for backend.
     """
     ver_handle = getattr(cls, "version_{}".format(cls.SINCE_VERSION), None)
     if ver_handle:
@@ -78,19 +77,8 @@ class Handler(object):
     return Handler.property_register("ONNX_OP", op)
 
   @staticmethod
-  def tf_op(op):
-    ops = op
-    if not isinstance(ops, list):
-      ops = [ops]
-    return Handler.property_register("TF_OP", ops)
-
-  @staticmethod
   def tf_func(func):
     return Handler.property_register("TF_FUNC", func)
-
-  @staticmethod
-  def experimental(func):
-    return Handler.property_register("EXPERIMENTAL", True)(func)
 
   @staticmethod
   def domain(d):
@@ -110,8 +98,6 @@ class Handler(object):
 
 
 domain = Handler.domain
-experimental = Handler.experimental
 onnx_op = Handler.onnx_op
-tf_op = Handler.tf_op
 tf_func = Handler.tf_func
 property_register = Handler.property_register
