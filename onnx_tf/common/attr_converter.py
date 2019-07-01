@@ -24,8 +24,6 @@ def __convert_tf_attr_value(attr):
     return attr.b
   elif attr.HasField('type'):
     return attr.type
-  elif attr.HasField('body'):
-    return attr.body
   elif attr.HasField('shape'):
     return attr.type
   elif attr.HasField('tensor'):
