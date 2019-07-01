@@ -35,11 +35,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 RUN pip install --upgrade pip
 RUN apt remove -y python-pip
-RUN pip install wheel ipython==5.0 numpy scipy pyyaml pytest
+RUN pip install wheel ipython==5.0 numpy scipy pyyaml pytest tabulate future
 
 RUN pip3 install --upgrade pip
 RUN apt remove -y python3-pip
-RUN pip3 install wheel ipython==5.0 numpy scipy pyyaml pytest
+RUN pip3 install wheel ipython==5.0 numpy scipy pyyaml pytest tabulate future
 
 RUN mkdir -p /root/programs
 
