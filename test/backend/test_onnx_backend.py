@@ -64,33 +64,9 @@ if legacy_onnx_pre_ver(1, 2):
 
 # The onnx test for cast, float to string, does not work
 if not legacy_opset_pre_ver(9):
-  backend_test.exclude(r'[a-z,_]*mvn[a-z,_]*')
   backend_test.exclude(r'[a-z,_]*cast[a-z,_]*')
-  backend_test.exclude(r'[a-z,_]*tfidfvectorizer[a-z,_]*')
-  backend_test.exclude(r'[a-z,_]*maxunpool[a-z,_]*')
 
-if not legacy_opset_pre_ver(10):
-  backend_test.exclude(r'[a-z,_]*strnorm[a-z,_]*')
-  backend_test.exclude(r'[a-z,_]*nonmaxsuppression[a-z,_]*')
-  backend_test.exclude(r'[a-z,_]*resize[a-z,_]*')
-  backend_test.exclude(r'[a-z,_]*reversesequence[a-z,_]*')
-  backend_test.exclude(r'[a-z,_]*test_qlinearmatmul[a-z,_]*')
-  backend_test.exclude(r'[a-z,_]*maxpool[a-z,_]*')
-  backend_test.exclude(r'[a-z,_]*convinteger[a-z,_]*')
-  backend_test.exclude(r'[a-z,_]*roialign[a-z,_]*')
-  backend_test.exclude(r'[a-z,_]*quantizelinear[a-z,_]*')
-  backend_test.exclude(r'[a-z,_]*qlinearconv[a-z,_]*')
-  backend_test.exclude(r'[a-z,_]*matmulinteger[a-z,_]*')
-  backend_test.exclude(r'[a-z,_]*dequantizelinear[a-z,_]*')
-  backend_test.exclude(r'[a-z,_]*averagepool[a-z,_]*')
-  backend_test.exclude(r'[a-z,_]*scatter[a-z,_]*')
-  backend_test.exclude(r'[a-z,_]*topk[a-z,_]*')
-
-if not legacy_opset_pre_ver(11):
-  backend_test.exclude(r'[a-z,_]*bitshift[a-z,_]*')
-  backend_test.exclude(r'[a-z,_]*round[a-z,_]*')
-
-# import all test cases at global scope to make them visible to python.unittest
+# Importo all test cases at global scope to make them visible to python.unittest
 globals().update(backend_test.enable_report().test_cases)
 
 if __name__ == '__main__':
