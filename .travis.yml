@@ -17,4 +17,4 @@ before_install:
 
 script:
   - cd .. && docker cp onnx-tensorflow test:/root/programs/
-  - docker exec -e TRAVIS=1 -t test /bin/bash -c "cd onnx-tensorflow && pip install -e . && pytest --disable-pytest-warnings test"
+  - docker exec -e TRAVIS=1 -t test /bin/bash -c "cd onnx-tensorflow && pip install -e . onnx=1.3.0 && pytest --disable-pytest-warnings test"

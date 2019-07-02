@@ -66,7 +66,7 @@ if legacy_onnx_pre_ver(1, 2):
 if not legacy_opset_pre_ver(9):
   backend_test.exclude(r'[a-z,_]*cast[a-z,_]*')
 
-# Importo all test cases at global scope to make them visible to python.unittest
+# import all test cases at global scope to make them visible to python.unittest
 globals().update(backend_test.enable_report().test_cases)
 
 if __name__ == '__main__':
