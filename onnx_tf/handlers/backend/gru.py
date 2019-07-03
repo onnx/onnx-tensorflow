@@ -18,9 +18,6 @@ class GRU(RNNMixin, BackendHandler):
     num_directions = 2 if direction == "bidirectional" else 1
     if "clip" in node.attrs:
       exception.OP_UNSUPPORTED_EXCEPT("GRU with clip", "Tensorflow")
-    if node.attrs.get("linear_before_reset", 0):
-      exception.OP_UNSUPPORTED_EXCEPT("GRU with linear_before_reset",
-                                      "Tensorflow")
     if "activations" in node.attrs:
       activations = list(map(lambda x: x.lower(), node.attrs["activations"]))
       if activations[0] != "sigmoid":
@@ -63,11 +60,16 @@ class GRU(RNNMixin, BackendHandler):
       if names[-2] == "gates":
         new_w = tf.transpose(tf.concat([w_r, w_z], 0))
         new_r = tf.transpose(tf.concat([r_r, r_z], 0))
-      elif names[-2] == "candidate":
+      elif names[-2] == "candidate" or names[-3] == "candidate":
         new_w = tf.transpose(w_h)
         new_r = tf.transpose(r_h)
-      kernel = tf.concat([new_w, new_r], 0)
-      return kernel
+      if names[-2] == 'input_projection':
+        return new_w
+      elif names[-2] == 'hidden_projection':
+        return new_r
+      else:
+        return tf.concat([new_w, new_r], 0)
+
     if names[-1] == "bias":
       if len(node.inputs) >= 4:
         # onnx Wb[zrh], Rb[zrh]
@@ -81,10 +83,15 @@ class GRU(RNNMixin, BackendHandler):
         if names[-2] == "gates":
           w_b = tf.transpose(tf.concat([w_b_r, w_b_z], 0))
           r_b = tf.transpose(tf.concat([r_b_r, r_b_z], 0))
-        elif names[-2] == "candidate":
+        elif names[-2] == "candidate" or names[-3] == "candidate":
           w_b = tf.transpose(w_b_h)
           r_b = tf.transpose(r_b_h)
-        return tf.add(w_b, r_b)
+        if names[-2] == 'input_projection':
+          return w_b
+        elif names[-2] == 'hidden_projection':
+          return r_b
+        else:
+          return tf.add(w_b, r_b)
       return getter(name, *args, **kwargs)
     return getter(name, *args, **kwargs)
 
@@ -158,7 +165,12 @@ class GRU(RNNMixin, BackendHandler):
       rnn_kwargs["time_major"] = True
       rnn_kwargs["dtype"] = tf.float32
 
-      outputs, states = cls.rnn(x, tf.nn.rnn_cell.GRUCell, cell_kwargs,
+      if node.attrs.get("linear_before_reset", 0):
+        cell_class = tf.contrib.cudnn_rnn.CudnnCompatibleGRUCell
+      else:
+        cell_class = tf.nn.rnn_cell.GRUCell
+
+      outputs, states = cls.rnn(x, cell_class, cell_kwargs,
                                 rnn_kwargs, tf_activations, direction)
 
     if num_directions == 1:
