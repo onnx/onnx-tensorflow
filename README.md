@@ -15,7 +15,7 @@ From ONNX to Tensorflow: `onnx-tf convert -t tf -i /path/to/input.onnx -o /path/
 
 ### Migrating from `onnx-tf` to `tf-onnx`:
 We have joined force with Microsoft to co-develop ONNX Tensorflow frontend.
-For current onnx-tf frontend users, please migrate to use tf-onnx (https://github.com/onnx/tensorflow-onnx) where our code had  be merged into.
+For current onnx-tf frontend users, please migrate to use tf-onnx (https://github.com/onnx/tensorflow-onnx) where our code had been merged into.
 
 ## ONNX model inference with Tensorflow backend:
 ```
