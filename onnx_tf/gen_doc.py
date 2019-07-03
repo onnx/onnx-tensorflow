@@ -11,7 +11,6 @@ import subprocess
 from onnx_tf import opset_version
 import onnx_tf.backend
 import onnx_tf.backend_rep
-import onnx_tf.frontend
 from third_party import get_info
 
 
@@ -25,9 +24,6 @@ def gen_api(docs_dir):
   gen_doc_for = {
       'onnx_tf.backend': [
           onnx_tf.backend.prepare,
-      ],
-      'onnx_tf.frontend': [
-          onnx_tf.frontend.tensorflow_graph_to_onnx_model,
       ],
       'onnx_tf.backend_rep.TensorflowRep': [
           onnx_tf.backend_rep.TensorflowRep.export_graph,
@@ -67,18 +63,6 @@ def gen_support_status(docs_dir):
     status_file.write('| ONNX Op        | Supported ONNX Version  |\n')
     status_file.write('| -------------- |:------------------:|\n')
     for key, val in sorted(opset_version.backend_opset_version.items()):
-      version_str = str(val)[1:-1]
-      status_file.write("|{}|{}|\n".format(
-          key, version_str if len(version_str) else "N/A"))
-
-    status_file.write('\n\n')
-
-    status_file.write('Frontend\n')
-    status_file.write('______\n\n')
-
-    status_file.write('| Tensorflow Op        | Supported ONNX Version  |\n')
-    status_file.write('| -------------- |:------------------:|\n')
-    for key, val in sorted(opset_version.frontend_tf_opset_version.items()):
       version_str = str(val)[1:-1]
       status_file.write("|{}|{}|\n".format(
           key, version_str if len(version_str) else "N/A"))
