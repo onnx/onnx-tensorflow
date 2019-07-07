@@ -6,57 +6,37 @@ ONNX-Tensorflow Command Line Interface
 
 More information: `onnx-tf -h`
 ```
-usage: onnx-tf [-h] {convert,check,optimize}
+usage: onnx-tf [-h] {convert}
 
 ONNX-Tensorflow Command Line Interface
 
 positional arguments:
-  {convert,check,optimize}
-                        Available commands.
+  {convert}   Available commands.
 
 optional arguments:
-  -h, --help            show this help message and exit
+  -h, --help  show this help message and exit
 ```
 
 ## Usage:
 
 ### Convert:
 
-#### From Tensorflow to ONNX:
-
-- Use frozen pb:
-`onnx-tf convert -t onnx -i /path/to/input.pb -o /path/to/output.onnx`
-
-- Use ckpt:
-`onnx-tf convert -t onnx -i /path/to/input.ckpt -o /path/to/output.onnx`
-(`/path/to` folder should contain files: `checkpoint`, `*.ckpt-{step}.data-*`, `*.ckpt-{step}.index`, `.ckpt-{step}.meta`)
-
 #### From ONNX to Tensorflow:
 `onnx-tf convert -t tf -i /path/to/input.onnx -o /path/to/output.pb`
 
 More information: `onnx-tf convert -h`
 ```
-usage: onnx-tf [-h] --infile INFILE --outfile OUTFILE --convert_to {onnx,tf}
-               [--graph GRAPH] [--device DEVICE] [--strict STRICT]
-               [--output OUTPUT] [--opset OPSET]
-               [--ignore_unimplemented IGNORE_UNIMPLEMENTED]
-               [--optimizer_passes OPTIMIZER_PASSES]
-               [--rnn_type {GRU,LSTM,RNN}]
+usage: onnx-tf [-h] --infile INFILE --outfile OUTFILE [--device DEVICE]
+               [--strict STRICT]
 
 This is the converter for converting protocol buffer between tf and onnx.
 
 optional arguments:
   -h, --help            show this help message and exit
   --infile INFILE, -i INFILE
-                        Input file path, can be pb or ckpt file.
+                        Input file path.
   --outfile OUTFILE, -o OUTFILE
                         Output file path.
-  --convert_to {onnx,tf}, -t {onnx,tf}
-                        Format converted to.
-  --graph GRAPH, -g GRAPH
-                        Inference graph, which is obtained by optimizing or
-                        editing the training graph for better training
-                        usability.
 
 backend arguments (onnx -> tf):
   --device DEVICE       The device to execute this model on. (from
@@ -67,31 +47,4 @@ backend arguments (onnx -> tf):
                         Changing to False is strongly discouraged. Currently,
                         the strict flag only affects the behavior of MaxPool
                         and AveragePool ops. (from onnx_tf.backend.prepare)
-
-frontend arguments (tf -> onnx):
-  --output OUTPUT       List of string or a string specifying the name of the
-                        output graph node. (from
-                        onnx_tf.frontend.tensorflow_graph_to_onnx_model)
-  --opset OPSET         Opset version number, list or tuple. Default is 0
-                        means using latest version with domain ''. List or
-                        tuple items should be (str domain, int version
-                        number). (from
-                        onnx_tf.frontend.tensorflow_graph_to_onnx_model)
-  --ignore_unimplemented IGNORE_UNIMPLEMENTED
-                        Convert to ONNX model and ignore all the operators
-                        that are not currently supported by onnx-tensorflow.
-                        This is an experimental feature. By enabling this
-                        feature, the model would not be guaranteed to match
-                        the ONNX specifications. (from
-                        onnx_tf.frontend.tensorflow_graph_to_onnx_model)
-  --optimizer_passes OPTIMIZER_PASSES
-                        List of optimization names c.f. https://github.com/onn
-                        x/onnx/blob/master/onnx/optimizer.py for available
-                        optimization passes. (from
-                        onnx_tf.frontend.tensorflow_graph_to_onnx_model)
-
-EXPERIMENTAL ARGUMENTS:
-  --rnn_type {GRU,LSTM,RNN}
-                        RNN graph type if using experimental feature: convert
-                        rnn graph to onnx.
 ```

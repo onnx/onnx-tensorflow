@@ -11,8 +11,6 @@ from tensorflow.python.tools import freeze_graph
 
 import onnx_tf.backend as backend
 from onnx_tf.common import get_unique_suffix
-import onnx_tf.experiment.frontend as experiment_frontend
-import onnx_tf.frontend as frontend
 from onnx_tf.pb_wrapper import TensorflowGraph
 
 logging.basicConfig(level=logging.DEBUG)
@@ -101,37 +99,16 @@ def parse_args(args):
   parser.add_argument(
       "--infile",
       "-i",
-      help="Input file path, can be pb or ckpt file.",
+      help="Input file path.",
       required=True)
   parser.add_argument(
       "--outfile", "-o", help="Output file path.", required=True)
-  parser.add_argument(
-      "--convert_to",
-      "-t",
-      choices=["onnx", "tf"],
-      help="Format converted to.",
-      required=True)
-  parser.add_argument(
-      "--graph",
-      "-g",
-      help=
-      "Inference graph, which is obtained by optimizing or editing the training graph for better training usability."
-  )
 
   def add_argument_group(parser, group_name, funcs):
     group = parser.add_argument_group(group_name)
     param_doc_dict = get_param_doc_dict(funcs)
     for k, v in param_doc_dict.items():
       group.add_argument("--{}".format(k), help=v["doc"], **v["params"])
-
-  def add_experimental_args(parser):
-    group = parser.add_argument_group("EXPERIMENTAL ARGUMENTS")
-    group.add_argument(
-        "--rnn_type",
-        choices=["GRU", "LSTM", "RNN"],
-        help=
-        "RNN graph type if using experimental feature: convert rnn graph to onnx."
-    )
 
   # backend args
   # Args must be named consistently with respect to backend.prepare.
@@ -140,112 +117,23 @@ def parse_args(args):
                          "device": {},
                          "strict": {}
                      })])
-
-  # frontend args
-  # Args must be named consistently with respect to frontend.tensorflow_graph_to_onnx_model.
-  add_argument_group(parser, "frontend arguments (tf -> onnx)",
-                     [(frontend.tensorflow_graph_to_onnx_model, {
-                         "output": {
-                             "action": ListAction,
-                             "dest": "output"
-                         },
-                         "opset": {
-                             "action": OpsetAction,
-                         },
-                         "ignore_unimplemented": {
-                             "type": bool
-                         },
-                         "optimizer_passes": {
-                             "action": ListAction,
-                             "dest": "optimizer_passes"
-                         }
-                     })])
-
-  add_experimental_args(parser)
-
+ 
   return parser.parse_args(args)
 
 
-def convert(infile, outfile, convert_to, graph=None, **kwargs):
+def convert(infile, outfile, **kwargs):
   """Convert pb.
 
   Args:
     infile: Input path.
     outfile: Output path.
-    convert_to: Format converted to.
-    graph: Inference graph.
     **kwargs: Other args for converting.
 
   Returns:
     None.
   """
-  if convert_to == "tf":
-    logger.info("Start converting onnx pb to tf pb:")
-    onnx_model = onnx.load(infile)
-    tf_rep = backend.prepare(onnx_model, **kwargs)
-    tf_rep.export_graph(outfile)
-  elif convert_to == "onnx":
-    ext = os.path.splitext(infile)[1]
-    logger.info("Start converting tf pb to onnx pb:")
-    if ext == ".pb":
-      with open(infile, "rb") as f:
-        graph_def = graph_pb2.GraphDef()
-        graph_def.ParseFromString(f.read())
-    elif ext == ".ckpt":
-      latest_ckpt = tf.train.latest_checkpoint(os.path.dirname(infile))
-      saver = tf.train.import_meta_graph(latest_ckpt + ".meta")
-      temp_file_suffix = get_unique_suffix()
-      workdir = 'onnx-tf_workdir_{}'.format(temp_file_suffix)
-      with tf.Session() as sess:
-        sess.run([
-            tf.global_variables_initializer(),
-            tf.local_variables_initializer()
-        ])
-        saver.restore(sess, latest_ckpt)
-        # Take users' hint or deduce output node automatically.
-        kwargs["output"] = kwargs.get(
-            "output",
-            TensorflowGraph.get_output_node_names(sess.graph.as_graph_def()))
-
-        # Save the graph to disk for freezing.
-        tf.train.write_graph(
-            sess.graph.as_graph_def(add_shapes=True),
-            workdir,
-            "input_model.pb",
-            as_text=False)
-
-      # Freeze graph:
-      freeze_graph.freeze_graph(
-          input_graph=graph or workdir + "/input_model.pb",
-          input_saver="",
-          input_binary=True,
-          input_checkpoint=latest_ckpt,
-          output_node_names=",".join(kwargs["output"]),
-          restore_op_name="",
-          filename_tensor_name="",
-          output_graph=workdir + "/frozen_model.pb",
-          clear_devices=True,
-          initializer_nodes="")
-
-      # Load back the frozen graph.
-      with open(workdir + "/frozen_model.pb", "rb") as f:
-        graph_def = graph_pb2.GraphDef()
-        graph_def.ParseFromString(f.read())
-
-      # Remove work directory.
-      shutil.rmtree(workdir)
-    else:
-      raise ValueError(
-          "Input file is not supported. Should be .pb or .ckpt, but get {}".
-          format(ext))
-
-    kwargs["output"] = kwargs.get(
-        "output", TensorflowGraph.get_output_node_names(graph_def))
-
-    if "rnn_type" in kwargs:
-      onnx_model = experiment_frontend.rnn_tf_graph_to_onnx_model(
-          graph_def, **kwargs)
-    else:
-      onnx_model = frontend.tensorflow_graph_to_onnx_model(graph_def, **kwargs)
-    onnx.save(onnx_model, outfile)
+  logger.info("Start converting onnx pb to tf pb:")
+  onnx_model = onnx.load(infile)
+  tf_rep = backend.prepare(onnx_model, **kwargs)
+  tf_rep.export_graph(outfile)
   logger.info("Converting completes successfully.")
