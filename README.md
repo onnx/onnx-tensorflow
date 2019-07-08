@@ -15,7 +15,7 @@ From ONNX to Tensorflow: `onnx-tf convert -t tf -i /path/to/input.onnx -o /path/
 
 ### Migrating from `onnx-tf` to `tf-onnx`:
 We have joined force with Microsoft to co-develop ONNX Tensorflow frontend.
-For current onnx-tf frontend users, please consider migrating to use tf-onnx (https://github.com/onnx/tensorflow-onnx) where our code will be merged into.
+For current onnx-tf frontend users, please migrate to use tf-onnx (https://github.com/onnx/tensorflow-onnx) where our code had been merged into.
 
 ## ONNX model inference with Tensorflow backend:
 ```
@@ -29,8 +29,6 @@ output = prepare(onnx_model).run(input)  # run the loaded model
 ## More tutorials:
 [Running an ONNX model using Tensorflow](https://github.com/onnx/tutorials/blob/master/tutorials/OnnxTensorflowImport.ipynb)
 
-[Exporting a Tensorflow Model to ONNX](https://github.com/onnx/tutorials/blob/master/tutorials/OnnxTensorflowExport.ipynb)
-
 ## Production Installation:
 ONNX-TF requires ONNX (Open Neural Network Exchange) as an external dependency, for any issues related to ONNX installation, we refer our users to [ONNX project repository](https://github.com/onnx/onnx) for documentation and help. Notably, please ensure that protoc is available if you plan to install ONNX via pip.
 
@@ -38,7 +36,7 @@ The specific ONNX release version that we support in the master branch of ONNX-T
 
 To install the latest version of ONNX-TF via pip, run `pip install onnx-tf`.
 
-Because users often have their own preferences for which variant of Tensorflow to install (i.e., a GPU version instead of a CPU version), we do not explicitly require tensorflow in the installation script. It is therefore users' responsibility to ensure that the proper variant of Tensorflow is available to ONNX-TF. Moreoever, we require Tensorflow version >= 1.5.0.
+Because users often have their own preferences for which variant of Tensorflow to install (i.e., a GPU version instead of a CPU version), we do not explicitly require tensorflow in the installation script. It is therefore users' responsibility to ensure that the proper variant of Tensorflow is available to ONNX-TF. Moreoever, we require Tensorflow version >= 1.13.1.
 
 ## Development:
 
@@ -50,7 +48,7 @@ Because users often have their own preferences for which variant of Tensorflow t
 
 ### Installation:
 - Install ONNX master branch from source.
-- Install Tensorflow>=1.5.0.
+- Install Tensorflow>=1.13.1.
 - Run `git clone git@github.com:onnx/onnx-tensorflow.git && cd onnx-tensorflow`.
 - Run `pip install -e .`.
 
