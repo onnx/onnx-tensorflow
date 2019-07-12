@@ -68,8 +68,6 @@ class TestCli(unittest.TestCase):
       subprocess.check_call([
           "onnx-tf",
           "convert",
-          "-t",
-          "tf",
           "-i",
           os.path.join(model_dir, '{}.onnx'.format(model_name)),
           "-o",
