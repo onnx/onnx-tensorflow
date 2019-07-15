@@ -101,6 +101,10 @@ if legacy_onnx_pre_ver(1, 2):
 if not legacy_opset_pre_ver(9):
   backend_test.exclude(r'[a-z,_]*cast[a-z,_]*')
 
+if not legacy_opset_pre_ver(10):
+  # Do not support dilations != 1 for ConvTranspose, test is added in opset 10
+  backend_test.exclude(r'[a-z,_]*convtranspose_dilations[a-z,_]*')
+
 # import all test cases at global scope to make them visible to python.unittest
 globals().update(backend_test.enable_report().test_cases)
 

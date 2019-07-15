@@ -37,13 +37,14 @@ ______
 |ConvTranspose|1|
 |Cos|7|
 |Cosh|9|
+|CumSum|N/A|
 |DepthToSpace|1|
 |DequantizeLinear|N/A|
 |DictVectorizer|N/A|
 |Div|1, 6, 7|
 |Dropout|1, 6, 7|
 |Elu|1, 6|
-|Equal|1, 7|
+|Equal|1, 7, 11|
 |Erf|9|
 |Exp|1, 6|
 |Expand|8|
