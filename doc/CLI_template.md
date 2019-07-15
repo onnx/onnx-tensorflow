@@ -14,7 +14,7 @@ More information: `onnx-tf -h`
 ### Convert:
 
 #### From ONNX to Tensorflow:
-`onnx-tf convert -t tf -i /path/to/input.onnx -o /path/to/output.pb`
+`onnx-tf convert -i /path/to/input.onnx -o /path/to/output.pb`
 
 More information: `onnx-tf convert -h`
 ```
