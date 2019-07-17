@@ -91,7 +91,7 @@ backend_opset_version = {
     'Mul': [1, 6, 7],
     'Multinomial': [],
     'Neg': [1, 6],
-    'NonMaxSuppression': [],
+    'NonMaxSuppression': [10, 11],
     'NonZero': [9],
     'Normalizer': [],
     'Not': [1],
