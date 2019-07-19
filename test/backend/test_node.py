@@ -693,68 +693,6 @@ class TestNode(unittest.TestCase):
               max(x[i1][i2][j1][2*j2], x[i1][i2][j1][2*j2 + 1])
     np.testing.assert_almost_equal(output["Y"], test_output)
 
-  def test_max_unpool(self):
-    input_shape = [10,10,4,4]
-    x = self._get_rnd(input_shape)
-
-    """ Maxpool op version 10 is not implemented yet and that is why we use a workaround
-        to force the onnx ops set version to 9 by using a model instead of just running nodes"""
-    X = helper.make_tensor_value_info('X', TensorProto.FLOAT, input_shape)
-    Y = helper.make_tensor_value_info('Y', TensorProto.FLOAT, input_shape)
-
-    maxpool_node_def = helper.make_node(
-        "MaxPool", ["X"], ["Pool", "Indices"],
-        kernel_shape=[2, 2],
-        strides=[2, 2])
-
-    maxunpool_node_def = helper.make_node(
-        "MaxUnpool", ["Pool", "Indices"], ["Y"],
-        kernel_shape=[2, 2],
-        strides=[2, 2])
-
-    graph_def = helper.make_graph(
-        [maxpool_node_def,maxunpool_node_def],
-        "MaxUnpool-model",
-        [X],
-        [Y],
-    )
-    version = helper.make_operatorsetid("",9)
-    model_def = helper.make_model(graph_def,
-                                  opset_imports=[version])
-    tf_rep = prepare(model_def)  # run the loaded model
-    output_unpool = tf_rep.run(x)
-
-    """ This code is simpler way to test maxunpool but fails because
-        maxpool op version 10 is not supported yet
-
-    node_def = helper.make_node(
-        "MaxPool", ["X"], ["Pool", "Indices"],
-        kernel_shape=[2, 2],
-        strides=[2, 2])
-    output_pool = run_node(node_def, [x])
-
-    node_def = helper.make_node(
-        "MaxUnpool", ["Pool", "Indices"], ["Y"],
-        kernel_shape=[2, 2],
-        strides=[2, 2])
-    output_unpool = run_node(node_def, [output_pool["Pool"], output_pool["Indices"]])
-    """
-
-    test_output = np.zeros(input_shape)
-    for i1 in range(0, input_shape[0]):
-      for i2 in range(0, input_shape[1]):
-        for i3 in range(0, input_shape[2], 2):
-          for i4 in range(0, input_shape[3], 2):
-            max_val = float('-inf')
-            for j1 in range(i3,i3+2):
-              for j2 in range(i4,i4+2):
-                if x[i1][i2][j1][j2] > max_val:
-                  max_val = x[i1][i2][j1][j2]
-                  max_ind = (j1, j2)
-            j1, j2 = max_ind
-            test_output[i1][i2][j1][j2] = max_val
-    np.testing.assert_almost_equal(output_unpool["Y"], test_output)
-
   def test_min(self):
     node_def = helper.make_node("Min", ["X1", "X2", "X3", "X4"], ["Z"])
     x1 = self._get_rnd([10, 10])
