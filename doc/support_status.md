@@ -84,7 +84,7 @@ ______
 |Max|1, 6, 8|
 |MaxPool|1, 8|
 |MaxRoiPool|N/A|
-|MaxUnpool|N/A|
+|MaxUnpool|9|
 |Mean|1, 6, 8|
 |MeanVarianceNormalization|1, 9|
 |Min|1, 6, 8|
