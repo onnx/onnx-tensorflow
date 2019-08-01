@@ -42,7 +42,7 @@ ______
 |DequantizeLinear|N/A|
 |DictVectorizer|N/A|
 |Div|1, 6, 7|
-|Dropout|1, 6, 7|
+|Dropout|1, 6, 7, 10|
 |Elu|1, 6|
 |Equal|1, 7, 11|
 |Erf|9|
