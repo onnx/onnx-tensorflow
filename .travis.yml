@@ -8,14 +8,13 @@ services:
   - docker
 
 cache: pip
-python:
-  - "2.7"
-  - "3.6"
 
-before_install:
-  - source ./.travis/setup.sh
-
-script:
-  - cd .. && docker cp onnx-tensorflow test:/root/programs/
-  - if [[ $TRAVIS_PYTHON_VERSION == 2.7 ]]; then docker exec -e TRAVIS=1 -t test /bin/bash -c "cd onnx-tensorflow && pip install -e . && python -m unittest discover test"; fi
-  - if [[ $TRAVIS_PYTHON_VERSION == 3.6 ]]; then docker exec -e TRAVIS=1 -t test /bin/bash -c "cd onnx-tensorflow && pip3 install -e . && python3 -m unittest discover test"; fi
+jobs:
+  include:
+    - name: master-test-3.6
+      python: "3.6"
+      before_install:
+        - source ./.travis/setup.sh
+      script:
+        - cd .. && docker cp onnx-tensorflow test:/root/programs/
+        - docker exec -e TRAVIS=1 -t test /bin/bash -c "cd onnx-tensorflow && pip3 install -e . && python3 -m unittest discover test"
