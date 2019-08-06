@@ -31,7 +31,7 @@ backend_opset_version = {
     'Cos': [7],
     'Cosh': [9],
     'CumSum': [],
-    'DepthToSpace': [1],
+    'DepthToSpace': [1, 11],
     'DequantizeLinear': [],
     'DictVectorizer': [],
     'Div': [1, 6, 7],
