@@ -49,8 +49,6 @@ backend_test = skip_not_implemented_ops_test(backend_test)
 # need to remove these lines once those ops support are added into onnx-tf
 # temporary exclude StringNormalizer test
 backend_test.exclude(r'[a-z,_]*strnorm[a-z,_]*')
-# temporary exclude MeanVarianceNormalization test
-backend_test.exclude(r'[a-z,_]*mvn[a-z,_]*')
 
 # https://github.com/onnx/onnx/issues/349
 backend_test.exclude(r'[a-z,_]*GLU[a-z,_]*')
