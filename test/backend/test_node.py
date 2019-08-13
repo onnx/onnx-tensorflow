@@ -1110,9 +1110,18 @@ class TestNode(unittest.TestCase):
     if legacy_opset_pre_ver(10): # for opset = 1
       node_def = helper.make_node("TopK", ["x"], ["values", "indices"], k=2)
       output = run_node(node_def, [x])
-    else: # for opset = 10
+    elif legacy_opset_pre_ver(11): # for opset = 10
       k = np.array([2], dtype=np.int64)
       node_def = helper.make_node("TopK", ["x", "k"], ["values", "indices"])
+      output = run_node(node_def, [x, k])
+    else: # for opset = 11
+      x = np.array([[3, 2, 5, 10, 7], [12, 15, 10, 7, 20], [21, 16, 5, 3, 6]],
+                   dtype=np.float32)
+      values = np.array([[3, 2], [10, 7], [5, 3]], dtype=np.float32)
+      indices = np.array([[0, 1], [2, 3], [2, 3]], dtype=np.int64)
+      k = np.array([2], dtype=np.int64)
+      node_def = helper.make_node(
+          "TopK", ["x", "k"], ["values", "indices"], largest=0, sorted=0)
       output = run_node(node_def, [x, k])
     np.testing.assert_almost_equal(output["values"], values)
     np.testing.assert_almost_equal(output["indices"], indices)

@@ -30,11 +30,21 @@ def skip_not_implemented_ops_test(test):
   onnxtf_ops_list = get_onnxtf_supported_ops()
   onnx_ops_list = get_onnx_supported_ops()
   for op in onnx_ops_list:
+    op_name = op
+    i = 1
+    while i < len(op_name):
+      if op_name[i].isupper():
+        op_name = op_name[:i] + '_' + op_name[i:]
+        i += 2
+      else:
+        i += 1
     if op in onnxtf_ops_list:
       if onnx_ops_list[op] not in onnxtf_ops_list[op]:
         test.exclude(r'[a-z,_]*' + op.lower() + '[a-z,_]*')
+        test.exclude(r'[a-z,_]*' + op_name.lower() + '[a-z,_]*')
     else:
       test.exclude(r'[a-z,_]*' + op.lower() + '[a-z,_]*')
+      test.exclude(r'[a-z,_]*' + op_name.lower() + '[a-z,_]*')
   return test
 
 # This is a pytest magic variable to load extra plugins
