@@ -150,7 +150,7 @@ backend_opset_version = {
     'TfIdfVectorizer': [],
     'ThresholdedRelu': [1, 10],
     'Tile': [1, 6],
-    'TopK': [1, 10],
+    'TopK': [1, 10, 11],
     'Transpose': [1],
     'TreeEnsembleClassifier': [],
     'TreeEnsembleRegressor': [],
