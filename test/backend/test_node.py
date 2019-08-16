@@ -379,6 +379,20 @@ class TestNode(unittest.TestCase):
     output = run_node(node_def, [x, y])
     np.testing.assert_almost_equal(output["Z"], np.divide(x, y))
 
+  def test_dropout(self):
+    # Since current ONNX only support inference and
+    # dropout at inference mode is a no-op,
+    # therefore dropout is always a no-op operator
+    # in ONNX.
+    node_def = helper.make_node("Dropout", ["X"], ["Y"])
+    if legacy_opset_pre_ver(7):
+      # at inference mode, is_test is always set to 1
+      node_def = helper.make_node("Dropout", ["X"], ["Y"], is_test=1)
+    x = self._get_rnd([3, 4, 5])
+    y = x
+    output = run_node(node_def, [x])
+    np.testing.assert_equal(output["Y"], y)
+
   def test_dot(self):
     # this op is removed
     # remove this test in the future
@@ -388,32 +402,6 @@ class TestNode(unittest.TestCase):
     y = np.floor(self._get_rnd([10, 10]))
     output = run_node(node_def, [x, y])
     np.testing.assert_almost_equal(output["Z"], np.dot(x, y))
-
-  def test_dynamic_slice(self):
-    # This is an experimental op added in ONNX 1.4 and defined under
-    # opset version 1. The following "if" statement is use to
-    # maintain backward compatibility
-    if defs.onnx_opset_version() < 9:
-      raise unittest.SkipTest(
-          "ONNX version {} doesn't support DynamicSlice.".format(
-              defs.onnx_opset_version()))
-    axes = np.array([0, 1], dtype=np.long)
-    starts = np.array([1, 0], dtype=np.long)
-    ends = np.array([2, 3], dtype=np.long)
-    # test case 1 with normal inputs
-    node_def = helper.make_node(
-        'DynamicSlice', inputs=['x', 'starts', 'ends', 'axes'], outputs=['y'])
-    x = np.array([[1, 2, 3, 4], [5, 6, 7, 8]], dtype=np.long)
-    y = x[1:2, 0:3]
-    output = run_node(node_def, inputs=[x, starts, ends, axes], outputs=[y])
-    np.testing.assert_almost_equal(output['y'], x[1:2, 0:3])
-    # test case 2 with negative, out-of-bound and default inputs
-    starts = np.array([0, 1], dtype=np.long)
-    ends = np.array([-1, 1000], dtype=np.long)
-    node_def = helper.make_node(
-        'DynamicSlice', inputs=['x', 'starts', 'ends'], outputs=['y'])
-    output = run_node(node_def, inputs=[x, starts, ends], outputs=[y])
-    np.testing.assert_almost_equal(output['y'], x[0:-1, 1:1000])
 
   def test_elu(self):
     node_def = helper.make_node("Elu", ["X"], ["Y"])
@@ -717,6 +705,23 @@ class TestNode(unittest.TestCase):
             test_output[i1][i2][j1][j2] = \
               max(x[i1][i2][j1][2*j2], x[i1][i2][j1][2*j2 + 1])
     np.testing.assert_almost_equal(output["Y"], test_output)
+
+  def test_mean_variance_normalization(self):
+    if legacy_opset_pre_ver(9):
+      raise unittest.SkipTest(
+      "ONNX version {} doesn't have test for MeanVarianceNormalization"
+      .format(defs.onnx_opset_version()))
+
+    input_data = self._get_rnd([2,2,2,2])
+    # Calculate expected output data using formula:
+    # (Input - Mean)/SD
+    mean = np.mean(input_data, keepdims=1, axis=(0,2,3))
+    std = np.std(input_data, keepdims=1, axis=(0,2,3))
+    expected_output = (input_data - mean) / std
+    # Testing without "axes" argument should default to axes=[0,2,3]
+    node_def = helper.make_node("MeanVarianceNormalization", ["X"], ["Y"])
+    output = run_node(node_def, [input_data])
+    np.testing.assert_almost_equal(output["Y"], expected_output, decimal=5)
 
   def test_min(self):
     node_def = helper.make_node("Min", ["X1", "X2", "X3", "X4"], ["Z"])
@@ -1105,9 +1110,18 @@ class TestNode(unittest.TestCase):
     if legacy_opset_pre_ver(10): # for opset = 1
       node_def = helper.make_node("TopK", ["x"], ["values", "indices"], k=2)
       output = run_node(node_def, [x])
-    else: # for opset = 10
+    elif legacy_opset_pre_ver(11): # for opset = 10
       k = np.array([2], dtype=np.int64)
       node_def = helper.make_node("TopK", ["x", "k"], ["values", "indices"])
+      output = run_node(node_def, [x, k])
+    else: # for opset = 11
+      x = np.array([[3, 2, 5, 10, 7], [12, 15, 10, 7, 20], [21, 16, 5, 3, 6]],
+                   dtype=np.float32)
+      values = np.array([[3, 2], [10, 7], [5, 3]], dtype=np.float32)
+      indices = np.array([[0, 1], [2, 3], [2, 3]], dtype=np.int64)
+      k = np.array([2], dtype=np.int64)
+      node_def = helper.make_node(
+          "TopK", ["x", "k"], ["values", "indices"], largest=0, sorted=0)
       output = run_node(node_def, [x, k])
     np.testing.assert_almost_equal(output["values"], values)
     np.testing.assert_almost_equal(output["indices"], indices)

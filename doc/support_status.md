@@ -37,13 +37,14 @@ ______
 |ConvTranspose|1|
 |Cos|7|
 |Cosh|9|
+|CumSum|N/A|
 |DepthToSpace|1|
 |DequantizeLinear|N/A|
 |DictVectorizer|N/A|
 |Div|1, 6, 7|
-|Dropout|1, 6, 7|
+|Dropout|1, 6, 7, 10|
 |Elu|1, 6|
-|Equal|1, 7|
+|Equal|1, 7, 11|
 |Erf|9|
 |Exp|1, 6|
 |Expand|8|
@@ -84,9 +85,9 @@ ______
 |Max|1, 6, 8|
 |MaxPool|1, 8|
 |MaxRoiPool|N/A|
-|MaxUnpool|N/A|
+|MaxUnpool|9|
 |Mean|1, 6, 8|
-|MeanVarianceNormalization|1|
+|MeanVarianceNormalization|1, 9|
 |Min|1, 6, 8|
 |Mod|10|
 |Mul|1, 6, 7|
@@ -123,7 +124,7 @@ ______
 |ReduceSumSquare|1|
 |Relu|1, 6|
 |Reshape|1, 5|
-|Resize|N/A|
+|Resize|10|
 |ReverseSequence|N/A|
 |RoiAlign|N/A|
 |Round|N/A|
@@ -156,7 +157,7 @@ ______
 |TfIdfVectorizer|N/A|
 |ThresholdedRelu|1, 10|
 |Tile|1, 6|
-|TopK|1, 10|
+|TopK|1, 10, 11|
 |Transpose|1|
 |TreeEnsembleClassifier|N/A|
 |TreeEnsembleRegressor|N/A|
@@ -165,3 +166,4 @@ ______
 |Where|9|
 |Xor|1, 7|
 |ZipMap|N/A|
+

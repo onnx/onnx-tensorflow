@@ -49,7 +49,7 @@ RUN cd /root/programs/onnx; pip2 install -e .
 RUN cd /root/programs/onnx; pip3 install -e .
 
 # Install Tensorflow
-RUN pip2 install -U tf-nightly
-RUN pip3 install -U tf-nightly
+RUN pip2 install -U tensorflow
+RUN pip3 install -U tensorflow
 
 WORKDIR /root/programs
