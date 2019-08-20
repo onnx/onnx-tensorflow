@@ -8,7 +8,6 @@ import os
 import re
 import subprocess
 
-from onnx_tf import opset_version
 import onnx_tf.backend
 import onnx_tf.backend_rep
 from third_party import get_info
@@ -16,7 +15,6 @@ from third_party import get_info
 
 def main(docs_dir):
   gen_api(docs_dir)
-  gen_support_status(docs_dir)
   gen_cli(docs_dir)
 
 
@@ -50,22 +48,6 @@ def gen_api(docs_dir):
 
         doc_file.write('_returns_:\n\n')
         doc_file.write(doc_parsed['returns'] + '\n\n')
-
-
-def gen_support_status(docs_dir):
-  with open(os.path.join(docs_dir, 'support_status.md'), 'w') as status_file:
-    status_file.write('ONNX-Tensorflow Support Status\n')
-    status_file.write('======\n\n')
-
-    status_file.write('Backend\n')
-    status_file.write('______\n\n')
-
-    status_file.write('| ONNX Op        | Supported ONNX Version  |\n')
-    status_file.write('| -------------- |:------------------:|\n')
-    for key, val in sorted(opset_version.backend_opset_version.items()):
-      version_str = str(val)[1:-1]
-      status_file.write("|{}|{}|\n".format(
-          key, version_str if len(version_str) else "N/A"))
 
 
 def gen_cli(docs_dir):

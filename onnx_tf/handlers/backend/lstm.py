@@ -6,10 +6,16 @@ from onnx_tf.common import get_unique_suffix
 from onnx_tf.common import exception
 from onnx_tf.handlers.backend_handler import BackendHandler
 from onnx_tf.handlers.handler import onnx_op
+from onnx_tf.handlers.handler import partial_support
+from onnx_tf.handlers.handler import ps_description
 from .rnn_mixin import RNNMixin
 
 
 @onnx_op("LSTM")
+@partial_support(True)
+@ps_description("LSTM not using sigmoid for `f`, or " +
+                "LSTM not using the same activation for `g` and `h` " +
+                "are not supported in Tensorflow.")
 class LSTM(RNNMixin, BackendHandler):
 
   @classmethod

@@ -6,10 +6,20 @@ from onnx_tf.common import get_unique_suffix
 from onnx_tf.common import exception
 from onnx_tf.handlers.backend_handler import BackendHandler
 from onnx_tf.handlers.handler import onnx_op
+from onnx_tf.handlers.handler import partial_support
+from onnx_tf.handlers.handler import ps_description
 from .rnn_mixin import RNNMixin
 
 
 @onnx_op("GRU")
+@partial_support(True)
+@ps_description("GRU with clip or GRU with linear_before_reset, or " +
+                "GRU not using sigmoid for z and r, or " +
+                "GRU using Elu as the activation function " +
+                "with alpha != 1, or " +
+                "GRU using HardSigmoid as the activation function " +
+                "with alpha != 0.2 or beta != 0.5 " +
+                "are not supported in TensorFlow.")
 class GRU(RNNMixin, BackendHandler):
 
   @classmethod

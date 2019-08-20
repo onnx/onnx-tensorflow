@@ -3,9 +3,13 @@ import tensorflow as tf
 from onnx_tf.common import exception
 from onnx_tf.handlers.backend_handler import BackendHandler
 from onnx_tf.handlers.handler import onnx_op
+from onnx_tf.handlers.handler import partial_support
+from onnx_tf.handlers.handler import ps_description
 
 
 @onnx_op("Resize")
+@partial_support(True)
+@ps_description("Resize required 4D input in Tensorflow.")
 class Resize(BackendHandler):
 
   @classmethod
