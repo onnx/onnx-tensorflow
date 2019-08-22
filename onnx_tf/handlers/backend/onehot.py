@@ -38,7 +38,7 @@ class OneHot(BackendHandler):
     return [
         cls.make_tensor_from_onnx_node(
             node,
-            inputs=[indices, depth[0], on_value, off_value],
+            inputs=[indices, depth, on_value, off_value],
             attrs=attrs,
             **kwargs)
     ]
