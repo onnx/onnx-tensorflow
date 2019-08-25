@@ -14,6 +14,8 @@ from onnx_tf.common import get_data_format
 from onnx_tf.common import get_perm_from_formats
 from onnx_tf.common import supports_device
 from .pad_mixin import PadMixin
+from .dilated_maxpooling import dilated_maxpool2d
+from .dilated_maxpooling import dilated_maxpool_with_argmax
 
 # Constant string used to indicate that requested padding
 # is not natively supported in Tensorflow.
@@ -114,6 +116,64 @@ class PoolMixin(object):
           pooled, perm=get_perm_from_formats(compute_format, storage_format))
 
     return [pooled]
+
+
+  @classmethod
+  def pool_v10(cls, node, input_dict, pool_func, pooling_type, strict=True):
+    x = input_dict[node.inputs[0]]
+    x_rank = len(x.get_shape())
+    spatial_size = x_rank - 2
+
+    storage_format, _ = get_data_format(x_rank)
+
+    kernel_shape = node.attrs["kernel_shape"]
+    strides = node.attrs.get("strides", [1] * spatial_size)
+    dilation = node.attrs.get("dilations", [1] * spatial_size)
+    ceil_mode = node.attrs.get("ceil_mode", 0)
+    ceil_mode = bool(ceil_mode)
+    auto_pad = node.attrs.get("auto_pad", "VALID")
+    pads = node.attrs.get("pads", auto_pad)
+
+    # if no dilation, ceil_mode is False or no maxpool,
+    # use the old version of the op
+    if ((dilation == [1] * spatial_size) and (not ceil_mode)) or \
+       (pooling_type[:3] != "MAX"):
+      return cls.pool(node, input_dict, pool_func, pooling_type, strict)
+
+    if x_rank != 4:
+      exception.OP_UNSUPPORTED_EXCEPT(
+          "MaxPool with {}D input".format(x_rank), "Tensorflow")
+    if node.attrs.get("storage_order", 0) != 0:
+      exception.OP_UNSUPPORTED_EXCEPT("MaxPool with column major",
+                                      "Tensorflow")
+
+    need_trans = storage_format != "NHWC"
+    if need_trans:
+      x = tf.transpose(x, perm=get_perm_from_formats(storage_format, "NHWC"))
+
+    result = []
+    if pooling_type == "MAX":
+      pooled = dilated_maxpool2d(
+        x, ksize = kernel_shape, strides = strides, dilation = dilation,
+        padding = pads, ceil_mode = ceil_mode)
+
+      if need_trans:
+        pooled = tf.transpose(
+            pooled, perm=get_perm_from_formats("NHWC", storage_format))
+      result = [pooled]
+    elif pooling_type == "MAX_WITH_ARGMAX":
+      pooled, argmax = dilated_maxpool_with_argmax(
+        x, ksize = kernel_shape, strides = strides, dilation = dilation,
+        padding = pads, ceil_mode = ceil_mode)
+
+      if need_trans:
+        pooled = tf.transpose(
+            pooled, perm=get_perm_from_formats("NHWC", storage_format))
+        argmax = tf.transpose(
+            argmax, perm=get_perm_from_formats("NHWC", storage_format))
+
+      result = [pooled, argmax]
+    return result
 
   @classmethod
   def _compatibility_pool(cls, node, input_dict, pooling_type):
