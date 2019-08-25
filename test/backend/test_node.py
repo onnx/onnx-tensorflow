@@ -13,7 +13,7 @@ from onnx_tf.common.legacy import legacy_onnx_pre_ver, legacy_opset_pre_ver
 from onnx import helper
 from onnx import TensorProto
 from onnx import defs
-from pool_helper import py_maxpool
+from onnx_tf.common.pooling_helper import py_maxpool
 
 
 class TestNode(unittest.TestCase):
