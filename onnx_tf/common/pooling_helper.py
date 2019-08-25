@@ -1,6 +1,3 @@
-from __future__ import division
-
-from numpy import inf
 import numpy as np
 import itertools
 import math
@@ -96,50 +93,40 @@ def py_maxpool(input, kernel_shape, strides=None, dilations=None,
     spatial_size = len(kernel_shape)
 
     input_shape = np.shape(input)
-    inp_sp_shape = input_shape[2:]
+    iheight, iwidth = input_shape[2:4]
 
-    batch_size = input_shape[0]
-    channels_num = input_shape[1]
+    oheight = _pooling_output_shape(iheight, kH, sH, dH, padH, ceil_mode)
+    owidth = _pooling_output_shape(iwidth, kW, sW, dW, padW, ceil_mode)
 
-    if strides is None:
-        strides = kernel_shape
+    out_pool = np.zeros((input_shape[0], input_shape[1],
+                        oheight, owidth), input.dtype)
+    out_ind = np.zeros((input_shape[0], input_shape[1],
+                       oheight, owidth), 'int64')
 
-    if dilations is None:
-        dilations = [1] * spatial_size
+    for batch in range(input_shape[0]):
+        for channel in range(input_shape[1]):
+            # Loop over output
+            for i in range(oheight):
+                for j in range(owidth):
+                    hstart = i * sH - pad_top
+                    wstart = j * sW - pad_left
+                    hend = min(hstart + (kH - 1) * dH + 1, iheight)
+                    wend = min(wstart + (kW - 1) * dW + 1, iwidth)
+                    while hstart < 0:
+                        hstart += dH
+                    while wstart < 0:
+                        wstart += dW
 
-    if padding is None:
-        padding = [0] * spatial_size * 2
+                    maxind = -1
+                    maxval = -np.inf
 
-    if type(padding) is not list:
-        if padding.lower().startswith("same"):
-            padding = calc_pads_same(inp_sp_shape, kernel_shape, strides,
-                                     dilations, padding)
-        else:
-            padding = [0] * spatial_size * 2
+                    for y in range(hstart, hend, dH):
+                        for x in range(wstart, wend, dW):
+                            val = input[batch][channel][y][x]
+                            if val > maxval:
+                                maxval = val
+                                maxind = y * iwidth + x
+                    out_pool[batch][channel][i][j] = maxval
+                    out_ind[batch][channel][i][j] = maxind
 
-    pads = []
-    pad_along_axis = []
-    output_sp_shape = []
-
-    for dim in range(spatial_size):
-        pads.append(padding[dim])
-        pads.append(padding[dim + spatial_size])
-        pad_along_axis.append(padding[dim] + padding[dim + spatial_size])
-
-        input_size = input_shape[dim + 2]
-        output_size = \
-            _pooling_output_shape(input_size, kernel_shape[dim],
-                                  strides[dim], dilations[dim],
-                                  pad_along_axis[dim], ceil_mode)
-        output_sp_shape.append(output_size)
-
-    out_pool = np.zeros([input_shape[0], input_shape[1]] +
-                        output_sp_shape, input.dtype)
-    out_ind = np.zeros([input_shape[0], input_shape[1]] +
-                       output_sp_shape, np.int64)
-
-    for batch in range(batch_size):
-        for channel in range(channels_num):
-            _loop_over_output(batch, channel)
-
-    return out_pool, out_ind
+    return (out_pool, out_ind)
