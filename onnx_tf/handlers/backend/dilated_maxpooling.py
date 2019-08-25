@@ -1,7 +1,7 @@
 from __future__ import division
 
 import tensorflow as tf
-import math
+from numpy import inf
 
 
 def _calc_xy(v, k, d, s):
@@ -67,7 +67,7 @@ def _pad_input_same(input, strides, filterSizeH, filterSizeW,
                    [0, 0]]
 
     padded = tf.pad(input, tf_paddings, mode='CONSTANT',
-                    constant_values=-math.inf)
+                    constant_values=-inf)
     return (padded, [pad_top, pad_bottom, pad_left, pad_right])
 
 
@@ -77,7 +77,7 @@ def _pad_input_explicit(input, pads):
     tf_paddings = [[0, 0], [pads[0], pads[2]],
                    [pads[1], pads[3]], [0, 0]]
     padded = tf.pad(input, tf_paddings, mode='CONSTANT',
-                    constant_values=-math.inf)
+                    constant_values=-inf)
     return (padded, [pads[0], pads[2], pads[1], pads[3]])
 
 
@@ -97,7 +97,7 @@ def _calc_padding_ceil_mode(input, strides, filterSizeH, filterSizeW):
     paddings = [[0, 0], [0, pad_bottom], [0, pad_right], [0, 0]]
 
     padded = tf.pad(input, paddings, mode='CONSTANT',
-                    constant_values=-math.inf)
+                    constant_values=-inf)
     return (padded, [0, pad_bottom, 0, pad_right])
 
 
