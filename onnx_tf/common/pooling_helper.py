@@ -1,4 +1,3 @@
-import math
 import numpy as np
 
 
@@ -64,7 +63,7 @@ def py_maxpool(input, ksize, strides, dilation=[1, 1],
                         wstart += dW
 
                     maxind = -1
-                    maxval = -math.inf
+                    maxval = -np.inf
 
                     for y in range(hstart, hend, dH):
                         for x in range(wstart, wend, dW):
