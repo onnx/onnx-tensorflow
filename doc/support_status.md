@@ -46,7 +46,6 @@ Notes:
 |ConvTranspose|1|
 |Cos|7|
 |Cosh|9|
-|CumSum|N/A|
 |DepthToSpace|1, 11|
 |DequantizeLinear|N/A|
 |Det|N/A|
