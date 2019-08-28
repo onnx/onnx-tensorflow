@@ -843,6 +843,31 @@ class TestNode(unittest.TestCase):
 
     np.testing.assert_almost_equal(output["Y"], test_output)
 
+  def test_max_pool_with_argmax_dilation_ceil_pads(self):
+    kernel_shape = [3, 3]
+    strides = [2, 2]
+    dilations = [3, 3]
+    pads = [1, 1, 2, 2]
+    ceil_mode = True
+    node_def = helper.make_node(
+        "MaxPool", ["X"], ["Y", "Ind"],
+        kernel_shape=kernel_shape,
+        strides=strides,
+        dilations=dilations,
+        pads=pads,
+        ceil_mode=ceil_mode)
+
+    input_shape = [10, 1, 23, 23]
+    x = self._get_rnd(input_shape)
+    output = run_node(node_def, [x])
+
+    test_output, test_ind = py_maxpool(x, ksize=kernel_shape, strides=strides,
+                                       dilation=dilations, pads=pads,
+                                       ceil_mode=ceil_mode)
+
+    np.testing.assert_almost_equal(output["Y"], test_output)
+    np.testing.assert_almost_equal(output["Ind"], test_ind)
+
   def test_max_pool(self):
     return
     node_def = helper.make_node(
