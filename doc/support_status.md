@@ -38,7 +38,7 @@ Notes:
 |Clip|1, 6|
 |Compress|9|
 |Concat|1, 4|
-|Constant|1, 9|
+|Constant|1, 9, 11|
 |ConstantFill|1|
 |ConstantOfShape|9|
 |Conv|1|
@@ -46,6 +46,7 @@ Notes:
 |ConvTranspose|1|
 |Cos|7|
 |Cosh|9|
+|CumSum|N/A|
 |DepthToSpace|1, 11|
 |DequantizeLinear|N/A|
 |Det|N/A|

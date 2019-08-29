@@ -196,7 +196,7 @@ def _pad_input(input, strides, filter_height, filter_width,
         Pad the input according to the parameters
     """
 
-    pads = tf.zeros([4])
+    pads = tf.zeros([4], tf.int64)
     # check for explicit padding
     if type(padding) is list:
         input, pads_ = _pad_input_explicit(input, padding)
@@ -361,8 +361,7 @@ def dilated_maxpool2d(input, ksize, strides, dilation,
 
     input_shape = tf.shape(input, out_type=tf.dtypes.int64)
 
-    filter = tf.zeros(ksize[0] * ksize[1] * input_shape[3])
-    filter = tf.reshape(filter, [ksize[0], ksize[1], input_shape[3]])
+    filter = tf.zeros([ksize[0], ksize[1], input_shape[3]], input.dtype)
 
     maxpool = tf.nn.dilation2d(input=input, filter=filter, strides=strides,
                                rates=dilation, padding=padding_)
