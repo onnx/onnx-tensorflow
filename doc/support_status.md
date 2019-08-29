@@ -46,11 +46,14 @@ Notes:
 |ConvTranspose|1|
 |Cos|7|
 |Cosh|9|
+|CumSum|N/A|
 |DepthToSpace|1, 11|
 |DequantizeLinear|N/A|
+|Det|N/A|
 |DictVectorizer|N/A|
 |Div|1, 6, 7|
 |Dropout|1, 6, 7, 10|
+|DynamicQuantizeLinear|N/A|
 |Elu|1, 6|
 |Equal|1, 7, 11|
 |Erf|9|
@@ -62,6 +65,7 @@ Notes:
 |Floor|1, 6|
 |GRU|1, 3, 7|
 |Gather|1|
+|GatherElements|N/A|
 |Gemm|1, 6, 7, 9|
 |GlobalAveragePool|1|
 |GlobalLpPool|1, 2|
@@ -119,6 +123,7 @@ Notes:
 |RandomNormalLike|1|
 |RandomUniform|1|
 |RandomUniformLike|1|
+|Range|N/A|
 |Reciprocal|1, 6|
 |ReduceL1|1|
 |ReduceL2|1|
@@ -141,6 +146,8 @@ Notes:
 |Scaler|N/A|
 |Scan|N/A|
 |Scatter|N/A|
+|ScatterElements|N/A|
+|ScatterND|N/A|
 |Selu|1, 6|
 |Shape|1|
 |Shrink|9|
@@ -169,6 +176,7 @@ Notes:
 |Transpose|1|
 |TreeEnsembleClassifier|N/A|
 |TreeEnsembleRegressor|N/A|
+|Unique|N/A|
 |Unsqueeze|1|
 |Upsample|7, 9|
 |Where|9|
