@@ -2,14 +2,16 @@ import argparse
 import inspect
 import logging
 import os
+import shutil
 
 import onnx
 import tensorflow as tf
 from tensorflow.core.framework import graph_pb2
+from tensorflow.python.tools import freeze_graph
 
 import onnx_tf.backend as backend
-from onnx_tf.common import get_output_node_names
-import onnx_tf.frontend as frontend
+from onnx_tf.common import get_unique_suffix
+from onnx_tf.pb_wrapper import TensorflowGraph
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger()
@@ -97,16 +99,10 @@ def parse_args(args):
   parser.add_argument(
       "--infile",
       "-i",
-      help="Input file path, can be pb or ckpt file.",
+      help="Input file path.",
       required=True)
   parser.add_argument(
       "--outfile", "-o", help="Output file path.", required=True)
-  parser.add_argument(
-      "--convert_to",
-      "-t",
-      choices=["onnx", "tf"],
-      help="Format converted to.",
-      required=True)
 
   def add_argument_group(parser, group_name, funcs):
     group = parser.add_argument_group(group_name)
@@ -115,71 +111,29 @@ def parse_args(args):
       group.add_argument("--{}".format(k), help=v["doc"], **v["params"])
 
   # backend args
+  # Args must be named consistently with respect to backend.prepare.
   add_argument_group(parser, "backend arguments (onnx -> tf)",
                      [(backend.prepare, {
                          "device": {},
                          "strict": {}
                      })])
-
-  # frontend args
-  add_argument_group(parser, "frontend arguments (tf -> onnx)",
-                     [(frontend.tensorflow_graph_to_onnx_model, {
-                         "opset": {
-                             "action": OpsetAction,
-                         },
-                         "ignore_unimplemented": {
-                             "type": bool
-                         },
-                         "optimizer_passes": {
-                             "action": ListAction,
-                             "dest": "optimizer_passes"
-                         }
-                     })])
-
+ 
   return parser.parse_args(args)
 
 
-def convert(infile, outfile, convert_to, **kwargs):
+def convert(infile, outfile, **kwargs):
   """Convert pb.
 
   Args:
     infile: Input path.
     outfile: Output path.
-    convert_to: Format converted to.
     **kwargs: Other args for converting.
 
   Returns:
     None.
   """
-  if convert_to == "tf":
-    logger.info("Start converting onnx pb to tf pb:")
-    onnx_model = onnx.load(infile)
-    tf_rep = backend.prepare(onnx_model, **kwargs)
-    tf_rep.export_graph(outfile)
-  elif convert_to == "onnx":
-    ext = os.path.splitext(infile)[1]
-    logger.info("Start converting tf pb to onnx pb:")
-    if ext == ".pb":
-      with open(infile, "rb") as f:
-        graph_def = graph_pb2.GraphDef()
-        graph_def.ParseFromString(f.read())
-    elif ext == ".ckpt":
-      latest_ckpt = tf.train.latest_checkpoint(os.path.dirname(infile))
-      saver = tf.train.import_meta_graph(latest_ckpt + ".meta")
-      with tf.Session() as sess:
-        sess.run([
-            tf.global_variables_initializer(),
-            tf.local_variables_initializer()
-        ])
-        saver.restore(sess, latest_ckpt)
-        output_node_names = get_output_node_names(sess.graph.as_graph_def())
-        graph_def = tf.graph_util.convert_variables_to_constants(
-            sess, sess.graph.as_graph_def(add_shapes=True), output_node_names)
-    else:
-      raise ValueError(
-          "Input file is not supported. Should be .pb or .ckpt, but get {}".
-          format(ext))
-    onnx_model = frontend.tensorflow_graph_to_onnx_model(
-        graph_def, get_output_node_names(graph_def), **kwargs)
-    onnx.save(onnx_model, outfile)
+  logger.info("Start converting onnx pb to tf pb:")
+  onnx_model = onnx.load(infile)
+  tf_rep = backend.prepare(onnx_model, **kwargs)
+  tf_rep.export_graph(outfile)
   logger.info("Converting completes successfully.")

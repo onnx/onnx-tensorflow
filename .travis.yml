@@ -1,25 +1,43 @@
 os:
   - linux
-#  - osx
-dist: trusty
+dist: xenial
 sudo: required
 language: python
+services:
+  - docker
+
 cache: pip
-python:
-  - "2.7"
-  - "3.6"
 
-install:
-  - ./.travis/install.sh
+jobs:
+  include:
+    - name: master-test-py2.7
+      python: 2.7
+      before_install:
+        - source ./.travis/setup_onnx_master.sh
+      script:
+        - cd .. && docker cp onnx-tensorflow test:/root/programs/
+        - docker exec -e TRAVIS=1 -t test /bin/bash -c "cd onnx-tensorflow && pip install -e . && python -m unittest discover test"
 
-script:
-  - ./.travis/build.sh
+    - name: master-test-py3.6
+      python: 3.6
+      before_install:
+        - source ./.travis/setup_onnx_master.sh
+      script:
+        - cd .. && docker cp onnx-tensorflow test:/root/programs/
+        - docker exec -e TRAVIS=1 -t test /bin/bash -c "cd onnx-tensorflow && pip3 install -e . && python3 -m unittest discover test"
 
-cache:
-  - directories:
-    - $HOME/.build_cache
-    - $HOME/.ccache
+    - name: target-test-py2.7
+      python: 2.7
+      before_install:
+        - source ./.travis/setup_onnx_target.sh
+      script:
+        - cd .. && docker cp onnx-tensorflow test:/root/programs/
+        - docker exec -e TRAVIS=1 -t test /bin/bash -c "cd onnx-tensorflow && pip install -e . && python -m unittest discover test"
 
-env:
-  - PB_VERSION=2.6.1 ONNX_BUILD_FROM=MASTER
-  - PB_VERSION=2.6.1 ONNX_BUILD_FROM=RELEASE
+    - name: target-test-py3.6
+      python: 3.6
+      before_install:
+        - source ./.travis/setup_onnx_target.sh
+      script:
+        - cd .. && docker cp onnx-tensorflow test:/root/programs/
+        - docker exec -e TRAVIS=1 -t test /bin/bash -c "cd onnx-tensorflow && pip3 install -e . && python3 -m unittest discover test"

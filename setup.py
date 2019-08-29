@@ -19,7 +19,7 @@ setuptools.setup(
     name='onnx-tf',
     version=version,
     description=
-    'Tensorflow backend and frontend for ONNX (Open Neural Network Exchange).',
+    'Tensorflow backend for ONNX (Open Neural Network Exchange).',
     install_requires=[onnx_dep, "PyYAML"],
     entry_points={
         "console_scripts": [

@@ -8,7 +8,7 @@ from onnx_tf.handlers.handler import onnx_op
 class MeanVarianceNormalization(BackendHandler):
 
   @classmethod
-  def _common(cls, node, **kwargs):
+  def version_1(cls, node, **kwargs):
     tensor_dict = kwargs["tensor_dict"]
     inputs = tensor_dict[node.inputs[0]]
     inputs_rank = inputs.shape.ndims
@@ -26,5 +26,22 @@ class MeanVarianceNormalization(BackendHandler):
     return [(inputs - mean) / tf.sqrt(variance)]
 
   @classmethod
-  def version_1(cls, node, **kwargs):
-    return cls._common(node, **kwargs)
+  def version_9(cls, node, **kwargs):
+    tensor_dict = kwargs["tensor_dict"]
+    inputs = tensor_dict[node.inputs[0]]
+    inputs_rank = inputs.shape.ndims
+    # To satisfy default axes=[0,2,3], also assume the
+    # following default when rank is not 4
+    # rank1 -> axes=[0]
+    # rank2 -> axes=[0]
+    # rank3 -> axes=[0,2]
+    # rank4 -> axes=[0,2,3]
+    # rankN -> axes=[0,2,3,..,N-1]
+    # TODO(tedhtchang): Since input tensor is no longer limited
+    # to shape [N,C,H,W], consider using "[0]" or "[]" as default axes.
+    # See issue https://github.com/onnx/onnx/issues/2047
+    default_axes = [0] if inputs_rank < 3 else [0, 2]
+    default_axes += list(range(inputs_rank))[3:]
+    moments_axes = node.attrs.get("axes", default_axes)
+    mean, variance = tf.nn.moments(inputs, moments_axes, keep_dims=True)
+    return [(inputs - mean) / tf.sqrt(variance)]

@@ -75,8 +75,7 @@ class TensorflowRep(BackendRep):
           feed_dict = dict([(self.inputs[0], inputs)])
 
         feed_dict = {
-            self.tensor_dict[key]: feed_dict[key]
-            for key in self.inputs
+            self.tensor_dict[key]: feed_dict[key] for key in self.inputs
         }
 
         sess.run(tf.global_variables_initializer())
@@ -97,6 +96,14 @@ class TensorflowRep(BackendRep):
     :returns: none.
     """
     graph_proto = self.graph.as_graph_def()
+    # rename the output nodes
+    meaningful_names = {}
+    for output_name in self.outputs:
+      meaningful_names[self.tensor_dict[output_name].name.replace(':0', '')] = output_name
+    for node in graph_proto.node:
+      if node.name in meaningful_names.keys():
+        node.name = meaningful_names[node.name]
+
     file = open(path, "wb")
     file.write(graph_proto.SerializeToString())
     file.close()

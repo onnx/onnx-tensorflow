@@ -5,27 +5,30 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import os
+import re
+import subprocess
 
 from onnx_tf import opset_version
 import onnx_tf.backend
 import onnx_tf.backend_rep
-import onnx_tf.frontend
 from third_party import get_info
 
 
 def main(docs_dir):
+  gen_api(docs_dir)
+  gen_support_status(docs_dir)
+  gen_cli(docs_dir)
+
+
+def gen_api(docs_dir):
   gen_doc_for = {
       'onnx_tf.backend': [
           onnx_tf.backend.prepare,
-      ],
-      'onnx_tf.frontend': [
-          onnx_tf.frontend.tensorflow_graph_to_onnx_model,
       ],
       'onnx_tf.backend_rep.TensorflowRep': [
           onnx_tf.backend_rep.TensorflowRep.export_graph,
       ]
   }
-
   with open(os.path.join(docs_dir, 'API.md'), 'w') as doc_file:
     doc_file.write('ONNX-Tensorflow API\n')
     doc_file.write('======\n\n')
@@ -48,6 +51,8 @@ def main(docs_dir):
         doc_file.write('_returns_:\n\n')
         doc_file.write(doc_parsed['returns'] + '\n\n')
 
+
+def gen_support_status(docs_dir):
   with open(os.path.join(docs_dir, 'support_status.md'), 'w') as status_file:
     status_file.write('ONNX-Tensorflow Support Status\n')
     status_file.write('======\n\n')
@@ -59,20 +64,26 @@ def main(docs_dir):
     status_file.write('| -------------- |:------------------:|\n')
     for key, val in sorted(opset_version.backend_opset_version.items()):
       version_str = str(val)[1:-1]
-      status_file.write("|{}|{}|\n".format(key, version_str
-                                           if len(version_str) else "N/A"))
+      status_file.write("|{}|{}|\n".format(
+          key, version_str if len(version_str) else "N/A"))
 
-    status_file.write('\n\n')
 
-    status_file.write('Frontend\n')
-    status_file.write('______\n\n')
+def gen_cli(docs_dir):
+  with open(os.path.join(docs_dir, 'CLI_template.md'), 'r') as cli_temp_file:
+    temp_lines = cli_temp_file.readlines()
 
-    status_file.write('| Tensorflow Op        | Supported ONNX Version  |\n')
-    status_file.write('| -------------- |:------------------:|\n')
-    for key, val in sorted(opset_version.frontend_tf_opset_version.items()):
-      version_str = str(val)[1:-1]
-      status_file.write("|{}|{}|\n".format(key, version_str
-                                           if len(version_str) else "N/A"))
+  lines = []
+  for line in temp_lines:
+    matched = re.match(r"{onnx-tf.*}", line)
+    if matched:
+      command = matched.string.strip()[1:-1]
+      output = subprocess.check_output(command.split(" ")).decode("UTF-8")
+      lines.append(output)
+    else:
+      lines.append(line)
+
+  with open(os.path.join(docs_dir, 'CLI.md'), 'w') as cli_file:
+    cli_file.writelines(lines)
 
 
 if __name__ == '__main__':

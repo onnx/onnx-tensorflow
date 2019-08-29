@@ -3,6 +3,7 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
+import math
 import unittest
 import numpy as np
 import tensorflow as tf
@@ -42,6 +43,15 @@ class TestNode(unittest.TestCase):
     x = self._get_rnd([1000])
     output = run_node(node_def, [x])
     np.testing.assert_almost_equal(output["Y"], np.abs(x))
+
+  def test_acosh(self):
+    if legacy_opset_pre_ver(9):
+      raise unittest.SkipTest("ONNX version {} doesn't support Acosh.".format(
+          defs.onnx_opset_version()))
+    node_def = helper.make_node("Acosh", ["X"], ["Y"])
+    x = self._get_rnd([3, 4, 5])
+    output = run_node(node_def, [x])
+    np.testing.assert_almost_equal(output["Y"], np.arccosh(x))
 
   def test_add(self):
     node_def = helper.make_node("Add", ["X", "Y"], ["Z"])
@@ -84,6 +94,24 @@ class TestNode(unittest.TestCase):
       output = run_node(node_def, [data])
       np.testing.assert_almost_equal(output["reduced"],
                                      np.argmin(data, axis=axis))
+
+  def test_asinh(self):
+    if legacy_opset_pre_ver(9):
+      raise unittest.SkipTest("ONNX version {} doesn't support Asinh.".format(
+          defs.onnx_opset_version()))
+    node_def = helper.make_node("Asinh", ["X"], ["Y"])
+    x = self._get_rnd([3, 4, 5])
+    output = run_node(node_def, [x])
+    np.testing.assert_almost_equal(output["Y"], np.arcsinh(x))
+
+  def test_atanh(self):
+    if legacy_opset_pre_ver(9):
+      raise unittest.SkipTest("ONNX version {} doesn't support Atanh.".format(
+          defs.onnx_opset_version()))
+    node_def = helper.make_node("Atanh", ["X"], ["Y"])
+    x = self._get_rnd([3, 4, 5])
+    output = run_node(node_def, [x])
+    np.testing.assert_almost_equal(output["Y"], np.arctanh(x))
 
   def test_average_pool(self):
     # TODO: fix this test
@@ -144,34 +172,62 @@ class TestNode(unittest.TestCase):
 
   def test_cast(self):
     if legacy_onnx_pre_ver(1, 2) or legacy_opset_pre_ver(6):
-      test_cases = [("FLOAT", tf.float32), ("UINT8", tf.uint8), ("INT8",
-                                                                 tf.int8),
+      test_cases = [("FLOAT", tf.float32), ("UINT8", tf.uint8),
+                    ("INT8", tf.int8),
                     ("UINT16", tf.uint16), ("INT16", tf.int16),
                     ("INT32", tf.int32), ("INT64", tf.int64), ("BOOL", tf.bool),
                     ("FLOAT16", tf.float16), ("DOUBLE", tf.float64),
                     ("COMPLEX64", tf.complex64), ("COMPLEX128", tf.complex128)]
     else:
       test_cases = [(TensorProto.FLOAT, tf.float32),
-                    (TensorProto.UINT8, tf.uint8), (TensorProto.INT8, tf.int8),
+                    (TensorProto.UINT8, tf.uint8),
+                    (TensorProto.INT8, tf.int8),
                     (TensorProto.UINT16, tf.uint16),
-                    (TensorProto.INT16, tf.int16), (TensorProto.INT32,
-                                                    tf.int32),
-                    (TensorProto.INT64, tf.int64), (TensorProto.BOOL, tf.bool),
+                    (TensorProto.INT16, tf.int16),
+                    (TensorProto.INT32, tf.int32),
+                    (TensorProto.INT64, tf.int64),
+                    (TensorProto.BOOL, tf.bool),
                     (TensorProto.FLOAT16, tf.float16),
                     (TensorProto.DOUBLE, tf.float64),
                     (TensorProto.COMPLEX64, tf.complex64),
                     (TensorProto.COMPLEX128, tf.complex128)]
+      if not legacy_opset_pre_ver(9):
+         test_cases.append((TensorProto.STRING, tf.string))
     for ty, tf_type in test_cases:
       node_def = helper.make_node("Cast", ["input"], ["output"], to=ty)
       vector = [2, 3]
       output = run_node(node_def, [vector])
       np.testing.assert_equal(output["output"].dtype, tf_type)
 
+    if not legacy_opset_pre_ver(9):
+      test_cases2 = [(TensorProto.FLOAT, tf.float32),
+                     (TensorProto.INT32, tf.int32),
+                     (TensorProto.INT64, tf.int64),
+                     (TensorProto.DOUBLE, tf.float64)]
+      for ty, tf_type in test_cases2:
+        node_def = helper.make_node("Cast", ["input"], ["output"], to=ty)
+        vector = ['2', '3']
+        output = run_node(node_def, [vector])
+        np.testing.assert_equal(output["output"].dtype, tf_type)
+
   def test_ceil(self):
     node_def = helper.make_node("Ceil", ["X"], ["Y"])
     x = self._get_rnd([1000])
     output = run_node(node_def, [x])
     np.testing.assert_almost_equal(output["Y"], np.ceil(x))
+
+  def test_compress(self):
+    if legacy_opset_pre_ver(9):
+      raise unittest.SkipTest(
+          "ONNX version {} doesn't support Compress.".format(
+              defs.onnx_opset_version()))
+    axis = 1
+    node_def = helper.make_node(
+        "Compress", inputs=['X', 'condition'], outputs=['Y'], axis=axis)
+    x = self._get_rnd([5, 5, 5])
+    cond = np.array([1, 0, 1])
+    output = run_node(node_def, inputs=[x, cond])
+    np.testing.assert_almost_equal(output['Y'], np.compress(cond, x, axis=axis))
 
   def test_concat(self):
     shape = [10, 20, 5]
@@ -193,7 +249,24 @@ class TestNode(unittest.TestCase):
     np.testing.assert_equal(output["Y"].shape, shape)
     np.testing.assert_almost_equal(output["Y"].flatten(), values)
 
+    # test sparse tensor
+    if not legacy_opset_pre_ver(11):
+      expected = np.array([[1, 0, 0, 0], [0, 0, 2, 0], [0, 0, 0, 0]])
+      x = np.array([[0, 0], [1, 2]]).flatten().astype(np.int64)
+      values = helper.make_tensor("values", TensorProto.INT32, [2], [1, 2])
+      indices = helper.make_tensor("indices", TensorProto.INT64, [2, 2], x)
+      a = helper.make_sparse_tensor(values, indices,[3, 4])
+      node_def = helper.make_node("Constant", [], ["Y"], sparse_value=a)
+      output = run_node(node_def, [])
+      b = tf.sparse_to_dense(output["Y"].indices, output["Y"].dense_shape, output["Y"].values)
+      result = b.eval(session=tf.Session())
+      np.testing.assert_equal(result, expected)
+
   def test_constant_fill(self):
+    if not legacy_opset_pre_ver(9):
+      raise unittest.SkipTest(
+          "ONNX version {} doesn't support ConstantFill.".format(
+              defs.onnx_opset_version()))
     shape = [1, 2, 3, 4]
     extra_shape = [5, 6]
     value = 3.
@@ -211,6 +284,22 @@ class TestNode(unittest.TestCase):
     output = run_node(node_def, [x])
     np.testing.assert_equal(output["Y"].dtype, tf.float32)
     np.testing.assert_equal(output["Y"], y)
+
+  def test_constant_of_shape(self):
+    if defs.onnx_opset_version() < 9:
+      raise unittest.SkipTest(
+          "ONNX version {} doesn't support ConstantOfShape.".format(
+              defs.onnx_opset_version()))
+    v = helper.make_tensor("value", TensorProto.FLOAT, [1], [1])
+    node_def = helper.make_node("ConstantOfShape", ["X"], ["Y"], value=v)
+    x = np.array([4, 3, 2])
+    output = run_node(node_def, inputs=[x])
+    np.testing.assert_almost_equal(output["Y"], np.ones(x, dtype=np.float32))
+    v = helper.make_tensor("value", TensorProto.INT32, [1], [0])
+    node_def = helper.make_node("ConstantOfShape", ["X"], ["Y"], value=v)
+    x = np.array([10, 6])
+    output = run_node(node_def, inputs=[x])
+    np.testing.assert_almost_equal(output["Y"], np.zeros(x, dtype=np.int32))
 
   def test_conv(self):
     device = "CUDA"
@@ -277,6 +366,15 @@ class TestNode(unittest.TestCase):
           test_output[b][m][h] = v
     np.testing.assert_almost_equal(output["Y"], test_output, decimal=5)
 
+  def test_cosh(self):
+    if legacy_opset_pre_ver(9):
+      raise unittest.SkipTest("ONNX version {} doesn't support Cosh.".format(
+          defs.onnx_opset_version()))
+    node_def = helper.make_node("Cosh", ["X"], ["Y"])
+    x = self._get_rnd([3, 4, 5])
+    output = run_node(node_def, [x])
+    np.testing.assert_almost_equal(output["Y"], np.cosh(x))
+
   def test_depth_to_space(self):
     node_def = helper.make_node("DepthToSpace", ["X"], ["Y"], blocksize=2)
     x_shape = [1, 12, 1, 1]
@@ -294,6 +392,20 @@ class TestNode(unittest.TestCase):
     output = run_node(node_def, [x, y])
     np.testing.assert_almost_equal(output["Z"], np.divide(x, y))
 
+  def test_dropout(self):
+    # Since current ONNX only support inference and
+    # dropout at inference mode is a no-op,
+    # therefore dropout is always a no-op operator
+    # in ONNX.
+    node_def = helper.make_node("Dropout", ["X"], ["Y"])
+    if legacy_opset_pre_ver(7):
+      # at inference mode, is_test is always set to 1
+      node_def = helper.make_node("Dropout", ["X"], ["Y"], is_test=1)
+    x = self._get_rnd([3, 4, 5])
+    y = x
+    output = run_node(node_def, [x])
+    np.testing.assert_equal(output["Y"], y)
+
   def test_dot(self):
     # this op is removed
     # remove this test in the future
@@ -303,29 +415,6 @@ class TestNode(unittest.TestCase):
     y = np.floor(self._get_rnd([10, 10]))
     output = run_node(node_def, [x, y])
     np.testing.assert_almost_equal(output["Z"], np.dot(x, y))
-
-  def test_dynamic_slice(self):
-    if defs.onnx_opset_version() < 9:
-      raise unittest.SkipTest(
-          "ONNX version {} doesn't support DynamicSlice.".format(
-              defs.onnx_opset_version()))
-    axes = np.array([0, 1], dtype=np.long)
-    starts = np.array([1, 0], dtype=np.long)
-    ends = np.array([2, 3], dtype=np.long)
-    # test case 1 with normal inputs
-    node_def = helper.make_node(
-        'DynamicSlice', inputs=['x', 'starts', 'ends', 'axes'], outputs=['y'])
-    x = np.array([[1, 2, 3, 4], [5, 6, 7, 8]], dtype=np.long)
-    y = x[1:2, 0:3]
-    output = run_node(node_def, inputs=[x, starts, ends, axes], outputs=[y])
-    np.testing.assert_almost_equal(output['y'], x[1:2, 0:3])
-    # test case 2 with negative, out-of-bound and default inputs
-    starts = np.array([0, 1], dtype=np.long)
-    ends = np.array([-1, 1000], dtype=np.long)
-    node_def = helper.make_node(
-        'DynamicSlice', inputs=['x', 'starts', 'ends'], outputs=['y'])
-    output = run_node(node_def, inputs=[x, starts, ends], outputs=[y])
-    np.testing.assert_almost_equal(output['y'], x[0:-1, 1:1000])
 
   def test_elu(self):
     node_def = helper.make_node("Elu", ["X"], ["Y"])
@@ -341,6 +430,16 @@ class TestNode(unittest.TestCase):
     output = run_node(node_def, [x, y])
     np.testing.assert_equal(output["Z"], np.equal(x, np.reshape(
         y, [1, 3, 3, 1])))
+
+  def test_erf(self):
+    if legacy_opset_pre_ver(9):
+      raise unittest.SkipTest("ONNX version {} doesn't support Erf.".format(
+          defs.onnx_opset_version()))
+    node_def = helper.make_node("Erf", ["X"], ["Y"])
+    x = self._get_rnd([3, 4, 5])
+    output = run_node(node_def, [x])
+    exp_output = np.vectorize(math.erf)(x).astype(np.float32)
+    np.testing.assert_almost_equal(output["Y"], exp_output)
 
   def test_exp(self):
     node_def = helper.make_node("Exp", ["X"], ["Y"])
@@ -443,6 +542,39 @@ class TestNode(unittest.TestCase):
     test_out = np.add(test_out, bias)
     test_out = np.transpose(test_out, [0, 3, 1, 2])
     np.testing.assert_almost_equal(output["Y"], test_out)
+
+  def test_is_inf(self):
+    if legacy_opset_pre_ver(10):
+      raise unittest.SkipTest(
+      "ONNX version {} doesn't support IsInf.".format(
+          defs.onnx_opset_version()))
+    input = np.array([-1.2, np.nan, np.inf, 2.8, np.NINF, np.inf],
+          dtype=np.float32)
+    expected_output = {
+      "node_def": np.isinf(input),
+      "node_def_neg_false": np.isposinf(input),
+      "node_def_pos_false": np.isneginf(input)}
+    node_defs = {
+      "node_def" :
+      helper.make_node("IsInf", ["X"], ["Y"]),
+      "node_def_neg_false" :
+      helper.make_node("IsInf", ["X"], ["Y"], detect_negative = 0),
+      "node_def_pos_false" :
+      helper.make_node("IsInf", ["X"], ["Y"], detect_positive = 0)
+    }
+    for key in node_defs:
+      output = run_node(node_defs[key], [input])
+      np.testing.assert_equal(output["Y"], expected_output[key])
+
+  def test_isnan(self):
+    if legacy_opset_pre_ver(9):
+      raise unittest.SkipTest("ONNX version {} doesn't support IsNaN.".format(
+          defs.onnx_opset_version()))
+    node_def = helper.make_node("IsNaN", ["X"], ["Y"])
+    x = self._get_rnd([3, 3])
+    x[0][1] = x[1][0] = x[2][2] = np.nan
+    output = run_node(node_def, [x])
+    np.testing.assert_almost_equal(output["Y"], np.isnan(x))
 
   def test_global_lp_pool(self):
     #   Image case:  (N x C x H x W), where N is the batch size,
@@ -587,6 +719,23 @@ class TestNode(unittest.TestCase):
               max(x[i1][i2][j1][2*j2], x[i1][i2][j1][2*j2 + 1])
     np.testing.assert_almost_equal(output["Y"], test_output)
 
+  def test_mean_variance_normalization(self):
+    if legacy_opset_pre_ver(9):
+      raise unittest.SkipTest(
+      "ONNX version {} doesn't have test for MeanVarianceNormalization"
+      .format(defs.onnx_opset_version()))
+
+    input_data = self._get_rnd([2,2,2,2])
+    # Calculate expected output data using formula:
+    # (Input - Mean)/SD
+    mean = np.mean(input_data, keepdims=1, axis=(0,2,3))
+    std = np.std(input_data, keepdims=1, axis=(0,2,3))
+    expected_output = (input_data - mean) / std
+    # Testing without "axes" argument should default to axes=[0,2,3]
+    node_def = helper.make_node("MeanVarianceNormalization", ["X"], ["Y"])
+    output = run_node(node_def, [input_data])
+    np.testing.assert_almost_equal(output["Y"], expected_output, decimal=5)
+
   def test_min(self):
     node_def = helper.make_node("Min", ["X1", "X2", "X3", "X4"], ["Z"])
     x1 = self._get_rnd([10, 10])
@@ -605,11 +754,50 @@ class TestNode(unittest.TestCase):
     np.testing.assert_almost_equal(output["Z"],
                                    np.multiply(x, y.reshape([1, 10, 1, 1])))
 
+  def test_mod(self):
+    if legacy_opset_pre_ver(10):
+      raise unittest.SkipTest("ONNX version {} doesn't support Mod.".format(
+          defs.onnx_opset_version()))
+    x = self._get_rnd([5, 5])
+    y = self._get_rnd([5, 5])
+    node_def = helper.make_node("Mod", ["X", "Y"], ["Z"], fmod=0)
+    output = run_node(node_def, [x, y])
+    np.testing.assert_almost_equal(output["Z"], np.mod(x, y))
+    node_def = helper.make_node("Mod", ["X", "Y"], ["Z"], fmod=1)
+    output = run_node(node_def, [x, y])
+    np.testing.assert_almost_equal(output["Z"], np.fmod(x, y))
+
   def test_neg(self):
     node_def = helper.make_node("Neg", ["X"], ["Y"])
     x = self._get_rnd([1000])
     output = run_node(node_def, [x])
     np.testing.assert_almost_equal(output["Y"], np.negative(x))
+
+  def test_non_zero(self):
+    if legacy_opset_pre_ver(9):
+      raise unittest.SkipTest("ONNX version {} doesn't support NonZero.".format(
+          defs.onnx_opset_version()))
+    node_def = helper.make_node("NonZero", ["x"], ["y"])
+    x = self._get_rnd([3, 4, 5])
+    y = np.array(np.nonzero(x))
+    output = run_node(node_def, [x])
+    np.testing.assert_equal(output["y"], y)
+
+  def test_onehot(self):
+    if legacy_opset_pre_ver(9):
+      raise unittest.SkipTest("ONNX version {} doesn't support OneHot.".format(
+          defs.onnx_opset_version()))
+    indices = np.array([[0, 2], [1, 2], [0, 1]])
+    depth = np.array([5], dtype=np.int32)
+    on_value = 6.0
+    off_value = 2.0
+    values = np.array([off_value, on_value])
+    node_def = helper.make_node(
+        'OneHot', inputs=['indices', 'depth', 'values'], outputs=['y'], axis=-1)
+    y = (np.arange(depth) == indices[..., None]).astype(int)
+    y = y * (on_value - off_value) + off_value
+    output = run_node(node_def, inputs=[indices, depth, values])
+    np.testing.assert_equal(output['y'], y)
 
   def test_relu(self):
     node_def = helper.make_node("Relu", ["X"], ["Y"])
@@ -737,11 +925,42 @@ class TestNode(unittest.TestCase):
     output = run_node(node_def, [x])
     np.testing.assert_allclose(output["Y"], np.shape(x))
 
+  def test_shrink(self):
+    if legacy_opset_pre_ver(9):
+      raise unittest.SkipTest(
+          "ONNX version {} doesn't support Shrink.".format(
+              defs.onnx_opset_version()))
+
+    node_def = helper.make_node("Shrink", ["X"], ["Y"], bias=1.5, lambd=1.5)
+
+    X = np.arange(-2.0, 2.1, dtype=np.float32)
+    Y = np.array([-0.5, 0, 0, 0, 0.5], dtype=np.float32)
+    output = run_node(node_def, [X])
+    np.testing.assert_almost_equal(output["Y"], Y)
+
   def test_sigmoid(self):
     node_def = helper.make_node("Sigmoid", ["X"], ["Y"])
     x = self._get_rnd([1000])
     output = run_node(node_def, [x])
     np.testing.assert_almost_equal(output["Y"], 1 / (1 + np.exp(-x)))
+
+  def test_sign(self):
+    if legacy_opset_pre_ver(9):
+      raise unittest.SkipTest("ONNX version {} doesn't support Sign.".format(
+          defs.onnx_opset_version()))
+    node_def = helper.make_node("Sign", ["X"], ["Y"])
+    x = self._get_rnd([3, 5], -10, 10)
+    output = run_node(node_def, [x])
+    np.testing.assert_almost_equal(output["Y"], np.sign(x))
+
+  def test_sinh(self):
+    if legacy_opset_pre_ver(9):
+      raise unittest.SkipTest("ONNX version {} doesn't support Sinh.".format(
+          defs.onnx_opset_version()))
+    node_def = helper.make_node("Sinh", ["X"], ["Y"])
+    x = self._get_rnd([3, 4, 5])
+    output = run_node(node_def, [x])
+    np.testing.assert_almost_equal(output["Y"], np.sinh(x))
 
   def test_size(self):
     node_def = helper.make_node("Size", ["X"], ["Y"])
@@ -754,20 +973,51 @@ class TestNode(unittest.TestCase):
     axes = [0, 1, 2]
     starts = [0, 0, 0]
     ends = [2, 2, 2]
-    node_def = helper.make_node(
+    steps = [1, 1, 1]
+
+    if legacy_opset_pre_ver(10):
+      node_def = helper.make_node(
         "Slice", ["X"], ["S"], axes=axes, starts=starts, ends=ends)
-    x = self._get_rnd([1000]).reshape([10, 10, 10])
-    output = run_node(node_def, [x])
-    np.testing.assert_almost_equal(output["S"], x[0:2, 0:2, 0:2])
+      x = self._get_rnd([1000]).reshape([10, 10, 10])
+      output = run_node(node_def, [x])
+      np.testing.assert_almost_equal(output["S"], x[0:2, 0:2, 0:2])
+    else:
+      node_def = helper.make_node(
+        "Slice", ["X", "starts", "ends", "axes", "steps"], ["S"])
+      x = self._get_rnd([1000]).reshape([10, 10, 10])
+      output = run_node(node_def, [x, starts, ends, axes, steps])
+      np.testing.assert_almost_equal(output["S"], x[0:2, 0:2, 0:2])
+
     # test case 2 with negative, out-of-bound and default inputs
     axes = [0, 2]
     starts = [0, -7]
     ends = [-8, 20]
-    node_def = helper.make_node(
+
+    if legacy_opset_pre_ver(10):
+      node_def = helper.make_node(
         "Slice", ["X"], ["S"], axes=axes, starts=starts, ends=ends)
-    x = self._get_rnd([1000]).reshape([10, 10, 10])
-    output = run_node(node_def, [x])
-    np.testing.assert_almost_equal(output["S"], x[0:-8, :, -7:20])
+      x = self._get_rnd([1000]).reshape([10, 10, 10])
+      output = run_node(node_def, [x])
+      np.testing.assert_almost_equal(output["S"], x[0:-8, :, -7:20])
+    else:
+      node_def = helper.make_node(
+        "Slice", ["X", "starts", "ends", "axes"], ["S"])
+      x = self._get_rnd([1000]).reshape([10, 10, 10])
+      output = run_node(node_def, [x, starts, ends, axes])
+      np.testing.assert_almost_equal(output["S"], x[0:-8, :, -7:20])
+
+    # test case 3 with non-default steps
+    axes = [0, 1, 2]
+    starts = [0, 0, 0]
+    ends = [2, 2, 2]
+    steps = [2, -2, -1]
+
+    if legacy_opset_pre_ver(10) == False:
+      node_def = helper.make_node(
+        "Slice", ["X", "starts", "ends", "axes", "steps"], ["S"])
+      x = self._get_rnd([1000]).reshape([10, 10, 10])
+      output = run_node(node_def, [x, starts, ends, axes, steps])
+      np.testing.assert_almost_equal(output["S"], x[0:2:2, 0:2:-2, 0:2:-1])
 
   def test_softplus(self):
     node_def = helper.make_node("Softplus", ["X"], ["Y"])
@@ -839,6 +1089,16 @@ class TestNode(unittest.TestCase):
     output = run_node(node_def, [x])
     np.testing.assert_almost_equal(output["Y"], np.tanh(x), decimal=5)
 
+  def test_thresholded_relu(self):
+    alpha = 2.0
+    node_def = helper.make_node(
+        "ThresholdedRelu", ["X"], ["Y"], alpha=alpha)
+    x = self._get_rnd([10], -3.0, 3.0)
+    y = np.clip(x, alpha, np.inf)
+    y[y == alpha] = 0
+    output = run_node(node_def, [x])
+    np.testing.assert_almost_equal(output["Y"], y)
+
   def test_tile(self):
     if legacy_onnx_pre_ver(1, 2):
       raise unittest.SkipTest(
@@ -856,6 +1116,40 @@ class TestNode(unittest.TestCase):
     output = run_node(node_def, [x])
     np.testing.assert_almost_equal(output["Y"], np.transpose(x, (0, 2, 1)))
 
+  def test_topk(self):
+    x = np.arange(15, dtype=np.float32).reshape(3, 5)
+    values = np.array([[4, 3], [9, 8], [14, 13]], dtype=np.float32)
+    indices = np.array([[4, 3],[4, 3],[4, 3]], dtype=np.int64)
+    if legacy_opset_pre_ver(10): # for opset = 1
+      node_def = helper.make_node("TopK", ["x"], ["values", "indices"], k=2)
+      output = run_node(node_def, [x])
+    elif legacy_opset_pre_ver(11): # for opset = 10
+      k = np.array([2], dtype=np.int64)
+      node_def = helper.make_node("TopK", ["x", "k"], ["values", "indices"])
+      output = run_node(node_def, [x, k])
+    else: # for opset = 11
+      x = np.array([[3, 2, 5, 10, 7], [12, 15, 10, 7, 20], [21, 16, 5, 3, 6]],
+                   dtype=np.float32)
+      values = np.array([[3, 2], [10, 7], [5, 3]], dtype=np.float32)
+      indices = np.array([[0, 1], [2, 3], [2, 3]], dtype=np.int64)
+      k = np.array([2], dtype=np.int64)
+      node_def = helper.make_node(
+          "TopK", ["x", "k"], ["values", "indices"], largest=0, sorted=0)
+      output = run_node(node_def, [x, k])
+    np.testing.assert_almost_equal(output["values"], values)
+    np.testing.assert_almost_equal(output["indices"], indices)
+
+  def test_where(self):
+    if legacy_opset_pre_ver(9):
+      raise unittest.SkipTest(
+          "ONNX version {} doesn't support Where.".format(
+              defs.onnx_opset_version()))
+    node_def = helper.make_node("Where", ["C","X","Y"], ["Z"])
+    c = np.array([[1, 0], [1, 1]], dtype=np.bool)
+    x = np.array([[1, 2], [3, 4]], dtype=np.float32)
+    y = np.array([[9, 8], [7, 6]], dtype=np.float32)
+    output = run_node(node_def, [c,x,y])
+    np.testing.assert_almost_equal(output["Z"], np.where(c,x,y))
 
 if __name__ == '__main__':
   unittest.main()

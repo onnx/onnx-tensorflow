@@ -9,7 +9,10 @@ def main():
   parser = argparse.ArgumentParser(
       description="ONNX-Tensorflow Command Line Interface")
   parser.add_argument(
-      "command", choices=["convert"], help="Available commands.")
+      "command",
+      choices=["convert"],
+      help="Available commands.")
+
   if len(args) == 0:
     parser.parse_args(["-h"])
   cli_tool = parser.parse_args([args[0]])
