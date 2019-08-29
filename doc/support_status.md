@@ -29,7 +29,7 @@ ______
 |Clip|1, 6|
 |Compress|9|
 |Concat|1, 4|
-|Constant|1, 9|
+|Constant|1, 9, 11|
 |ConstantFill|1|
 |ConstantOfShape|9|
 |Conv|1|
@@ -38,11 +38,12 @@ ______
 |Cos|7|
 |Cosh|9|
 |CumSum|N/A|
-|DepthToSpace|1|
+|DepthToSpace|1, 11|
 |DequantizeLinear|N/A|
 |DictVectorizer|N/A|
 |Div|1, 6, 7|
 |Dropout|1, 6, 7, 10|
+|DynamicQuantizeLinear|N/A|
 |Elu|1, 6|
 |Equal|1, 7, 11|
 |Erf|9|
@@ -54,6 +55,7 @@ ______
 |Floor|1, 6|
 |GRU|1, 3, 7|
 |Gather|1|
+|GatherElements|N/A|
 |Gemm|1, 6, 7, 9|
 |GlobalAveragePool|1|
 |GlobalLpPool|1, 2|
@@ -111,6 +113,7 @@ ______
 |RandomNormalLike|1|
 |RandomUniform|1|
 |RandomUniformLike|1|
+|Range|N/A|
 |Reciprocal|1, 6|
 |ReduceL1|1|
 |ReduceL2|1|
@@ -133,6 +136,7 @@ ______
 |Scaler|N/A|
 |Scan|N/A|
 |Scatter|N/A|
+|ScatterElements|N/A|
 |Selu|1, 6|
 |Shape|1|
 |Shrink|9|
@@ -161,9 +165,9 @@ ______
 |Transpose|1|
 |TreeEnsembleClassifier|N/A|
 |TreeEnsembleRegressor|N/A|
+|Unique|N/A|
 |Unsqueeze|1|
 |Upsample|7, 9|
 |Where|9|
 |Xor|1, 7|
 |ZipMap|N/A|
-

@@ -1,3 +1,5 @@
+import numpy as np
+
 from onnx import numpy_helper
 import tensorflow as tf
 
@@ -18,7 +20,9 @@ class Constant(BackendHandler):
     value = numpy_helper.to_array(attr_value)
     return [
         cls.make_tensor_from_onnx_node(
-            node, inputs=[value], attrs={"dtype": dtype})
+            node, inputs=[value], attrs={
+                "dtype": dtype
+            })
     ]
 
   @classmethod
@@ -28,3 +32,15 @@ class Constant(BackendHandler):
   @classmethod
   def version_9(cls, node, **kwargs):
     return cls._common(node, **kwargs)
+
+  @classmethod
+  def version_11(cls, node, **kwargs):
+    # either value or sparse_value
+    if "value" in node.attrs:
+      return cls._common(node, **kwargs)
+    else:
+      sparse_value = node.attrs["sparse_value"]
+      indices = numpy_helper.to_array(sparse_value.indices)
+      values = numpy_helper.to_array(sparse_value.values)
+      shape = np.array(sparse_value.dims)
+    return [tf.SparseTensor(indices, values, shape)]
