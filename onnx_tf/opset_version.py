@@ -121,7 +121,7 @@ backend_opset_version = {
     'Relu': [1, 6],
     'Reshape': [1, 5],
     'Resize': [10],
-    'ReverseSequence': [],
+    'ReverseSequence': [10],
     'RoiAlign': [],
     'Round': [],
     'SVMClassifier': [],
