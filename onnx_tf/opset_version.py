@@ -79,7 +79,7 @@ backend_opset_version = {
     'LpNormalization': [1],
     'LpPool': [],
     'MatMul': [1, 9],
-    'MatMulInteger': [],
+    'MatMulInteger': [10],
     'Max': [1, 6, 8],
     'MaxPool': [1, 8],
     'MaxRoiPool': [],

@@ -726,6 +726,67 @@ class TestNode(unittest.TestCase):
     output = run_node(node_def, [x])
     np.testing.assert_almost_equal(output["Y"], np.log(x))
 
+  def test_matmul_integer(self):
+    if legacy_opset_pre_ver(10):
+      raise unittest.SkipTest(
+          "ONNX version {} doesn't support MatMulInteger.".format(
+              defs.onnx_opset_version()))
+
+    node_def = helper.make_node(
+        "MatMulInteger", ["A", "B", "a_zero_point", "b_zero_point"], ["Z"])
+    lower_bound = {np.uint8: 0, np.int8: -20}
+    for dtype in [np.uint8, np.int8]:
+      # A & B are 3-D tensor and a_zero_point & b_zero_point are scalar
+      A = self._get_rnd_int(
+          lower_bound[dtype], 20, shape=(2, 3, 4), dtype=dtype)
+      B = self._get_rnd_int(
+          lower_bound[dtype], 20, shape=(2, 4, 6), dtype=dtype)
+      a_zero_point = self._get_rnd_int(lower_bound[dtype], 20, dtype=dtype)
+      b_zero_point = self._get_rnd_int(lower_bound[dtype], 20, dtype=dtype)
+      A_minus_zero_point = np.subtract(
+          A.astype(np.int32), a_zero_point.astype(np.int32))
+      B_minus_zero_point = np.subtract(
+          B.astype(np.int32), b_zero_point.astype(np.int32))
+      z = np.matmul(A_minus_zero_point, B_minus_zero_point)
+      output = run_node(node_def, [A, B, a_zero_point, b_zero_point])
+      np.testing.assert_almost_equal(output["Z"], z)
+      # A & B are 4-D tensor and a_zero_point & b_zero_point are 1-D tensor
+      A = self._get_rnd_int(
+          lower_bound[dtype], 20, shape=(2, 5, 3, 4), dtype=dtype)
+      B = self._get_rnd_int(
+          lower_bound[dtype], 20, shape=(2, 1, 4, 6), dtype=dtype)
+      a_zero_point = self._get_rnd_int(
+          lower_bound[dtype], 20, shape=(A.shape[-2]), dtype=dtype)
+      b_zero_point = self._get_rnd_int(
+          lower_bound[dtype], 20, shape=(B.shape[-1]), dtype=dtype)
+      a_zero_point_with_reshape = np.reshape(a_zero_point, [A.shape[-2], 1])
+      A_minus_zero_point = np.subtract(
+          A.astype(np.int32), a_zero_point_with_reshape.astype(np.int32))
+      B_minus_zero_point = np.subtract(
+          B.astype(np.int32), b_zero_point.astype(np.int32))
+      z = np.matmul(A_minus_zero_point, B_minus_zero_point)
+      output = run_node(node_def, [A, B, a_zero_point, b_zero_point])
+      np.testing.assert_almost_equal(output["Z"], z)
+
+    node_def = helper.make_node("MatMulInteger", ["A", "B"], ["Z"])
+    for dtype in [np.uint8, np.int8]:
+      # A & B are 3-D tensor
+      A = self._get_rnd_int(
+          lower_bound[dtype], 20, shape=(2, 3, 4), dtype=dtype)
+      B = self._get_rnd_int(
+          lower_bound[dtype], 20, shape=(2, 4, 6), dtype=dtype)
+      z = np.matmul(A.astype(np.int32), B.astype(np.int32))
+      output = run_node(node_def, [A, B])
+      np.testing.assert_almost_equal(output["Z"], z)
+      # A & B are 4-D tensor
+      A = self._get_rnd_int(
+          lower_bound[dtype], 20, shape=(2, 5, 3, 4), dtype=dtype)
+      B = self._get_rnd_int(
+          lower_bound[dtype], 20, shape=(2, 1, 4, 6), dtype=dtype)
+      z = np.matmul(A.astype(np.int32), B.astype(np.int32))
+      output = run_node(node_def, [A, B])
+      np.testing.assert_almost_equal(output["Z"], z)
+
   def test_max(self):
     node_def = helper.make_node("Max", ["X1", "X2", "X3", "X4"], ["Z"])
     x1 = self._get_rnd_float32(shape=[10, 10])
