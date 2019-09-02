@@ -126,8 +126,11 @@ class LSTM(RNNMixin, BackendHandler):
 
     if "clip" in node.attrs:
       cell_kwargs["cell_clip"] = node.attrs["clip"]
-
+  
     tf_activations = [tf.nn.tanh]
+    if num_directions == 2:
+      tf_activations.append(tf.nn.tanh)
+
     if "activations" in node.attrs:
       activations = list(map(lambda x: x.lower(), node.attrs["activations"]))
       activation_alpha = node.attrs.get("activation_alpha", [None] * 6)
