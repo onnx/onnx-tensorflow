@@ -1,11 +1,6 @@
 import itertools
 import warnings
 
-try:
-  from itertools import izip as zip
-except ImportError:  # will be 3.x series
-  pass
-
 import numpy as np
 import tensorflow as tf
 
@@ -14,8 +9,7 @@ from onnx_tf.common import get_data_format
 from onnx_tf.common import get_perm_from_formats
 from onnx_tf.common import supports_device
 from .pad_mixin import PadMixin
-from .dilated_maxpooling import dilated_maxpool2d
-from .dilated_maxpooling import dilated_maxpool_with_argmax
+from .dilated_maxpooling import DilatedPooling
 
 # Constant string used to indicate that requested padding
 # is not natively supported in Tensorflow.
@@ -87,7 +81,8 @@ class PoolMixin(object):
       if need_trans:
         x = tf.transpose(x, perm=get_perm_from_formats(storage_format, "NHWC"))
       pooled, argmax = pool_func(
-          x, [1] + kernel_shape + [1], padding=pad, strides=[1] + strides + [1])
+          x, [1] + kernel_shape + [1], padding=pad, strides=[1] +
+          strides + [1])
       if need_trans:
         pooled = tf.transpose(
             pooled, perm=get_perm_from_formats("NHWC", storage_format))
@@ -117,60 +112,60 @@ class PoolMixin(object):
 
     return [pooled]
 
-
   @classmethod
   def pool_v10(cls, node, input_dict, pool_func, pooling_type, strict=True):
     x = input_dict[node.inputs[0]]
-    x_rank = len(x.get_shape())
-    spatial_size = x_rank - 2
 
-    storage_format, _ = get_data_format(x_rank)
+    kernel_shape = node.attrs["kernel_shape"]
+
+    spatial_size = len(kernel_shape)
+    x_rank = spatial_size + 2
 
     kernel_shape = node.attrs["kernel_shape"]
     strides = node.attrs.get("strides", [1] * spatial_size)
-    dilation = node.attrs.get("dilations", [1] * spatial_size)
+    dilations = node.attrs.get("dilations", [1] * spatial_size)
     ceil_mode = node.attrs.get("ceil_mode", 0)
     ceil_mode = bool(ceil_mode)
     auto_pad = node.attrs.get("auto_pad", "VALID")
     pads = node.attrs.get("pads", auto_pad)
 
-    # if no dilation, ceil_mode is False or no maxpool,
-    # use the old version of the op
-    if ((dilation == [1] * spatial_size) and (not ceil_mode)) or \
-       (pooling_type[:3] != "MAX"):
-      return cls.pool(node, input_dict, pool_func, pooling_type, strict)
-
-    if x_rank != 4:
+    if spatial_size > 3:
+      exception.OP_UNSUPPORTED_EXCEPT(
+          "MaxPool with {}D input".format(x_rank), "Tensorflow")
+    if pooling_type == "MAX_WITH_ARGMAX" and x_rank != 4:
       exception.OP_UNSUPPORTED_EXCEPT(
           "MaxPool with {}D input".format(x_rank), "Tensorflow")
     if node.attrs.get("storage_order", 0) != 0:
       exception.OP_UNSUPPORTED_EXCEPT("MaxPool with column major",
                                       "Tensorflow")
 
-    need_trans = storage_format != "NHWC"
+    storage_format, _ = get_data_format(x_rank)
+
+    need_trans = storage_format.startswith("NC")
     if need_trans:
-      x = tf.transpose(x, perm=get_perm_from_formats(storage_format, "NHWC"))
+      compute_format = "N" + storage_format[2:] + "C"
+      x = tf.transpose(x, perm=get_perm_from_formats(storage_format,
+                                                     compute_format))
+
+    dp = DilatedPooling(input=x, kernel_shape=kernel_shape, strides=strides,
+                        dilations=dilations, padding=pads, ceil_mode=ceil_mode)
 
     result = []
     if pooling_type == "MAX":
-      pooled = dilated_maxpool2d(
-        x, ksize = kernel_shape, strides = strides, dilation = dilation,
-        padding = pads, ceil_mode = ceil_mode)
+      pooled = dp.dilated_maxpool()
 
       if need_trans:
         pooled = tf.transpose(
-            pooled, perm=get_perm_from_formats("NHWC", storage_format))
+            pooled, perm=get_perm_from_formats(compute_format, storage_format))
       result = [pooled]
     elif pooling_type == "MAX_WITH_ARGMAX":
-      pooled, argmax = dilated_maxpool_with_argmax(
-        x, ksize = kernel_shape, strides = strides, dilation = dilation,
-        padding = pads, ceil_mode = ceil_mode)
+      pooled, argmax = dp.dilated_maxpool_with_argmax()
 
       if need_trans:
         pooled = tf.transpose(
-            pooled, perm=get_perm_from_formats("NHWC", storage_format))
+            pooled, perm=get_perm_from_formats(compute_format, storage_format))
         argmax = tf.transpose(
-            argmax, perm=get_perm_from_formats("NHWC", storage_format))
+            argmax, perm=get_perm_from_formats(compute_format, storage_format))
 
       result = [pooled, argmax]
     return result
@@ -256,8 +251,8 @@ class PoolMixin(object):
       pad_shape = [0] * len(input_spatial_shape)
       if auto_pad in ("SAME_UPPER", "SAME_LOWER"):
         for i in range(len(input_spatial_shape)):
-          pad_shape[i] = (output_spatial_shape[i] - 1) * strides_spatial[i] + kernel_spatial_shape[i] - \
-                         input_spatial_shape[i]
+          pad_shape[i] = (output_spatial_shape[i] - 1) * strides_spatial[i] + \
+                          kernel_spatial_shape[i] - input_spatial_shape[i]
       elif auto_pad in ("VALID", ""):
         pass
       return pad_shape
@@ -309,8 +304,8 @@ class PoolMixin(object):
     if pads == [0] * num_sp_dim * 2:
       return "VALID"
 
-    _, same_pads = cls._pool_get_shapes("SAME_UPPER", input_shape, kernel_shape,
-                                        strides, pads)
+    _, same_pads = cls._pool_get_shapes("SAME_UPPER", input_shape,
+                                        kernel_shape, strides, pads)
     if pads == same_pads:
       return "SAME"
 

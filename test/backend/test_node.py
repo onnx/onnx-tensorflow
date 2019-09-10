@@ -10,10 +10,10 @@ import tensorflow as tf
 from onnx_tf.backend import run_node
 from onnx_tf.common import supports_device
 from onnx_tf.common.legacy import legacy_onnx_pre_ver, legacy_opset_pre_ver
+from onnx_tf.common.pooling_helper import py_maxpool
 from onnx import helper
 from onnx import TensorProto
 from onnx import defs
-from onnx_tf.common.pooling_helper import py_maxpool
 
 
 class TestNode(unittest.TestCase):
@@ -737,26 +737,52 @@ class TestNode(unittest.TestCase):
     test_output = np.maximum(np.maximum(np.maximum(x1, x2), x3), x4)
     np.testing.assert_almost_equal(output["Z"], test_output)
 
-  def test_max_pool_ceil(self):
-    kernel_shape = [3, 3]
-    strides = [2, 2]
-    ceil_mode = 1
-    node_def = helper.make_node(
-        "MaxPool", ["X"], ["Y"],
-        kernel_shape=kernel_shape,
-        strides=strides,
-        ceil_mode=ceil_mode)
+
+  def _test_max_pool(self, input_shape, kernel_shape, strides=None, 
+                     dilations=None, pads=None, ceil_mode=None):
+    node_def_kwargs = {"op_type": "MaxPool", "inputs": ["X"], "outputs": ["Y"],
+        "kernel_shape": kernel_shape}
+
+    if strides is not None:
+        node_def_kwargs["strides"] = strides
+    if dilations is not None:
+        node_def_kwargs["dilations"] = dilations
+    if pads is not None:
+        node_def_kwargs["pads"] = pads
+    if ceil_mode is not None:
+        node_def_kwargs["ceil_mode"] = ceil_mode
+    else:
+        ceil_mode = 0
+
+    node_def = helper.make_node(**node_def_kwargs)
  
-    input_shape = [10, 3, 24, 24]
     x = self._get_rnd(input_shape)
     output = run_node(node_def, [x])
 
-    test_output, _ = py_maxpool(x, ksize=kernel_shape, strides=strides,
+    test_output, _ = py_maxpool(x, kernel_shape=kernel_shape, strides=strides,
+                                dilations=dilations, padding=pads,
                                 ceil_mode=ceil_mode)
 
     np.testing.assert_almost_equal(output["Y"], test_output)
 
-  def test_max_pool_dilation(self):
+  def test_max_pool_2d(self):
+    kernel_shape=[1, 2]
+    strides=[1, 2]
+
+    input_shape = [10, 10, 4, 4]
+    self._test_max_pool(input_shape=input_shape, kernel_shape=kernel_shape,
+                        strides=strides)
+
+  def test_max_pool_2d_ceil(self):
+    kernel_shape = [3, 3]
+    strides = [2, 2]
+    ceil_mode = 1
+
+    input_shape = [10, 3, 24, 24]
+    self._test_max_pool(input_shape=input_shape, kernel_shape=kernel_shape,
+                        strides=strides, ceil_mode=ceil_mode)
+
+  def test_max_pool_2d_dilations(self):
     kernel_shape = [3, 3]
     strides = [2, 2]
     dilations = [3, 3]
@@ -767,82 +793,68 @@ class TestNode(unittest.TestCase):
         dilations=dilations)
 
     input_shape = [10, 3, 24, 24]
-    x = self._get_rnd(input_shape)
-    output = run_node(node_def, [x])
-
-    test_output, _ = py_maxpool(x, ksize=kernel_shape, strides=strides,
-                                dilation=dilations)
-
-    np.testing.assert_almost_equal(output["Y"], test_output)
+    self._test_max_pool(input_shape=input_shape, kernel_shape=kernel_shape,
+                        strides=strides, dilations=dilations)
 
 
-  def test_max_pool_dilation_ceil(self):
+  def test_max_pool_2d_dilations_ceil(self):
     kernel_shape = [3, 3]
     strides = [2, 2]
     dilations = [3, 3]
-    ceil_mode = True
-    node_def = helper.make_node(
-        "MaxPool", ["X"], ["Y"],
-        kernel_shape=kernel_shape,
-        strides=strides,
-        dilations=dilations,
-        ceil_mode=ceil_mode)
+    ceil_mode = 1
 
     input_shape = [10, 3, 24, 24]
-    x = self._get_rnd(input_shape)
-    output = run_node(node_def, [x])
+    self._test_max_pool(input_shape=input_shape, kernel_shape=kernel_shape,
+                        strides=strides, dilations=dilations,
+                        ceil_mode=ceil_mode)
 
-    test_output, _ = py_maxpool(x, ksize=kernel_shape, strides=strides,
-                                dilation=dilations, ceil_mode=ceil_mode)
-
-    np.testing.assert_almost_equal(output["Y"], test_output)
-
-  def test_max_pool_dilation_pads(self):
+  def test_max_pool_2d_dilations_pads(self):
     kernel_shape = [3, 3]
     strides = [2, 2]
     dilations = [3, 3]
     pads = [1, 1, 2, 2]
-    node_def = helper.make_node(
-        "MaxPool", ["X"], ["Y"],
-        kernel_shape=kernel_shape,
-        strides=strides,
-        dilations=dilations,
-        pads=pads)
 
     input_shape = [10, 3, 24, 24]
-    x = self._get_rnd(input_shape)
-    output = run_node(node_def, [x])
+    self._test_max_pool(input_shape=input_shape, kernel_shape=kernel_shape,
+                        strides=strides, dilations=dilations, pads=pads)
 
-    test_output, _ = py_maxpool(x, ksize=kernel_shape, strides=strides,
-                                dilation=dilations, pads=pads)
-
-    np.testing.assert_almost_equal(output["Y"], test_output)
-
-  def test_max_pool_dilation_ceil_pads(self):
+  def test_max_pool_2d_dilations_ceil_pads(self):
     kernel_shape = [3, 3]
     strides = [2, 2]
     dilations = [3, 3]
     pads = [1, 1, 2, 2]
-    ceil_mode = True
-    node_def = helper.make_node(
-        "MaxPool", ["X"], ["Y"],
-        kernel_shape=kernel_shape,
-        strides=strides,
-        dilations=dilations,
-        pads=pads,
-        ceil_mode=ceil_mode)
+    ceil_mode = 1
 
     input_shape = [10, 3, 23, 23]
-    x = self._get_rnd(input_shape)
-    output = run_node(node_def, [x])
+    self._test_max_pool(input_shape=input_shape, kernel_shape=kernel_shape,
+                        strides=strides, dilations=dilations, pads=pads,
+                        ceil_mode=ceil_mode)
 
-    test_output, _ = py_maxpool(x, ksize=kernel_shape, strides=strides,
-                                dilation=dilations, pads=pads,
-                                ceil_mode=ceil_mode)
+  def test_max_pool_3d_dilations_ceil_pads(self):
+    kernel_shape = [3, 3, 3]
+    strides = [2, 2, 2]
+    dilations = [3, 3, 3]
+    pads = [1, 1, 2, 2, 1, 1]
+    ceil_mode = 1
 
-    np.testing.assert_almost_equal(output["Y"], test_output)
+    input_shape = [10, 3, 23, 23, 23]
+    self._test_max_pool(input_shape=input_shape, kernel_shape=kernel_shape,
+                        strides=strides, dilations=dilations, pads=pads,
+                        ceil_mode=ceil_mode)
 
-  def test_max_pool_with_argmax_dilation_ceil_pads(self):
+  def test_max_pool_1d_dilations_ceil_pads(self):
+    kernel_shape = [3]
+    strides = [2]
+    dilations = [3]
+    pads = [1, 2]
+    ceil_mode = 1
+
+    input_shape = [10, 3, 23]
+    self._test_max_pool(input_shape=input_shape, kernel_shape=kernel_shape,
+                        strides=strides, dilations=dilations, pads=pads,
+                        ceil_mode=ceil_mode)
+
+  def test_max_pool_with_argmax_2d_dilations_ceil_pads(self):
     kernel_shape = [3, 3]
     strides = [2, 2]
     dilations = [3, 3]
@@ -860,31 +872,36 @@ class TestNode(unittest.TestCase):
     x = self._get_rnd(input_shape)
     output = run_node(node_def, [x])
 
-    test_output, test_ind = py_maxpool(x, ksize=kernel_shape, strides=strides,
-                                       dilation=dilations, pads=pads,
+    test_output, test_ind = py_maxpool(x, kernel_shape=kernel_shape, strides=strides,
+                                       dilations=dilations, padding=pads,
                                        ceil_mode=ceil_mode)
 
     np.testing.assert_almost_equal(output["Y"], test_output)
     np.testing.assert_almost_equal(output["Ind"], test_ind)
 
-  def test_max_pool(self):
-    return
+  def test_max_pool_with_argmax_3d(self):
+    kernel_shape = [3, 3, 3]
+    strides = [2, 2, 2]
     node_def = helper.make_node(
-        "MaxPool", ["X"], ["Y"],
-        dilations=[1, 1],
-        kernel_shape=[1, 2],
-        pads=[0, 0],
-        strides=[1, 2])
-    x = self._get_rnd_float32(shape=[10, 10, 4, 4])
-    output = run_node(node_def, [x])
-    test_output = np.zeros([10, 10, 4, 2])
-    for i1 in range(0, 10):
-      for i2 in range(0, 10):
-        for j1 in range(0, 4):
-          for j2 in range(0, 2):
-            test_output[i1][i2][j1][j2] = \
-              max(x[i1][i2][j1][2*j2], x[i1][i2][j1][2*j2 + 1])
-    np.testing.assert_almost_equal(output["Y"], test_output)
+        "MaxPool", ["X"], ["Y", "Ind"],
+        kernel_shape=kernel_shape,
+        strides=strides)
+
+    input_shape = [10, 1, 23, 23, 23]
+    x = self._get_rnd(input_shape)
+    self.assertRaises(RuntimeError, run_node, node_def, [x])
+
+  def test_max_pool_4d(self):
+    kernel_shape = [3, 3, 3, 3]
+    strides = [2, 2, 2, 2]
+    node_def = helper.make_node(
+        "MaxPool", ["X"], ["Y", "Ind"],
+        kernel_shape=kernel_shape,
+        strides=strides)
+
+    input_shape = [1, 1, 4, 4, 4, 4]
+    x = self._get_rnd(input_shape)
+    self.assertRaises(RuntimeError, run_node, node_def, [x])
 
   def test_mean_variance_normalization(self):
     if legacy_opset_pre_ver(9):

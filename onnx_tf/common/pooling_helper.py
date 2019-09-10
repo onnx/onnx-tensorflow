@@ -1,23 +1,25 @@
+from numpy import inf
 import numpy as np
+import itertools
 
 
-def py_maxpool(input, ksize, strides, dilation=[1, 1],
-               pads=[0, 0, 0, 0], ceil_mode=False):
+def py_maxpool(input, kernel_shape, strides=None, dilations=None,
+               padding=None, ceil_mode=False):
     """
         Implementation of MaxPool operation in Python
         Args:
-            input:      input 4D data array in NCHW format
-            ksize:      the size of the kernel along each axis
-            strides:    stride along each spatial axis
-            dilation:   dilation value along each spatial axis of filter
-            pads:       padding for the beginning and ending along each
-                        spatial axis. `pads` format should be as follow
-                        [x1_begin, x2_begin...x1_end, x2_end,...]
-            ceil_mode:  wether to use ceil or floor (default) to compute
-                        the output shape.
+            input:        input N-D data array in NC* format
+            kernel_shape: the size of the kernel along each axis
+            strides:      stride along each spatial axis
+            dilations:    dilations value along each spatial axis of filter
+            padding:      padding for the beginning and ending along each
+                          spatial axis. `padding` format should be as follow
+                          [x1_begin, x2_begin...x1_end, x2_end,...]
+            ceil_mode:    whether to use ceil or floor (default) to compute
+                          the output shape.
       Return:
-            pooled:     output data from max pooling across the input
-            ind:        indices from max pooling across the input
+            pooled:       output data from max pooling across the input
+            ind:          indices of the selected max values from the input
     """
 
     def _pooling_output_shape(input_size, ksize, stride,
@@ -29,49 +31,80 @@ def py_maxpool(input, ksize, strides, dilation=[1, 1],
                 output_size -= 1
         return output_size
 
-    kH, kW = ksize
-    sH, sW = strides
-    dH, dW = dilation
+    def _loop_over_output(batch, channel):
+        dims = [range(output_sp_shape[d]) for d in range(spatial_size)]
+        for counters in itertools.product(*dims):
+            input_ranges = []
+            for dim in range(spatial_size):
+                dim_start = \
+                    counters[dim] * strides[dim] - pads[dim * 2]
+                dim_end = \
+                    min(dim_start + (kernel_shape[dim] - 1) * dilations[dim]
+                        + 1, inp_sp_shape[dim])
+                while dim_start < 0:
+                    dim_start += dilations[dim]
 
-    pad_top, pad_left, pad_bottom, pad_right = pads
-    padH = pad_top + pad_bottom
-    padW = pad_left + pad_right
+                cur_range = [i for i in range(dim_start,
+                                              dim_end, dilations[dim])]
+                input_ranges.append(cur_range)
+            maxval = -inf
+            maxind = -1
+            for input_ind in itertools.product(*input_ranges):
+                ind = (batch, channel) + input_ind
+                val = input[ind]
+                if val > maxval:
+                    maxval = val
+                    ind = 0
+                    for i in range(spatial_size):
+                        coef = 1
+                        for j in range(i+1, spatial_size):
+                            coef *= inp_sp_shape[j]
+                        ind += input_ind[i] * coef
+                    maxind = ind
+            ind = (batch, channel) + counters
+            out_pool[ind] = maxval
+            out_ind[ind] = maxind
+
+    spatial_size = len(kernel_shape)
 
     input_shape = np.shape(input)
-    iheight, iwidth = input_shape[2:4]
+    inp_sp_shape = input_shape[2:]
 
-    oheight = _pooling_output_shape(iheight, kH, sH, dH, padH, ceil_mode)
-    owidth = _pooling_output_shape(iwidth, kW, sW, dW, padW, ceil_mode)
+    batch_size = input_shape[0]
+    channels_num = input_shape[1]
 
-    out_pool = np.zeros((input_shape[0], input_shape[1],
-                        oheight, owidth), input.dtype)
-    out_ind = np.zeros((input_shape[0], input_shape[1],
-                       oheight, owidth), 'int64')
+    if strides is None:
+        strides = kernel_shape
 
-    for batch in range(input_shape[0]):
-        for channel in range(input_shape[1]):
-            # Loop over output
-            for i in range(oheight):
-                for j in range(owidth):
-                    hstart = i * sH - pad_top
-                    wstart = j * sW - pad_left
-                    hend = min(hstart + (kH - 1) * dH + 1, iheight)
-                    wend = min(wstart + (kW - 1) * dW + 1, iwidth)
-                    while hstart < 0:
-                        hstart += dH
-                    while wstart < 0:
-                        wstart += dW
+    if dilations is None:
+        dilations = [1] * spatial_size
 
-                    maxind = -1
-                    maxval = -np.inf
+    if padding is None:
+        padding = [0] * spatial_size * 2
 
-                    for y in range(hstart, hend, dH):
-                        for x in range(wstart, wend, dW):
-                            val = input[batch][channel][y][x]
-                            if val > maxval:
-                                maxval = val
-                                maxind = y * iwidth + x
-                    out_pool[batch][channel][i][j] = maxval
-                    out_ind[batch][channel][i][j] = maxind
+    pads = []
+    pad_along_axis = []
+    output_sp_shape = []
 
-    return (out_pool, out_ind)
+    for dim in range(spatial_size):
+        pads.append(padding[dim])
+        pads.append(padding[dim + spatial_size])
+        pad_along_axis.append(padding[dim] + padding[dim + spatial_size])
+
+        input_size = input_shape[dim + 2]
+        output_size = \
+            _pooling_output_shape(input_size, kernel_shape[dim],
+                                  strides[dim], dilations[dim],
+                                  pad_along_axis[dim], ceil_mode)
+        output_sp_shape.append(output_size)
+
+    out_pool = np.zeros([input_shape[0], input_shape[1]] +
+                        output_sp_shape, input.dtype)
+    out_ind = np.zeros([input_shape[0], input_shape[1]] +
+                       output_sp_shape, np.int64)
+
+    for batch in range(batch_size):
+        for channel in range(channels_num):
+            _loop_over_output(batch, channel)
+
+    return out_pool, out_ind
