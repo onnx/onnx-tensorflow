@@ -14,7 +14,6 @@ from onnx_tf.common.pooling_helper import py_maxpool
 from onnx import helper
 from onnx import TensorProto
 from onnx import defs
-from onnx_tf.common.pooling_helper import py_maxpool
 
 
 class TestNode(unittest.TestCase):
@@ -738,138 +737,55 @@ class TestNode(unittest.TestCase):
     test_output = np.maximum(np.maximum(np.maximum(x1, x2), x3), x4)
     np.testing.assert_almost_equal(output["Z"], test_output)
 
-  def test_max_pool_ceil(self):
+
+  def _test_max_pool(self, input_shape, kernel_shape, strides=None, 
+                     dilations=None, pads=None, ceil_mode=None):
+    node_def_kwargs = {"op_type": "MaxPool", "inputs": ["X"], "outputs": ["Y"],
+        "kernel_shape": kernel_shape}
+
+    if strides is not None:
+        node_def_kwargs["strides"] = strides
+    if dilations is not None:
+        node_def_kwargs["dilations"] = dilations
+    if pads is not None:
+        node_def_kwargs["pads"] = pads
+    if ceil_mode is not None:
+        node_def_kwargs["ceil_mode"] = ceil_mode
+    else:
+        ceil_mode = 0
+
+    node_def = helper.make_node(**node_def_kwargs)
+ 
+    x = self._get_rnd(input_shape)
+    output = run_node(node_def, [x])
+
+    test_output, _ = py_maxpool(x, kernel_shape=kernel_shape, strides=strides,
+                                dilations=dilations, padding=pads,
+                                ceil_mode=ceil_mode)
+
+    np.testing.assert_almost_equal(output["Y"], test_output)
+
+  def test_max_pool_2d(self):
+    kernel_shape=[1, 2]
+    strides=[1, 2]
+
+    input_shape = [10, 10, 4, 4]
+    self._test_max_pool(input_shape=input_shape, kernel_shape=kernel_shape,
+                        strides=strides)
+
+  def test_max_pool_2d_ceil(self):
     kernel_shape = [3, 3]
     strides = [2, 2]
     ceil_mode = 1
-    node_def = helper.make_node(
-        "MaxPool", ["X"], ["Y"],
-        kernel_shape=kernel_shape,
-        strides=strides,
-        ceil_mode=ceil_mode)
- 
-    input_shape = [10, 3, 24, 24]
-    x = self._get_rnd(input_shape)
-    output = run_node(node_def, [x])
-
-    test_output, _ = py_maxpool(x, ksize=kernel_shape, strides=strides,
-                                ceil_mode=ceil_mode)
-
-    np.testing.assert_almost_equal(output["Y"], test_output)
-
-  def test_max_pool_dilation(self):
-    kernel_shape = [3, 3]
-    strides = [2, 2]
-    dilations = [3, 3]
-    node_def = helper.make_node(
-        "MaxPool", ["X"], ["Y"],
-        kernel_shape=kernel_shape,
-        strides=strides,
-        dilations=dilations)
 
     input_shape = [10, 3, 24, 24]
-    x = self._get_rnd(input_shape)
-    output = run_node(node_def, [x])
+    self._test_max_pool(input_shape=input_shape, kernel_shape=kernel_shape,
+                        strides=strides, ceil_mode=ceil_mode)
 
-    test_output, _ = py_maxpool(x, ksize=kernel_shape, strides=strides,
-                                dilation=dilations)
-
-    np.testing.assert_almost_equal(output["Y"], test_output)
-
-
-  def test_max_pool_dilation_ceil(self):
+  def test_max_pool_2d_dilations(self):
     kernel_shape = [3, 3]
     strides = [2, 2]
     dilations = [3, 3]
-    ceil_mode = True
-    node_def = helper.make_node(
-        "MaxPool", ["X"], ["Y"],
-        kernel_shape=kernel_shape,
-        strides=strides,
-        dilations=dilations,
-        ceil_mode=ceil_mode)
-
-    input_shape = [10, 3, 24, 24]
-    x = self._get_rnd(input_shape)
-    output = run_node(node_def, [x])
-
-    test_output, _ = py_maxpool(x, ksize=kernel_shape, strides=strides,
-                                dilation=dilations, ceil_mode=ceil_mode)
-
-    np.testing.assert_almost_equal(output["Y"], test_output)
-
-  def test_max_pool_dilation_pads(self):
-    kernel_shape = [3, 3]
-    strides = [2, 2]
-    dilations = [3, 3]
-    pads = [1, 1, 2, 2]
-    node_def = helper.make_node(
-        "MaxPool", ["X"], ["Y"],
-        kernel_shape=kernel_shape,
-        strides=strides,
-        dilations=dilations,
-        pads=pads)
-
-    input_shape = [10, 3, 24, 24]
-    x = self._get_rnd(input_shape)
-    output = run_node(node_def, [x])
-
-    test_output, _ = py_maxpool(x, ksize=kernel_shape, strides=strides,
-                                dilation=dilations, pads=pads)
-
-    np.testing.assert_almost_equal(output["Y"], test_output)
-
-  def test_max_pool_dilation_ceil_pads(self):
-    kernel_shape = [3, 3]
-    strides = [2, 2]
-    dilations = [3, 3]
-    pads = [1, 1, 2, 2]
-    ceil_mode = True
-    node_def = helper.make_node(
-        "MaxPool", ["X"], ["Y"],
-        kernel_shape=kernel_shape,
-        strides=strides,
-        dilations=dilations,
-        pads=pads,
-        ceil_mode=ceil_mode)
-
-    input_shape = [10, 3, 23, 23]
-    x = self._get_rnd(input_shape)
-    output = run_node(node_def, [x])
-
-    test_output, _ = py_maxpool(x, ksize=kernel_shape, strides=strides,
-                                dilation=dilations, pads=pads,
-                                ceil_mode=ceil_mode)
-
-    np.testing.assert_almost_equal(output["Y"], test_output)
-
-  def test_max_pool_with_argmax_dilation_ceil_pads(self):
-    kernel_shape = [3, 3]
-    strides = [2, 2]
-    dilations = [3, 3]
-    pads = [1, 1, 2, 2]
-    ceil_mode = True
-    node_def = helper.make_node(
-        "MaxPool", ["X"], ["Y", "Ind"],
-        kernel_shape=kernel_shape,
-        strides=strides,
-        dilations=dilations,
-        pads=pads,
-        ceil_mode=ceil_mode)
-
-    input_shape = [10, 1, 23, 23]
-    x = self._get_rnd(input_shape)
-    output = run_node(node_def, [x])
-
-    test_output, test_ind = py_maxpool(x, ksize=kernel_shape, strides=strides,
-                                       dilation=dilations, pads=pads,
-                                       ceil_mode=ceil_mode)
-
-    np.testing.assert_almost_equal(output["Y"], test_output)
-    np.testing.assert_almost_equal(output["Ind"], test_ind)
-
-  def test_max_pool(self):
-    return
     node_def = helper.make_node(
         "MaxPool", ["X"], ["Y"],
         kernel_shape=kernel_shape,
@@ -882,27 +798,17 @@ class TestNode(unittest.TestCase):
 
 
   def test_max_pool_2d_dilations_ceil(self):
-    if legacy_opset_pre_ver(10):
-      raise unittest.SkipTest(
-          "ONNX version {} doesn't support dilations nor ceil mode.".format(
-              defs.onnx_opset_version()))
-
     kernel_shape = [3, 3]
     strides = [2, 2]
     dilations = [3, 3]
     ceil_mode = 1
 
-    input_shape = [10, 3, 23, 23]
+    input_shape = [10, 3, 24, 24]
     self._test_max_pool(input_shape=input_shape, kernel_shape=kernel_shape,
                         strides=strides, dilations=dilations,
                         ceil_mode=ceil_mode)
 
   def test_max_pool_2d_dilations_pads(self):
-    if legacy_opset_pre_ver(10):
-      raise unittest.SkipTest(
-          "ONNX version {} doesn't support dilations.".format(
-              defs.onnx_opset_version()))
-
     kernel_shape = [3, 3]
     strides = [2, 2]
     dilations = [3, 3]
@@ -913,11 +819,6 @@ class TestNode(unittest.TestCase):
                         strides=strides, dilations=dilations, pads=pads)
 
   def test_max_pool_2d_dilations_ceil_pads(self):
-    if legacy_opset_pre_ver(10):
-      raise unittest.SkipTest(
-          "ONNX version {} doesn't support dilations nor ceil mode.".format(
-              defs.onnx_opset_version()))
-
     kernel_shape = [3, 3]
     strides = [2, 2]
     dilations = [3, 3]
@@ -929,52 +830,7 @@ class TestNode(unittest.TestCase):
                         strides=strides, dilations=dilations, pads=pads,
                         ceil_mode=ceil_mode)
 
-  def test_max_pool_2d_dilations_same_lower(self):
-    if legacy_opset_pre_ver(10):
-      raise unittest.SkipTest(
-          "ONNX version {} doesn't support dilations.".format(
-              defs.onnx_opset_version()))
-
-    kernel_shape = [3, 3]
-    strides = [2, 2]
-    dilations = [3, 3]
-    auto_pad = "same_lower"
-
-    input_shape = [10, 3, 24, 24]
-    self._test_max_pool(input_shape=input_shape, kernel_shape=kernel_shape,
-                        strides=strides, dilations=dilations,
-                        auto_pad=auto_pad)
-
-  def test_max_pool_2d_dilations_same_upper(self):
-    if legacy_opset_pre_ver(10):
-      raise unittest.SkipTest(
-          "ONNX version {} doesn't support dilations.".format(
-              defs.onnx_opset_version()))
-
-    kernel_shape = [2, 3]
-    strides = [4, 2]
-    dilations = [3, 5]
-    auto_pad = "SAME_UPPER"
-
-    input_shape = [10, 3, 24, 24]
-    self._test_max_pool(input_shape=input_shape, kernel_shape=kernel_shape,
-                        strides=strides, dilations=dilations,
-                        auto_pad=auto_pad)
-
-  def test_max_pool_3d(self):
-    kernel_shape = [3, 3, 3]
-    strides = [2, 2, 2]
-
-    input_shape = [10, 3, 23, 23, 23]
-    self._test_max_pool(input_shape=input_shape, kernel_shape=kernel_shape,
-                        strides=strides)
-
   def test_max_pool_3d_dilations_ceil_pads(self):
-    if legacy_opset_pre_ver(10):
-      raise unittest.SkipTest(
-          "ONNX version {} doesn't support dilations nor ceil mode.".format(
-              defs.onnx_opset_version()))
-
     kernel_shape = [3, 3, 3]
     strides = [2, 2, 2]
     dilations = [3, 3, 3]
@@ -986,28 +842,7 @@ class TestNode(unittest.TestCase):
                         strides=strides, dilations=dilations, pads=pads,
                         ceil_mode=ceil_mode)
 
-  def test_max_pool_3d_dilations_same_lower(self):
-    if legacy_opset_pre_ver(10):
-      raise unittest.SkipTest(
-          "ONNX version {} doesn't support dilations.".format(
-              defs.onnx_opset_version()))
-
-    kernel_shape = [3, 1, 2]
-    strides = [2, 2, 1]
-    dilations = [3, 2, 5]
-    auto_pad = "SAME_LOWER"
-
-    input_shape = [10, 3, 23, 23, 23]
-    self._test_max_pool(input_shape=input_shape, kernel_shape=kernel_shape,
-                        strides=strides, dilations=dilations,
-                        auto_pad=auto_pad)
-
   def test_max_pool_1d_dilations_ceil_pads(self):
-    if legacy_opset_pre_ver(10):
-      raise unittest.SkipTest(
-          "ONNX version {} doesn't support dilations nor ceil mode.".format(
-              defs.onnx_opset_version()))
-
     kernel_shape = [3]
     strides = [2]
     dilations = [3]
@@ -1019,20 +854,7 @@ class TestNode(unittest.TestCase):
                         strides=strides, dilations=dilations, pads=pads,
                         ceil_mode=ceil_mode)
 
-  def test_max_pool_1d(self):
-    kernel_shape = [3]
-    strides = [2]
-
-    input_shape = [10, 3, 23]
-    self._test_max_pool(input_shape=input_shape, kernel_shape=kernel_shape,
-                        strides=strides)
-
   def test_max_pool_with_argmax_2d_dilations_ceil_pads(self):
-    if legacy_opset_pre_ver(10):
-      raise unittest.SkipTest(
-          "ONNX version {} doesn't support dilations nor ceil mode.".format(
-              defs.onnx_opset_version()))
-
     kernel_shape = [3, 3]
     strides = [2, 2]
     dilations = [3, 3]
