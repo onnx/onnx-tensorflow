@@ -31,4 +31,9 @@ setuptools.setup(
     author_email='tian.jin1@ibm.com',
     license='Apache License 2.0',
     packages=setuptools.find_packages(),
-    zip_safe=False)
+    zip_safe=False, 
+    classifiers=[
+         "Programming Language :: Python :: 2",
+         "Programming Language :: Python :: 3"
+    ]
+)
