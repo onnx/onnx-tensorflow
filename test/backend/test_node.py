@@ -24,6 +24,9 @@ class TestNode(unittest.TestCase):
                       .reshape(shape) \
                       .astype(np.float32)
 
+  def _get_rnd_int(self, low, high=None, shape=None, dtype=np.int32):
+    return np.random.randint(low, high, size=shape, dtype=dtype)
+
   def _elu(self, x):
     # f(x) = alpha * (exp(x) - 1.) for x < 0,
     # f(x) = x for x >= 0
@@ -791,7 +794,7 @@ class TestNode(unittest.TestCase):
       raise unittest.SkipTest("ONNX version {} doesn't support OneHot.".format(
           defs.onnx_opset_version()))
     indices = np.array([[0, 2], [1, 2], [0, 1]])
-    depth = np.array([5], dtype=np.int32)
+    depth = np.int32(5)
     on_value = 6.0
     off_value = 2.0
     values = np.array([off_value, on_value])
@@ -801,6 +804,34 @@ class TestNode(unittest.TestCase):
     y = y * (on_value - off_value) + off_value
     output = run_node(node_def, inputs=[indices, depth, values])
     np.testing.assert_equal(output['y'], y)
+
+  def test_range(self):
+    if legacy_opset_pre_ver(11):
+      raise unittest.SkipTest("ONNX version {} doesn't support Range.".format(
+          defs.onnx_opset_version()))
+    node_def = helper.make_node(
+        "Range", ['start', 'limit', 'delta'], ['y'])
+    # test positive_delta
+    start = self._get_rnd_int(low=0, high=3)
+    limit = self._get_rnd_int(low=10, high=30)
+    delta = np.int32(3)
+    output = run_node(node_def, [start, limit, delta])
+    np.testing.assert_equal(output['y'], range(start, limit, delta))
+    # test negative_delta
+    start = self._get_rnd_int(low=20, high=30)
+    limit = self._get_rnd_int(low=1, high=5)
+    delta = np.int32(-2)
+    output = run_node(node_def, [start, limit, delta])
+    np.testing.assert_equal(output['y'], range(start, limit, delta))
+
+  def test_round(self):
+    if legacy_opset_pre_ver(11):
+      raise unittest.SkipTest("ONNX version {} doesn't support Round.".format(
+          defs.onnx_opset_version()))
+    node_def = helper.make_node("Round", ["X"], ["Y"])
+    x = self._get_rnd([1000], -20.0, 20.0)
+    output = run_node(node_def, [x])
+    np.testing.assert_almost_equal(output["Y"], np.round(x))
 
   def test_relu(self):
     node_def = helper.make_node("Relu", ["X"], ["Y"])

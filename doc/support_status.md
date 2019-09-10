@@ -113,7 +113,7 @@ ______
 |RandomNormalLike|1|
 |RandomUniform|1|
 |RandomUniformLike|1|
-|Range|N/A|
+|Range|11|
 |Reciprocal|1, 6|
 |ReduceL1|1|
 |ReduceL2|1|
@@ -130,7 +130,7 @@ ______
 |Resize|10|
 |ReverseSequence|10|
 |RoiAlign|N/A|
-|Round|N/A|
+|Round|11|
 |SVMClassifier|N/A|
 |SVMRegressor|N/A|
 |Scaler|N/A|
