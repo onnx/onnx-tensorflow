@@ -66,6 +66,7 @@ Notes:
 |GRU|1, 3, 7|
 |Gather|1|
 |GatherElements|N/A|
+|GatherND|N/A|
 |Gemm|1, 6, 7, 9|
 |GlobalAveragePool|1|
 |GlobalLpPool|1, 2|

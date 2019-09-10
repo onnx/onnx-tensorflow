@@ -51,6 +51,7 @@ backend_opset_version = {
     'GRU': [1, 3, 7],
     'Gather': [1],
     'GatherElements': [],
+    'GatherND': [],
     'Gemm': [1, 6, 7, 9],
     'GlobalAveragePool': [1],
     'GlobalLpPool': [1, 2],
