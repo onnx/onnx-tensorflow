@@ -164,20 +164,22 @@ class DilatedPooling(object):
         gather_ind = tf.range(channel_num, dtype=tf.int64)
         gather_ind = tf.expand_dims(gather_ind, 1)
 
-        self.output_shape = [input_shape[0]]
+        self.output_shape = np.zeros([self.spatial_size + 2])
+        self.output_shape[0] = input_shape[0]
         for dim in range(self.spatial_size - 1, -1, -1):
             filter_size = (self.kernel_shape[dim] - 1) * \
                            self.dilations[dim] + 1
             output_size = (((in_spatial_shape[dim] - filter_size) //
                            self.strides[dim]) + 1) * self.kernel_shape[dim]
-            self.output_shape += [output_size]
+            self.output_shape[dim + 1] = output_size
             local_ind = tf.range(output_size)
             local_ind = self._calc_input_ind(local_ind, self.kernel_shape[dim],
                                              self.dilations[dim],
                                              self.strides[dim])
 
             gather_ind = self._tf_product(gather_ind, local_ind)
-        self.output_shape += [channel_num]
+
+        self.output_shape[self.spatial_size + 1] = channel_num
 
         for x in range(self.spatial_size):
             gather_ind = tf.expand_dims(gather_ind, 0)
@@ -420,7 +422,6 @@ class DilatedPooling(object):
             if padding_ == "SAME":
                 # pad the input
                 self._pad_input()
-
             input_ = self._reduce_dilations()
             pooled = tf.nn.pool(input_, window_shape=self.kernel_shape,
                                 strides=self.kernel_shape, padding="VALID",

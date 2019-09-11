@@ -835,7 +835,7 @@ class TestNode(unittest.TestCase):
     dilations = [3, 3]
     ceil_mode = 1
 
-    input_shape = [10, 3, 24, 24]
+    input_shape = [10, 3, 23, 23]
     self._test_max_pool(input_shape=input_shape, kernel_shape=kernel_shape,
                         strides=strides, dilations=dilations,
                         ceil_mode=ceil_mode)
@@ -897,9 +897,9 @@ class TestNode(unittest.TestCase):
                         ceil_mode=ceil_mode)
 
   def test_max_pool_3d_dilations_same_lower(self):
-    kernel_shape = [3, 2, 3]
+    kernel_shape = [3, 1, 2]
     strides = [2, 2, 1]
-    dilations = [2, 3, 1]
+    dilations = [3, 2, 5]
     auto_pad = "SAME_LOWER"
 
     input_shape = [10, 3, 23, 23, 23]
