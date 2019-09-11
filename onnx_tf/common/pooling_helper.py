@@ -4,7 +4,8 @@ import itertools
 import math
 
 
-def calc_pads_same(in_spatial_shape, kernel_shape, strides, dilations, padding):
+def calc_pads_same(in_spatial_shape, kernel_shape, strides,
+                   dilations, padding):
     pads_begin = []
     pads_end = []
     spatial_size = len(in_spatial_shape)
@@ -26,6 +27,7 @@ def calc_pads_same(in_spatial_shape, kernel_shape, strides, dilations, padding):
         pads_end.append(pad_end)
 
     return pads_begin + pads_end
+
 
 def py_maxpool(input, kernel_shape, strides=None, dilations=None,
                padding=None, ceil_mode=False):
