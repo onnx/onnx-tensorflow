@@ -200,15 +200,29 @@ class DilatedPooling(object):
             in_size = in_spatial_shape[i]
             filter_size = (self.kernel_shape[i] - 1) * self.dilations[i] + 1
 
-            out_size = tf.cast(tf.math.ceil(in_size / self.strides[i]),
-                               tf.int64)
-            pad_along_axis = tf.math.maximum((out_size - 1) * self.strides[i] +
-                                             filter_size - in_size, 0)
-            if self.padding.lower() == "same_lower":
-                pad_op = tf.math.ceil
+            if self.is_known_shape:
+                maximum_op = np.maximum
+                ceil_op = np.ceil
+                floor_op = np.floor
             else:
-                pad_op = tf.math.floor
-            pad_begin = tf.cast(pad_op(pad_along_axis / 2), dtype=tf.int64)
+                maximum_op = tf.maximum
+                ceil_op = tf.ceil
+                floor_op = tf.floor
+
+            out_size = ceil_op(in_size / self.strides[i])
+            pad_along_axis = maximum_op((out_size - 1) * self.strides[i] +
+                                        filter_size - in_size, 0)
+            if self.padding.lower() == "same_lower":
+                pad_op = ceil_op
+            else:
+                pad_op = floor_op
+            pad_begin = pad_op(pad_along_axis / 2)
+            if self.is_known_shape:
+                pad_begin = pad_begin.astype(np.int64)
+                pad_along_axis = pad_along_axis.astype(np.int64)
+            else:
+                pad_begin = tf.cast(pad_begin, tf.int64)
+                pad_along_axis = tf.cast(pad_along_axis, tf.int64)
             pad_end = pad_along_axis - pad_begin
 
             pads += [pad_begin, pad_end]
@@ -255,13 +269,13 @@ class DilatedPooling(object):
         # check for explicit padding
         if type(self.padding) is list:
             pads += self._calc_pads_explicit()
-        elif self.padding[:4].lower() == "same":
+        elif self.padding.lower().startswith("same"):
             pads += self._calc_pads_same(in_spatial_shape)
 
         # when padding is set to SAME, ceil_mode will not do anything
         # because output sizes will be multiple of the strides
         if self.ceil_mode and (type(self.padding) is list or
-                               self.padding[:4].lower() != "same"):
+                               not self.padding.lower().startswith("same")):
             new_spatial_shape = [in_spatial_shape[i] + pads[i * 2] +
                                  pads[i * 2 + 1] for i in
                                  range(self.spatial_size)]
@@ -327,10 +341,11 @@ class DilatedPooling(object):
         # spatial_size != 2
         assert self.spatial_size == 2
 
-        self._pad_input()
-
         if list(self.dilations) != [1] * self.spatial_size or \
            force_custom_impl:
+            # pad the input
+            self._pad_input()
+
             new_input = self._reduce_dilations()
             kernel_shape = [1] + list(self.kernel_shape) + [1]
             pooled, new_ind = tf.nn.max_pool_with_argmax(
@@ -340,6 +355,9 @@ class DilatedPooling(object):
         else:
             if type(self.padding) is list or \
                self.padding.lower() == "same_lower":
+                # pad the input
+                self._pad_input()
+
                 padding_ = "VALID"
             elif self.padding.lower() == "same_upper":
                 padding_ = "SAME"
@@ -363,10 +381,11 @@ class DilatedPooling(object):
             Does N-D dilated max pooling. Pads the input if explicit or
             SAME_* padding is provided or ceil_mode is True
         """
-        # pad the input first
-        self._pad_input()
 
         if type(self.padding) is list or self.padding.lower() == "same_lower":
+            # pad the input
+            self._pad_input()
+
             padding_ = "VALID"
         elif self.padding.lower() == "same_upper":
             padding_ = "SAME"
@@ -398,6 +417,10 @@ class DilatedPooling(object):
         # applying the strides and dilations. Then use tf.nn.pool with
         # strides = kernel_shape and no dilations
         else:
+            if padding_ == "SAME":
+                # pad the input
+                self._pad_input()
+
             input_ = self._reduce_dilations()
             pooled = tf.nn.pool(input_, window_shape=self.kernel_shape,
                                 strides=self.kernel_shape, padding="VALID",

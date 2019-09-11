@@ -1,7 +1,31 @@
 from numpy import inf
 import numpy as np
 import itertools
+import math
 
+
+def calc_pads_same(in_spatial_shape, kernel_shape, strides, dilations, padding):
+    pads_begin = []
+    pads_end = []
+    spatial_size = len(in_spatial_shape)
+    for i in range(spatial_size):
+        in_size = in_spatial_shape[i]
+        filter_size = (kernel_shape[i] - 1) * dilations[i] + 1
+
+        out_size = int(math.ceil(in_size / strides[i]))
+        pad_along_axis = max((out_size - 1) * strides[i] +
+                             filter_size - in_size, 0)
+        if padding.lower() == "same_lower":
+            pad_op = math.ceil
+        else:
+            pad_op = math.floor
+        pad_begin = int(pad_op(pad_along_axis / 2))
+        pad_end = pad_along_axis - pad_begin
+
+        pads_begin.append(pad_begin)
+        pads_end.append(pad_end)
+
+    return pads_begin + pads_end
 
 def py_maxpool(input, kernel_shape, strides=None, dilations=None,
                padding=None, ceil_mode=False):
@@ -81,6 +105,13 @@ def py_maxpool(input, kernel_shape, strides=None, dilations=None,
 
     if padding is None:
         padding = [0] * spatial_size * 2
+
+    if type(padding) is not list:
+        if padding.lower().startswith("same"):
+            padding = calc_pads_same(inp_sp_shape, kernel_shape, strides,
+                                     dilations, padding)
+        else:
+            padding = [0] * spatial_size * 2
 
     pads = []
     pad_along_axis = []

@@ -35,27 +35,26 @@ class PoolMixin(object):
     # from version 7
     count_include_pad = node.attrs.get("count_include_pad", 0)
 
-    # If padding is specified, try to recover it from explicit padding
-    # specification to tensorflow padding mode:
-    if pads is not None:
-      pad = cls._get_tf_pad(x_shape[2:], kernel_shape, strides, pads)
-    else:
-      # Neither pad nor auto_pad is specified, assume no padding.
-      if "auto_pad" not in node.attrs:
-        pad = "VALID"
-      # We consult auto_pad if pad is not specified and auto_pad
-      # is available.
+    auto_pad = node.attrs.get("auto_pad", "NOTSET")
+    # if auto_pad is NOTSET, we check pads
+    if auto_pad == "NOTSET":
+      # If padding is specified, try to recover it from explicit padding
+      # specification to tensorflow padding mode:
+      if pads is not None:
+        pad = cls._get_tf_pad(x_shape[2:], kernel_shape, strides, pads)
       else:
-        if node.attrs["auto_pad"] == "SAME_UPPER":
-          pad = "SAME"
-        elif node.attrs["auto_pad"] == "VALID":
-          pad = "VALID"
-        elif node.attrs["auto_pad"] == "SAME_LOWER":
-          pad = PAD_TF_INCOMPATIBLE
-        if count_include_pad == 1:
-          _, pads = cls._pool_get_shapes(node.attrs["auto_pad"], x_shape[2:],
-                                         kernel_shape, strides,
-                                         [0] * spatial_size * 2)
+        pad = "VALID"
+    else:
+      if auto_pad == "SAME_UPPER":
+        pad = "SAME"
+      elif auto_pad == "VALID":
+        pad = "VALID"
+      elif auto_pad == "SAME_LOWER":
+        pad = PAD_TF_INCOMPATIBLE
+      if count_include_pad == 1:
+        _, pads = cls._pool_get_shapes(auto_pad, x_shape[2:],
+                                       kernel_shape, strides,
+                                       [0] * spatial_size * 2)
 
     if pooling_type in ("AVG", "MAX"):
       if strict and count_include_pad == 0:
@@ -124,10 +123,10 @@ class PoolMixin(object):
     kernel_shape = node.attrs["kernel_shape"]
     strides = node.attrs.get("strides", [1] * spatial_size)
     dilations = node.attrs.get("dilations", [1] * spatial_size)
-    ceil_mode = node.attrs.get("ceil_mode", 0)
-    ceil_mode = bool(ceil_mode)
-    auto_pad = node.attrs.get("auto_pad", "VALID")
-    pads = node.attrs.get("pads", auto_pad)
+    ceil_mode = bool(node.attrs.get("ceil_mode", 0))
+    pads = node.attrs.get("auto_pad", "NOTSET")
+    if pads == "NOTSET":
+        pads = node.attrs.get("pads", [0] * spatial_size * 2)
 
     if spatial_size > 3:
       exception.OP_UNSUPPORTED_EXCEPT(
