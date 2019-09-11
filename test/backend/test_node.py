@@ -786,6 +786,11 @@ class TestNode(unittest.TestCase):
                         strides=strides, auto_pad=auto_pad)
 
   def test_max_pool_2d_ceil_same_lower(self):
+    if legacy_opset_pre_ver(10):
+      raise unittest.SkipTest(
+          "ONNX version {} doesn't support ceil mode.".format(
+              defs.onnx_opset_version()))
+
     kernel_shape=[2, 1]
     strides=[1, 2]
     auto_pad="SAME_LOWER"
@@ -806,6 +811,11 @@ class TestNode(unittest.TestCase):
                         strides=strides, auto_pad=auto_pad)
 
   def test_max_pool_2d_ceil(self):
+    if legacy_opset_pre_ver(10):
+      raise unittest.SkipTest(
+          "ONNX version {} doesn't support ceil mode.".format(
+              defs.onnx_opset_version()))
+
     kernel_shape = [3, 3]
     strides = [2, 2]
     ceil_mode = 1
@@ -815,6 +825,11 @@ class TestNode(unittest.TestCase):
                         strides=strides, ceil_mode=ceil_mode)
 
   def test_max_pool_2d_dilations(self):
+    if legacy_opset_pre_ver(10):
+      raise unittest.SkipTest(
+          "ONNX version {} doesn't support dilations.".format(
+              defs.onnx_opset_version()))
+
     kernel_shape = [3, 3]
     strides = [2, 2]
     dilations = [3, 3]
@@ -830,6 +845,11 @@ class TestNode(unittest.TestCase):
 
 
   def test_max_pool_2d_dilations_ceil(self):
+    if legacy_opset_pre_ver(10):
+      raise unittest.SkipTest(
+          "ONNX version {} doesn't support dilations nor ceil mode.".format(
+              defs.onnx_opset_version()))
+
     kernel_shape = [3, 3]
     strides = [2, 2]
     dilations = [3, 3]
@@ -841,6 +861,11 @@ class TestNode(unittest.TestCase):
                         ceil_mode=ceil_mode)
 
   def test_max_pool_2d_dilations_pads(self):
+    if legacy_opset_pre_ver(10):
+      raise unittest.SkipTest(
+          "ONNX version {} doesn't support dilations.".format(
+              defs.onnx_opset_version()))
+
     kernel_shape = [3, 3]
     strides = [2, 2]
     dilations = [3, 3]
@@ -851,6 +876,11 @@ class TestNode(unittest.TestCase):
                         strides=strides, dilations=dilations, pads=pads)
 
   def test_max_pool_2d_dilations_ceil_pads(self):
+    if legacy_opset_pre_ver(10):
+      raise unittest.SkipTest(
+          "ONNX version {} doesn't support dilations nor ceil mode.".format(
+              defs.onnx_opset_version()))
+
     kernel_shape = [3, 3]
     strides = [2, 2]
     dilations = [3, 3]
@@ -863,6 +893,11 @@ class TestNode(unittest.TestCase):
                         ceil_mode=ceil_mode)
 
   def test_max_pool_2d_dilations_same_lower(self):
+    if legacy_opset_pre_ver(10):
+      raise unittest.SkipTest(
+          "ONNX version {} doesn't support dilations.".format(
+              defs.onnx_opset_version()))
+
     kernel_shape = [3, 3]
     strides = [2, 2]
     dilations = [3, 3]
@@ -874,6 +909,11 @@ class TestNode(unittest.TestCase):
                         auto_pad=auto_pad)
 
   def test_max_pool_2d_dilations_same_upper(self):
+    if legacy_opset_pre_ver(10):
+      raise unittest.SkipTest(
+          "ONNX version {} doesn't support dilations.".format(
+              defs.onnx_opset_version()))
+
     kernel_shape = [2, 3]
     strides = [4, 2]
     dilations = [3, 5]
@@ -884,7 +924,20 @@ class TestNode(unittest.TestCase):
                         strides=strides, dilations=dilations,
                         auto_pad=auto_pad)
 
+  def test_max_pool_3d(self):
+    kernel_shape = [3, 3, 3]
+    strides = [2, 2, 2]
+
+    input_shape = [10, 3, 23, 23, 23]
+    self._test_max_pool(input_shape=input_shape, kernel_shape=kernel_shape,
+                        strides=strides)
+
   def test_max_pool_3d_dilations_ceil_pads(self):
+    if legacy_opset_pre_ver(10):
+      raise unittest.SkipTest(
+          "ONNX version {} doesn't support dilations nor ceil mode.".format(
+              defs.onnx_opset_version()))
+
     kernel_shape = [3, 3, 3]
     strides = [2, 2, 2]
     dilations = [3, 3, 3]
@@ -897,6 +950,11 @@ class TestNode(unittest.TestCase):
                         ceil_mode=ceil_mode)
 
   def test_max_pool_3d_dilations_same_lower(self):
+    if legacy_opset_pre_ver(10):
+      raise unittest.SkipTest(
+          "ONNX version {} doesn't support dilations.".format(
+              defs.onnx_opset_version()))
+
     kernel_shape = [3, 1, 2]
     strides = [2, 2, 1]
     dilations = [3, 2, 5]
@@ -908,6 +966,11 @@ class TestNode(unittest.TestCase):
                         auto_pad=auto_pad)
 
   def test_max_pool_1d_dilations_ceil_pads(self):
+    if legacy_opset_pre_ver(10):
+      raise unittest.SkipTest(
+          "ONNX version {} doesn't support dilations nor ceil mode.".format(
+              defs.onnx_opset_version()))
+
     kernel_shape = [3]
     strides = [2]
     dilations = [3]
@@ -919,7 +982,20 @@ class TestNode(unittest.TestCase):
                         strides=strides, dilations=dilations, pads=pads,
                         ceil_mode=ceil_mode)
 
+  def test_max_pool_1d(self):
+    kernel_shape = [3]
+    strides = [2]
+
+    input_shape = [10, 3, 23]
+    self._test_max_pool(input_shape=input_shape, kernel_shape=kernel_shape,
+                        strides=strides)
+
   def test_max_pool_with_argmax_2d_dilations_ceil_pads(self):
+    if legacy_opset_pre_ver(10):
+      raise unittest.SkipTest(
+          "ONNX version {} doesn't support dilations nor ceil mode.".format(
+              defs.onnx_opset_version()))
+
     kernel_shape = [3, 3]
     strides = [2, 2]
     dilations = [3, 3]
