@@ -127,10 +127,10 @@ class PoolMixin(object):
     kernel_shape = node.attrs["kernel_shape"]
     strides = node.attrs.get("strides", [1] * spatial_size)
     dilations = node.attrs.get("dilations", [1] * spatial_size)
-    ceil_mode = node.attrs.get("ceil_mode", 0)
-    ceil_mode = bool(ceil_mode)
-    auto_pad = node.attrs.get("auto_pad", "VALID")
-    pads = node.attrs.get("pads", auto_pad)
+    ceil_mode = bool(node.attrs.get("ceil_mode", 0))
+    pads = node.attrs.get("auto_pad", "NOTSET")
+    if pads == "NOTSET":
+        pads = node.attrs.get("pads", [0] * spatial_size * 2)
 
     if spatial_size > 3:
       exception.OP_UNSUPPORTED_EXCEPT(

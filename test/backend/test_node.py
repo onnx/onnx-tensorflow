@@ -739,7 +739,7 @@ class TestNode(unittest.TestCase):
 
 
   def _test_max_pool(self, input_shape, kernel_shape, strides=None, 
-                     dilations=None, pads=None, ceil_mode=None):
+                     dilations=None, pads=None, auto_pad=None, ceil_mode=None):
     node_def_kwargs = {"op_type": "MaxPool", "inputs": ["X"], "outputs": ["Y"],
         "kernel_shape": kernel_shape}
 
@@ -749,6 +749,9 @@ class TestNode(unittest.TestCase):
         node_def_kwargs["dilations"] = dilations
     if pads is not None:
         node_def_kwargs["pads"] = pads
+    if auto_pad is not None:
+        node_def_kwargs["auto_pad"] = auto_pad
+        pads = auto_pad
     if ceil_mode is not None:
         node_def_kwargs["ceil_mode"] = ceil_mode
     else:
@@ -772,6 +775,35 @@ class TestNode(unittest.TestCase):
     input_shape = [10, 10, 4, 4]
     self._test_max_pool(input_shape=input_shape, kernel_shape=kernel_shape,
                         strides=strides)
+
+  def test_max_pool_2d_same_lower(self):
+    kernel_shape=[1, 2]
+    strides=[1, 2]
+    auto_pad="SAME_LOWER"
+
+    input_shape = [10, 10, 7, 7]
+    self._test_max_pool(input_shape=input_shape, kernel_shape=kernel_shape,
+                        strides=strides, auto_pad=auto_pad)
+
+  def test_max_pool_2d_ceil_same_lower(self):
+    kernel_shape=[2, 1]
+    strides=[1, 2]
+    auto_pad="SAME_LOWER"
+    ceil_mode=1
+
+    input_shape = [10, 10, 7, 7]
+    self._test_max_pool(input_shape=input_shape, kernel_shape=kernel_shape,
+                        strides=strides, auto_pad=auto_pad,
+                        ceil_mode=ceil_mode)
+
+  def test_max_pool_2d_same_upper(self):
+    kernel_shape=[1, 2]
+    strides=[1, 2]
+    auto_pad="SAME_UPPER"
+
+    input_shape = [10, 10, 7, 7]
+    self._test_max_pool(input_shape=input_shape, kernel_shape=kernel_shape,
+                        strides=strides, auto_pad=auto_pad)
 
   def test_max_pool_2d_ceil(self):
     kernel_shape = [3, 3]
@@ -830,6 +862,28 @@ class TestNode(unittest.TestCase):
                         strides=strides, dilations=dilations, pads=pads,
                         ceil_mode=ceil_mode)
 
+  def test_max_pool_2d_dilations_same_lower(self):
+    kernel_shape = [3, 3]
+    strides = [2, 2]
+    dilations = [3, 3]
+    auto_pad = "same_lower"
+
+    input_shape = [10, 3, 24, 24]
+    self._test_max_pool(input_shape=input_shape, kernel_shape=kernel_shape,
+                        strides=strides, dilations=dilations,
+                        auto_pad=auto_pad)
+
+  def test_max_pool_2d_dilations_same_upper(self):
+    kernel_shape = [2, 3]
+    strides = [4, 2]
+    dilations = [3, 5]
+    auto_pad = "SAME_UPPER"
+
+    input_shape = [10, 3, 24, 24]
+    self._test_max_pool(input_shape=input_shape, kernel_shape=kernel_shape,
+                        strides=strides, dilations=dilations,
+                        auto_pad=auto_pad)
+
   def test_max_pool_3d_dilations_ceil_pads(self):
     kernel_shape = [3, 3, 3]
     strides = [2, 2, 2]
@@ -841,6 +895,17 @@ class TestNode(unittest.TestCase):
     self._test_max_pool(input_shape=input_shape, kernel_shape=kernel_shape,
                         strides=strides, dilations=dilations, pads=pads,
                         ceil_mode=ceil_mode)
+
+  def test_max_pool_3d_dilations_same_lower(self):
+    kernel_shape = [3, 2, 3]
+    strides = [2, 2, 1]
+    dilations = [2, 3, 1]
+    auto_pad = "SAME_LOWER"
+
+    input_shape = [10, 3, 23, 23, 23]
+    self._test_max_pool(input_shape=input_shape, kernel_shape=kernel_shape,
+                        strides=strides, dilations=dilations,
+                        auto_pad=auto_pad)
 
   def test_max_pool_1d_dilations_ceil_pads(self):
     kernel_shape = [3]
