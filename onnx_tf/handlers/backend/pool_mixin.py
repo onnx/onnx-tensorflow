@@ -25,6 +25,10 @@ class PoolMixin(object):
     x_shape = x.get_shape().as_list()
     spatial_size = x_rank - 2
 
+    if spatial_size > 3:
+      exception.OP_UNSUPPORTED_EXCEPT(
+          "MaxPool with {}D input".format(x_rank), "Tensorflow")
+
     support_cuda = supports_device("CUDA")
     storage_format, compute_format = get_data_format(x_rank)
 
