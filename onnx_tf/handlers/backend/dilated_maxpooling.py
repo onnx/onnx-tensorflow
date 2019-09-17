@@ -15,6 +15,8 @@ def _tf_shape(a):
 class DilatedPooling(object):
     def __init__(self, input, kernel_shape, strides, dilations,
                  padding="VALID", ceil_mode=False, pooling_type="MAX"):
+        self.input = tf.convert_to_tensor(input)
+
         self.kernel_shape = kernel_shape
         self.strides = strides
         self.dilations = dilations
@@ -22,7 +24,7 @@ class DilatedPooling(object):
         self.ceil_mode = ceil_mode
         self.pooling_type = pooling_type
 
-        self.is_known_shape = input.shape.is_fully_defined()
+        self.is_known_shape = self.input.shape.is_fully_defined()
         self.spatial_size = len(kernel_shape)
         self.input_rank = self.spatial_size + 2
 
@@ -32,7 +34,6 @@ class DilatedPooling(object):
             input.set_shape([None] * self.input_rank)
         self.orig_input_shape = _tf_shape(input)
         self.input_shape = self.orig_input_shape
-        self.input = input
 
         if pooling_type == "MAX":
             self.padding_constant = -inf
