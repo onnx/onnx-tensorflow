@@ -19,10 +19,12 @@ class TestNode(unittest.TestCase):
   """ Tests for nodes
   """
 
-  def _get_rnd(self, shape, low=-1.0, high=1.0):
-    return np.random.uniform(low, high, np.prod(shape)) \
-                      .reshape(shape) \
-                      .astype(np.float32)
+  def _get_rnd_float32(self, low=-1.0, high=1.0, shape=None):
+    output = np.random.uniform(low, high, shape)
+    if shape == None:
+      return np.float32(output)
+    else:
+      return output.astype(np.float32)
 
   def _get_rnd_int(self, low, high=None, shape=None, dtype=np.int32):
     return np.random.randint(low, high, size=shape, dtype=dtype)
@@ -43,7 +45,7 @@ class TestNode(unittest.TestCase):
 
   def test_abs(self):
     node_def = helper.make_node("Abs", ["X"], ["Y"])
-    x = self._get_rnd([1000])
+    x = self._get_rnd_float32(shape=[1000])
     output = run_node(node_def, [x])
     np.testing.assert_almost_equal(output["Y"], np.abs(x))
 
@@ -52,14 +54,14 @@ class TestNode(unittest.TestCase):
       raise unittest.SkipTest("ONNX version {} doesn't support Acosh.".format(
           defs.onnx_opset_version()))
     node_def = helper.make_node("Acosh", ["X"], ["Y"])
-    x = self._get_rnd([3, 4, 5])
+    x = self._get_rnd_float32(shape=[3, 4, 5])
     output = run_node(node_def, [x])
     np.testing.assert_almost_equal(output["Y"], np.arccosh(x))
 
   def test_add(self):
     node_def = helper.make_node("Add", ["X", "Y"], ["Z"])
-    x = self._get_rnd([5, 10, 5, 5])
-    y = self._get_rnd([10, 1, 1])
+    x = self._get_rnd_float32(shape=[5, 10, 5, 5])
+    y = self._get_rnd_float32(shape=[10, 1, 1])
     output = run_node(node_def, [x, y])
     np.testing.assert_almost_equal(output["Z"],
                                    np.add(x, y.reshape([1, 10, 1, 1])))
@@ -82,7 +84,7 @@ class TestNode(unittest.TestCase):
     for axis in [0, 1]:
       node_def = helper.make_node(
           "ArgMax", ["data"], ["reduced"], axis=axis, keepdims=0)
-      data = self._get_rnd([10, 10])
+      data = self._get_rnd_float32(shape=[10, 10])
       output = run_node(node_def, [data])
       np.testing.assert_almost_equal(output["reduced"],
                                      np.argmax(data, axis=axis))
@@ -93,7 +95,7 @@ class TestNode(unittest.TestCase):
     for axis in [0, 1]:
       node_def = helper.make_node(
           "ArgMin", ["data"], ["reduced"], axis=axis, keepdims=0)
-      data = self._get_rnd([10, 10])
+      data = self._get_rnd_float32(shape=[10, 10])
       output = run_node(node_def, [data])
       np.testing.assert_almost_equal(output["reduced"],
                                      np.argmin(data, axis=axis))
@@ -103,7 +105,7 @@ class TestNode(unittest.TestCase):
       raise unittest.SkipTest("ONNX version {} doesn't support Asinh.".format(
           defs.onnx_opset_version()))
     node_def = helper.make_node("Asinh", ["X"], ["Y"])
-    x = self._get_rnd([3, 4, 5])
+    x = self._get_rnd_float32(shape=[3, 4, 5])
     output = run_node(node_def, [x])
     np.testing.assert_almost_equal(output["Y"], np.arcsinh(x))
 
@@ -112,7 +114,7 @@ class TestNode(unittest.TestCase):
       raise unittest.SkipTest("ONNX version {} doesn't support Atanh.".format(
           defs.onnx_opset_version()))
     node_def = helper.make_node("Atanh", ["X"], ["Y"])
-    x = self._get_rnd([3, 4, 5])
+    x = self._get_rnd_float32(shape=[3, 4, 5])
     output = run_node(node_def, [x])
     np.testing.assert_almost_equal(output["Y"], np.arctanh(x))
 
@@ -129,7 +131,7 @@ class TestNode(unittest.TestCase):
         kernel_shape=[1, 2],
         pads=[1, 1],
         strides=[1, 1])
-    x = self._get_rnd(shape)
+    x = self._get_rnd_float32(shape=shape)
     output = run_node(node_def, [x], device=device)
     test_output = np.zeros(shape)
     for i1 in range(0, shape[0]):
@@ -160,14 +162,14 @@ class TestNode(unittest.TestCase):
     x_shape = [3, 5, 4, 2]
     param_shape = [5]
     _param_shape = [1, 5, 1, 1]
-    x = self._get_rnd(x_shape, 0, 1)
-    m = self._get_rnd(param_shape, 0, 1)
+    x = self._get_rnd_float32(0, 1, shape=x_shape)
+    m = self._get_rnd_float32(0, 1, shape=param_shape)
     _m = m.reshape(_param_shape)
-    v = self._get_rnd(param_shape, 0, 1)
+    v = self._get_rnd_float32(0, 1, shape=param_shape)
     _v = v.reshape(_param_shape)
-    scale = self._get_rnd(param_shape, 0, 1)
+    scale = self._get_rnd_float32(0, 1, shape=param_shape)
     _scale = scale.reshape(_param_shape)
-    bias = self._get_rnd(param_shape, 0, 1)
+    bias = self._get_rnd_float32(0, 1, shape=param_shape)
     _bias = bias.reshape(_param_shape)
     golden = self._batch_normalization(x, _m, _v, _bias, _scale, 0.001)
     output = run_node(node_def, [x, scale, bias, m, v])
@@ -216,7 +218,7 @@ class TestNode(unittest.TestCase):
 
   def test_ceil(self):
     node_def = helper.make_node("Ceil", ["X"], ["Y"])
-    x = self._get_rnd([1000])
+    x = self._get_rnd_float32(shape=[1000])
     output = run_node(node_def, [x])
     np.testing.assert_almost_equal(output["Y"], np.ceil(x))
 
@@ -228,7 +230,7 @@ class TestNode(unittest.TestCase):
     axis = 1
     node_def = helper.make_node(
         "Compress", inputs=['X', 'condition'], outputs=['Y'], axis=axis)
-    x = self._get_rnd([5, 5, 5])
+    x = self._get_rnd_float32(shape=[5, 5, 5])
     cond = np.array([1, 0, 1])
     output = run_node(node_def, inputs=[x, cond])
     np.testing.assert_almost_equal(output['Y'], np.compress(cond, x, axis=axis))
@@ -237,8 +239,8 @@ class TestNode(unittest.TestCase):
     shape = [10, 20, 5]
     for axis in range(len(shape)):
       node_def = helper.make_node("Concat", ["X1", "X2"], ["Y"], axis=axis)
-      x1 = self._get_rnd(shape)
-      x2 = self._get_rnd(shape)
+      x1 = self._get_rnd_float32(shape=shape)
+      x2 = self._get_rnd_float32(shape=shape)
       output = run_node(node_def, [x1, x2])
       np.testing.assert_almost_equal(output["Y"], np.concatenate((x1, x2),
                                                                  axis))
@@ -282,7 +284,7 @@ class TestNode(unittest.TestCase):
         extra_shape=extra_shape,
         dtype=1,
     )
-    x = self._get_rnd(shape)
+    x = self._get_rnd_float32(shape=shape)
     y = np.zeros(shape + extra_shape)
     y.fill(value)
     output = run_node(node_def, [x])
@@ -320,8 +322,8 @@ class TestNode(unittest.TestCase):
         pads=[1, 1, 1, 1],
         kernel_shape=[kH, kW])
 
-    x = self._get_rnd(x_shape)
-    weights = self._get_rnd(weight_shape)
+    x = self._get_rnd_float32(shape=x_shape)
+    weights = self._get_rnd_float32(shape=weight_shape)
     output = run_node(node_def, [x, weights], device=device)
 
     out_shape = [N, K, H, W]
@@ -355,7 +357,7 @@ class TestNode(unittest.TestCase):
     x_shape = [1, 5, 4]
     x = self._get_rnd(x_shape)
     weight_shape = [5, 3, 2]
-    weights = self._get_rnd(weight_shape)
+    weights = self._get_rnd_float32(shape=weight_shape)
     output = run_node(node_def, [x, weights], device=device)
     out_shape = [x_shape[0], weight_shape[1], x_shape[2]]
     test_output = np.zeros(out_shape)
@@ -374,24 +376,47 @@ class TestNode(unittest.TestCase):
       raise unittest.SkipTest("ONNX version {} doesn't support Cosh.".format(
           defs.onnx_opset_version()))
     node_def = helper.make_node("Cosh", ["X"], ["Y"])
-    x = self._get_rnd([3, 4, 5])
+    x = self._get_rnd_float32(shape=[3, 4, 5])
     output = run_node(node_def, [x])
     np.testing.assert_almost_equal(output["Y"], np.cosh(x))
 
   def test_depth_to_space(self):
     node_def = helper.make_node("DepthToSpace", ["X"], ["Y"], blocksize=2)
     x_shape = [1, 12, 1, 1]
-    x = self._get_rnd(x_shape)
+    x = self._get_rnd_float32(shape=x_shape)
     output = run_node(node_def, [x])
     x = np.transpose(x, (0, 2, 3, 1))
     y = np.reshape(np.swapaxes(x.reshape(1, 1, 1, 2, 2, 3), 2, 3), (1, 2, 2, 3))
     y = np.transpose(y, (0, 3, 1, 2))
     np.testing.assert_almost_equal(output["Y"], y, decimal=5)
 
+  def test_dequantize_linear(self):
+    node_def = helper.make_node("DequantizeLinear",
+                                ["x", "x_scale", "x_zero_point"], ["y"])
+    for x, x_zero_point in [
+        [
+            self._get_rnd_int(-128, 127, [2, 6], np.int8),
+            self._get_rnd_int(-128, 127, dtype=np.int8)
+        ],
+        [
+            self._get_rnd_int(0, 255, [2, 6], np.uint8),
+            self._get_rnd_int(0, 255, dtype=np.uint8)
+        ],
+        [
+            self._get_rnd_int(-512, 512, [2, 6]),
+            np.int32(0)
+        ]
+    ]:
+      x_scale = self._get_rnd_float32(-10., 10)
+      y = np.subtract(np.float32(x), np.float32(x_zero_point))
+      y = np.multiply(y, x_scale)
+      output = run_node(node_def, [x, x_scale, x_zero_point])
+      np.testing.assert_almost_equal(output["y"], y)
+
   def test_div(self):
     node_def = helper.make_node("Div", ["X", "Y"], ["Z"])
-    x = self._get_rnd([10, 10])
-    y = self._get_rnd([10, 10])
+    x = self._get_rnd_float32(shape=[10, 10])
+    y = self._get_rnd_float32(shape=[10, 10])
     output = run_node(node_def, [x, y])
     np.testing.assert_almost_equal(output["Z"], np.divide(x, y))
 
@@ -404,7 +429,7 @@ class TestNode(unittest.TestCase):
     if legacy_opset_pre_ver(7):
       # at inference mode, is_test is always set to 1
       node_def = helper.make_node("Dropout", ["X"], ["Y"], is_test=1)
-    x = self._get_rnd([3, 4, 5])
+    x = self._get_rnd_float32(shape=[3, 4, 5])
     y = x
     output = run_node(node_def, [x])
     np.testing.assert_equal(output["Y"], y)
@@ -414,22 +439,22 @@ class TestNode(unittest.TestCase):
     # remove this test in the future
     return
     node_def = helper.make_node("Dot", ["X", "Y"], ["Z"])
-    x = np.floor(self._get_rnd([10, 10]))
-    y = np.floor(self._get_rnd([10, 10]))
+    x = np.floor(self._get_rnd_float32(shape=[10, 10]))
+    y = np.floor(self._get_rnd_float32(shape=[10, 10]))
     output = run_node(node_def, [x, y])
     np.testing.assert_almost_equal(output["Z"], np.dot(x, y))
 
   def test_elu(self):
     node_def = helper.make_node("Elu", ["X"], ["Y"])
-    x = self._get_rnd([100])
+    x = self._get_rnd_float32(shape=[100])
     output = run_node(node_def, [x])
     test_output = [self._elu(a) for a in x]
     np.testing.assert_almost_equal(output["Y"], test_output)
 
   def test_equal(self):
     node_def = helper.make_node("Equal", ["X", "Y"], ["Z"])
-    x = self._get_rnd([5, 3, 3, 2])
-    y = self._get_rnd([3, 3, 1])
+    x = self._get_rnd_float32(shape=[5, 3, 3, 2])
+    y = self._get_rnd_float32(shape=[3, 3, 1])
     output = run_node(node_def, [x, y])
     np.testing.assert_equal(output["Z"], np.equal(x, np.reshape(
         y, [1, 3, 3, 1])))
@@ -439,14 +464,14 @@ class TestNode(unittest.TestCase):
       raise unittest.SkipTest("ONNX version {} doesn't support Erf.".format(
           defs.onnx_opset_version()))
     node_def = helper.make_node("Erf", ["X"], ["Y"])
-    x = self._get_rnd([3, 4, 5])
+    x = self._get_rnd_float32(shape=[3, 4, 5])
     output = run_node(node_def, [x])
     exp_output = np.vectorize(math.erf)(x).astype(np.float32)
     np.testing.assert_almost_equal(output["Y"], exp_output)
 
   def test_exp(self):
     node_def = helper.make_node("Exp", ["X"], ["Y"])
-    x = self._get_rnd([100])
+    x = self._get_rnd_float32(shape=[100])
     x = x - 3.6
     output = run_node(node_def, [x])
     np.testing.assert_almost_equal(output["Y"], np.exp(x))
@@ -459,7 +484,7 @@ class TestNode(unittest.TestCase):
       for off_diagonal_offset in [-10, -6, -3, 0, 3, 6, 7, 10]:
         node_def = helper.make_node(
             "EyeLike", ['x'], ['y'], dtype=1, k=off_diagonal_offset)
-        x = np.random.randint(0, 100, size=shape, dtype=np.int32)
+        x = self._get_rnd_int(0, 100, shape=shape)
         y = np.eye(shape[0], shape[1], k=off_diagonal_offset, dtype=np.float32)
         output = run_node(node_def, [x])
         np.testing.assert_equal(output['y'], y)
@@ -473,7 +498,7 @@ class TestNode(unittest.TestCase):
     # TODO: pass axis attribute which is supported in newer
     # versions of onnx
     node_def = helper.make_node("Flatten", ["X"], ["Y"])
-    x = self._get_rnd([10, 2, 3, 4, 5])
+    x = self._get_rnd_float32(shape=[10, 2, 3, 4, 5])
     output = run_node(node_def, [x])
     # TODO: pass axis=3 and uncomment the line below
     # np.testing.assert_almost_equal(output["Y"], x.reshape([60, 20]))
@@ -481,7 +506,7 @@ class TestNode(unittest.TestCase):
 
   def test_gather(self):
     node_def = helper.make_node("Gather", ["X", "Y"], ["Z"])
-    x = self._get_rnd([10, 10])
+    x = self._get_rnd_float32(shape=[10, 10])
     y = [[0, 1], [1, 2]]
     output = run_node(node_def, [x, y])
     test_output = np.zeros((2, 2, 10))
@@ -497,9 +522,9 @@ class TestNode(unittest.TestCase):
     # Compute Y = alpha * A * B + beta * C
     node_def = helper.make_node(
         "Gemm", ["A", "B", "C"], ["Y"], transA=0, transB=0, alpha=1.0, beta=1.0)
-    x = np.floor(self._get_rnd([10, 10]))
-    y = np.floor(self._get_rnd([10, 10]))
-    z = np.floor(self._get_rnd([10, 10]))
+    x = np.floor(self._get_rnd_float32(shape=[10, 10]))
+    y = np.floor(self._get_rnd_float32(shape=[10, 10]))
+    z = np.floor(self._get_rnd_float32(shape=[10, 10]))
     output = run_node(node_def, [x, y, z])
     test_output = np.matmul(x, y) + z
     np.testing.assert_almost_equal(output["Y"], test_output)
@@ -514,7 +539,7 @@ class TestNode(unittest.TestCase):
     #   Output data tensor from pooling across the input tensor.
     # Dimensions will be N x C x 1 x 1
     node_def = helper.make_node("GlobalAveragePool", ["X"], ["Y"])
-    x = self._get_rnd([10, 10, 2, 3])
+    x = self._get_rnd_float32(shape=[10, 10, 2, 3])
     output = run_node(node_def, [x])
     test_output = np.zeros([10, 10, 1, 1])
     for i1 in range(0, 10):
@@ -533,7 +558,7 @@ class TestNode(unittest.TestCase):
     # Scale: (flout, default 1.0) the scale to apply
     # Bias: applied to each channel, same size as C
     # Output has same shape and type as input
-    x = self._get_rnd([1, 3, 224, 224])
+    x = self._get_rnd_float32(shape=[1, 3, 224, 224])
     #random distribution over [0,1), so add 0.1
     scale = np.random.rand(1)[0] + 0.1
     bias = np.random.rand(3)
@@ -574,7 +599,7 @@ class TestNode(unittest.TestCase):
       raise unittest.SkipTest("ONNX version {} doesn't support IsNaN.".format(
           defs.onnx_opset_version()))
     node_def = helper.make_node("IsNaN", ["X"], ["Y"])
-    x = self._get_rnd([3, 3])
+    x = self._get_rnd_float32(shape=[3, 3])
     x[0][1] = x[1][0] = x[2][2] = np.nan
     output = run_node(node_def, [x])
     np.testing.assert_almost_equal(output["Y"], np.isnan(x))
@@ -589,7 +614,7 @@ class TestNode(unittest.TestCase):
     #   Output data tensor from pooling across the input tensor.
     # Dimensions will be N x C x 1 x 1
     node_def = helper.make_node("GlobalLpPool", ["X"], ["Y"])
-    x = self._get_rnd([10, 10, 2, 3])
+    x = self._get_rnd_float32(shape=[10, 10, 2, 3])
     output = run_node(node_def, [x])
     test_output = np.zeros([10, 10, 1, 1])
     for i1 in range(0, 10):
@@ -611,7 +636,7 @@ class TestNode(unittest.TestCase):
     #   Output data tensor from pooling across the input tensor.
     # Dimensions will be N x C x 1 x 1
     node_def = helper.make_node("GlobalMaxPool", ["X"], ["Y"])
-    x = self._get_rnd([10, 10, 2, 3])
+    x = self._get_rnd_float32(shape=[10, 10, 2, 3])
     output = run_node(node_def, [x])
     test_output = np.zeros([10, 10, 1, 1])
     for i1 in range(0, 10):
@@ -626,8 +651,8 @@ class TestNode(unittest.TestCase):
 
   def test_less(self):
     node_def = helper.make_node("Less", ["X", "Y"], ["Z"])
-    x = self._get_rnd([5, 3, 3, 2])
-    y = self._get_rnd([3, 3, 1])
+    x = self._get_rnd_float32(shape=[5, 3, 3, 2])
+    y = self._get_rnd_float32(shape=[3, 3, 1])
     output = run_node(node_def, [x, y])
     np.testing.assert_equal(output["Z"], np.less(x, np.reshape(y,
                                                                [1, 3, 3, 1])))
@@ -652,7 +677,7 @@ class TestNode(unittest.TestCase):
     size = 3
     node_def = helper.make_node(
         "LRN", ["X"], ["Y"], alpha=alpha, beta=beta, bias=bias, size=size)
-    x = self._get_rnd([10, 2, 10, 10])
+    x = self._get_rnd_float32(shape=[10, 2, 10, 10])
     output = run_node(node_def, [x])
     test_output = np.zeros([10, 10, 10, 2])
     x = np.transpose(x, axes=[0, 2, 3, 1])
@@ -678,30 +703,30 @@ class TestNode(unittest.TestCase):
 
   def test_floor(self):
     node_def = helper.make_node("Floor", ["X"], ["Y"])
-    x = self._get_rnd([100])
+    x = self._get_rnd_float32(shape=[100])
     output = run_node(node_def, [x])
     np.testing.assert_almost_equal(output["Y"], np.floor(x))
 
   def test_leakyrelu(self):
     node_def = helper.make_node("LeakyRelu", ["X"], ["Y"], alpha=0.8)
-    x = np.floor(self._get_rnd([100]))
+    x = np.floor(self._get_rnd_float32(shape=[100]))
     output = run_node(node_def, [x])
     test_output = [self._leaky_relu(a, 0.8) for a in x]
     np.testing.assert_almost_equal(output["Y"], test_output)
 
   def test_log(self):
     node_def = helper.make_node("Log", ["X"], ["Y"])
-    x = self._get_rnd([100])
+    x = self._get_rnd_float32(shape=[100])
     x = x + 3.6
     output = run_node(node_def, [x])
     np.testing.assert_almost_equal(output["Y"], np.log(x))
 
   def test_max(self):
     node_def = helper.make_node("Max", ["X1", "X2", "X3", "X4"], ["Z"])
-    x1 = self._get_rnd([10, 10])
-    x2 = self._get_rnd([10, 10])
-    x3 = self._get_rnd([10, 10])
-    x4 = self._get_rnd([10, 10])
+    x1 = self._get_rnd_float32(shape=[10, 10])
+    x2 = self._get_rnd_float32(shape=[10, 10])
+    x3 = self._get_rnd_float32(shape=[10, 10])
+    x4 = self._get_rnd_float32(shape=[10, 10])
     output = run_node(node_def, [x1, x2, x3, x4])
     test_output = np.maximum(np.maximum(np.maximum(x1, x2), x3), x4)
     np.testing.assert_almost_equal(output["Z"], test_output)
@@ -714,7 +739,7 @@ class TestNode(unittest.TestCase):
         kernel_shape=[1, 2],
         pads=[0, 0],
         strides=[1, 2])
-    x = self._get_rnd([10, 10, 4, 4])
+    x = self._get_rnd_float32(shape=[10, 10, 4, 4])
     output = run_node(node_def, [x])
     test_output = np.zeros([10, 10, 4, 2])
     for i1 in range(0, 10):
@@ -731,7 +756,7 @@ class TestNode(unittest.TestCase):
       "ONNX version {} doesn't have test for MeanVarianceNormalization"
       .format(defs.onnx_opset_version()))
 
-    input_data = self._get_rnd([2,2,2,2])
+    input_data = self._get_rnd_float32(shape=[2,2,2,2])
     # Calculate expected output data using formula:
     # (Input - Mean)/SD
     mean = np.mean(input_data, keepdims=1, axis=(0,2,3))
@@ -744,18 +769,18 @@ class TestNode(unittest.TestCase):
 
   def test_min(self):
     node_def = helper.make_node("Min", ["X1", "X2", "X3", "X4"], ["Z"])
-    x1 = self._get_rnd([10, 10])
-    x2 = self._get_rnd([10, 10])
-    x3 = self._get_rnd([10, 10])
-    x4 = self._get_rnd([10, 10])
+    x1 = self._get_rnd_float32(shape=[10, 10])
+    x2 = self._get_rnd_float32(shape=[10, 10])
+    x3 = self._get_rnd_float32(shape=[10, 10])
+    x4 = self._get_rnd_float32(shape=[10, 10])
     output = run_node(node_def, [x1, x2, x3, x4])
     test_output = np.minimum(np.minimum(np.minimum(x1, x2), x3), x4)
     np.testing.assert_almost_equal(output["Z"], test_output)
 
   def test_mul(self):
     node_def = helper.make_node("Mul", ["X", "Y"], ["Z"])
-    x = self._get_rnd([5, 10, 5, 5])
-    y = self._get_rnd([10, 1, 1])
+    x = self._get_rnd_float32(shape=[5, 10, 5, 5])
+    y = self._get_rnd_float32(shape=[10, 1, 1])
     output = run_node(node_def, [x, y])
     np.testing.assert_almost_equal(output["Z"],
                                    np.multiply(x, y.reshape([1, 10, 1, 1])))
@@ -764,8 +789,8 @@ class TestNode(unittest.TestCase):
     if legacy_opset_pre_ver(10):
       raise unittest.SkipTest("ONNX version {} doesn't support Mod.".format(
           defs.onnx_opset_version()))
-    x = self._get_rnd([5, 5])
-    y = self._get_rnd([5, 5])
+    x = self._get_rnd_float32(shape=[5, 5])
+    y = self._get_rnd_float32(shape=[5, 5])
     node_def = helper.make_node("Mod", ["X", "Y"], ["Z"], fmod=0)
     output = run_node(node_def, [x, y])
     np.testing.assert_almost_equal(output["Z"], np.mod(x, y))
@@ -775,7 +800,7 @@ class TestNode(unittest.TestCase):
 
   def test_neg(self):
     node_def = helper.make_node("Neg", ["X"], ["Y"])
-    x = self._get_rnd([1000])
+    x = self._get_rnd_float32(shape=[1000])
     output = run_node(node_def, [x])
     np.testing.assert_almost_equal(output["Y"], np.negative(x))
 
@@ -784,7 +809,7 @@ class TestNode(unittest.TestCase):
       raise unittest.SkipTest("ONNX version {} doesn't support NonZero.".format(
           defs.onnx_opset_version()))
     node_def = helper.make_node("NonZero", ["x"], ["y"])
-    x = self._get_rnd([3, 4, 5])
+    x = self._get_rnd_float32(shape=[3, 4, 5])
     y = np.array(np.nonzero(x))
     output = run_node(node_def, [x])
     np.testing.assert_equal(output["y"], y)
@@ -829,20 +854,20 @@ class TestNode(unittest.TestCase):
       raise unittest.SkipTest("ONNX version {} doesn't support Round.".format(
           defs.onnx_opset_version()))
     node_def = helper.make_node("Round", ["X"], ["Y"])
-    x = self._get_rnd([1000], -20.0, 20.0)
+    x = self._get_rnd_float32(-20.0, 20.0, shape=[1000])
     output = run_node(node_def, [x])
     np.testing.assert_almost_equal(output["Y"], np.round(x))
 
   def test_relu(self):
     node_def = helper.make_node("Relu", ["X"], ["Y"])
-    x = self._get_rnd([1000])
+    x = self._get_rnd_float32(shape=[1000])
     output = run_node(node_def, [x])
     np.testing.assert_almost_equal(output["Y"], np.maximum(x, 0))
 
   def test_pad(self):
     node_def = helper.make_node(
         "Pad", ["X"], ["Y"], mode="constant", pads=[1, 1, 1, 1], value=2.0)
-    x = self._get_rnd([100, 100])
+    x = self._get_rnd_float32(shape=[100, 100])
     output = run_node(node_def, [x])
     np.testing.assert_almost_equal(output["Y"],
                                    np.lib.pad(
@@ -850,22 +875,44 @@ class TestNode(unittest.TestCase):
                                        'constant',
                                        constant_values=(2, 2)))
 
+  def test_quantize_linear(self):
+    node_def = helper.make_node("QuantizeLinear",
+                                ["x", "y_scale", "y_zero_point"], ["y"])
+    for x in [
+        self._get_rnd_float32(-512., 512., [2, 6]),
+        self._get_rnd_int(-512, 512, [2, 6])
+    ]:
+      y_scale = self._get_rnd_float32(-10., 10.)
+      for y_zero_point in [
+          self._get_rnd_int(-128, 127, dtype=np.int8),
+          self._get_rnd_int(0, 255, dtype=np.uint8)
+      ]:
+        y = np.divide(x, y_scale)
+        y = np.round(y)
+        y = np.add(y, y_zero_point)
+        if y_zero_point.dtype.type is np.int8:
+          y = np.clip(y, -128, 127).astype(np.int8)
+        else:
+          y = np.clip(y, 0, 255).astype(np.uint8)
+        output = run_node(node_def, [x, y_scale, y_zero_point])
+        np.testing.assert_almost_equal(output["y"], y)
+
   def test_reciprocal(self):
     node_def = helper.make_node("Reciprocal", ["X"], ["Y"])
-    x = self._get_rnd([1000])
+    x = self._get_rnd_float32(shape=[1000])
     output = run_node(node_def, [x])
     np.testing.assert_almost_equal(output["Y"], 1.0 / x)
 
   def test_reduce_l1(self):
     node_def = helper.make_node("ReduceL1", ["X"], ["Y"], axes=[1, 2])
-    x = self._get_rnd([5, 10, 10, 3])
+    x = self._get_rnd_float32(shape=[5, 10, 10, 3])
     output = run_node(node_def, [x])
     np.testing.assert_almost_equal(output["Y"],
                                    np.linalg.norm(x, 1, (1, 2), True))
 
   def test_reduce_log_sum_exp(self):
     node_def = helper.make_node("ReduceLogSumExp", ["X"], ["Y"], axes=[1, 2])
-    x = self._get_rnd([5, 10, 10, 3])
+    x = self._get_rnd_float32(shape=[5, 10, 10, 3])
     output = run_node(node_def, [x])
     np.testing.assert_allclose(
         output["Y"],
@@ -874,55 +921,55 @@ class TestNode(unittest.TestCase):
 
   def test_reduce_max(self):
     node_def = helper.make_node("ReduceMax", ["X"], ["Y"], axes=[1, 2])
-    x = self._get_rnd([5, 10, 10, 3])
+    x = self._get_rnd_float32(shape=[5, 10, 10, 3])
     output = run_node(node_def, [x])
     np.testing.assert_allclose(
         output["Y"], np.max(x, (1, 2), keepdims=True), rtol=1e-3)
 
   def test_reduce_mean(self):
     node_def = helper.make_node("ReduceMean", ["X"], ["Y"], axes=[1, 2])
-    x = self._get_rnd([5, 10, 10, 3])
+    x = self._get_rnd_float32(shape=[5, 10, 10, 3])
     output = run_node(node_def, [x])
     np.testing.assert_allclose(
         output["Y"], np.mean(x, (1, 2), keepdims=True), rtol=1e-3)
 
   def test_reduce_min(self):
     node_def = helper.make_node("ReduceMin", ["X"], ["Y"], axes=[1, 2])
-    x = self._get_rnd([5, 10, 10, 3])
+    x = self._get_rnd_float32(shape=[5, 10, 10, 3])
     output = run_node(node_def, [x])
     np.testing.assert_allclose(
         output["Y"], np.min(x, (1, 2), keepdims=True), rtol=1e-3)
 
   def test_reduce_prod(self):
     node_def = helper.make_node("ReduceProd", ["X"], ["Y"], axes=[1, 2])
-    x = self._get_rnd([1, 5, 5, 3])
+    x = self._get_rnd_float32(shape=[1, 5, 5, 3])
     output = run_node(node_def, [x])
     np.testing.assert_allclose(
         output["Y"], np.prod(x, (1, 2), keepdims=True), rtol=1e-3)
 
   def test_reduce_sum(self):
     node_def = helper.make_node("ReduceSum", ["X"], ["Y"], axes=[1, 2])
-    x = self._get_rnd([5, 10, 10, 3])
+    x = self._get_rnd_float32(shape=[5, 10, 10, 3])
     output = run_node(node_def, [x])
     np.testing.assert_allclose(
         output["Y"], np.sum(x, (1, 2), keepdims=True), rtol=1e-3)
 
   def test_reduce_sum_square(self):
     node_def = helper.make_node("ReduceSumSquare", ["X"], ["Y"], axes=[1, 2])
-    x = self._get_rnd([5, 10, 10, 3])
+    x = self._get_rnd_float32(shape=[5, 10, 10, 3])
     output = run_node(node_def, [x])
     np.testing.assert_allclose(
         output["Y"], np.sum(np.square(x), (1, 2), keepdims=True), rtol=1e-3)
 
   def test_pow(self):
     node_def = helper.make_node("Pow", ["X", "Y"], ["Z"])
-    x = self._get_rnd(1000) / 2.0 + 0.5
-    y = self._get_rnd(1000) / 2.0 + 0.5
+    x = self._get_rnd_float32(shape=1000) / 2.0 + 0.5
+    y = self._get_rnd_float32(shape=1000) / 2.0 + 0.5
     output = run_node(node_def, [x, y])
     np.testing.assert_almost_equal(output["Z"], np.power(x, y))
 
   def test_reshape(self):
-    x = self._get_rnd(100)
+    x = self._get_rnd_float32(shape=100)
     shape = [10, 10]
     if defs.onnx_opset_version() < 5:
       node_def = helper.make_node("Reshape", ["X"], ["Z"], shape=shape)
@@ -934,7 +981,7 @@ class TestNode(unittest.TestCase):
     np.testing.assert_almost_equal(output["Z"], x.reshape([10, 10]))
 
   def test_reshape_with_copy(self):
-    x = self._get_rnd([10, 20 * 30])
+    x = self._get_rnd_float32(shape=[10, 20 * 30])
     shape = [0, 20, 30]
     if defs.onnx_opset_version() < 5:
       node_def = helper.make_node("Reshape", ["X"], ["Z"], shape=shape)
@@ -947,7 +994,7 @@ class TestNode(unittest.TestCase):
 
   def test_selu(self):
     node_def = helper.make_node("Selu", ["X"], ["Y"])
-    x = self._get_rnd([1000])
+    x = self._get_rnd_float32(shape=[1000])
     output = run_node(node_def, [x])
     alpha = 1.6732
     gamma = 1.0507
@@ -957,7 +1004,7 @@ class TestNode(unittest.TestCase):
 
   def test_shape(self):
     node_def = helper.make_node("Shape", ["X"], ["Y"])
-    x = self._get_rnd([5, 10, 10, 3])
+    x = self._get_rnd_float32(shape=[5, 10, 10, 3])
     output = run_node(node_def, [x])
     np.testing.assert_allclose(output["Y"], np.shape(x))
 
@@ -975,7 +1022,7 @@ class TestNode(unittest.TestCase):
 
   def test_sigmoid(self):
     node_def = helper.make_node("Sigmoid", ["X"], ["Y"])
-    x = self._get_rnd([1000])
+    x = self._get_rnd_float32(shape=[1000])
     output = run_node(node_def, [x])
     np.testing.assert_almost_equal(output["Y"], 1 / (1 + np.exp(-x)))
 
@@ -984,7 +1031,7 @@ class TestNode(unittest.TestCase):
       raise unittest.SkipTest("ONNX version {} doesn't support Sign.".format(
           defs.onnx_opset_version()))
     node_def = helper.make_node("Sign", ["X"], ["Y"])
-    x = self._get_rnd([3, 5], -10, 10)
+    x = self._get_rnd_float32(-10, 10, [3, 5])
     output = run_node(node_def, [x])
     np.testing.assert_almost_equal(output["Y"], np.sign(x))
 
@@ -993,13 +1040,13 @@ class TestNode(unittest.TestCase):
       raise unittest.SkipTest("ONNX version {} doesn't support Sinh.".format(
           defs.onnx_opset_version()))
     node_def = helper.make_node("Sinh", ["X"], ["Y"])
-    x = self._get_rnd([3, 4, 5])
+    x = self._get_rnd_float32(shape=[3, 4, 5])
     output = run_node(node_def, [x])
     np.testing.assert_almost_equal(output["Y"], np.sinh(x))
 
   def test_size(self):
     node_def = helper.make_node("Size", ["X"], ["Y"])
-    x = self._get_rnd([5, 10, 10, 3])
+    x = self._get_rnd_float32(shape=[5, 10, 10, 3])
     output = run_node(node_def, [x])
     np.testing.assert_almost_equal(output["Y"], np.size(x))
 
@@ -1012,14 +1059,14 @@ class TestNode(unittest.TestCase):
 
     if legacy_opset_pre_ver(10):
       node_def = helper.make_node(
-          "Slice", ["X"], ["S"], axes=axes, starts=starts, ends=ends)
-      x = self._get_rnd([1000]).reshape([10, 10, 10])
+        "Slice", ["X"], ["S"], axes=axes, starts=starts, ends=ends)
+      x = self._get_rnd_float32(shape=[1000]).reshape([10, 10, 10])
       output = run_node(node_def, [x])
       np.testing.assert_almost_equal(output["S"], x[0:2, 0:2, 0:2])
     else:
       node_def = helper.make_node(
-          "Slice", ["X", "starts", "ends", "axes", "steps"], ["S"])
-      x = self._get_rnd([1000]).reshape([10, 10, 10])
+        "Slice", ["X", "starts", "ends", "axes", "steps"], ["S"])
+      x = self._get_rnd_float32(shape=[1000]).reshape([10, 10, 10])
       output = run_node(node_def, [x, starts, ends, axes, steps])
       np.testing.assert_almost_equal(output["S"], x[0:2, 0:2, 0:2])
 
@@ -1030,14 +1077,14 @@ class TestNode(unittest.TestCase):
 
     if legacy_opset_pre_ver(10):
       node_def = helper.make_node(
-          "Slice", ["X"], ["S"], axes=axes, starts=starts, ends=ends)
-      x = self._get_rnd([1000]).reshape([10, 10, 10])
+        "Slice", ["X"], ["S"], axes=axes, starts=starts, ends=ends)
+      x = self._get_rnd_float32(shape=[1000]).reshape([10, 10, 10])
       output = run_node(node_def, [x])
       np.testing.assert_almost_equal(output["S"], x[0:-8, :, -7:20])
     else:
-      node_def = helper.make_node("Slice", ["X", "starts", "ends", "axes"],
-                                  ["S"])
-      x = self._get_rnd([1000]).reshape([10, 10, 10])
+      node_def = helper.make_node(
+        "Slice", ["X", "starts", "ends", "axes"], ["S"])
+      x = self._get_rnd_float32(shape=[1000]).reshape([10, 10, 10])
       output = run_node(node_def, [x, starts, ends, axes])
       np.testing.assert_almost_equal(output["S"], x[0:-8, :, -7:20])
 
@@ -1049,27 +1096,27 @@ class TestNode(unittest.TestCase):
 
     if legacy_opset_pre_ver(10) == False:
       node_def = helper.make_node(
-          "Slice", ["X", "starts", "ends", "axes", "steps"], ["S"])
-      x = self._get_rnd([1000]).reshape([10, 10, 10])
+        "Slice", ["X", "starts", "ends", "axes", "steps"], ["S"])
+      x = self._get_rnd_float32(shape=[1000]).reshape([10, 10, 10])
       output = run_node(node_def, [x, starts, ends, axes, steps])
       np.testing.assert_almost_equal(output["S"], x[0:2:2, 0:2:-2, 0:2:-1])
 
   def test_softplus(self):
     node_def = helper.make_node("Softplus", ["X"], ["Y"])
-    x = self._get_rnd([3, 4, 5])
+    x = self._get_rnd_float32(shape=[3, 4, 5])
     output = run_node(node_def, [x])
     np.testing.assert_almost_equal(output["Y"], np.log(np.exp(x) + 1))
 
   def test_softsign(self):
     node_def = helper.make_node("Softsign", ["X"], ["Y"])
-    x = self._get_rnd([3, 4, 5])
+    x = self._get_rnd_float32(shape=[3, 4, 5])
     output = run_node(node_def, [x])
     np.testing.assert_almost_equal(output["Y"], x / (1 + np.abs(x)))
 
   def test_space_to_depth(self):
     node_def = helper.make_node("SpaceToDepth", ["X"], ["Y"], blocksize=2)
     x_shape = [1, 3, 2, 2]
-    x = self._get_rnd(x_shape)
+    x = self._get_rnd_float32(shape=x_shape)
     output = run_node(node_def, [x])
     x = np.transpose(x, (0, 2, 3, 1))
     y = np.reshape(
@@ -1083,7 +1130,7 @@ class TestNode(unittest.TestCase):
         "Split", ["X"], ["Z%i" % i for i in range(len(split))],
         axis=0,
         split=split)
-    x = self._get_rnd([100]).reshape([10, 10])
+    x = self._get_rnd_float32(shape=[100]).reshape([10, 10])
 
     output = run_node(node_def, [x])
     for a, b in zip(list(output), np.split(x, np.cumsum(split))[:-1]):
@@ -1091,7 +1138,7 @@ class TestNode(unittest.TestCase):
 
   def test_sqrt(self):
     node_def = helper.make_node("Sqrt", ["X"], ["Y"])
-    x = self._get_rnd([1000]) + 1.0
+    x = self._get_rnd_float32(shape=[1000]) + 1.0
     output = run_node(node_def, [x])
     np.testing.assert_almost_equal(output["Y"], np.sqrt(x), decimal=5)
 
@@ -1103,31 +1150,32 @@ class TestNode(unittest.TestCase):
 
   def test_sub(self):
     node_def = helper.make_node("Sub", ["X", "Y"], ["Z"])
-    x = self._get_rnd([10, 10])
-    y = self._get_rnd([10, 10])
+    x = self._get_rnd_float32(shape=[10, 10])
+    y = self._get_rnd_float32(shape=[10, 10])
     output = run_node(node_def, [x, y])
     np.testing.assert_almost_equal(output["Z"], np.subtract(x, y))
 
   def test_sum(self):
     node_def = helper.make_node("Sum", ["X1", "X2", "X3", "X4"], ["Z"])
-    x1 = self._get_rnd([10, 10])
-    x2 = self._get_rnd([10, 10])
-    x3 = self._get_rnd([10, 10])
-    x4 = self._get_rnd([10, 10])
+    x1 = self._get_rnd_float32(shape=[10, 10])
+    x2 = self._get_rnd_float32(shape=[10, 10])
+    x3 = self._get_rnd_float32(shape=[10, 10])
+    x4 = self._get_rnd_float32(shape=[10, 10])
     output = run_node(node_def, [x1, x2, x3, x4])
     test_output = x1 + x2 + x3 + x4
     np.testing.assert_almost_equal(output["Z"], test_output)
 
   def test_tanh(self):
     node_def = helper.make_node("Tanh", ["X"], ["Y"])
-    x = self._get_rnd([1000]) + 1.0
+    x = self._get_rnd_float32(shape=[1000]) + 1.0
     output = run_node(node_def, [x])
     np.testing.assert_almost_equal(output["Y"], np.tanh(x), decimal=5)
 
   def test_thresholded_relu(self):
     alpha = 2.0
-    node_def = helper.make_node("ThresholdedRelu", ["X"], ["Y"], alpha=alpha)
-    x = self._get_rnd([10], -3.0, 3.0)
+    node_def = helper.make_node(
+        "ThresholdedRelu", ["X"], ["Y"], alpha=alpha)
+    x = self._get_rnd_float32(-3.0, 3.0, [10])
     y = np.clip(x, alpha, np.inf)
     y[y == alpha] = 0
     output = run_node(node_def, [x])
@@ -1139,14 +1187,14 @@ class TestNode(unittest.TestCase):
           "The current version of ONNX does not record correctly the opset of Tile."
       )
     node_def = helper.make_node("Tile", ["X1", "X2"], ["Z"])
-    x = self._get_rnd([3, 5, 5, 3])
+    x = self._get_rnd_float32(shape=[3, 5, 5, 3])
     repeats = [1, 1, 2, 1]
     output = run_node(node_def, [x, repeats])
     np.testing.assert_allclose(output["Z"], np.tile(x, repeats), rtol=1e-3)
 
   def test_transpose(self):
     node_def = helper.make_node("Transpose", ["X"], ["Y"], perm=[0, 2, 1])
-    x = self._get_rnd([1000]).reshape([10, 10, 10])
+    x = self._get_rnd_float32(shape=[1000]).reshape([10, 10, 10])
     output = run_node(node_def, [x])
     np.testing.assert_almost_equal(output["Y"], np.transpose(x, (0, 2, 1)))
 

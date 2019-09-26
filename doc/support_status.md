@@ -29,6 +29,7 @@ ______
 |Clip|1, 6|
 |Compress|9|
 |Concat|1, 4|
+|ConcatFromSequence|N/A|
 |Constant|1, 9, 11|
 |ConstantFill|1|
 |ConstantOfShape|9|
@@ -39,7 +40,8 @@ ______
 |Cosh|9|
 |CumSum|N/A|
 |DepthToSpace|1, 11|
-|DequantizeLinear|N/A|
+|DequantizeLinear|10|
+|Det|N/A|
 |DictVectorizer|N/A|
 |Div|1, 6, 7|
 |Dropout|1, 6, 7, 10|
@@ -56,6 +58,7 @@ ______
 |GRU|1, 3, 7|
 |Gather|1|
 |GatherElements|N/A|
+|GatherND|N/A|
 |Gemm|1, 6, 7, 9|
 |GlobalAveragePool|1|
 |GlobalLpPool|1, 2|
@@ -107,7 +110,7 @@ ______
 |Pow|1, 7|
 |QLinearConv|N/A|
 |QLinearMatMul|N/A|
-|QuantizeLinear|N/A|
+|QuantizeLinear|10|
 |RNN|1, 7|
 |RandomNormal|1|
 |RandomNormalLike|1|
@@ -137,7 +140,14 @@ ______
 |Scan|N/A|
 |Scatter|N/A|
 |ScatterElements|N/A|
+|ScatterND|N/A|
 |Selu|1, 6|
+|SequenceAt|N/A|
+|SequenceConstruct|N/A|
+|SequenceEmpty|N/A|
+|SequenceErase|N/A|
+|SequenceInsert|N/A|
+|SequenceLength|N/A|
 |Shape|1|
 |Shrink|9|
 |Sigmoid|1, 6|
@@ -151,6 +161,7 @@ ______
 |Softsign|1|
 |SpaceToDepth|1|
 |Split|1, 2|
+|SplitToSequence|N/A|
 |Sqrt|1, 6|
 |Squeeze|1|
 |StringNormalizer|N/A|
