@@ -759,7 +759,7 @@ class TestNode(unittest.TestCase):
 
     node_def = helper.make_node(**node_def_kwargs)
  
-    x = self._get_rnd(input_shape)
+    x = self._get_rnd_float32(shape=input_shape)
     output = run_node(node_def, [x])
 
     test_output, _ = py_maxpool(x, kernel_shape=kernel_shape, strides=strides,
@@ -1010,7 +1010,7 @@ class TestNode(unittest.TestCase):
         ceil_mode=ceil_mode)
 
     input_shape = [10, 1, 23, 23]
-    x = self._get_rnd(input_shape)
+    x = self._get_rnd_float32(shape=input_shape)
     output = run_node(node_def, [x])
 
     test_output, test_ind = py_maxpool(x, kernel_shape=kernel_shape, strides=strides,
@@ -1029,7 +1029,7 @@ class TestNode(unittest.TestCase):
         strides=strides)
 
     input_shape = [10, 1, 23, 23, 23]
-    x = self._get_rnd(input_shape)
+    x = self._get_rnd_float32(shape=input_shape)
     self.assertRaises(RuntimeError, run_node, node_def, [x])
 
   def test_max_pool_4d(self):
@@ -1041,7 +1041,7 @@ class TestNode(unittest.TestCase):
         strides=strides)
 
     input_shape = [1, 1, 4, 4, 4, 4]
-    x = self._get_rnd(input_shape)
+    x = self._get_rnd_float32(shape=input_shape)
     self.assertRaises(RuntimeError, run_node, node_def, [x])
 
   def test_mean_variance_normalization(self):
