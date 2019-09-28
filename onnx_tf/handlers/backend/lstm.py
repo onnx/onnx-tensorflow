@@ -128,8 +128,6 @@ class LSTM(RNNMixin, BackendHandler):
       cell_kwargs["cell_clip"] = node.attrs["clip"]
   
     tf_activations = [tf.nn.tanh]
-    if num_directions == 2:
-      tf_activations.append(tf.nn.tanh)
 
     if "activations" in node.attrs:
       activations = list(map(lambda x: x.lower(), node.attrs["activations"]))
@@ -143,6 +141,9 @@ class LSTM(RNNMixin, BackendHandler):
         tf_activations.append(
             cls.rnn_get_activation(activations[4], activation_alpha[4],
                                    activation_beta[4]))
+    else:
+      if num_directions == 2:
+        tf_activations.append(tf.nn.tanh)
 
     # TODO(fumihwh): check if reverse and bidirectional works
     with tf.variable_scope(
