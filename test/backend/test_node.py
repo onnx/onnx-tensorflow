@@ -178,26 +178,27 @@ class TestNode(unittest.TestCase):
   def test_cast(self):
     if legacy_onnx_pre_ver(1, 2) or legacy_opset_pre_ver(6):
       test_cases = [("FLOAT", tf.float32), ("UINT8", tf.uint8),
-                    ("INT8", tf.int8),
-                    ("UINT16", tf.uint16), ("INT16", tf.int16),
+                    ("INT8", tf.int8), ("UINT16", tf.uint16), ("INT16",
+                                                               tf.int16),
                     ("INT32", tf.int32), ("INT64", tf.int64), ("BOOL", tf.bool),
                     ("FLOAT16", tf.float16), ("DOUBLE", tf.float64),
                     ("COMPLEX64", tf.complex64), ("COMPLEX128", tf.complex128)]
     else:
-      test_cases = [(TensorProto.FLOAT, tf.float32),
-                    (TensorProto.UINT8, tf.uint8),
-                    (TensorProto.INT8, tf.int8),
-                    (TensorProto.UINT16, tf.uint16),
-                    (TensorProto.INT16, tf.int16),
-                    (TensorProto.INT32, tf.int32),
-                    (TensorProto.INT64, tf.int64),
-                    (TensorProto.BOOL, tf.bool),
-                    (TensorProto.FLOAT16, tf.float16),
-                    (TensorProto.DOUBLE, tf.float64),
-                    (TensorProto.COMPLEX64, tf.complex64),
-                    (TensorProto.COMPLEX128, tf.complex128)]
+      test_cases = [(TensorProto.FLOAT,
+                     tf.float32), (TensorProto.UINT8,
+                                   tf.uint8), (TensorProto.INT8, tf.int8),
+                    (TensorProto.UINT16,
+                     tf.uint16), (TensorProto.INT16,
+                                  tf.int16), (TensorProto.INT32, tf.int32),
+                    (TensorProto.INT64,
+                     tf.int64), (TensorProto.BOOL,
+                                 tf.bool), (TensorProto.FLOAT16, tf.float16),
+                    (TensorProto.DOUBLE,
+                     tf.float64), (TensorProto.COMPLEX64,
+                                   tf.complex64), (TensorProto.COMPLEX128,
+                                                   tf.complex128)]
       if not legacy_opset_pre_ver(9):
-         test_cases.append((TensorProto.STRING, tf.string))
+        test_cases.append((TensorProto.STRING, tf.string))
     for ty, tf_type in test_cases:
       node_def = helper.make_node("Cast", ["input"], ["output"], to=ty)
       vector = [2, 3]
@@ -205,10 +206,10 @@ class TestNode(unittest.TestCase):
       np.testing.assert_equal(output["output"].dtype, tf_type)
 
     if not legacy_opset_pre_ver(9):
-      test_cases2 = [(TensorProto.FLOAT, tf.float32),
-                     (TensorProto.INT32, tf.int32),
-                     (TensorProto.INT64, tf.int64),
-                     (TensorProto.DOUBLE, tf.float64)]
+      test_cases2 = [(TensorProto.FLOAT, tf.float32), (TensorProto.INT32,
+                                                       tf.int32),
+                     (TensorProto.INT64, tf.int64), (TensorProto.DOUBLE,
+                                                     tf.float64)]
       for ty, tf_type in test_cases2:
         node_def = helper.make_node("Cast", ["input"], ["output"], to=ty)
         vector = ['2', '3']
@@ -339,9 +340,8 @@ class TestNode(unittest.TestCase):
                   w_in_range = (w - kW // 2 + kw) < W and (
                       w - kW // 2 + kw) >= 0
                   if h_in_range and w_in_range:
-                    test_output[n][k][h][w] += (
-                        x[n][c][h - kH // 2 + kh][w - kW // 2 + kw] *
-                        weights[k][c][kh][kw])
+                    test_output[n][k][h][w] += (x[n][c][h - kH // 2 + kh][
+                        w - kW // 2 + kw] * weights[k][c][kh][kw])
 
     np.testing.assert_almost_equal(output["Y"], test_output, decimal=5)
 
@@ -573,22 +573,22 @@ class TestNode(unittest.TestCase):
 
   def test_is_inf(self):
     if legacy_opset_pre_ver(10):
-      raise unittest.SkipTest(
-      "ONNX version {} doesn't support IsInf.".format(
+      raise unittest.SkipTest("ONNX version {} doesn't support IsInf.".format(
           defs.onnx_opset_version()))
-    input = np.array([-1.2, np.nan, np.inf, 2.8, np.NINF, np.inf],
-          dtype=np.float32)
+    input = np.array(
+        [-1.2, np.nan, np.inf, 2.8, np.NINF, np.inf], dtype=np.float32)
     expected_output = {
-      "node_def": np.isinf(input),
-      "node_def_neg_false": np.isposinf(input),
-      "node_def_pos_false": np.isneginf(input)}
+        "node_def": np.isinf(input),
+        "node_def_neg_false": np.isposinf(input),
+        "node_def_pos_false": np.isneginf(input)
+    }
     node_defs = {
-      "node_def" :
-      helper.make_node("IsInf", ["X"], ["Y"]),
-      "node_def_neg_false" :
-      helper.make_node("IsInf", ["X"], ["Y"], detect_negative = 0),
-      "node_def_pos_false" :
-      helper.make_node("IsInf", ["X"], ["Y"], detect_positive = 0)
+        "node_def":
+        helper.make_node("IsInf", ["X"], ["Y"]),
+        "node_def_neg_false":
+        helper.make_node("IsInf", ["X"], ["Y"], detect_negative=0),
+        "node_def_pos_false":
+        helper.make_node("IsInf", ["X"], ["Y"], detect_positive=0)
     }
     for key in node_defs:
       output = run_node(node_defs[key], [input])
@@ -658,11 +658,14 @@ class TestNode(unittest.TestCase):
                                                                [1, 3, 3, 1])))
 
   def test_lp_normalization(self):
-    node_def = helper.make_node("LpNormalization", ["X"], ["Y"])
-    x = self._get_rnd_float32(shape=[5, 3, 3, 2])
-    output = run_node(node_def, [x])
-    np.testing.assert_allclose(
-        output["Y"], np.expand_dims(np.linalg.norm(x, axis=-1), -1), rtol=1e-3)
+    for ordr in range(1, 3):
+      node_def = helper.make_node("LpNormalization", ["X"], ["Y"], p=ordr)
+      x = self._get_rnd([2, 2, 3, 2])
+      output = run_node(node_def, [x])
+      np.testing.assert_allclose(
+          output["Y"],
+          x / np.expand_dims(np.linalg.norm(x, axis=-1, ord=ordr), -1),
+          rtol=1e-3)
 
   def test_l_r_n(self):
     # Each input value is divided by:
@@ -866,9 +869,11 @@ class TestNode(unittest.TestCase):
         "Pad", ["X"], ["Y"], mode="constant", pads=[1, 1, 1, 1], value=2.0)
     x = self._get_rnd_float32(shape=[100, 100])
     output = run_node(node_def, [x])
-    np.testing.assert_almost_equal(
-        output["Y"],
-        np.lib.pad(x, ((1, 1), (1, 1)), 'constant', constant_values=(2, 2)))
+    np.testing.assert_almost_equal(output["Y"],
+                                   np.lib.pad(
+                                       x, ((1, 1), (1, 1)),
+                                       'constant',
+                                       constant_values=(2, 2)))
 
   def test_quantize_linear(self):
     node_def = helper.make_node("QuantizeLinear",
@@ -1005,9 +1010,8 @@ class TestNode(unittest.TestCase):
 
   def test_shrink(self):
     if legacy_opset_pre_ver(9):
-      raise unittest.SkipTest(
-          "ONNX version {} doesn't support Shrink.".format(
-              defs.onnx_opset_version()))
+      raise unittest.SkipTest("ONNX version {} doesn't support Shrink.".format(
+          defs.onnx_opset_version()))
 
     node_def = helper.make_node("Shrink", ["X"], ["Y"], bias=1.5, lambd=1.5)
 
@@ -1197,8 +1201,8 @@ class TestNode(unittest.TestCase):
   def test_topk(self):
     x = np.arange(15, dtype=np.float32).reshape(3, 5)
     values = np.array([[4, 3], [9, 8], [14, 13]], dtype=np.float32)
-    indices = np.array([[4, 3],[4, 3],[4, 3]], dtype=np.int64)
-    if legacy_opset_pre_ver(10): # for opset = 1
+    indices = np.array([[4, 3], [4, 3], [4, 3]], dtype=np.int64)
+    if legacy_opset_pre_ver(10):  # for opset = 1
       node_def = helper.make_node("TopK", ["x"], ["values", "indices"], k=2)
       output = run_node(node_def, [x])
     elif legacy_opset_pre_ver(11): # for opset = 10
@@ -1219,15 +1223,15 @@ class TestNode(unittest.TestCase):
 
   def test_where(self):
     if legacy_opset_pre_ver(9):
-      raise unittest.SkipTest(
-          "ONNX version {} doesn't support Where.".format(
-              defs.onnx_opset_version()))
-    node_def = helper.make_node("Where", ["C","X","Y"], ["Z"])
+      raise unittest.SkipTest("ONNX version {} doesn't support Where.".format(
+          defs.onnx_opset_version()))
+    node_def = helper.make_node("Where", ["C", "X", "Y"], ["Z"])
     c = np.array([[1, 0], [1, 1]], dtype=np.bool)
     x = np.array([[1, 2], [3, 4]], dtype=np.float32)
     y = np.array([[9, 8], [7, 6]], dtype=np.float32)
-    output = run_node(node_def, [c,x,y])
-    np.testing.assert_almost_equal(output["Z"], np.where(c,x,y))
+    output = run_node(node_def, [c, x, y])
+    np.testing.assert_almost_equal(output["Z"], np.where(c, x, y))
+
 
 if __name__ == '__main__':
   unittest.main()
