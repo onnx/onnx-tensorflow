@@ -11,7 +11,7 @@ from onnx_tf.handlers.handler import tf_func
 class Hardmax(BackendHandler):
 
   @classmethod
-  def version_1(cls, node, **kwargs):
+  def _common(cls, node, **kwargs):
     x = kwargs["tensor_dict"][node.inputs[0]]
     axis = node.attrs.get("axis", 1)
     axis = axis if axis >= 0 else len(np.shape(x)) + axis
@@ -25,3 +25,11 @@ class Hardmax(BackendHandler):
     x = tf.reshape(x, cal_shape)
 
     return [tf.reshape(tf.contrib.seq2seq.hardmax(x), shape)]
+
+  @classmethod
+  def version_1(cls, node, **kwargs):
+    return cls._common(node, **kwargs)
+
+  @classmethod
+  def version_11(cls, node, **kwargs):
+    return cls._common(node, **kwargs)

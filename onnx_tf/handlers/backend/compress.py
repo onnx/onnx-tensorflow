@@ -11,7 +11,7 @@ from onnx_tf.handlers.handler import tf_func
 class Compress(BackendHandler):
 
   @classmethod
-  def version_9(cls, node, **kwargs):
+  def _common(cls, node, **kwargs):
     attrs = copy.deepcopy(node.attrs)
     tensor_dict = kwargs["tensor_dict"]
     x = tensor_dict[node.inputs[0]]
@@ -26,3 +26,11 @@ class Compress(BackendHandler):
     return [
         cls.make_tensor_from_onnx_node(node, inputs=[x], attrs=attrs, **kwargs)
     ]
+
+  @classmethod
+  def version_9(cls, node, **kwargs):
+    return cls._common(node, **kwargs)
+
+  @classmethod
+  def version_11(cls, node, **kwargs):
+    return cls._common(node, **kwargs)

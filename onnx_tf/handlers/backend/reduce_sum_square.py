@@ -9,8 +9,16 @@ from .math_mixin import ReductionMixin
 class ReduceSumSquare(ReductionMixin, BackendHandler):
 
   @classmethod
-  def version_1(cls, node, **kwargs):
+  def _common(cls, node, **kwargs):
     x = kwargs["tensor_dict"][node.inputs[0]]
     axis = node.attrs.get("axes", list(range(len(x.get_shape().as_list()))))
     keepdims = node.attrs.get("keepdims", 1) == 1
     return [tf.reduce_sum(tf.square(x), axis=axis, keepdims=keepdims)]
+
+  @classmethod
+  def version_1(cls, node, **kwargs):
+    return cls._common(node, **kwargs)
+
+  @classmethod
+  def version_11(cls, node, **kwargs):
+    return cls._common(node, **kwargs)
