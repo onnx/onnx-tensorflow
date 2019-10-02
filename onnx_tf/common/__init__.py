@@ -8,11 +8,13 @@ import re
 import sys
 import uuid
 import warnings
+import logging
 
 from onnx.backend.base import DeviceType
 from tensorflow.python.client import device_lib
 
 IS_PYTHON3 = sys.version_info > (3,)
+logger = logging.getLogger('onnx-tf')
 
 
 class Deprecated:
