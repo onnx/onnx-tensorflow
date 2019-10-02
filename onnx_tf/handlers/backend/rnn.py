@@ -6,10 +6,14 @@ from onnx_tf.common import get_unique_suffix
 from onnx_tf.common import exception
 from onnx_tf.handlers.backend_handler import BackendHandler
 from onnx_tf.handlers.handler import onnx_op
+from onnx_tf.handlers.handler import partial_support
+from onnx_tf.handlers.handler import ps_description
 from .rnn_mixin import RNNMixin
 
 
 @onnx_op("RNN")
+@partial_support(True)
+@ps_description("RNN with clip is not supported in Tensorflow.")
 class RNN(RNNMixin, BackendHandler):
 
   @classmethod

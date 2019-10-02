@@ -24,6 +24,8 @@ class Handler(object):
   DOMAIN = defs.ONNX_DOMAIN
   VERSION = 0
   SINCE_VERSION = 0
+  PARTIAL_SUPPORT = False
+  PS_DESCRIPTION = ''
 
   @classmethod
   def check_cls(cls):
@@ -85,6 +87,14 @@ class Handler(object):
     return Handler.property_register("DOMAIN", d)
 
   @staticmethod
+  def partial_support(ps):
+    return Handler.property_register("PARTIAL_SUPPORT", ps)
+
+  @staticmethod
+  def ps_description(psd):
+    return Handler.property_register("PS_DESCRIPTION", psd)
+
+  @staticmethod
   def property_register(name, value):
 
     def deco(cls):
@@ -100,4 +110,6 @@ class Handler(object):
 domain = Handler.domain
 onnx_op = Handler.onnx_op
 tf_func = Handler.tf_func
+partial_support = Handler.partial_support
+ps_description = Handler.ps_description
 property_register = Handler.property_register

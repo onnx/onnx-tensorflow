@@ -9,6 +9,7 @@ import pprint
 from onnx import defs
 
 from onnx_tf.common.handler_helper import get_backend_coverage
+from onnx_tf.common.handler_helper import get_backend_partial_support_detail
 
 
 def main():
@@ -20,11 +21,14 @@ def main():
 
   backend_onnx_coverage, backend_experimental_op = get_backend_coverage()
   backend_opset_dict.update(backend_onnx_coverage.get(defs.ONNX_DOMAIN, {}))
+  backend_ps_dict = get_backend_partial_support_detail()
 
   with open('opset_version.py', 'w') as version_file:
     pp = pprint.PrettyPrinter(indent=4)
     version_file.write("backend_opset_version = {\n " +
                        pp.pformat(backend_opset_dict)[1:-1] + "\n}\n\n")
+    version_file.write("backend_partial_support = {\n " +
+                       pp.pformat(backend_ps_dict)[1:-1] + "\n}\n")
 
 
 if __name__ == '__main__':

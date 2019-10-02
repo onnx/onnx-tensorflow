@@ -3,10 +3,15 @@ import tensorflow as tf
 from onnx_tf.handlers.backend_handler import BackendHandler
 from onnx_tf.handlers.handler import onnx_op
 from onnx_tf.handlers.handler import tf_func
+from onnx_tf.handlers.handler import partial_support
+from onnx_tf.handlers.handler import ps_description
 
 
 @onnx_op("Cast")
 @tf_func(tf.cast)
+@partial_support(True)
+@ps_description("Cast string to float32/float64/int32/int64 " +
+                "are not supported in Tensorflow.")
 class Cast(BackendHandler):
 
   @classmethod
