@@ -10,11 +10,9 @@ from tensorflow.core.framework import graph_pb2
 from tensorflow.python.tools import freeze_graph
 
 import onnx_tf.backend as backend
+import onnx_tf.common as common
 from onnx_tf.common import get_unique_suffix
 from onnx_tf.pb_wrapper import TensorflowGraph
-
-logging.basicConfig(level=logging.DEBUG)
-logger = logging.getLogger()
 
 
 def main(args):
@@ -96,11 +94,7 @@ def parse_args(args):
   )
 
   # required two args, source and destination path
-  parser.add_argument(
-      "--infile",
-      "-i",
-      help="Input file path.",
-      required=True)
+  parser.add_argument("--infile", "-i", help="Input file path.", required=True)
   parser.add_argument(
       "--outfile", "-o", help="Output file path.", required=True)
 
@@ -115,9 +109,10 @@ def parse_args(args):
   add_argument_group(parser, "backend arguments (onnx -> tf)",
                      [(backend.prepare, {
                          "device": {},
-                         "strict": {}
+                         "strict": {},
+                         "logging_level": {}
                      })])
- 
+
   return parser.parse_args(args)
 
 
@@ -132,8 +127,9 @@ def convert(infile, outfile, **kwargs):
   Returns:
     None.
   """
-  logger.info("Start converting onnx pb to tf pb:")
+  common.logger.setLevel(kwargs.get("logging_level", "INFO"))
+  common.logger.info("Start converting onnx pb to tf pb:")
   onnx_model = onnx.load(infile)
   tf_rep = backend.prepare(onnx_model, **kwargs)
   tf_rep.export_graph(outfile)
-  logger.info("Converting completes successfully.")
+  common.logger.info("Converting completes successfully.")
