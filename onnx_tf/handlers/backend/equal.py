@@ -3,11 +3,16 @@ import tensorflow as tf
 from onnx_tf.handlers.backend_handler import BackendHandler
 from onnx_tf.handlers.handler import onnx_op
 from onnx_tf.handlers.handler import tf_func
+from onnx_tf.handlers.handler import partial_support
+from onnx_tf.handlers.handler import ps_description
 from .control_flow_mixin import ComparisonMixin
 
 
 @onnx_op("Equal")
 @tf_func(tf.equal)
+@partial_support(True)
+@ps_description("Equal inputs in uint16/uint32/uint64 " +
+                "are not supported in Tensorflow.")
 class Equal(ComparisonMixin, BackendHandler):
 
   @classmethod
@@ -21,7 +26,7 @@ class Equal(ComparisonMixin, BackendHandler):
     x = kwargs["tensor_dict"][node.inputs[0]]
     if x.dtype not in supported_dtype:
       exception.OP_UNSUPPORTED_EXCEPT(
-          "Equal input in " + str(x.dtype) + " which", "Tensorflow")
+          "Equal inputs in " + str(x.dtype) + " which", "Tensorflow")
 
   @classmethod
   def version_1(cls, node, **kwargs):

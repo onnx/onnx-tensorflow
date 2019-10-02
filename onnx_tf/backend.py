@@ -28,6 +28,7 @@ from onnx_tf.common import get_unique_suffix
 from onnx_tf.common import supports_device as common_supports_device
 from onnx_tf.common.handler_helper import get_all_backend_handlers
 from onnx_tf.pb_wrapper import OnnxNode
+import onnx_tf.common as common
 
 
 class TensorflowBackend(Backend):
@@ -35,7 +36,12 @@ class TensorflowBackend(Backend):
   """
 
   @classmethod
-  def prepare(cls, model, device='CPU', strict=True, **kwargs):
+  def prepare(cls,
+              model,
+              device='CPU',
+              strict=True,
+              logging_level='INFO',
+              **kwargs):
     """Prepare an ONNX model for Tensorflow Backend.
 
     This function converts an ONNX model to an internel representation
@@ -48,10 +54,13 @@ class TensorflowBackend(Backend):
       and the converted tensorflow model, defaults to True (yes, enforce semantic equivalence).
       Changing to False is strongly discouraged.
       Currently, the strict flag only affects the behavior of MaxPool and AveragePool ops.
+    :param logging_level: The logging level, default is INFO. Change it to DEBUG
+      to see more conversion details or to WARNING to see less
 
     :returns: A TensorflowRep class object representing the ONNX model
     """
     super(TensorflowBackend, cls).prepare(model, device, **kwargs)
+    common.logger.setLevel(logging_level)
 
     return cls.onnx_model_to_tensorflow_rep(model, strict)
 
