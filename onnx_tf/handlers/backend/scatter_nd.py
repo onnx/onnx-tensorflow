@@ -5,7 +5,7 @@ from onnx_tf.handlers.handler import onnx_op
 
 
 @onnx_op("ScatterND")
-class ScatterElements(BackendHandler):
+class ScatterND(BackendHandler):
 
   @classmethod
   def version_11(cls, node, **kwargs):
