@@ -1232,6 +1232,22 @@ class TestNode(unittest.TestCase):
     output = run_node(node_def, [c, x, y])
     np.testing.assert_almost_equal(output["Z"], np.where(c, x, y))
 
+  def test_scatter_nd(self):
+    data    = np.array([1, 2, 3, 4, 5, 6, 7, 8], dtype=np.float32)
+    indices = np.array([[4], [3], [1], [7]], dtype=np.int64)
+    updates = np.array([9, 10, 11, 12], dtype=np.float32)
+    ref_output  = np.array([1, 11, 3, 10, 9, 6, 7, 12], dtype=np.float32)
+    node_def = helper.make_node("ScatterND", ["data", "indices", "updates"], ["outputs"])
+    output = run_node(node_def, [data, indices, updates])
+    np.testing.assert_almost_equal(output["outputs"], ref_output)
+
+  def test_gather_nd(self):
+    data    = [[0,1],[2,3]]
+    indices = [[0,0],[1,1]]
+    ref_output  = [0,3]
+    node_def = helper.make_node("GatherND", ["data", "indices"], ["outputs"])
+    output = run_node(node_def, [data, indices])
+    np.testing.assert_almost_equal(output["outputs"], ref_output)
 
 if __name__ == '__main__':
   unittest.main()
