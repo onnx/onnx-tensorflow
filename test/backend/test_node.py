@@ -1267,11 +1267,18 @@ class TestNode(unittest.TestCase):
     axis = 1
     ref_output = np.array([[1.0, 1.1, 3.0, 2.1, 5.0]], dtype=np.float32)
 
-    node_def = helper.make_node("ScatterElements",
+    if legacy_opset_pre_ver(11):
+      node_def = helper.make_node("Scatter",
                                 ["data", "indices", "updates"], ["outputs"],
                                 axis=axis)
-    output = run_node(node_def, [data, indices, updates])
-    np.testing.assert_almost_equal(output["outputs"], ref_output)
+      output = run_node(node_def, [data, indices, updates])
+      np.testing.assert_almost_equal(output["outputs"], ref_output)
+    else:
+      node_def = helper.make_node("ScatterElements",
+                                ["data", "indices", "updates"], ["outputs"],
+                                axis=axis)
+      output = run_node(node_def, [data, indices, updates])
+      np.testing.assert_almost_equal(output["outputs"], ref_output)
 
   def test_scatter_elements2(self):
     data = np.array([
@@ -1293,10 +1300,16 @@ class TestNode(unittest.TestCase):
         [0.0, 2.1, 1.2],
     ], dtype=np.float32)
 
-    node_def = helper.make_node("ScatterElements",
+    if legacy_opset_pre_ver(11):
+      node_def = helper.make_node("Scatter",
+                                  ["data", "indices", "updates"], ["outputs"])
+      output = run_node(node_def, [data, indices, updates])
+      np.testing.assert_almost_equal(output["outputs"], ref_output)
+    else:
+      node_def = helper.make_node("ScatterElements",
                                 ["data", "indices", "updates"], ["outputs"])
-    output = run_node(node_def, [data, indices, updates])
-    np.testing.assert_almost_equal(output["outputs"], ref_output)
+      output = run_node(node_def, [data, indices, updates])
+      np.testing.assert_almost_equal(output["outputs"], ref_output)
 
   def test_gather_nd(self):
     data = [[0, 1], [2, 3]]
