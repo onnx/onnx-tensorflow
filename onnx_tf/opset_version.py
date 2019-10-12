@@ -162,7 +162,7 @@ backend_opset_version = {
     'Sum': [1, 6, 8],
     'Tan': [7],
     'Tanh': [1, 6],
-    'TfIdfVectorizer': [],
+    'TfIdfVectorizer': [9],
     'ThresholdedRelu': [1, 10],
     'Tile': [1, 6],
     'TopK': [1, 10, 11],
