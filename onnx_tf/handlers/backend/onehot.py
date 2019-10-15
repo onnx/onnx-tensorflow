@@ -35,7 +35,7 @@ class OneHot(BackendHandler):
               depth.dtype) + " which", "Tensorflow")
 
   @classmethod
-  def version_9(cls, node, **kwargs):
+  def _common(cls, node, **kwargs):
     attrs = copy.deepcopy(node.attrs)
     tensor_dict = kwargs["tensor_dict"]
     indices = tensor_dict[node.inputs[0]]
@@ -50,3 +50,11 @@ class OneHot(BackendHandler):
             attrs=attrs,
             **kwargs)
     ]
+
+  @classmethod
+  def version_9(cls, node, **kwargs):
+    return cls._common(node, **kwargs)
+
+  @classmethod
+  def version_11(cls, node, **kwargs):
+      return cls._common(node, **kwargs)

@@ -79,8 +79,6 @@ class TestNode(unittest.TestCase):
     # np.testing.assert_almost_equal(output["C"], np.add(a, b))
 
   def test_arg_max(self):
-    # TODO: need to fix this test
-    return
     for axis in [0, 1]:
       node_def = helper.make_node(
           "ArgMax", ["data"], ["reduced"], axis=axis, keepdims=0)
@@ -90,8 +88,6 @@ class TestNode(unittest.TestCase):
                                      np.argmax(data, axis=axis))
 
   def test_arg_min(self):
-    # TODO: need to fix this test
-    return
     for axis in [0, 1]:
       node_def = helper.make_node(
           "ArgMin", ["data"], ["reduced"], axis=axis, keepdims=0)
@@ -355,7 +351,7 @@ class TestNode(unittest.TestCase):
     node_def = helper.make_node(
         "ConvTranspose", ["X", "weights"], ["Y"], pads=[1, 1])
     x_shape = [1, 5, 4]
-    x = self._get_rnd(x_shape)
+    x = self._get_rnd_float32(shape=x_shape)
     weight_shape = [5, 3, 2]
     weights = self._get_rnd_float32(shape=weight_shape)
     output = run_node(node_def, [x, weights], device=device)
@@ -490,19 +486,16 @@ class TestNode(unittest.TestCase):
         np.testing.assert_equal(output['y'], y)
 
   def test_flatten(self):
-    # If input tensor has shape (d_0, d_1, ... d_n) then the
-    # output will have shape:
-    #
-    # (d_0 X d_1 ... d_(axis-1), d_axis X d_(axis+1) ... X dn)
-    #
-    # TODO: pass axis attribute which is supported in newer
-    # versions of onnx
-    node_def = helper.make_node("Flatten", ["X"], ["Y"])
-    x = self._get_rnd_float32(shape=[10, 2, 3, 4, 5])
-    output = run_node(node_def, [x])
-    # TODO: pass axis=3 and uncomment the line below
-    # np.testing.assert_almost_equal(output["Y"], x.reshape([60, 20]))
-    np.testing.assert_almost_equal(output["Y"], x.reshape([10, 120]))
+    shape = [10, 2, 3, 4, 5]
+    x = self._get_rnd_float32(shape=shape)
+    for axis in range(-len(shape), len(shape)):
+      node_def = helper.make_node("Flatten", ["X"], ["Y"], axis=axis)
+      output = run_node(node_def, [x])
+      if axis == 0:
+        new_shape = (1, -1)
+      else:
+        new_shape = (np.prod(shape[0:axis]).astype(int), -1)
+      np.testing.assert_almost_equal(output["Y"], np.reshape(x, new_shape))
 
   def test_gather(self):
     node_def = helper.make_node("Gather", ["X", "Y"], ["Z"])
@@ -550,6 +543,18 @@ class TestNode(unittest.TestCase):
             sum += x[i1][i2][j1][j2]
         test_output[i1][i2][0][0] = sum / 6.
     np.testing.assert_almost_equal(output["Y"], test_output)
+
+  def test_hardmax(self):
+    shape = [2, 3, 4, 5]
+    x = self._get_rnd_float32(shape=shape)
+    for axis in range(-len(shape), len(shape)):
+      node_def = helper.make_node("Hardmax", ["X"], ["Y"], axis=axis)
+      output = run_node(node_def, [x])
+      shape_in_2d = (np.prod(shape[0:axis]).astype(int),
+                     np.prod(shape[axis:len(shape)]))
+      x_in_2d = np.reshape(x, shape_in_2d)
+      y = np.eye(x_in_2d.shape[1], dtype=x.dtype)[np.argmax(x_in_2d, axis=1)]
+      np.testing.assert_almost_equal(output["Y"], np.reshape(y, shape))
 
   def test_image_sacler(self):
     # Input:  (N x C x H x W), where N is the batch size,
@@ -660,7 +665,7 @@ class TestNode(unittest.TestCase):
   def test_lp_normalization(self):
     for ordr in range(1, 3):
       node_def = helper.make_node("LpNormalization", ["X"], ["Y"], p=ordr)
-      x = self._get_rnd([2, 2, 3, 2])
+      x = self._get_rnd_float32(shape=[2, 2, 3, 2])
       output = run_node(node_def, [x])
       np.testing.assert_allclose(
           output["Y"],
