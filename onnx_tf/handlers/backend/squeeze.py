@@ -16,3 +16,7 @@ class Squeeze(BackendHandler):
   @classmethod
   def version_1(cls, node, **kwargs):
     return [cls.make_tensor_from_onnx_node(node, **kwargs)]
+
+  @classmethod
+  def version_11(cls, node, **kwargs):
+    return [cls.make_tensor_from_onnx_node(node, **kwargs)]
