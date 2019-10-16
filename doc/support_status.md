@@ -1,7 +1,7 @@
 # ONNX-Tensorflow Support Status
 |||
 |-:|:-|
-|ONNX-Tensorflow Version|Master ( commit id: fc7ed07d1b7d402bc41d7c9878605d9a31712b34 )|
+|ONNX-Tensorflow Version|Master ( commit id: da1f184324174fafe830126afcee85068f58198d )|
 |ONNX Version|Master ( commit id: 3ea3b0e04cc0cb0f2fd250cf40b7e284d8bb945c )|
 |Tensorflow Version|v1.15.0|
 
@@ -102,7 +102,7 @@ Notes:
 |OneHot|-|-|-|-|-|-|-|-|**9**:small_orange_diamond:|9:small_orange_diamond:|**11**:small_orange_diamond:|
 |Or|**1**|1|1|1|1|1|**7**|7|7|7|7|
 |PRelu|**1**|1|1|1|1|**6**|**7**|7|**9**|9|9|
-|Pad|**1**|**2**|2|2|2|2|2|2|2|2|**11**:small_red_triangle:|
+|Pad|**1**|**2**|2|2|2|2|2|2|2|2|**11**|
 |Pow|**1**|1|1|1|1|1|**7**|7|7|7|7|
 |QLinearConv|-|-|-|-|-|-|-|-|-|**10**:small_red_triangle:|10:small_red_triangle:|
 |QLinearMatMul|-|-|-|-|-|-|-|-|-|**10**|10|
@@ -153,7 +153,7 @@ Notes:
 |Softplus|**1**|1|1|1|1|1|1|1|1|1|1|
 |Softsign|**1**|1|1|1|1|1|1|1|1|1|1|
 |SpaceToDepth|**1**|1|1|1|1|1|1|1|1|1|1|
-|Split|**1**|**2**|2|2|2|2|2|2|2|2|**11**:small_red_triangle:|
+|Split|**1**|**2**|2|2|2|2|2|2|2|2|**11**|
 |SplitToSequence|-|-|-|-|-|-|-|-|-|-|**11**:small_red_triangle:|
 |Sqrt|**1**|1|1|1|1|**6**|6|6|6|6|6|
 |Squeeze|**1**|1|1|1|1|1|1|1|1|1|**11**|
@@ -173,7 +173,7 @@ Notes:
 |Where|-|-|-|-|-|-|-|-|**9**|9|9|
 |Xor|**1**|1|1|1|1|1|**7**|7|7|7|7|
 
-ONNX-TF Supported Operators / ONNX Operators: 121 / 156
+ONNX-TF Supported Operators / ONNX Operators: 124 / 156
 
 Notes:
 1. Cast: Cast string to float32/float64/int32/int64 are not supported in Tensorflow.

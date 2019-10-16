@@ -9,9 +9,9 @@ import os
 import subprocess
 import sys
 
-import tensorflow as tf
+import onnx
 
-from onnx import defs
+import tensorflow as tf
 
 from onnx_tf import opset_version
 
@@ -20,67 +20,67 @@ def main(docs_dir):
   base_dir = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
   docs_dir = os.path.join(base_dir, 'doc')
   onnx_version = ''
-  onnx_path = ''
   onnx_tf_release_build = False
 
   try:
-    opts, args = getopt.getopt(
-        sys.argv[1:], 'hv:p:r',
-        ['onnx_version=', 'onnx_path=', 'onnx_tf_release_build'])
+    opts, args = getopt.getopt(sys.argv[1:], 'hv:r',
+                               ['onnx_version=', 'onnx_tf_release_build'])
   except getopt.GetoptError:
-    print('gen_status.py -v <onnx_version> -p <onnx_path> ' +
-          '-r <onnx_tf_release_build>')
-    print('If onnx_version=master then onnx_path is required.')
+    print('Usage:')
+    print('     gen_status.py -v <onnx_version> [-r]')
+    print('     gen_status.py -h')
+    print('Description:')
+    print('  -v, --onnx_version             installed ONNX version')
+    print('  -r, --onnx_tf_release_build    create report for ONNX-TF release with version stated in the VERSION_NUMBER file')
+    print('                                 when omitted, the report is for ONNX-TF master')
+    print('  -h                             show this help message and exit')
     print('eg. generate support_status.md for onnx-tf master and onnx master')
-    print('        gen_status.py -v master -p /YOUR-ONNX-PATH')
+    print('        gen_status.py -v master')
     print('    generate support_status_<onnx_tf_version>.md for onnx-tf ' +
-          'version state in the VERSION_NUMBER file and onnx v1.5.0 ')
+          'version stated in the VERSION_NUMBER file and onnx v1.5.0 ')
     print('        gen_status.py -v v1.5.0 -r')
     sys.exit(2)
   for opt, arg in opts:
     if opt == '-h':
-      print('gen_status.py -v <onnx_version> -p <onnx_path> ' +
-            '-r <onnx_tf_release_build>')
-      print('If onnx_version=master then onnx_path is required.')
+      print('Usage:')
+      print('     gen_status.py -v <onnx_version> [-r]')
+      print('     gen_status.py -h')
+      print('Description:')
+      print('  -v, --onnx_version             installed ONNX version')
+      print('  -r, --onnx_tf_release_build    create report for ONNX-TF release with version stated in the VERSION_NUMBER file')
+      print('                                 when omitted, the report is for ONNX-TF master')
+      print('  -h                             show this help message and exit')
       print('eg. generate support_status.md for onnx-tf master and onnx master')
-      print('        gen_status.py -v master -p /YOUR-ONNX-PATH')
+      print('        gen_status.py -v master')
       print('    generate support_status_<onnx_tf_version>.md for onnx-tf ' +
-            'version state in the VERSION_NUMBER file and onnx v1.5.0')
+            'version stated in the VERSION_NUMBER file and onnx v1.5.0')
       print('        gen_status.py -v v1.5.0 -r')
       sys.exit()
     elif opt in ('-v', '--onnx_version'):
       onnx_version = arg
-    elif opt in ('-p', '--onnx_path'):
-      onnx_path = arg
     elif opt in ('-r', '--onnx_tf_release_build'):
       onnx_tf_release_build = True
-  if onnx_version == 'master' and onnx_path == '':
-    print('onnx_path is required when onnx_version=master\n')
-    print('gen_status.py -v <onnx_version> -p <onnx_path> ' +
-          '-r <onnx_tf_release_build>')
-    print('eg. generate support_status.md for onnx-tf master and onnx master')
-    print('        gen_status.py -v master -p /YOUR-ONNX-PATH')
-    print('    generate support_status_<onnx_tf_version>.md for onnx-tf ' +
-          'version state in the VERSION_NUMBER file and onnx v1.5.0')
-    print('        gen_status.py -v v1.5.0 -r')
-    sys.exit(2)
-  elif onnx_version == '':
+  if onnx_version == '':
     print('Please provide the onnx_version.')
-    print('If onnx_version=master, then onnx_path is required too.\n')
-    print('gen_status.py -v <onnx_version> -p <onnx_path> ' +
-          '-r <onnx_tf_release_build>')
+    print('Usage:')
+    print('     gen_status.py -v <onnx_version> [-r]')
+    print('     gen_status.py -h')
+    print('Description:')
+    print('  -v, --onnx_version             installed ONNX version')
+    print('  -r, --onnx_tf_release_build    create report for ONNX-TF release with version stated in the VERSION_NUMBER file')
+    print('                                 when omitted, the report is for ONNX-TF master')
+    print('  -h                             show this help message and exit')
     print('eg. generate support_status.md for onnx-tf master and onnx master')
-    print('        gen_status.py -v master -p /YOUR-ONNX-PATH')
+    print('        gen_status.py -v master')
     print('    generate support_status_<onnx_tf_version>.md for onnx-tf ' +
-          'version state in the VERSION_NUMBER file and onnx v1.5.0')
+          'version stated in the VERSION_NUMBER file and onnx v1.5.0')
     print('        gen_status.py -v v1.5.0 -r')
     sys.exit(2)
 
-  gen_support_status(docs_dir, onnx_version, onnx_path, onnx_tf_release_build)
+  gen_support_status(docs_dir, onnx_version, onnx_tf_release_build)
 
 
-def gen_support_status(docs_dir, onnx_version, onnx_path,
-                       onnx_tf_release_build):
+def gen_support_status(docs_dir, onnx_version, onnx_tf_release_build):
 
   # set filename
   if onnx_tf_release_build:
@@ -93,8 +93,8 @@ def gen_support_status(docs_dir, onnx_version, onnx_path,
     filename = 'support_status_' + onnx_tf_version.replace('.', '_') + '.md'
   else:  # onnx-tf = master
     # get onnx-tf commit id
-    onnx_tf_commit_id = subprocess.check_output(
-        'git rev-parse HEAD', shell=True)
+    onnx_tf_commit_id = subprocess.check_output('git rev-parse HEAD',
+                                                shell=True)
     onnx_tf_commit_id = onnx_tf_commit_id.decode().strip('\n')
     onnx_tf_version = 'Master ( commit id: {} )'.format(onnx_tf_commit_id)
     filename = 'support_status.md'
@@ -107,8 +107,11 @@ def gen_support_status(docs_dir, onnx_version, onnx_path,
 
     # get onnx commit id
     if onnx_version == 'master':
-      onnx_commit_id = subprocess.check_output(
-          'cd ' + onnx_path + '; git rev-parse HEAD', shell=True)
+      onnx_path = os.path.dirname(
+          os.path.dirname(os.path.realpath(onnx.__file__)))
+      onnx_commit_id = subprocess.check_output('cd ' + onnx_path +
+                                               '; git rev-parse HEAD',
+                                               shell=True)
       onnx_commit_id = onnx_commit_id.decode().strip('\n')
       status_file.write(
           '|ONNX Version|Master ( commit id: {} )|\n'.format(onnx_commit_id))
@@ -131,13 +134,13 @@ def gen_support_status(docs_dir, onnx_version, onnx_path,
 
     # get oll onnx ops
     onnx_ops = {}
-    for schema in defs.get_all_schemas():
+    for schema in onnx.defs.get_all_schemas():
       if schema.domain == '':  # only get onnx ops
         onnx_ops[schema.name] = {
             'versions': [],
             'deprecated': schema.since_version if schema.deprecated else -1
         }
-    for schema in defs.get_all_schemas_with_history():
+    for schema in onnx.defs.get_all_schemas_with_history():
       if schema.domain == '':  # only get onnx ops
         op = onnx_ops[schema.name]
         versions = op['versions']
@@ -148,7 +151,7 @@ def gen_support_status(docs_dir, onnx_version, onnx_path,
     onnx_tf_ops_ps = opset_version.backend_partial_support
 
     # get the cureent opset version
-    current_opset = defs.onnx_opset_version()
+    current_opset = onnx.defs.onnx_opset_version()
 
     # setup table header
     status_file.write('||')
