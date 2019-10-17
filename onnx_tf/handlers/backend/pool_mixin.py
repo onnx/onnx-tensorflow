@@ -116,7 +116,7 @@ class PoolMixin(object):
     return [pooled]
 
   @classmethod
-  def pool_v10(cls, node, input_dict, pool_func, pooling_type, strict=True):
+  def pool_v11(cls, node, input_dict, pooling_type, strict=True):
     x = input_dict[node.inputs[0]]
 
     kernel_shape = node.attrs["kernel_shape"]
@@ -169,64 +169,6 @@ class PoolMixin(object):
 
     result = [pooled] if argmax is None else [pooled, argmax]
 
-    return result
-
-  @classmethod
-  def pool_v10(cls, node, input_dict, pool_func, pooling_type, strict=True):
-    x = input_dict[node.inputs[0]]
-
-    kernel_shape = node.attrs["kernel_shape"]
-
-    spatial_size = len(kernel_shape)
-    x_rank = spatial_size + 2
-
-    kernel_shape = node.attrs["kernel_shape"]
-    strides = node.attrs.get("strides", [1] * spatial_size)
-    dilations = node.attrs.get("dilations", [1] * spatial_size)
-    ceil_mode = bool(node.attrs.get("ceil_mode", 0))
-    pads = node.attrs.get("auto_pad", "NOTSET")
-    if pads == "NOTSET":
-        pads = node.attrs.get("pads", [0] * spatial_size * 2)
-
-    if spatial_size > 3:
-      exception.OP_UNSUPPORTED_EXCEPT(
-          "MaxPool with {}D input".format(x_rank), "Tensorflow")
-    if pooling_type == "MAX_WITH_ARGMAX" and x_rank != 4:
-      exception.OP_UNSUPPORTED_EXCEPT(
-          "MaxPool with {}D input".format(x_rank), "Tensorflow")
-    if node.attrs.get("storage_order", 0) != 0:
-      exception.OP_UNSUPPORTED_EXCEPT("MaxPool with column major",
-                                      "Tensorflow")
-
-    storage_format, _ = get_data_format(x_rank)
-
-    need_trans = storage_format.startswith("NC")
-    if need_trans:
-      compute_format = "N" + storage_format[2:] + "C"
-      x = tf.transpose(x, perm=get_perm_from_formats(storage_format,
-                                                     compute_format))
-
-    dp = DilatedPooling(input=x, kernel_shape=kernel_shape, strides=strides,
-                        dilations=dilations, padding=pads, ceil_mode=ceil_mode)
-
-    result = []
-    if pooling_type == "MAX":
-      pooled = dp.dilated_maxpool()
-
-      if need_trans:
-        pooled = tf.transpose(
-            pooled, perm=get_perm_from_formats(compute_format, storage_format))
-      result = [pooled]
-    elif pooling_type == "MAX_WITH_ARGMAX":
-      pooled, argmax = dp.dilated_maxpool_with_argmax()
-
-      if need_trans:
-        pooled = tf.transpose(
-            pooled, perm=get_perm_from_formats(compute_format, storage_format))
-        argmax = tf.transpose(
-            argmax, perm=get_perm_from_formats(compute_format, storage_format))
-
-      result = [pooled, argmax]
     return result
 
   @classmethod
