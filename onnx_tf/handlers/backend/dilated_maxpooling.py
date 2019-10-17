@@ -291,7 +291,7 @@ class DilatedPooling(object):
         # initilize the output_shape with zeros
         # self.output_shape will contain the shape of the
         # output tensor after the loop below is executed
-        self.output_shape = np.zeros([self.spatial_size + 2])
+        self.output_shape = [0] * (self.spatial_size + 2)
         self.output_shape[0] = input_shape[0]
 
         """

@@ -13,7 +13,7 @@ pad_ops = namedtuple("pad_ops",
 
 pad_numpy_ops = pad_ops(np.maximum, np.ceil, np.floor,
                         lambda arr: arr.astype(np.int64))
-pad_tf_ops = pad_ops(tf.maximum, tf.ceil, tf.floor,
+pad_tf_ops = pad_ops(tf.maximum, tf.math.ceil, tf.math.floor,
                      lambda tensor: tf.cast(tensor, tf.int64))
 
 
@@ -37,7 +37,7 @@ def calc_pads_same(in_spatial_shape, kernel_shape, strides,
             pads_order:         order of returned pads. possible options are:
                                     1 - b1, b2, ..., bn, e1, e2, ..., en
                                     2 - b1, e1, b2, e2, ..., bn, en
-                                where n = len(in_spatial_shape) * 2,
+                                where n = len(kernel_shape) * 2,
                                 b1, b2, ..., bn define pads at the begging of
                                                 axis
                                 e1, e2, ..., en define pads at the end of
@@ -47,13 +47,14 @@ def calc_pads_same(in_spatial_shape, kernel_shape, strides,
                                 values is determined by `pads_order`
 
     """
-    spatial_size = len(in_spatial_shape)
+    spatial_size = len(kernel_shape)
     pads = [0] * (spatial_size * 2)
     for i in range(spatial_size):
         in_size = in_spatial_shape[i]
         filter_size = (kernel_shape[i] - 1) * dilations[i] + 1
 
         out_size = padding_ops.ceil_op(in_size / strides[i])
+        out_size = padding_ops.cast_int_op(out_size)
         pad_along_axis = \
             padding_ops.max_op((out_size - 1) * strides[i] +
                                filter_size - in_size, 0)
