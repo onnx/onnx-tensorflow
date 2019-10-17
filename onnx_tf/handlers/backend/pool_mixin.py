@@ -130,7 +130,7 @@ class PoolMixin(object):
     ceil_mode = bool(node.attrs.get("ceil_mode", 0))
     pads = node.attrs.get("auto_pad", "NOTSET")
     if pads == "NOTSET":
-        pads = node.attrs.get("pads", [0] * spatial_size * 2)
+      pads = node.attrs.get("pads", [0] * spatial_size * 2)
 
     if spatial_size > 3:
       exception.OP_UNSUPPORTED_EXCEPT(
@@ -153,24 +153,22 @@ class PoolMixin(object):
     dp = DilatedPooling(input=x, kernel_shape=kernel_shape, strides=strides,
                         dilations=dilations, padding=pads, ceil_mode=ceil_mode)
 
-    result = []
-    if pooling_type == "MAX":
-      pooled = dp.dilated_maxpool()
+    # select correct op depending on the pooling type
+    pooling_op = lambda : (dp.dilated_maxpool(), None) if \
+        pooling_type == "MAX" else dp.dilated_maxpool_with_argmax()
 
-      if need_trans:
-        pooled = tf.transpose(
-            pooled, perm=get_perm_from_formats(compute_format, storage_format))
-      result = [pooled]
-    elif pooling_type == "MAX_WITH_ARGMAX":
-      pooled, argmax = dp.dilated_maxpool_with_argmax()
+    # select the correct transpose ops depending on the input storage format
+    perm = get_perm_from_formats(compute_format, storage_format)
+    postprocess_op = lambda pooled, argmax: (
+        tf.transpose(pooled, perm=perm) if need_trans else pooled,
+        tf.transpose(argmax, perm=perm) if need_trans and argmax
+        is not None else argmax)
 
-      if need_trans:
-        pooled = tf.transpose(
-            pooled, perm=get_perm_from_formats(compute_format, storage_format))
-        argmax = tf.transpose(
-            argmax, perm=get_perm_from_formats(compute_format, storage_format))
+    pooled, argmax = pooling_op()
+    pooled, argmax = postprocess_op(pooled, argmax)
 
-      result = [pooled, argmax]
+    result = [pooled] if argmax is None else [pooled, argmax]
+
     return result
 
   @classmethod

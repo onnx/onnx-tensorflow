@@ -1,34 +1,78 @@
 from __future__ import division
 
+from collections import namedtuple
 from numpy import inf
 import numpy as np
+import tensorflow as tf
+
 import itertools
-import math
+
+
+pad_ops = namedtuple("pad_ops",
+                     ["max_op", "ceil_op", "floor_op", "cast_int_op"])
+
+pad_numpy_ops = pad_ops(np.maximum, np.ceil, np.floor,
+                        lambda arr: arr.astype(np.int64))
+pad_tf_ops = pad_ops(tf.maximum, tf.ceil, tf.floor,
+                     lambda tensor: tf.cast(tensor, tf.int64))
 
 
 def calc_pads_same(in_spatial_shape, kernel_shape, strides,
-                   dilations, padding):
-    pads_begin = []
-    pads_end = []
+                   dilations, padding, padding_ops=pad_numpy_ops,
+                   pads_order=1):
+    """
+        Calculates the SAME paddings that need to be added to the input
+
+        Args:
+            in_spatial_shape:   input spatial shape
+            kernel_shape:       the size of the kernel along each axis
+            strides:            stride along each spatial axis
+            dilations:          dilations value along each spatial axis
+            padding:            padding to calculate: SAME_UPPER or
+                                SAME_LOWER
+            padding_ops:        namedtuple with ops to be used during
+                                calculations. there are two sets of ops
+                                defined pad_numpy_ops and pad_tf_ops with
+                                numpy and tensorflow ops
+            pads_order:         order of returned pads. possible options are:
+                                    1 - b1, b2, ..., bn, e1, e2, ..., en
+                                    2 - b1, e1, b2, e2, ..., bn, en
+                                where n = len(in_spatial_shape) * 2,
+                                b1, b2, ..., bn define pads at the begging of
+                                                axis
+                                e1, e2, ..., en define pads at the end of
+                                                axis
+        Return:
+            pads:               array with calculated pads. the order of the
+                                values is determined by `pads_order`
+
+    """
     spatial_size = len(in_spatial_shape)
+    pads = [0] * (spatial_size * 2)
     for i in range(spatial_size):
         in_size = in_spatial_shape[i]
         filter_size = (kernel_shape[i] - 1) * dilations[i] + 1
 
-        out_size = int(math.ceil(in_size / strides[i]))
-        pad_along_axis = max((out_size - 1) * strides[i] +
-                             filter_size - in_size, 0)
+        out_size = padding_ops.ceil_op(in_size / strides[i])
+        pad_along_axis = \
+            padding_ops.max_op((out_size - 1) * strides[i] +
+                               filter_size - in_size, 0)
         if padding.lower() == "same_lower":
-            pad_op = math.ceil
+            pad_op = padding_ops.ceil_op
         else:
-            pad_op = math.floor
-        pad_begin = int(pad_op(pad_along_axis / 2))
+            pad_op = padding_ops.floor_op
+        pad_begin = pad_op(pad_along_axis / 2)
+
+        pad_begin = padding_ops.cast_int_op(pad_begin)
+        pad_along_axis = padding_ops.cast_int_op(pad_along_axis)
+
         pad_end = pad_along_axis - pad_begin
 
-        pads_begin.append(pad_begin)
-        pads_end.append(pad_end)
+        pads[i * pads_order] = pad_begin
+        pads[i * pads_order +
+             (spatial_size if pads_order == 1 else 1)] = pad_end
 
-    return pads_begin + pads_end
+    return pads
 
 
 def py_maxpool(input, kernel_shape, strides=None, dilations=None,
@@ -58,6 +102,9 @@ def py_maxpool(input, kernel_shape, strides=None, dilations=None,
             if ((output_size - 1) * stride >= input_size + pad):
                 output_size -= 1
         return output_size
+
+    input_shape = np.shape(input)
+    inp_sp_shape = input_shape[2:]
 
     def _loop_over_output(batch, channel):
         dims = [range(output_sp_shape[d]) for d in range(spatial_size)]
@@ -94,9 +141,6 @@ def py_maxpool(input, kernel_shape, strides=None, dilations=None,
             out_ind[ind] = maxind
 
     spatial_size = len(kernel_shape)
-
-    input_shape = np.shape(input)
-    inp_sp_shape = input_shape[2:]
 
     batch_size = input_shape[0]
     channels_num = input_shape[1]
