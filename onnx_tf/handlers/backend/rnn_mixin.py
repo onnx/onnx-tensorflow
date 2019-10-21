@@ -1,6 +1,7 @@
 from functools import partial
 
 import tensorflow as tf
+# import tensorflow_probability as tfp
 from tensorflow.python.ops import array_ops
 
 from onnx_tf.common import exception
@@ -11,6 +12,9 @@ class RNNMixin(object):
   ONNX_ACTIVATION_MAPPING = {
       # Added from tf 1.8
       # "affine": tf.contrib.distributions.bijectors.AffineScalar,
+      # tf.contrib was removed since tf 2.0,
+      # Class Affine had been move to the following module
+      # "affine": tfp.bijectors.Affine,
       "elu": tf.nn.elu,
       "hard_sigmoid": tf.keras.backend.hard_sigmoid,
       "leaky_relu": tf.nn.leaky_relu,

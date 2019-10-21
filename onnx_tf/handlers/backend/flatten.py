@@ -33,3 +33,7 @@ class Flatten(BackendHandler):
   @classmethod
   def version_9(cls, node, **kwargs):
     return cls._common(node, **kwargs)
+
+  @classmethod
+  def version_11(cls, node, **kwargs):
+    return cls._common(node, **kwargs)

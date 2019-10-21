@@ -6,11 +6,15 @@ import tensorflow as tf
 from onnx_tf.common import exception
 from onnx_tf.handlers.backend_handler import BackendHandler
 from onnx_tf.handlers.handler import onnx_op
+from onnx_tf.handlers.handler import partial_support
+from onnx_tf.handlers.handler import ps_description
 from onnx_tf.handlers.handler import tf_func
 
 
 @onnx_op("Upsample")
 @tf_func(tf.image.resize_images)
+@partial_support(True)
+@ps_description("Upsample required 4D input in Tensorflow.")
 class Upsample(BackendHandler):
 
   @classmethod
