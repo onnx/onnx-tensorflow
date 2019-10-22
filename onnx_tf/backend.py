@@ -24,6 +24,7 @@ from onnx_tf.backend_rep import TensorflowRep
 from onnx_tf.common import data_type
 from onnx_tf.common import exception
 from onnx_tf.common import get_device_option
+from onnx_tf.common import get_unique_suffix
 from onnx_tf.common import supports_device as common_supports_device
 from onnx_tf.common.handler_helper import get_all_backend_handlers
 from onnx_tf.pb_wrapper import OnnxNode
@@ -115,9 +116,13 @@ class TensorflowBackend(Backend):
         shape = list(
             d.dim_value if (d.dim_value > 0 and d.dim_param == "") else None
             for d in value_info.type.tensor_type.shape.dim)
+        value_info_name = value_info.name.replace(
+            ":", "_tf_") + "_" + get_unique_suffix(
+            ) if ":" in value_info.name else value_info.name
+
         x = tf.placeholder(
             data_type.onnx2tf(value_info.type.tensor_type.elem_type),
-            name=value_info.name,
+            name=value_info_name,
             shape=shape)
         input_dict_items.append((value_info.name, x))
 
