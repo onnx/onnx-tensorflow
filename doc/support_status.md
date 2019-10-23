@@ -1,7 +1,7 @@
 # ONNX-Tensorflow Support Status
 |||
 |-:|:-|
-|ONNX-Tensorflow Version|Master ( commit id: be1432c613fd118bc73f348a81329d98e9043d70 )|
+|ONNX-Tensorflow Version|Master ( commit id: cbcfcf7a77194e3e9a87194cd92c23c33f386887 )|
 |ONNX Version|Master ( commit id: 25cf73e5ff4beb0234d657c481223529acedd26f )|
 |Tensorflow Version|v1.14.0|
 
@@ -96,7 +96,7 @@ Notes:
 |Mul|**1**|1|1|1|1|**6**|**7**|7|7|7|7|
 |Multinomial|-|-|-|-|-|-|**7**:small_red_triangle:|7:small_red_triangle:|7:small_red_triangle:|7:small_red_triangle:|7:small_red_triangle:|
 |Neg|**1**|1|1|1|1|**6**|6|6|6|6|6|
-|NonMaxSuppression|-|-|-|-|-|-|-|-|-|**10**:small_red_triangle:|**11**:small_red_triangle:|
+|NonMaxSuppression|-|-|-|-|-|-|-|-|-|**10**|**11**|
 |NonZero|-|-|-|-|-|-|-|-|**9**|9|9|
 |Not|**1**|1|1|1|1|1|1|1|1|1|1|
 |OneHot|-|-|-|-|-|-|-|-|**9**:small_orange_diamond:|9:small_orange_diamond:|**11**:small_orange_diamond:|
@@ -173,7 +173,7 @@ Notes:
 |Where|-|-|-|-|-|-|-|-|**9**|9|9|
 |Xor|**1**|1|1|1|1|1|**7**|7|7|7|7|
 
-ONNX-TF Supported Operators / ONNX Operators: 114 / 156
+ONNX-TF Supported Operators / ONNX Operators: 115 / 156
 
 Notes:
 1. Cast: Cast string to float32/float64/int32/int64 are not supported in Tensorflow.
