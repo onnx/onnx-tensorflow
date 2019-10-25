@@ -1251,6 +1251,9 @@ class TestNode(unittest.TestCase):
     np.testing.assert_almost_equal(output["Z"], np.where(c, x, y))
 
   def test_scatter_nd(self):
+    if legacy_opset_pre_ver(11):
+      raise unittest.SkipTest("ONNX version {} doesn't support ScatterND.".format(
+          defs.onnx_opset_version()))
     data = np.array([1, 2, 3, 4, 5, 6, 7, 8], dtype=np.float32)
     indices = np.array([[4], [3], [1], [7]], dtype=np.int64)
     updates = np.array([9, 10, 11, 12], dtype=np.float32)
@@ -1312,6 +1315,9 @@ class TestNode(unittest.TestCase):
       np.testing.assert_almost_equal(output["outputs"], ref_output)
 
   def test_gather_nd(self):
+    if legacy_opset_pre_ver(11):
+      raise unittest.SkipTest("ONNX version {} doesn't support GatherND.".format(
+          defs.onnx_opset_version()))
     data = [[0, 1], [2, 3]]
     indices = [[0, 0], [1, 1]]
     ref_output = [0, 3]
