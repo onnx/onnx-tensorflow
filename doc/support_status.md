@@ -1,9 +1,9 @@
 # ONNX-Tensorflow Support Status
 |||
 |-:|:-|
-|ONNX-Tensorflow Version|Master ( commit id: edb6b7fce7719f41db52884173fcdd3088d3cbe1 )|
-|ONNX Version|Master ( commit id: dd082c99537356749575d3a7920587696aec858d )|
-|Tensorflow Version|v1.15.0-dev20190626|
+|ONNX-Tensorflow Version|Master ( commit id: cbcfcf7a77194e3e9a87194cd92c23c33f386887 )|
+|ONNX Version|Master ( commit id: 25cf73e5ff4beb0234d657c481223529acedd26f )|
+|Tensorflow Version|v1.14.0|
 
 Notes:
 * Values that are new or updated from a previous opset version are in bold.
@@ -96,7 +96,7 @@ Notes:
 |Mul|**1**|1|1|1|1|**6**|**7**|7|7|7|7|
 |Multinomial|-|-|-|-|-|-|**7**:small_red_triangle:|7:small_red_triangle:|7:small_red_triangle:|7:small_red_triangle:|7:small_red_triangle:|
 |Neg|**1**|1|1|1|1|**6**|6|6|6|6|6|
-|NonMaxSuppression|-|-|-|-|-|-|-|-|-|**10**:small_red_triangle:|**11**:small_red_triangle:|
+|NonMaxSuppression|-|-|-|-|-|-|-|-|-|**10**|**11**|
 |NonZero|-|-|-|-|-|-|-|-|**9**|9|9|
 |Not|**1**|1|1|1|1|1|1|1|1|1|1|
 |OneHot|-|-|-|-|-|-|-|-|**9**:small_orange_diamond:|9:small_orange_diamond:|**11**:small_orange_diamond:|
