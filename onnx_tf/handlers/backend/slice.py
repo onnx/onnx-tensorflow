@@ -24,8 +24,8 @@ class Slice(BackendHandler):
     axes = node.attrs.get("axes", list(range(slice_len)))
 
     for i in range(slice_len):
-      starts[i] = full_sizes[axes[i]] + starts[i] if starts[i] < 0 else starts[
-          i]
+      starts[i] = full_sizes[
+          axes[i]] + starts[i] if starts[i] < 0 else starts[i]
       ends[i] = full_sizes[axes[i]] + ends[i] if ends[i] < 0 else ends[i]
       if full_sizes[axes[i]] is not None:
         ends[i] = np.min([full_sizes[axes[i]], ends[i]])
@@ -58,6 +58,10 @@ class Slice(BackendHandler):
 
     axes = tensor_dict[node.inputs[3]] if len(
         node.inputs) >= 4 else tf.constant(l, ends.dtype)
+
+    axes = tf.map_fn(lambda axis: tf.where(
+        axis < 0, tf.add(tf.cast(tf.rank(
+            input_tensor), axis.dtype), axis), axis), axes)
 
     # expand a dimension of 1 at the end
     sparse_indices = tf.expand_dims(axes, -1)
@@ -116,3 +120,7 @@ class Slice(BackendHandler):
             ],
             **kwargs)
     ]
+
+  @classmethod
+  def version_11(cls, node, **kwargs):
+    return cls.version_10(node, **kwargs)
