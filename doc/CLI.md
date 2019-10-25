@@ -27,7 +27,7 @@ optional arguments:
 More information: `onnx-tf convert -h`
 ```
 usage: onnx-tf [-h] --infile INFILE --outfile OUTFILE [--device DEVICE]
-               [--strict STRICT]
+               [--strict STRICT] [--logging_level LOGGING_LEVEL]
 
 This is the converter for converting protocol buffer between tf and onnx.
 
@@ -47,4 +47,8 @@ backend arguments (onnx -> tf):
                         Changing to False is strongly discouraged. Currently,
                         the strict flag only affects the behavior of MaxPool
                         and AveragePool ops. (from onnx_tf.backend.prepare)
+  --logging_level LOGGING_LEVEL
+                        The logging level, default is INFO. Change it to DEBUG
+                        to see more conversion details or to WARNING to see
+                        less (from onnx_tf.backend.prepare)
 ```

@@ -86,7 +86,7 @@ Notes:
 |MatMul|**1**|1|1|1|1|1|1|1|**9**|9|9|
 |MatMulInteger|-|-|-|-|-|-|-|-|-|**10**|10|
 |Max|**1**|1|1|1|1|**6**|6|**8**|8|8|8|
-|MaxPool|**1**:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|**8**:small_orange_diamond:|8:small_orange_diamond:|**10**:small_red_triangle:|**11**:small_red_triangle:|
+|MaxPool|**1**:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|**8**:small_orange_diamond:|8:small_orange_diamond:|**10**:small_orange_diamond:|**11**:small_orange_diamond:|
 |MaxRoiPool|**1**:small_red_triangle:|1:small_red_triangle:|1:small_red_triangle:|1:small_red_triangle:|1:small_red_triangle:|1:small_red_triangle:|1:small_red_triangle:|1:small_red_triangle:|1:small_red_triangle:|1:small_red_triangle:|1:small_red_triangle:|
 |MaxUnpool|-|-|-|-|-|-|-|-|**9**|9|**11**:small_red_triangle:|
 |Mean|**1**|1|1|1|1|**6**|6|**8**|8|8|8|
