@@ -1,6 +1,6 @@
 import tensorflow as tf
 from onnx.helper import make_opsetid
-from onnx_tf import backend
+import onnx_tf
 from onnx_tf.common import data_type
 
 
@@ -29,7 +29,7 @@ class ScanMixin(object):
                 input_values[body.input[i + num_state_vars].name] = b[i]
 
             tensor_dict = \
-                backend.onnx_graph_to_tensorflow_ops(graph_def=body,
+                onnx_tf.backend.onnx_graph_to_tensorflow_ops(graph_def=body,
                                                      input_values=input_values,
                                                      opset=current_opset,
                                                      strict=strict)
