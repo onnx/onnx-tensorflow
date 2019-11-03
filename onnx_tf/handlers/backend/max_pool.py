@@ -33,3 +33,15 @@ class MaxPool(PoolMixin, BackendHandler):
       pool_func = tf.nn.max_pool_with_argmax
     return cls.pool(node, kwargs["tensor_dict"], pool_func, pool_type,
                     kwargs.get("strict", True))
+
+  @classmethod
+  def version_10(cls, node, **kwargs):
+    pool_type = "MAX" if len(node.outputs) == 1 else "MAX_WITH_ARGMAX"
+    return cls.pool_v11(node, kwargs["tensor_dict"], pool_type,
+                    kwargs.get("strict", True))
+
+  @classmethod
+  def version_11(cls, node, **kwargs):
+    pool_type = "MAX" if len(node.outputs) == 1 else "MAX_WITH_ARGMAX"
+    return cls.pool_v11(node, kwargs["tensor_dict"], pool_type,
+                    kwargs.get("strict", True))

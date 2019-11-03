@@ -1,9 +1,9 @@
 # ONNX-Tensorflow Support Status
 |||
 |-:|:-|
-|ONNX-Tensorflow Version|Master ( commit id: 86a5ee7dc69bd34fe63a695eeed7f99f96b1aef8 )|
-|ONNX Version|Master ( commit id: dd082c99537356749575d3a7920587696aec858d )|
-|Tensorflow Version|v1.15.0-dev20190626|
+|ONNX-Tensorflow Version|Master ( commit id: a0750e341515cb3bf2ed37a85d25d296ed32afe8 )|
+|ONNX Version|Master ( commit id: 3ea3b0e04cc0cb0f2fd250cf40b7e284d8bb945c )|
+|Tensorflow Version|v1.15.0-rc2|
 
 Notes:
 * Values that are new or updated from a previous opset version are in bold.
@@ -84,7 +84,7 @@ Notes:
 |LpNormalization|**1**|1|1|1|1|1|1|1|1|1|1|
 |LpPool|**1**:small_red_triangle:|**2**:small_red_triangle:|2:small_red_triangle:|2:small_red_triangle:|2:small_red_triangle:|2:small_red_triangle:|2:small_red_triangle:|2:small_red_triangle:|2:small_red_triangle:|2:small_red_triangle:|**11**:small_red_triangle:|
 |MatMul|**1**|1|1|1|1|1|1|1|**9**|9|9|
-|MatMulInteger|-|-|-|-|-|-|-|-|-|**10**:small_red_triangle:|10:small_red_triangle:|
+|MatMulInteger|-|-|-|-|-|-|-|-|-|**10**|10|
 |Max|**1**|1|1|1|1|**6**|6|**8**|8|8|8|
 |MaxPool|**1**:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|**8**:small_orange_diamond:|8:small_orange_diamond:|**10**:small_orange_diamond:|**11**:small_orange_diamond:|
 |MaxRoiPool|**1**:small_red_triangle:|1:small_red_triangle:|1:small_red_triangle:|1:small_red_triangle:|1:small_red_triangle:|1:small_red_triangle:|1:small_red_triangle:|1:small_red_triangle:|1:small_red_triangle:|1:small_red_triangle:|1:small_red_triangle:|
@@ -96,7 +96,7 @@ Notes:
 |Mul|**1**|1|1|1|1|**6**|**7**|7|7|7|7|
 |Multinomial|-|-|-|-|-|-|**7**:small_red_triangle:|7:small_red_triangle:|7:small_red_triangle:|7:small_red_triangle:|7:small_red_triangle:|
 |Neg|**1**|1|1|1|1|**6**|6|6|6|6|6|
-|NonMaxSuppression|-|-|-|-|-|-|-|-|-|**10**:small_red_triangle:|**11**:small_red_triangle:|
+|NonMaxSuppression|-|-|-|-|-|-|-|-|-|**10**|**11**|
 |NonZero|-|-|-|-|-|-|-|-|**9**|9|9|
 |Not|**1**|1|1|1|1|1|1|1|1|1|1|
 |OneHot|-|-|-|-|-|-|-|-|**9**:small_orange_diamond:|9:small_orange_diamond:|**11**:small_orange_diamond:|
@@ -173,7 +173,7 @@ Notes:
 |Where|-|-|-|-|-|-|-|-|**9**|9|9|
 |Xor|**1**|1|1|1|1|1|**7**|7|7|7|7|
 
-ONNX-TF Supported Operators / ONNX Operators: 115 / 156
+ONNX-TF Supported Operators / ONNX Operators: 116 / 156
 
 Notes:
 1. Cast: Cast string to float32/float64/int32/int64 are not supported in Tensorflow.

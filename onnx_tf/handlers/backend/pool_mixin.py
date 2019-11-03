@@ -1,11 +1,6 @@
 import itertools
 import warnings
 
-try:
-  from itertools import izip as zip
-except ImportError:  # will be 3.x series
-  pass
-
 import numpy as np
 import tensorflow as tf
 
@@ -14,6 +9,7 @@ from onnx_tf.common import get_data_format
 from onnx_tf.common import get_perm_from_formats
 from onnx_tf.common import supports_device
 from .pad_mixin import PadMixin
+from .dilated_maxpooling import DilatedPooling
 
 # Constant string used to indicate that requested padding
 # is not natively supported in Tensorflow.
@@ -29,6 +25,10 @@ class PoolMixin(object):
     x_shape = x.get_shape().as_list()
     spatial_size = x_rank - 2
 
+    if spatial_size > 3:
+      exception.OP_UNSUPPORTED_EXCEPT(
+          "MaxPool with {}D input".format(x_rank), "Tensorflow")
+
     support_cuda = supports_device("CUDA")
     storage_format, compute_format = get_data_format(x_rank)
 
@@ -39,27 +39,26 @@ class PoolMixin(object):
     # from version 7
     count_include_pad = node.attrs.get("count_include_pad", 0)
 
-    # If padding is specified, try to recover it from explicit padding
-    # specification to tensorflow padding mode:
-    if pads is not None:
-      pad = cls._get_tf_pad(x_shape[2:], kernel_shape, strides, pads)
-    else:
-      # Neither pad nor auto_pad is specified, assume no padding.
-      if "auto_pad" not in node.attrs:
-        pad = "VALID"
-      # We consult auto_pad if pad is not specified and auto_pad
-      # is available.
+    auto_pad = node.attrs.get("auto_pad", "NOTSET")
+    # if auto_pad is NOTSET, we check pads
+    if auto_pad == "NOTSET":
+      # If padding is specified, try to recover it from explicit padding
+      # specification to tensorflow padding mode:
+      if pads is not None:
+        pad = cls._get_tf_pad(x_shape[2:], kernel_shape, strides, pads)
       else:
-        if node.attrs["auto_pad"] == "SAME_UPPER":
-          pad = "SAME"
-        elif node.attrs["auto_pad"] == "VALID":
-          pad = "VALID"
-        elif node.attrs["auto_pad"] == "SAME_LOWER":
-          pad = PAD_TF_INCOMPATIBLE
-        if count_include_pad == 1:
-          _, pads = cls._pool_get_shapes(node.attrs["auto_pad"], x_shape[2:],
-                                         kernel_shape, strides,
-                                         [0] * spatial_size * 2)
+        pad = "VALID"
+    else:
+      if auto_pad == "SAME_UPPER":
+        pad = "SAME"
+      elif auto_pad == "VALID":
+        pad = "VALID"
+      elif auto_pad == "SAME_LOWER":
+        pad = PAD_TF_INCOMPATIBLE
+      if count_include_pad == 1:
+        _, pads = cls._pool_get_shapes(auto_pad, x_shape[2:],
+                                       kernel_shape, strides,
+                                       [0] * spatial_size * 2)
 
     if pooling_type in ("AVG", "MAX"):
       if strict and count_include_pad == 0:
@@ -85,7 +84,8 @@ class PoolMixin(object):
       if need_trans:
         x = tf.transpose(x, perm=get_perm_from_formats(storage_format, "NHWC"))
       pooled, argmax = pool_func(
-          x, [1] + kernel_shape + [1], padding=pad, strides=[1] + strides + [1])
+          x, [1] + kernel_shape + [1], padding=pad, strides=[1] +
+          strides + [1])
       if need_trans:
         pooled = tf.transpose(
             pooled, perm=get_perm_from_formats("NHWC", storage_format))
@@ -114,6 +114,62 @@ class PoolMixin(object):
           pooled, perm=get_perm_from_formats(compute_format, storage_format))
 
     return [pooled]
+
+  @classmethod
+  def pool_v11(cls, node, input_dict, pooling_type, strict=True):
+    x = input_dict[node.inputs[0]]
+
+    kernel_shape = node.attrs["kernel_shape"]
+
+    spatial_size = len(kernel_shape)
+    x_rank = spatial_size + 2
+
+    kernel_shape = node.attrs["kernel_shape"]
+    strides = node.attrs.get("strides", [1] * spatial_size)
+    dilations = node.attrs.get("dilations", [1] * spatial_size)
+    ceil_mode = bool(node.attrs.get("ceil_mode", 0))
+    pads = node.attrs.get("auto_pad", "NOTSET")
+    if pads == "NOTSET":
+      pads = node.attrs.get("pads", [0] * spatial_size * 2)
+
+    if spatial_size > 3:
+      exception.OP_UNSUPPORTED_EXCEPT(
+          "MaxPool with {}D input".format(x_rank), "Tensorflow")
+    if pooling_type == "MAX_WITH_ARGMAX" and x_rank != 4:
+      exception.OP_UNSUPPORTED_EXCEPT(
+          "MaxPool with {}D input".format(x_rank), "Tensorflow")
+    if node.attrs.get("storage_order", 0) != 0:
+      exception.OP_UNSUPPORTED_EXCEPT("MaxPool with column major",
+                                      "Tensorflow")
+
+    storage_format, _ = get_data_format(x_rank)
+
+    need_trans = storage_format.startswith("NC")
+    if need_trans:
+      compute_format = "N" + storage_format[2:] + "C"
+      x = tf.transpose(x, perm=get_perm_from_formats(storage_format,
+                                                     compute_format))
+
+    dp = DilatedPooling(input=x, kernel_shape=kernel_shape, strides=strides,
+                        dilations=dilations, padding=pads, ceil_mode=ceil_mode)
+
+    # select correct op depending on the pooling type
+    pooling_op = lambda : (dp.dilated_maxpool(), None) if \
+        pooling_type == "MAX" else dp.dilated_maxpool_with_argmax()
+
+    # select the correct transpose ops depending on the input storage format
+    perm = get_perm_from_formats(compute_format, storage_format)
+    postprocess_op = lambda pooled, argmax: (
+        tf.transpose(pooled, perm=perm) if need_trans else pooled,
+        tf.transpose(argmax, perm=perm) if need_trans and argmax
+        is not None else argmax)
+
+    pooled, argmax = pooling_op()
+    pooled, argmax = postprocess_op(pooled, argmax)
+
+    result = [pooled] if argmax is None else [pooled, argmax]
+
+    return result
 
   @classmethod
   def _compatibility_pool(cls, node, input_dict, pooling_type):
@@ -196,8 +252,8 @@ class PoolMixin(object):
       pad_shape = [0] * len(input_spatial_shape)
       if auto_pad in ("SAME_UPPER", "SAME_LOWER"):
         for i in range(len(input_spatial_shape)):
-          pad_shape[i] = (output_spatial_shape[i] - 1) * strides_spatial[i] + kernel_spatial_shape[i] - \
-                         input_spatial_shape[i]
+          pad_shape[i] = (output_spatial_shape[i] - 1) * strides_spatial[i] + \
+                          kernel_spatial_shape[i] - input_spatial_shape[i]
       elif auto_pad in ("VALID", ""):
         pass
       return pad_shape
@@ -249,8 +305,8 @@ class PoolMixin(object):
     if pads == [0] * num_sp_dim * 2:
       return "VALID"
 
-    _, same_pads = cls._pool_get_shapes("SAME_UPPER", input_shape, kernel_shape,
-                                        strides, pads)
+    _, same_pads = cls._pool_get_shapes("SAME_UPPER", input_shape,
+                                        kernel_shape, strides, pads)
     if pads == same_pads:
       return "SAME"
 
