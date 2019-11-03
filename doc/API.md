@@ -29,6 +29,10 @@ Changing to False is strongly discouraged.
 Currently, the strict flag only affects the behavior of MaxPool and AveragePool ops.
 
 
+`logging_level` : The logging level, default is INFO. Change it to DEBUG
+to see more conversion details or to WARNING to see less
+
+
 _returns_:
 
 A TensorflowRep class object representing the ONNX model

@@ -249,6 +249,27 @@ class TensorflowBackend(Backend):
   def supports_device(cls, device):
     return common_supports_device(device)
 
+  @classmethod
+  def onnx_graph_to_tensorflow_ops(cls, graph_def, input_values,
+                                   opset=None, strict=True):
+    input_dict_items = []
+    # set input values for the subgraph
+    for value_info in graph_def.input:
+      if value_info.name in input_values:
+        x = input_values[value_info.name]
+        input_dict_items.append((value_info.name, x))
+
+    tensor_dict = dict(input_dict_items)
+
+    for node in graph_def.node:
+      onnx_node = OnnxNode(node)
+      output_ops = cls._onnx_node_to_tensorflow_op(onnx_node, tensor_dict,
+                                                   opset=opset,strict=strict)
+      curr_node_output_map = \
+          dict(zip(onnx_node.outputs, output_ops))
+      tensor_dict.update(curr_node_output_map)
+    return tensor_dict
+
 
 prepare = TensorflowBackend.prepare
 
@@ -257,3 +278,5 @@ run_node = TensorflowBackend.run_node
 run_model = TensorflowBackend.run_model
 
 supports_device = TensorflowBackend.supports_device
+
+onnx_graph_to_tensorflow_ops = TensorflowBackend.onnx_graph_to_tensorflow_ops

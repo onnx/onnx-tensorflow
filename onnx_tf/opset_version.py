@@ -130,7 +130,7 @@ backend_opset_version = {
     'SVMClassifier': [],
     'SVMRegressor': [],
     'Scaler': [],
-    'Scan': [],
+    'Scan': [8, 9, 11],
     'Scatter': [],
     'ScatterElements': [],
     'ScatterND': [],
