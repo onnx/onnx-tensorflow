@@ -1373,7 +1373,23 @@ class TestNode(unittest.TestCase):
                      scan_input_axes=None, scan_input_directions=None,
                      scan_output_axes=None, scan_output_directions=None,
                      sequence_lens=None, directions=None):
+    """
+      Subgraph looks like this.
 
+      [const1]       state_in                    concat1_in    concat2_in_
+            \           |                                 \     /
+             \--------[Add]                               [Concat]
+                        |                                    |
+                        |                                 concat_out
+                        |                                    |
+                        |                                  [Add]----------[const1]
+                        |                                    |
+                        |                                add_out_1
+                        |                                    |
+                        |                                 [Split]
+                        |                               /  |   |   \
+                   state_out                  split1_out    ...     split4_out
+    """ 
     val_1 = helper.make_tensor(
         name='const_tensor',
         data_type=TensorProto.FLOAT,
@@ -1406,9 +1422,6 @@ class TestNode(unittest.TestCase):
                                                TensorProto.FLOAT, output_shape)
     split4_out = helper.make_tensor_value_info('split4_out',
                                                TensorProto.FLOAT, output_shape)
-
-    seq_lens = helper.make_tensor_value_info('seq_lens',
-                                             TensorProto.INT64, [1])
 
     scan_body = helper.make_graph(
         [constant_node, state_add_node, concat_node, add_node, split_node],
