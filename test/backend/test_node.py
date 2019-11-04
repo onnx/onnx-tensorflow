@@ -1218,6 +1218,70 @@ class TestNode(unittest.TestCase):
     output = run_node(node_def, [x])
     np.testing.assert_almost_equal(output["Y"], np.round(x))
 
+  def test_qLinearMatMul(self):
+    if legacy_opset_pre_ver(10):
+      raise unittest.SkipTest(
+          "ONNX version {} doesn't support QLinearMatMul.".format(
+              defs.onnx_opset_version()))
+
+    def qLinearMatMul(a, a_scale, a_zero_point, b, b_scale, b_zero_point,
+                      y_scale, y_zero_point):
+      y_dtype = y_zero_point.dtype
+      # reshape 1-D a_scale, a_zero_point, y_scale and
+      # y_zero_point so it can broadcast in arithmetic
+      # operations later
+      a_scale_shape = a_scale.shape
+      if a_scale_shape and a_scale_shape[0] > 1:
+        a_scale = np.reshape(a_scale, [a_scale_shape[0], 1])
+        a_zero_point = np.reshape(a_zero_point, [a_scale_shape[0], 1])
+      y_scale_shape = y_scale.shape
+      if y_scale_shape and y_scale_shape[0] > 1:
+        y_scale = np.reshape(y_scale, [y_scale_shape[0], 1])
+        y_zero_point = np.reshape(y_zero_point, [y_scale_shape[0], 1])
+      # cast everything to float32
+      a = a.astype(np.float32)
+      a_zero_point = a_zero_point.astype(np.float32)
+      b = b.astype(np.float32)
+      b_zero_point = b_zero_point.astype(np.float32)
+      y_zero_point = y_zero_point.astype(np.float32)
+      # dequantize a and b
+      dequantized_a = np.subtract(a, a_zero_point)
+      dequantized_a = np.multiply(dequantized_a, a_scale)
+      dequantized_b = np.subtract(b, b_zero_point)
+      dequantized_b = np.multiply(dequantized_b, b_scale)
+      # matmul a and b
+      x = np.matmul(dequantized_a, dequantized_b)
+      # quantize x
+      y = np.divide(x, y_scale)
+      y = np.round(y)
+      y = np.add(y, y_zero_point)
+      y = np.clip(y, np.iinfo(y_dtype).min, np.iinfo(y_dtype).max)
+      y = y.astype(y_dtype)
+      return y
+
+    node_def = helper.make_node('QLinearMatMul', [
+        'a', 'a_scale', 'a_zero_point', 'b', 'b_scale', 'b_zero_point',
+        'y_scale', 'y_zero_point'
+    ], ['y'])
+    for dtype in [np.int8, np.uint8]:
+      low = np.iinfo(dtype).min
+      high = np.iinfo(dtype).max
+      a = self._get_rnd_int(low, high, [3, 4, 5, 6], dtype)
+      a_scale = self._get_rnd_float32(-0.005, 0.005, [5])
+      a_zero_point = self._get_rnd_int(low, high, [5], dtype)
+      b = self._get_rnd_int(low, high, [3, 4, 6, 2], dtype)
+      b_scale = self._get_rnd_float32(-0.005, 0.005, [2])
+      b_zero_point = self._get_rnd_int(low, high, [2], dtype)
+      y_scale = self._get_rnd_float32(-0.05, 0.05, [5])
+      y_zero_point = self._get_rnd_int(low, high, [5], dtype)
+      y = qLinearMatMul(a, a_scale, a_zero_point, b, b_scale, b_zero_point,
+                        y_scale, y_zero_point)
+      output = run_node(node_def, [
+          a, a_scale, a_zero_point, b, b_scale, b_zero_point, y_scale,
+          y_zero_point
+      ])
+      np.testing.assert_almost_equal(output['y'], y)
+
   def test_relu(self):
     node_def = helper.make_node("Relu", ["X"], ["Y"])
     x = self._get_rnd_float32(shape=[1000])
