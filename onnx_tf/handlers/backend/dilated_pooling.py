@@ -12,14 +12,14 @@ from onnx_tf.common.tf_helper import tf_product
 class DilatedPooling(object):
     """
         This class implements two main methods:
-            dilated_maxpool:
-                calculates a maxpool over the input
+            dilated_pool:
+                calculates a max or average pool over the input
 
             dilated_maxpool_with_argmax:
                 calculates a maxpool over the input and returns the
                 indices/argmax of the selected values
 
-        In addition to the standard features of maxpooling operations in
+        In addition to the standard features of pooling operations in
         Tensorflow, these methods support dilations, ceil mode, SAME_LOWER and
         explicit padding.
 
@@ -71,8 +71,8 @@ class DilatedPooling(object):
 
             [10, 7, 16, 30, 15, 18]
 
-        and apllying tf.nn.maxpool with strides = kernel_shape = 3 will result
-        into:
+        and apllying tf.nn.maxpool (or avgpool) with strides = kernel_shape = 3
+        will result into:
 
             [16, 30]
 
@@ -144,15 +144,18 @@ class DilatedPooling(object):
 
     """
     def __init__(self, input, kernel_shape, strides, dilations,
-                 padding="VALID", ceil_mode=False, pooling_type="MAX"):
+                 padding="VALID", ceil_mode=False, count_include_pad=False,
+                 pooling_type="MAX"):
         self.input = tf.convert_to_tensor(input)
 
         self.kernel_shape = kernel_shape
         self.strides = strides
         self.dilations = dilations
         self.padding = padding
+        self.is_explicit_padding = type(padding) is list
         self.ceil_mode = ceil_mode
-        self.pooling_type = pooling_type
+        self.count_include_pad = count_include_pad
+        self.pooling_type = pooling_type.upper()
 
         self.is_known_shape = self.input.shape.is_fully_defined()
         self.spatial_size = len(kernel_shape)
@@ -165,7 +168,7 @@ class DilatedPooling(object):
         self.orig_input_shape = tf_shape(input)
         self.input_shape = self.orig_input_shape
 
-        if pooling_type == "MAX":
+        if pooling_type.startswith("MAX"):
             self.padding_constant = -inf
         else:
             self.padding_constant = 0
@@ -564,13 +567,17 @@ class DilatedPooling(object):
 
         return (pooled, new_ind)
 
-    def dilated_maxpool(self, force_custom_impl=False):
+    def dilated_pool(self, force_custom_impl=False):
         """
-            Does N-D dilated max pooling. Pads the input if explicit or
+            Does N-D dilated max/avg pooling. Pads the input if explicit or
             SAME_* padding is provided or ceil_mode is True
         """
 
-        if type(self.padding) is list or self.padding.lower() == "same_lower":
+        assert self.is_supported()
+
+        if self.is_explicit_padding or self.padding.lower() == "same_lower" \
+                or (self.padding.lower() == "same_upper" and
+                    self.count_include_pad):
             # pad the input
             self._pad_input()
 
@@ -580,8 +587,9 @@ class DilatedPooling(object):
         else:
             padding_ = self.padding
 
-        # if spatial_size == 2 we can use tf.nn.dilation2d directly
-        if self.spatial_size == 2 and not force_custom_impl:
+        # if spatial_size == 2 and maxpool we can use tf.nn.dilation2d directly
+        if self.spatial_size == 2 and self.pooling_type.startswith("MAX") \
+                and not force_custom_impl:
             strides = [1] + list(self.strides) + [1]
             dilations = [1] + list(self.dilations) + [1]
 
@@ -598,7 +606,7 @@ class DilatedPooling(object):
             pooled = tf.nn.pool(self.input, window_shape=self.kernel_shape,
                                 dilation_rate=self.dilations,
                                 strides=self.strides, padding=padding_,
-                                pooling_type="MAX")
+                                pooling_type=self.pooling_type)
         # in any other case we use custom implementation _remove_dilations
         # to reduce atrous/dilated pooling into regular pooling and selecting
         # only the values of the input that should have been selected by
@@ -613,3 +621,18 @@ class DilatedPooling(object):
                                 strides=self.kernel_shape, padding="VALID",
                                 pooling_type=self.pooling_type)
         return pooled
+
+    def is_supported(self):
+        """
+            Function to check if the current set of arguments are
+            supported for average pool
+        """
+        if self.pooling_type.startswith("MAX"):
+            return True
+        else:
+            return self.count_include_pad or ((
+                   (self.is_explicit_padding and
+                    self.padding == [0] * self.spatial_size * 2) or
+                   (not self.is_explicit_padding and
+                    self.padding.lower() in ["valid", "same_upper"])) and
+                   not self.ceil_mode)

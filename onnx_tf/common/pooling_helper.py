@@ -76,10 +76,10 @@ def calc_pads_same(in_spatial_shape, kernel_shape, strides,
     return pads
 
 
-def py_maxpool(input, kernel_shape, strides=None, dilations=None,
-               padding=None, ceil_mode=False):
+def py_pool(input, kernel_shape, strides=None, dilations=None,
+            padding=None, ceil_mode=False, pooling_type="MAX"):
     """
-        Implementation of MaxPool operation in Python
+        Implementation of Max and Average pool operations in Python
         Args:
             input:        input N-D data array in NC* format
             kernel_shape: the size of the kernel along each axis
@@ -90,6 +90,7 @@ def py_maxpool(input, kernel_shape, strides=None, dilations=None,
                           [x1_begin, x2_begin...x1_end, x2_end,...]
             ceil_mode:    whether to use ceil or floor (default) to compute
                           the output shape.
+            pooling_type: specify pooling type. Values can be "MAX" or "AVG".
       Return:
             pooled:       output data from max pooling across the input
             ind:          indices of the selected max values from the input
@@ -123,23 +124,34 @@ def py_maxpool(input, kernel_shape, strides=None, dilations=None,
                 cur_range = [i for i in range(dim_start,
                                               dim_end, dilations[dim])]
                 input_ranges.append(cur_range)
-            maxval = -inf
-            maxind = -1
+            if pooling_type == "AVG":
+                val_sum = 0
+                val_count = 0
+            else:
+                maxval = -inf
+                maxind = -1
             for input_ind in itertools.product(*input_ranges):
                 ind = (batch, channel) + input_ind
                 val = input[ind]
-                if val > maxval:
-                    maxval = val
-                    ind = 0
-                    for i in range(spatial_size):
-                        coef = 1
-                        for j in range(i+1, spatial_size):
-                            coef *= inp_sp_shape[j]
-                        ind += input_ind[i] * coef
-                    maxind = ind
+                if pooling_type == "AVG":
+                    val_sum += val
+                    val_count += 1
+                else:
+                    if val > maxval:
+                        maxval = val
+                        ind = 0
+                        for i in range(spatial_size):
+                            coef = 1
+                            for j in range(i+1, spatial_size):
+                                coef *= inp_sp_shape[j]
+                            ind += input_ind[i] * coef
+                        maxind = ind
             ind = (batch, channel) + counters
-            out_pool[ind] = maxval
-            out_ind[ind] = maxind
+            if pooling_type == "AVG":
+                out_pool[ind] = val_sum / val_count
+            else:
+                out_pool[ind] = maxval
+                out_ind[ind] = maxind
 
     spatial_size = len(kernel_shape)
 

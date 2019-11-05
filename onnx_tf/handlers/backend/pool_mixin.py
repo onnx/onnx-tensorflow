@@ -9,7 +9,8 @@ from onnx_tf.common import get_data_format
 from onnx_tf.common import get_perm_from_formats
 from onnx_tf.common import supports_device
 from .pad_mixin import PadMixin
-from .dilated_maxpooling import DilatedPooling
+from .dilated_pooling import DilatedPooling
+from onnx_tf.common.pooling_helper import py_pool
 
 # Constant string used to indicate that requested padding
 # is not natively supported in Tensorflow.
@@ -118,6 +119,7 @@ class PoolMixin(object):
   @classmethod
   def pool_v11(cls, node, input_dict, pooling_type, strict=True):
     x = input_dict[node.inputs[0]]
+    orig_x = x
 
     kernel_shape = node.attrs["kernel_shape"]
 
@@ -132,14 +134,22 @@ class PoolMixin(object):
     if pads == "NOTSET":
       pads = node.attrs.get("pads", [0] * spatial_size * 2)
 
+    count_include_pad = bool(node.attrs.get("count_include_pad", 0))
+    if pooling_type == "AVG":
+        pooling_name = "AveragePool"
+    elif pooling_type == "MAX":
+        pooling_name = "MaxPool"
+    elif pooling_type == "MAX_WITH_ARGMAX":
+        pooling_name = "MaxPoolWithArgmax"
+
     if spatial_size > 3:
       exception.OP_UNSUPPORTED_EXCEPT(
-          "MaxPool with {}D input".format(x_rank), "Tensorflow")
+          pooling_name + " with {}D input".format(x_rank), "Tensorflow")
     if pooling_type == "MAX_WITH_ARGMAX" and x_rank != 4:
       exception.OP_UNSUPPORTED_EXCEPT(
-          "MaxPool with {}D input".format(x_rank), "Tensorflow")
+          pooling_name + " with {}D input".format(x_rank), "Tensorflow")
     if node.attrs.get("storage_order", 0) != 0:
-      exception.OP_UNSUPPORTED_EXCEPT("MaxPool with column major",
+      exception.OP_UNSUPPORTED_EXCEPT(pooling_name + " with column major",
                                       "Tensorflow")
 
     storage_format, _ = get_data_format(x_rank)
@@ -151,11 +161,21 @@ class PoolMixin(object):
                                                      compute_format))
 
     dp = DilatedPooling(input=x, kernel_shape=kernel_shape, strides=strides,
-                        dilations=dilations, padding=pads, ceil_mode=ceil_mode)
+                        dilations=dilations, padding=pads, ceil_mode=ceil_mode,
+                        pooling_type=pooling_type,
+                        count_include_pad=count_include_pad)
+    if not dp.is_supported():
+      if not strict:
+        return py_pool(orig_x, kernel_shape=kernel_shape, strides=strides,
+                       dilations=dilations, padding=pads,
+                       ceil_mode=ceil_mode, pooling_type="AVG")
+      else:
+        exception.OP_UNSUPPORTED_EXCEPT("Average pooling is incompatible" \
+                                        "and strict is true", "Tensorflow")
 
     # select correct op depending on the pooling type
-    pooling_op = lambda : (dp.dilated_maxpool(), None) if \
-        pooling_type == "MAX" else dp.dilated_maxpool_with_argmax()
+    pooling_op = lambda : (dp.dilated_pool(), None) if \
+        pooling_type in ["MAX", "AVG"] else dp.dilated_maxpool_with_argmax()
 
     # select the correct transpose ops depending on the input storage format
     perm = get_perm_from_formats(compute_format, storage_format)
