@@ -1608,6 +1608,77 @@ class TestNode(unittest.TestCase):
     output = run_node(node_def, [x])
     np.testing.assert_almost_equal(output["Y"], np.tanh(x), decimal=5)
 
+  def test_tfidf_vectorizer(self):
+    if legacy_opset_pre_ver(9):
+      raise unittest.SkipTest("ONNX version {} doesn't support TfIdfVectorizer.".format(
+                   defs.onnx_opset_version()))
+
+    def run_test_ints():
+      node_def = helper.make_node("TfIdfVectorizer", ["X"], ["Y"],
+                   mode = mode, min_gram_length=min_gram_len, max_gram_length=max_gram_len,
+                   max_skip_count=max_skip, ngram_counts=ngram_counts,
+                   ngram_indexes=ngram_indexes, weights=weights, pool_int64s=pool_int64s)
+      output = run_node(node_def, [x])
+      np.testing.assert_almost_equal(output["Y"], y)
+    def run_test_strings():
+      node_def =  helper.make_node("TfIdfVectorizer", ["X"], ["Y"],
+                   mode = mode, min_gram_length=min_gram_len, max_gram_length=max_gram_len,
+                   max_skip_count=max_skip, ngram_counts=ngram_counts,
+                   ngram_indexes=ngram_indexes, weights=weights, pool_strings=pool_strings)
+      output = run_node(node_def, [x])
+      np.testing.assert_almost_equal(output["Y"], y)
+
+    # test 2d inputs with 3 elements, output contains 1-grams and 2-grams
+    x = np.array([[1, 1, 3, 3, 3, 7], [8, 6, 7, 5, 6, 8], [8, 6, 7, 5, 6, 8]]).astype(np.int32)
+    y = np.array([[0., 3., 0., 0., 0., 0., 0.], [0., 0., 1., 0., 1., 0., 1.], [0., 0., 1., 0., 1., 0., 1.]]).astype(np.float32)
+    ngram_counts = np.array([0, 4]).astype(np.int64)
+    ngram_indexes = np.array([0, 1, 2, 3, 4, 5, 6]).astype(np.int64)
+    pool_int64s = np.array([2, 3, 5, 4, 5, 6, 7, 8, 6, 7]).astype(np.int64)
+    min_gram_len = 1
+    max_gram_len = 2
+    max_skip = 0
+    mode = 'TF'
+    weights = np.array([1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0])
+    run_test_ints()
+
+    # test 1d inputs with indexes in non-default order, max_skip=3, output 2-grams
+    x = np.array([1, 1, 3, 3, 3, 7, 8, 6, 7, 5, 6, 8]).astype(np.int32)
+    y = np.array([0., 1., 0., 1., 0., 0., 2.]).astype(np.float32)
+    ngram_counts = np.array([0, 4]).astype(np.int64)
+    ngram_indexes = np.array([5, 0, 2, 4, 1, 6, 3]).astype(np.int64)
+    pool_int64s = np.array([2, 3, 5, 4, 5, 6, 7, 8, 6, 7]).astype(np.int64)
+    min_gram_len = 2
+    max_gram_len = 2
+    max_skip = 3
+    mode = 'TF'
+    weights = np.array([1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0])
+    run_test_ints()
+
+    # test IDF mode with weights, max_skip=5, output contains 1-grams and 2-grams
+    x = np.array([[1, 1, 3, 3, 3, 7], [8, 6, 7, 5, 6, 8]]).astype(np.int32)
+    y = np.array([[0., 0.1, 0., 0., 0., 0., 0.], [0., 0., 0.1, 0., 0.5, 0.5, 0.5]]).astype(np.float32)
+    ngram_counts = np.array([0, 4]).astype(np.int64)
+    ngram_indexes = np.array([0, 1, 2, 3, 4, 5, 6]).astype(np.int64)
+    pool_int64s = np.array([2, 3, 5, 4, 5, 6, 7, 8, 6, 7]).astype(np.int64)
+    min_gram_len = 1
+    max_gram_len = 2
+    max_skip = 5
+    mode = 'IDF'
+    weights = np.array([0.1, 0.1, 0.1, 0.1, 0.5, 0.5, 0.5])
+    run_test_ints()
+
+    # test strings inputs, max_skip=5, output contains 1-grams and 2-grams
+    x = np.array(['a', 'a', 'b', 'b', 'b', 'c', 'd', 'e', 'c', 'f', 'e', 'd'])
+    y = np.array([0., 3., 1., 0., 1., 3., 1.]).astype(np.float32)
+    ngram_counts = np.array([0, 4]).astype(np.int64)
+    ngram_indexes = np.array([0, 1, 2, 3, 4, 5, 6]).astype(np.int64)
+    pool_strings = np.array(['x', 'b', 'f', 'y', 'f', 'e', 'c', 'd', 'e', 'c'])
+    min_gram_len = 1
+    max_gram_len = 2
+    max_skip = 5
+    mode = 'TF'
+    run_test_strings()
+
   def test_thresholded_relu(self):
     alpha = 2.0
     node_def = helper.make_node("ThresholdedRelu", ["X"], ["Y"], alpha=alpha)
