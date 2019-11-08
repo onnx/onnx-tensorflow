@@ -8,11 +8,12 @@ class ScanMixin(object):
 
     @classmethod
     def scan(cls, node, input_dict, strict):
-        current_opset = [make_opsetid(cls.DOMAIN, cls.VERSION)]
+        current_opset = [make_opsetid(cls.DOMAIN, cls.SINCE_VERSION)]
 
         body = node.attrs["body"]
 
-        node_inputs = node.inputs if cls.VERSION != 8 else \
+        # in version 8, node.inputs[0] is the sequence_lens
+        node_inputs = node.inputs if cls.SINCE_VERSION != 8 else \
             node.inputs[1:]
         # M
         num_scan_inputs = int(node.attrs["num_scan_inputs"])
@@ -21,18 +22,26 @@ class ScanMixin(object):
         # K = num_outputs - N
         num_scan_outputs = len(node.outputs) - num_state_vars
 
+        """
+            Function to run subgraph used with tf.scan
+        """
         def run_subgraph(a, b):
             input_values = {}
+            # set the input values for the subgraph
+            # set the values for the state variables
             for i in range(num_state_vars):
                 input_values[body.input[i].name] = a[i]
+            # set the values for the scan inputs
             for i in range(num_scan_inputs):
                 input_values[body.input[i + num_state_vars].name] = b[i]
 
+            # get the tensor operations for the onnx graph
             tensor_dict = \
                 onnx_tf.backend.onnx_graph_to_tensorflow_ops(graph_def=body,
                                                      input_values=input_values,
                                                      opset=current_opset,
                                                      strict=strict)
+            # return sequence of tensors for every subgraph output
             outputs = [tensor_dict[output.name] for output in body.output]
             return outputs
 
@@ -48,14 +57,20 @@ class ScanMixin(object):
         scan_output_directions = node.attrs.get("scan_output_directions",
                                                 [0] * num_scan_outputs)
 
-        if cls.VERSION == 8:
+        # if version 8 read the sequnce_lens from the first input
+        if cls.SINCE_VERSION == 8:
             sequence_lens = input_dict[node.inputs[0]] \
                             if node.inputs[0] != '' else None
 
         inputs = [input_dict[node_input] for node_input in node_inputs]
 
         scan_inputs = inputs[num_state_vars:]
+        # loop over all the scan inputs and apply transpose depending
+        # on input axes provided and also reverse the scan inputs if
+        # reverse direction for scan is provided
         for i in range(num_scan_inputs):
+            # if input axes are different than 0, use transpose to scan over
+            # the provided axes
             if scan_input_axes[i] != 0:
                 transpose_perm = cls._calc_transpose_perm_input(
                         tf.rank(scan_inputs[i]), scan_input_axes[i])
@@ -64,12 +79,14 @@ class ScanMixin(object):
             # check for reverse direction scans
             if scan_input_directions[i] == 1:
                 # version 8 has a batch dimension
-                axis = 0 if cls.VERSION != 8 else 1
+                axis = 0 if cls.SINCE_VERSION != 8 else 1
                 scan_inputs[i] = tf.reverse(scan_inputs[i], [axis])
 
         state_vars_init = inputs[:num_state_vars]
 
         scan_outputs_init = []
+        # generate sequence of zero tensors for all scan outputs
+        # with the correct shape and dtype
         for scan_output in body.output[num_state_vars:]:
             tensor_type = scan_output.type.tensor_type
             shape = [d.dim_value
@@ -78,20 +95,25 @@ class ScanMixin(object):
             dtype = data_type.onnx2tf(tensor_type.elem_type)
             scan_outputs_init.append(tf.zeros(shape, dtype=dtype))
 
+        # tf.scan initilizer is state_variables_init + scan_outputs_init
         initializer = state_vars_init + scan_outputs_init
 
-        if cls.VERSION == 8:
+        if cls.SINCE_VERSION == 8:
             # version == 8
+            # function to process the batches. it is used with tf.map_fn
             def run_batches(x):
+                # state vars initial values per batch
                 initial = x[0]
+                # scan inputs per batch
                 scan_inputs = x[1]
+                # sequence length for the batch
                 seq_len = x[2]
 
                 # slice the input to the current sequence len
                 scan_inputs = [scan_input[:seq_len, ...]
                                for scan_input in scan_inputs]
 
-                # scan for every batch in the input
+                # run scan on the current batch
                 out = tf.scan(run_subgraph, scan_inputs,
                               initializer=initial + scan_outputs_init)
 
@@ -121,22 +143,27 @@ class ScanMixin(object):
                             dtype=output_types)
 
             state_vars_outputs = []
+            # extract the final values of the state variables
             for state_var in out[:num_state_vars]:
                 state_vars_outputs.append(tf.map_fn(lambda x: x[0][x[1]-1],
                                           (state_var, sequence_lens),
                                           state_var.dtype))
         else:
             # version > 8
+            # run the scan
             out = tf.scan(run_subgraph, scan_inputs,
                           initializer=initializer)
 
+            # extract the final values of the state variables
             state_vars_outputs = [state_var[tf.shape(state_var)[0]-1]
                                   for state_var in out[:num_state_vars]]
 
         scan_outputs = out[num_state_vars:]
 
+        # post process the scan outputs depending on the directions and
+        # axes provided. 
         for i in range(num_scan_outputs):
-            # check for reverse direction scans
+            # check for reverse direction scan outputs
             if scan_output_directions[i] == 1:
                 scan_outputs[i] = tf.reverse(scan_outputs[i], [0])
 
