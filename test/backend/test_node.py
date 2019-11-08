@@ -1289,15 +1289,36 @@ class TestNode(unittest.TestCase):
     np.testing.assert_almost_equal(output["Y"], np.maximum(x, 0))
 
   def test_pad(self):
-    node_def = helper.make_node("Pad", ["X"], ["Y"],
-                                mode="constant",
-                                pads=[1, 1, 1, 1],
-                                value=2.0)
     x = self._get_rnd_float32(shape=[100, 100])
-    output = run_node(node_def, [x])
-    np.testing.assert_almost_equal(
-        output["Y"],
-        np.lib.pad(x, ((1, 1), (1, 1)), 'constant', constant_values=(2, 2)))
+    if legacy_opset_pre_ver(11):  # for opset = 1 or 2
+      # mode = constant
+      node_def = helper.make_node(
+          "Pad", ["X"], ["Y"], mode="constant", pads=[1, 1, 1, 1], value=2.0)
+      output = run_node(node_def, [x])
+      y = np.pad(x, ((1, 1), (1, 1)), 'constant', constant_values=(2, 2))
+      np.testing.assert_almost_equal(output["Y"], y)
+      # mode = reflect and edge
+      for mode in ['edge', 'reflect']:
+        node_def = helper.make_node(
+            "Pad", ["X"], ["Y"], mode=mode, pads=[1, 1, 1, 1])
+        output = run_node(node_def, [x])
+        y = np.pad(x, ((1, 1), (1, 1)), mode)
+        np.testing.assert_almost_equal(output["Y"], y)
+    else:  # for opset = 11
+      # mode = constant
+      node_def = helper.make_node(
+          "Pad", ["X", "pads", "constant_values"], ["Y"], mode="constant")
+      pads = np.array([1, 1, 1, 1], dtype=np.int64)
+      constant_values = 2.0
+      output = run_node(node_def, [x, pads, constant_values])
+      y = np.pad(x, ((1, 1), (1, 1)), 'constant', constant_values=(2, 2))
+      np.testing.assert_almost_equal(output["Y"], y)
+      # mode = reflect and edge
+      for mode in ['edge', 'reflect']:
+        node_def = helper.make_node("Pad", ["X", "pads"], ["Y"], mode=mode)
+        output = run_node(node_def, [x, pads])
+        y = np.pad(x, ((1, 1), (1, 1)), mode)
+        np.testing.assert_almost_equal(output["Y"], y)
 
   def test_quantize_linear(self):
     node_def = helper.make_node("QuantizeLinear",
