@@ -1585,7 +1585,7 @@ class TestNode(unittest.TestCase):
     np.testing.assert_almost_equal(output_z, Z)
 
   def test_scan(self):
-    if legacy_opset_pre_ver(9) or not legacy_opset_pre_ver(11):
+    if legacy_opset_pre_ver(9):
       raise unittest.SkipTest(
           "ONNX version {} not supported.".format(
               defs.onnx_opset_version()))
@@ -1605,7 +1605,7 @@ class TestNode(unittest.TestCase):
     np.testing.assert_almost_equal(output_z, Z)
 
   def test_scan_input_directions(self):
-    if legacy_opset_pre_ver(9) or not legacy_opset_pre_ver(11):
+    if legacy_opset_pre_ver(9):
       raise unittest.SkipTest(
           "ONNX version {} not supported.".format(
               defs.onnx_opset_version()))
@@ -1626,7 +1626,7 @@ class TestNode(unittest.TestCase):
     np.testing.assert_almost_equal(output_z, Z)
 
   def test_scan_input_axes(self):
-    if legacy_opset_pre_ver(9) or not legacy_opset_pre_ver(11):
+    if legacy_opset_pre_ver(9):
       raise unittest.SkipTest(
           "ONNX version {} not supported.".format(
               defs.onnx_opset_version()))
@@ -1649,7 +1649,7 @@ class TestNode(unittest.TestCase):
     np.testing.assert_almost_equal(output_z, Z)
 
   def test_scan_output_directions(self):
-    if legacy_opset_pre_ver(9) or not legacy_opset_pre_ver(11):
+    if legacy_opset_pre_ver(9):
       raise unittest.SkipTest(
           "ONNX version {} not supported.".format(
               defs.onnx_opset_version()))
@@ -1670,7 +1670,7 @@ class TestNode(unittest.TestCase):
     np.testing.assert_almost_equal(output_z, Z)
 
   def test_scan_output_axes(self):
-    if legacy_opset_pre_ver(9) or not legacy_opset_pre_ver(11):
+    if legacy_opset_pre_ver(9):
       raise unittest.SkipTest(
           "ONNX version {} not supported.".format(
               defs.onnx_opset_version()))
