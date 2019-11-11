@@ -21,6 +21,7 @@ class Split(BackendHandler):
     x_shape = tensor_dict[node.inputs[0]].get_shape().as_list()
     attrs = copy.deepcopy(node.attrs)
     axis = attrs.get("axis", 0)
+    axis = axis if axis >= 0 else len(x_shape) + axis
     if "split" in node.attrs:
       split = attrs["split"]
     elif len(node.inputs) == 2:  # since version 1
@@ -41,4 +42,8 @@ class Split(BackendHandler):
 
   @classmethod
   def version_2(cls, node, **kwargs):
+    return cls._common(node, **kwargs)
+
+  @classmethod
+  def version_11(cls, node, **kwargs):
     return cls._common(node, **kwargs)
