@@ -257,6 +257,20 @@ class TensorflowBackend(Backend):
   @classmethod
   def onnx_graph_to_tensorflow_ops(cls, graph_def, input_values,
                                    opset=None, strict=True):
+    """
+    Converts ONNX graph to Tensorflow operations
+    Args:
+      graph_def:        the ONNX graph to be converted
+      input_values:     dictionary with values/tensors to initialize
+                        the graph inputs. the dictionary must contain values
+                        for all the graph_def.input
+      opset:            opset version of the operator set.
+      strict:           whether to enforce semantic equivalence between the
+                        original model and the converted tensorflow model,
+                        defaults to True (yes, enforce semantic equivalence).
+    Returns:
+      array of Tensorflow Tensors
+    """
     input_dict_items = []
     # set input values for the subgraph
     for value_info in graph_def.input:

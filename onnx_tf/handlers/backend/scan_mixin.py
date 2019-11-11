@@ -8,7 +8,7 @@ class ScanMixin(object):
 
     @classmethod
     def scan(cls, node, input_dict, strict):
-        current_opset = [make_opsetid(cls.DOMAIN, cls.SINCE_VERSION)]
+        current_opset = [make_opsetid(cls.DOMAIN, cls.VERSION)]
 
         body = node.attrs["body"]
 
@@ -37,21 +37,21 @@ class ScanMixin(object):
 
             # get the tensor operations for the onnx graph
             tensor_dict = \
-                onnx_tf.backend.onnx_graph_to_tensorflow_ops(graph_def=body,
-                                                     input_values=input_values,
-                                                     opset=current_opset,
-                                                     strict=strict)
+                onnx_tf.backend.onnx_graph_to_tensorflow_ops(
+                    graph_def=body,
+                    input_values=input_values,
+                    opset=current_opset,
+                    strict=strict)
             # return sequence of tensors for every subgraph output
             outputs = [tensor_dict[output.name] for output in body.output]
             return outputs
 
         scan_input_axes = node.attrs.get("scan_input_axes",
                                          [0] * num_scan_inputs)
-        # Version 8 of the operator
-        scan_input_directions = node.attrs.get("directions", None)
-        if scan_input_directions is None:
-            scan_input_directions = node.attrs.get("scan_input_directions",
-                                                   [0] * num_scan_inputs)
+        scan_input_directions = node.attrs.get("directions"
+                                               if cls.SINCE_VERSION == 8 else
+                                               "scan_input_directions",
+                                               [0] * num_scan_inputs)
         scan_output_axes = node.attrs.get("scan_output_axes",
                                           [0] * num_scan_outputs)
         scan_output_directions = node.attrs.get("scan_output_directions",
@@ -161,7 +161,7 @@ class ScanMixin(object):
         scan_outputs = out[num_state_vars:]
 
         # post process the scan outputs depending on the directions and
-        # axes provided. 
+        # axes provided.
         for i in range(num_scan_outputs):
             # check for reverse direction scan outputs
             if scan_output_directions[i] == 1:
