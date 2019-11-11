@@ -1,7 +1,6 @@
 from __future__ import division
 
 import tensorflow as tf
-from numpy import inf
 import numpy as np
 
 from onnx_tf.common import pooling_helper
@@ -169,7 +168,7 @@ class DilatedPooling(object):
         self.input_shape = self.orig_input_shape
 
         if pooling_type.startswith("MAX"):
-            self.padding_constant = -inf
+            self.padding_constant = -np.inf
         else:
             self.padding_constant = 0
 
@@ -627,12 +626,24 @@ class DilatedPooling(object):
             Function to check if the current set of arguments are
             supported for average pool
         """
+        # check for maxpool
         if self.pooling_type.startswith("MAX"):
             return True
         else:
-            return self.count_include_pad or ((
-                   (self.is_explicit_padding and
-                    self.padding == [0] * self.spatial_size * 2) or
-                   (not self.is_explicit_padding and
-                    self.padding.lower() in ["valid", "same_upper"])) and
-                   not self.ceil_mode)
+            # if count_include_pad is true it is fully supported
+            if self.count_include_pad:
+                return True
+            # ceil mode is not supported
+            elif self.ceil_mode:
+                return False
+            # explicit padding with padding values set to 0 is supported
+            elif (self.is_explicit_padding and
+                    self.padding == [0] * self.spatial_size * 2):
+                return True
+            # "valid" and "same_upper" auto padding is supported
+            elif (not self.is_explicit_padding and
+                    self.padding.lower() in ["valid", "same_upper"]):
+                return True
+            # any other case is not supported
+            else:
+                return False

@@ -170,8 +170,9 @@ class PoolMixin(object):
                        dilations=dilations, padding=pads,
                        ceil_mode=ceil_mode, pooling_type="AVG")
       else:
-        exception.OP_UNSUPPORTED_EXCEPT("Average pooling is incompatible" \
-                                        "and strict is true", "Tensorflow")
+        exception.OP_UNSUPPORTED_EXCEPT("strict == true and average pool" \
+                                        " arguments not compatible",
+                                        "Tensorflow")
 
     # select correct op depending on the pooling type
     pooling_op = lambda : (dp.dilated_pool(), None) if \
