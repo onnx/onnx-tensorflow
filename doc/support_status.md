@@ -1,7 +1,7 @@
 # ONNX-Tensorflow Support Status
 |||
 |-:|:-|
-|ONNX-Tensorflow Version|Master ( commit id: 0e170f5a2ffa8437ce215b72dacd95275fdc141c )|
+|ONNX-Tensorflow Version|Master ( commit id: fa51d839acab854d986fcf8fa68615f3e34d2277 )|
 |ONNX Version|Master ( commit id: e108da9a9a9916880ca7d1a0cfff96637921212c )|
 |Tensorflow Version|v1.15.0|
 
@@ -27,7 +27,7 @@ Notes:
 |Asinh|-|-|-|-|-|-|-|-|**9**|9|9|
 |Atan|-|-|-|-|-|-|**7**|7|7|7|7|
 |Atanh|-|-|-|-|-|-|-|-|**9**|9|9|
-|AveragePool|**1**|1|1|1|1|1|**7**|7|7|**10**:small_red_triangle:|**11**:small_red_triangle:|
+|AveragePool|**1**|1|1|1|1|1|**7**|7|7|**10**|**11**|
 |BatchNormalization|**1**|1|1|1|1|**6**|**7**|7|**9**|9|9|
 |BitShift|-|-|-|-|-|-|-|-|-|-|**11**:small_red_triangle:|
 |Cast|**1**:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|**6**:small_orange_diamond:|6:small_orange_diamond:|6:small_orange_diamond:|**9**:small_orange_diamond:|9:small_orange_diamond:|9:small_orange_diamond:|
@@ -130,7 +130,7 @@ Notes:
 |ReverseSequence|-|-|-|-|-|-|-|-|-|**10**|10|
 |RoiAlign|-|-|-|-|-|-|-|-|-|**10**:small_red_triangle:|10:small_red_triangle:|
 |Round|-|-|-|-|-|-|-|-|-|-|**11**|
-|Scan|-|-|-|-|-|-|-|**8**:small_red_triangle:|**9**:small_red_triangle:|9:small_red_triangle:|**11**:small_red_triangle:|
+|Scan|-|-|-|-|-|-|-|**8**|**9**|9|**11**|
 |Scatter|-|-|-|-|-|-|-|-|**9**|9|**11**\*|
 |ScatterElements|-|-|-|-|-|-|-|-|-|-|**11**|
 |ScatterND|-|-|-|-|-|-|-|-|-|-|**11**|
@@ -173,7 +173,7 @@ Notes:
 |Where|-|-|-|-|-|-|-|-|**9**|9|9|
 |Xor|**1**|1|1|1|1|1|**7**|7|7|7|7|
 
-ONNX-TF Supported Operators / ONNX Operators: 126 / 156
+ONNX-TF Supported Operators / ONNX Operators: 128 / 156
 
 Notes:
 1. Cast: Cast string to float32/float64/int32/int64 are not supported in Tensorflow.
