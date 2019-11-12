@@ -805,9 +805,10 @@ class TestNode(unittest.TestCase):
     x = self._get_rnd_float32(shape=input_shape)
     output = run_node(node_def, [x])
 
-    test_output, _ = py_pool(x, kernel_shape=kernel_shape, strides=strides,
-                             dilations=dilations, padding=pads,
-                             ceil_mode=ceil_mode, pooling_type=pooling_type)
+    test_output = py_pool(x, kernel_shape=kernel_shape, strides=strides,
+                          dilations=dilations, padding=pads,
+                          ceil_mode=ceil_mode, pooling_type=pooling_type,
+                          include_indices=False)
 
     np.testing.assert_almost_equal(output["Y"], test_output)
 

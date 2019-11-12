@@ -165,12 +165,16 @@ class PoolMixin(object):
                         pooling_type=pooling_type,
                         count_include_pad=count_include_pad)
     if not dp.is_supported():
-      if not strict:
-        return py_pool(orig_x, kernel_shape=kernel_shape, strides=strides,
-                       dilations=dilations, padding=pads,
-                       ceil_mode=ceil_mode, pooling_type="AVG")
+      if strict:
+        warnings.warn(
+            "Using the pooling op in compatibility mode. "
+            "This means your graph cannot be serialized.", UserWarning)
+
+        return [tf.py_func(py_pool, [orig_x, kernel_shape, strides,
+                                     dilations, pads, ceil_mode, "AVG",
+                                     False], orig_x.dtype)]
       else:
-        exception.OP_UNSUPPORTED_EXCEPT("strict == true and average pool" \
+        exception.OP_UNSUPPORTED_EXCEPT("strict == 0 and average pool"
                                         " arguments not compatible",
                                         "Tensorflow")
 
