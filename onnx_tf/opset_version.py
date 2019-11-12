@@ -11,7 +11,7 @@ backend_opset_version = {
     'Asinh': [9],
     'Atan': [7],
     'Atanh': [9],
-    'AveragePool': [1, 7],
+    'AveragePool': [1, 7, 10, 11],
     'BatchNormalization': [1, 6, 7, 9],
     'Binarizer': [],
     'BitShift': [],
