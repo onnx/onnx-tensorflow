@@ -1,7 +1,7 @@
 # ONNX-Tensorflow Support Status
 |||
 |-:|:-|
-|ONNX-Tensorflow Version|Master ( commit id: e5b9c66d1c789456468a78d4a61eb54846915e9d )|
+|ONNX-Tensorflow Version|Master ( commit id: 0e170f5a2ffa8437ce215b72dacd95275fdc141c )|
 |ONNX Version|Master ( commit id: e108da9a9a9916880ca7d1a0cfff96637921212c )|
 |Tensorflow Version|v1.15.0|
 
@@ -104,7 +104,7 @@ Notes:
 |PRelu|**1**|1|1|1|1|**6**|**7**|7|**9**|9|9|
 |Pad|**1**|**2**|2|2|2|2|2|2|2|2|**11**|
 |Pow|**1**|1|1|1|1|1|**7**|7|7|7|7|
-|QLinearConv|-|-|-|-|-|-|-|-|-|**10**:small_red_triangle:|10:small_red_triangle:|
+|QLinearConv|-|-|-|-|-|-|-|-|-|**10**|10|
 |QLinearMatMul|-|-|-|-|-|-|-|-|-|**10**|10|
 |QuantizeLinear|-|-|-|-|-|-|-|-|-|**10**|10|
 |RNN|**1**:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|**7**:small_orange_diamond:|7:small_orange_diamond:|7:small_orange_diamond:|7:small_orange_diamond:|7:small_orange_diamond:|
@@ -173,7 +173,7 @@ Notes:
 |Where|-|-|-|-|-|-|-|-|**9**|9|9|
 |Xor|**1**|1|1|1|1|1|**7**|7|7|7|7|
 
-ONNX-TF Supported Operators / ONNX Operators: 125 / 156
+ONNX-TF Supported Operators / ONNX Operators: 126 / 156
 
 Notes:
 1. Cast: Cast string to float32/float64/int32/int64 are not supported in Tensorflow.
