@@ -6,8 +6,9 @@ Customize op can also be implemented in similar way.
 
 ### Backend
 
-1.  Find specification from [onnx/Operators](https://github.com/onnx/onnx/blob/master/docs/Operators.md).
-2.  Decide if need a specific handler.  
+1.  Verify the latest master version of ONNX is installed on your environment
+2.  Find specification from [onnx/Operators](https://github.com/onnx/onnx/blob/master/docs/Operators.md).
+3.  Decide if need a specific handler.
     Op doesn't need a specific handler when tf's specification highly matches onnx's, means:
     
     - inputs are same
@@ -15,7 +16,7 @@ Customize op can also be implemented in similar way.
     - attr doesn't exist in tf could be set by `DEFAULT_ONNX_ATTR_PER_OP` in `backend.py`  
     
     otherwise, op needs a specific handler.
-3.  Implement. All inputs and attrs could get from step 1.
+4.  Implement. All inputs and attrs could get from step 2.
     ```
     non-specific handler
     
@@ -29,5 +30,7 @@ Customize op can also be implemented in similar way.
 
     * version is the number of since version, which can get from operator's specification
     ```
-4.  Run `gen_opset.py` and `gen_doc.py`.
-5.  Add test case to `test_node.py`.
+5.  Run `gen_opset.py`.
+6.  Run `gen_status.py -v master`.
+7.  Run `gen_doc.py` if there is any update to CLI or API.
+8.  Add test case to `test_node.py`.

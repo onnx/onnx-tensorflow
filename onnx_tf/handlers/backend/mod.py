@@ -3,10 +3,16 @@ import tensorflow as tf
 from onnx_tf.common import exception
 from onnx_tf.handlers.backend_handler import BackendHandler
 from onnx_tf.handlers.handler import onnx_op
+from onnx_tf.handlers.handler import partial_support
+from onnx_tf.handlers.handler import ps_description
 from .math_mixin import ArithmeticMixin
 
 
 @onnx_op("Mod")
+@partial_support(True)
+@ps_description("Mod Dividend or Divisor in " +
+                "int8/int16/uint8/uint16/uint32/uint64 " +
+                "are not supported in Tensorflow.")
 class Mod(ArithmeticMixin, BackendHandler):
 
   @classmethod

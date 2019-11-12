@@ -6,10 +6,16 @@ from onnx_tf.common import get_unique_suffix
 from onnx_tf.common import exception
 from onnx_tf.handlers.backend_handler import BackendHandler
 from onnx_tf.handlers.handler import onnx_op
+from onnx_tf.handlers.handler import partial_support
+from onnx_tf.handlers.handler import ps_description
 from .rnn_mixin import RNNMixin
 
 
 @onnx_op("LSTM")
+@partial_support(True)
+@ps_description("LSTM not using sigmoid for `f`, or " +
+                "LSTM not using the same activation for `g` and `h` " +
+                "are not supported in Tensorflow.")
 class LSTM(RNNMixin, BackendHandler):
 
   @classmethod
@@ -127,28 +133,28 @@ class LSTM(RNNMixin, BackendHandler):
     if "clip" in node.attrs:
       cell_kwargs["cell_clip"] = node.attrs["clip"]
 
-    tf_activations = [tf.nn.tanh]
+    tf_activations = [tf.nn.tanh] * num_directions
     if "activations" in node.attrs:
       activations = list(map(lambda x: x.lower(), node.attrs["activations"]))
       activation_alpha = node.attrs.get("activation_alpha", [None] * 6)
       activation_beta = node.attrs.get("activation_beta", [None] * 6)
+
+      # tf only supports cutomizing hidden states activation function,
+      # which correspond to activation functions specified at position 1
+      # and 4 in onnx's activations attribute.
+      activation_idxs = [1, 4] if num_directions == 2 else [1]
       tf_activations = [
-          cls.rnn_get_activation(activations[1], activation_alpha[1],
-                                 activation_beta[1])
+          cls.rnn_get_activation(activations[i], activation_alpha[i],
+                                 activation_beta[i]) for i in activation_idxs
       ]
-      if num_directions == 2:
-        tf_activations.append(
-            cls.rnn_get_activation(activations[4], activation_alpha[4],
-                                   activation_beta[4]))
 
     # TODO(fumihwh): check if reverse and bidirectional works
-    with tf.variable_scope(
-        "LSTM_" + get_unique_suffix(),
-        custom_getter=partial(
-            cls._custom_getter,
-            node=node,
-            tensor_dict=tensor_dict,
-            is_bidirectional=num_directions == 2)):
+    with tf.variable_scope("LSTM_" + get_unique_suffix(),
+                           custom_getter=partial(
+                               cls._custom_getter,
+                               node=node,
+                               tensor_dict=tensor_dict,
+                               is_bidirectional=num_directions == 2)):
 
       cell_kwargs[
           "use_peepholes"] = input_size == 8 and node.inputs[7] in tensor_dict

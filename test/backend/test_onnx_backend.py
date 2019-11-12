@@ -30,11 +30,21 @@ def skip_not_implemented_ops_test(test):
   onnxtf_ops_list = get_onnxtf_supported_ops()
   onnx_ops_list = get_onnx_supported_ops()
   for op in onnx_ops_list:
+    op_name = op
+    i = 1
+    while i < len(op_name):
+      if op_name[i].isupper():
+        op_name = op_name[:i] + '_' + op_name[i:]
+        i += 2
+      else:
+        i += 1
     if op in onnxtf_ops_list:
       if onnx_ops_list[op] not in onnxtf_ops_list[op]:
         test.exclude(r'[a-z,_]*' + op.lower() + '[a-z,_]*')
+        test.exclude(r'[a-z,_]*' + op_name.lower() + '[a-z,_]*')
     else:
       test.exclude(r'[a-z,_]*' + op.lower() + '[a-z,_]*')
+      test.exclude(r'[a-z,_]*' + op_name.lower() + '[a-z,_]*')
   return test
 
 # This is a pytest magic variable to load extra plugins
@@ -49,8 +59,6 @@ backend_test = skip_not_implemented_ops_test(backend_test)
 # need to remove these lines once those ops support are added into onnx-tf
 # temporary exclude StringNormalizer test
 backend_test.exclude(r'[a-z,_]*strnorm[a-z,_]*')
-# temporary exclude MeanVarianceNormalization test
-backend_test.exclude(r'[a-z,_]*mvn[a-z,_]*')
 
 # https://github.com/onnx/onnx/issues/349
 backend_test.exclude(r'[a-z,_]*GLU[a-z,_]*')
@@ -76,6 +84,13 @@ backend_test.exclude(r'test_mod_[a-z,_]*int(8|(16))+')
 # tf.one_hot
 backend_test.exclude(r'test_onehot_[a-z,_]*')
 
+# skip resize downsample with mode=linear
+backend_test.exclude(r'test_resize_downsample_linear[a-z,_]*')
+
+# range is using loop in the unit test but
+# loop is not supported in tf-onnx converter
+backend_test.exclude(r'test_range[a-z,_]*')
+
 if legacy_opset_pre_ver(7):
   backend_test.exclude(r'[a-z,_]*Upsample[a-z,_]*')
 
@@ -100,6 +115,10 @@ if legacy_onnx_pre_ver(1, 2):
 # The onnx test for cast, float to string, does not work
 if not legacy_opset_pre_ver(9):
   backend_test.exclude(r'[a-z,_]*cast[a-z,_]*')
+
+if not legacy_opset_pre_ver(10):
+  # Do not support dilations != 1 for ConvTranspose, test is added in opset 10
+  backend_test.exclude(r'[a-z,_]*convtranspose_dilations[a-z,_]*')
 
 # import all test cases at global scope to make them visible to python.unittest
 globals().update(backend_test.enable_report().test_cases)

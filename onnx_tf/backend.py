@@ -24,9 +24,11 @@ from onnx_tf.backend_rep import TensorflowRep
 from onnx_tf.common import data_type
 from onnx_tf.common import exception
 from onnx_tf.common import get_device_option
+from onnx_tf.common import get_unique_suffix
 from onnx_tf.common import supports_device as common_supports_device
 from onnx_tf.common.handler_helper import get_all_backend_handlers
 from onnx_tf.pb_wrapper import OnnxNode
+import onnx_tf.common as common
 
 
 class TensorflowBackend(Backend):
@@ -34,7 +36,12 @@ class TensorflowBackend(Backend):
   """
 
   @classmethod
-  def prepare(cls, model, device='CPU', strict=True, **kwargs):
+  def prepare(cls,
+              model,
+              device='CPU',
+              strict=True,
+              logging_level='INFO',
+              **kwargs):
     """Prepare an ONNX model for Tensorflow Backend.
 
     This function converts an ONNX model to an internel representation
@@ -47,10 +54,13 @@ class TensorflowBackend(Backend):
       and the converted tensorflow model, defaults to True (yes, enforce semantic equivalence).
       Changing to False is strongly discouraged.
       Currently, the strict flag only affects the behavior of MaxPool and AveragePool ops.
+    :param logging_level: The logging level, default is INFO. Change it to DEBUG
+      to see more conversion details or to WARNING to see less
 
     :returns: A TensorflowRep class object representing the ONNX model
     """
     super(TensorflowBackend, cls).prepare(model, device, **kwargs)
+    common.logger.setLevel(logging_level)
 
     return cls.onnx_model_to_tensorflow_rep(model, strict)
 
@@ -106,9 +116,13 @@ class TensorflowBackend(Backend):
         shape = list(
             d.dim_value if (d.dim_value > 0 and d.dim_param == "") else None
             for d in value_info.type.tensor_type.shape.dim)
+        value_info_name = value_info.name.replace(
+            ":", "_tf_") + "_" + get_unique_suffix(
+            ) if ":" in value_info.name else value_info.name
+
         x = tf.placeholder(
             data_type.onnx2tf(value_info.type.tensor_type.elem_type),
-            name=value_info.name,
+            name=value_info_name,
             shape=shape)
         input_dict_items.append((value_info.name, x))
 
@@ -241,6 +255,41 @@ class TensorflowBackend(Backend):
   def supports_device(cls, device):
     return common_supports_device(device)
 
+  @classmethod
+  def onnx_graph_to_tensorflow_ops(cls, graph_def, input_values,
+                                   opset=None, strict=True):
+    """
+    Converts ONNX graph to Tensorflow operations
+    Args:
+      graph_def:        the ONNX graph to be converted
+      input_values:     dictionary with values/tensors to initialize
+                        the graph inputs. the dictionary must contain values
+                        for all the graph_def.input
+      opset:            opset version of the operator set.
+      strict:           whether to enforce semantic equivalence between the
+                        original model and the converted tensorflow model,
+                        defaults to True (yes, enforce semantic equivalence).
+    Returns:
+      array of Tensorflow Tensors
+    """
+    input_dict_items = []
+    # set input values for the subgraph
+    for value_info in graph_def.input:
+      if value_info.name in input_values:
+        x = input_values[value_info.name]
+        input_dict_items.append((value_info.name, x))
+
+    tensor_dict = dict(input_dict_items)
+
+    for node in graph_def.node:
+      onnx_node = OnnxNode(node)
+      output_ops = cls._onnx_node_to_tensorflow_op(onnx_node, tensor_dict,
+                                                   opset=opset,strict=strict)
+      curr_node_output_map = \
+          dict(zip(onnx_node.outputs, output_ops))
+      tensor_dict.update(curr_node_output_map)
+    return tensor_dict
+
 
 prepare = TensorflowBackend.prepare
 
@@ -249,3 +298,5 @@ run_node = TensorflowBackend.run_node
 run_model = TensorflowBackend.run_model
 
 supports_device = TensorflowBackend.supports_device
+
+onnx_graph_to_tensorflow_ops = TensorflowBackend.onnx_graph_to_tensorflow_ops

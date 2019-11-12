@@ -79,10 +79,10 @@ http://sphinxcontrib-napoleon.readthedocs.io/en/latest/example_google.html
 To perfom unit tests, run `python -m unittest discover test`.
 Testing requires significant hardware resources, but nonetheless, we highly recommend that users run through the complete test suite before deploying onnx-tf. The complete test suite typically takes between 15 and 45 minutes to complete, depending on hardware configurations.
 
-PS. Please ensure your code is backward compatible with older version of ONNX. You can easily test it by running the following [docker container](https://hub.docker.com/r/winnietsang/onnx-tensoflow) with your code. If you don't have Docker installed yet, please follow this link to install [Docker](https://docs.docker.com/install/) on your environment.
+PS. Please ensure your code is backward compatible with older version of ONNX. You can easily test it by running the following [docker container](https://hub.docker.com/r/winnietsang/onnx-tensorflow) with your code. If you don't have Docker installed yet, please follow this link to install [Docker](https://docs.docker.com/install/) on your environment.
 ```
-sudo docker pull winnietsang/onnx-tensoflow:onnx1.3.0-tf1.13.1
-sudo docker run -it --name=YOUR-CONTAINER-NAME winnietsang/onnx-tensoflow:onnx1.3.0-tf1.13.1 /bin/bash
+sudo docker pull winnietsang/onnx-tensorflow:onnx1.3.0-tf1.13.1
+sudo docker run -it --name=YOUR-CONTAINER-NAME winnietsang/onnx-tensorflow:onnx1.3.0-tf1.13.1 /bin/bash
 git clone https://github.com/YOUR-USERNAME/onnx-tensorflow.git
 cd onnx-tensorflow
 git checkout -b YOUR-BRANCH --track remotes/origin/YOUR-BRANCH

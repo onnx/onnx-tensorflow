@@ -64,3 +64,13 @@ def _update_coverage(coverage, domain, key, versions):
   vers = domain_coverage.get(key, [])
   vers.extend(versions)
   domain_coverage[key] = sorted(list(set(vers)))
+
+
+def get_backend_partial_support_detail():
+  ps_dict = {}
+  opset_dict = dict([(defs.ONNX_DOMAIN, defs.onnx_opset_version())])
+  handlers = get_all_backend_handlers(opset_dict)[defs.ONNX_DOMAIN]
+  for op_name in handlers:
+    if handlers[op_name].PARTIAL_SUPPORT:
+      ps_dict[op_name] = handlers[op_name].PS_DESCRIPTION
+  return ps_dict
