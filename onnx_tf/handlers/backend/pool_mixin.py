@@ -178,19 +178,23 @@ class PoolMixin(object):
                                         " arguments not compatible",
                                         "Tensorflow")
 
+    def dilated_pool():
+      return (dp.dilated_pool(), None)
+
     # select correct op depending on the pooling type
-    pooling_op = lambda : (dp.dilated_pool(), None) if \
-        pooling_type in ["MAX", "AVG"] else dp.dilated_maxpool_with_argmax()
+    pooling_op = dilated_pool if pooling_type in ["MAX", "AVG"] else \
+        dp.dilated_maxpool_with_argmax
 
     # select the correct transpose ops depending on the input storage format
     perm = get_perm_from_formats(compute_format, storage_format)
-    postprocess_op = lambda pooled, argmax: (
-        tf.transpose(pooled, perm=perm) if need_trans else pooled,
-        tf.transpose(argmax, perm=perm) if need_trans and argmax
-        is not None else argmax)
+
+    def postprocess(pooled, argmax):
+      return (tf.transpose(pooled, perm=perm) if need_trans else pooled,
+              tf.transpose(argmax, perm=perm) if need_trans and argmax
+              is not None else argmax)
 
     pooled, argmax = pooling_op()
-    pooled, argmax = postprocess_op(pooled, argmax)
+    pooled, argmax = postprocess(pooled, argmax)
 
     result = [pooled] if argmax is None else [pooled, argmax]
 
