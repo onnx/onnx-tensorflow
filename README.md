@@ -36,7 +36,7 @@ The specific ONNX release version that we support in the master branch of ONNX-T
 
 To install the latest version of ONNX-TF via pip, run `pip install onnx-tf`.
 
-Because users often have their own preferences for which variant of Tensorflow to install (i.e., a GPU version instead of a CPU version), we do not explicitly require tensorflow in the installation script. It is therefore users' responsibility to ensure that the proper variant of Tensorflow is available to ONNX-TF. Moreoever, we require Tensorflow version >= 1.13.1.
+Because users often have their own preferences for which variant of Tensorflow to install (i.e., a GPU version instead of a CPU version), we do not explicitly require tensorflow in the installation script. It is therefore users' responsibility to ensure that the proper variant of Tensorflow is available to ONNX-TF. Moreoever, we require Tensorflow version >= 1.15.0.
 
 ## Development:
 
@@ -48,7 +48,7 @@ Because users often have their own preferences for which variant of Tensorflow t
 
 ### Installation:
 - Install ONNX master branch from source.
-- Install Tensorflow>=1.13.1.
+- Install Tensorflow >= 1.15.0.
 - Run `git clone git@github.com:onnx/onnx-tensorflow.git && cd onnx-tensorflow`.
 - Run `pip install -e .`.
 
@@ -81,8 +81,8 @@ Testing requires significant hardware resources, but nonetheless, we highly reco
 
 PS. Please ensure your code is backward compatible with older version of ONNX. You can easily test it by running the following [docker container](https://hub.docker.com/r/winnietsang/onnx-tensorflow) with your code. If you don't have Docker installed yet, please follow this link to install [Docker](https://docs.docker.com/install/) on your environment.
 ```
-sudo docker pull winnietsang/onnx-tensorflow:onnx1.3.0-tf1.13.1
-sudo docker run -it --name=YOUR-CONTAINER-NAME winnietsang/onnx-tensorflow:onnx1.3.0-tf1.13.1 /bin/bash
+sudo docker pull winnietsang/onnx-tensorflow:onnx1.5.0-tf1.15.0
+sudo docker run -it --name=YOUR-CONTAINER-NAME winnietsang/onnx-tensorflow:onnx1.5.0-tf1.15.0 /bin/bash
 git clone https://github.com/YOUR-USERNAME/onnx-tensorflow.git
 cd onnx-tensorflow
 git checkout -b YOUR-BRANCH --track remotes/origin/YOUR-BRANCH
