@@ -27,11 +27,11 @@ class ConvInteger(ConvMixin, BackendHandler):
       if "w_zero_point" in node.inputs:
         node.inputs.remove("w_zero_point")
 
-      tensor_dict[node.inputs[0]] = new_x
-      tensor_dict[node.inputs[1]] = new_w
+      new_dict = { node.inputs[0]:new_x, node.inputs[1]:new_w } 
 
       # Use common conv handling
-      conv_node = cls.conv(node, kwargs["tensor_dict"])
+      conv_node = cls.conv(node, new_dict)
+
       return conv_node
 
     # Apply x_zero_point first
@@ -60,4 +60,4 @@ class ConvInteger(ConvMixin, BackendHandler):
       # Just cast without processing w
       w = tf.cast(w, tf.float32)
 
-    return tf.cast(process_conv(x, w), tf.int32)
+    return [tf.cast(process_conv(x, w)[0], tf.int32)]
