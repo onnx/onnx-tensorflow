@@ -1559,6 +1559,243 @@ class TestNode(unittest.TestCase):
     x[x > 0] = gamma * x[x > 0]
     np.testing.assert_allclose(output["Y"], x, rtol=1e-3, atol=1e-7)
 
+  def _run_scan_node(self, initial, x1, x2, input_shape, output_shape,
+                     scan_input_axes=None, scan_input_directions=None,
+                     scan_output_axes=None, scan_output_directions=None,
+                     sequence_lens=None, directions=None):
+    """
+      Subgraph looks like this.
+
+      [const1]       state_in                    concat1_in    concat2_in_
+            \           |                                 \     /
+             \--------[Add]                               [Concat]
+                        |                                    |
+                        |                                 concat_out
+                        |                                    |
+                        |                                  [Add]----------[const1]
+                        |                                    |
+                        |                                add_out_1
+                        |                                    |
+                        |                                 [Split]
+                        |                               /  |   |   \
+                   state_out                  split1_out    ...     split4_out
+    """ 
+    val_1 = helper.make_tensor(
+        name='const_tensor',
+        data_type=TensorProto.FLOAT,
+        dims=[1],
+        vals=[1],
+    )
+    constant_node = helper.make_node("Constant", [], ["const_1"], value=val_1)
+    state_add_node = helper.make_node("Add", ["state_in", "const_1"],
+                                      ["state_out"])
+    concat_node = helper.make_node("Concat", ["concat1_in", "concat2_in"],
+                                   ["concat_out"], axis=0)
+    add_node = helper.make_node("Add", ["concat_out", "const_1"], ["add_out"])
+    split_node = helper.make_node("Split", ["add_out"],
+                                  ["split1_out", "split2_out", "split3_out",
+                                   "split4_out"])
+
+    state_in = helper.make_tensor_value_info('state_in',
+                                             TensorProto.FLOAT, [1])
+    concat1_in = helper.make_tensor_value_info('concat1_in',
+                                               TensorProto.FLOAT, input_shape)
+    concat2_in = helper.make_tensor_value_info('concat2_in',
+                                               TensorProto.FLOAT, input_shape)
+    state_out  = helper.make_tensor_value_info('state_out',
+                                               TensorProto.FLOAT, [1])
+    split1_out = helper.make_tensor_value_info('split1_out',
+                                               TensorProto.FLOAT, output_shape)
+    split2_out = helper.make_tensor_value_info('split2_out',
+                                               TensorProto.FLOAT, output_shape)
+    split3_out = helper.make_tensor_value_info('split3_out',
+                                               TensorProto.FLOAT, output_shape)
+    split4_out = helper.make_tensor_value_info('split4_out',
+                                               TensorProto.FLOAT, output_shape)
+
+    scan_body = helper.make_graph(
+        [constant_node, state_add_node, concat_node, add_node, split_node],
+        "scan_body",
+        [state_in, concat1_in, concat2_in],
+        [state_out, split1_out, split2_out, split3_out, split4_out],
+    )
+
+    node_kwargs = {"op_type": "Scan", 
+                   "inputs": ["initial", "x1", "x2"],
+                   "outputs": ["y", "z1", "z2", "z3", "z4"],
+                   "num_scan_inputs": 2,
+                   "body": scan_body
+                  }
+    if sequence_lens is not None:
+        node_kwargs["inputs"] = ["" if sequence_lens is str else 
+                                 "seq_lens"] + node_kwargs["inputs"]
+
+    if scan_input_axes is not None:
+      node_kwargs["scan_input_axes"] = scan_input_axes
+    if scan_input_directions is not None:
+      node_kwargs["scan_input_directions"] = scan_input_directions
+    if scan_output_axes is not None:
+      node_kwargs["scan_output_axes"] = scan_output_axes
+    if scan_output_directions is not None:
+      node_kwargs["scan_output_directions"] = scan_output_directions
+    if directions is not None:
+      node_kwargs["directions"] = directions
+
+    scan_node = helper.make_node(**node_kwargs)
+
+    if sequence_lens is None:
+        inputs = [initial, x1, x2]
+    else:
+        inputs = [sequence_lens, initial, x1, x2]
+
+    return run_node(scan_node, inputs)
+
+  def test_scan_v8(self):
+    if legacy_opset_pre_ver(8) or not legacy_opset_pre_ver(9):
+      raise unittest.SkipTest(
+          "ONNX version {} not supported.".format(
+              defs.onnx_opset_version()))
+
+    initial = self._get_rnd_int(0, 100, shape=[5, 1]).astype(np.float32)
+    x1 = self._get_rnd_float32(0, 1000, shape=[5, 20, 6, 2])
+    x2 = self._get_rnd_float32(0, 1000, shape=[5, 20, 6, 2])
+
+    directions = [0, 1]
+    sequence_lens = np.array([15, 20, 14, 18, 20]).astype(np.int32)
+
+    Y = initial + (np.shape(x1)[1] if sequence_lens is str else \
+                  np.reshape(sequence_lens,[-1, 1]))
+    x1_out = x1 + 1
+    # left-right flip x2 (reverse direction)
+    x2_out = x2[:,::-1] + 1
+
+    Z = np.concatenate([x1_out, x2_out], 2)
+    if sequence_lens is not str:
+        for batch in range(len(sequence_lens)):
+            # zero pad from the sequence_lens
+            shape = list(np.shape(Z[batch]))
+            seq_len = sequence_lens[batch]
+
+            zero_pad = np.zeros([shape[0] - seq_len] + shape[1:])
+            Z[batch] = np.concatenate([
+                Z[batch][:seq_len], zero_pad])
+
+    output = self._run_scan_node(initial, x1, x2, [6, 4], [3, 2],
+                                 sequence_lens=sequence_lens,
+                                 directions=directions)
+    output_z = np.concatenate([output["z1"], output["z2"],
+                               output["z3"], output["z4"]], 2)
+
+    np.testing.assert_almost_equal(output["y"], Y)
+    np.testing.assert_almost_equal(output_z, Z)
+
+  def test_scan(self):
+    if legacy_opset_pre_ver(9):
+      raise unittest.SkipTest(
+          "ONNX version {} not supported.".format(
+              defs.onnx_opset_version()))
+
+    initial = self._get_rnd_int(0, 100, shape=[2]).astype(np.float32)
+    x1 = self._get_rnd_float32(0, 1000, shape=[20, 6, 2])
+    x2 = self._get_rnd_float32(0, 1000, shape=[20, 6, 2])
+
+    Y = initial + np.shape(x1)[0]
+    Z = np.concatenate([x1, x2], 1) + 1
+ 
+    output = self._run_scan_node(initial, x1, x2, [6, 2], [3, 2])
+    output_z = np.concatenate([output["z1"], output["z2"],
+                               output["z3"], output["z4"]], 1)
+
+    np.testing.assert_almost_equal(output["y"], Y)
+    np.testing.assert_almost_equal(output_z, Z)
+
+  def test_scan_input_directions(self):
+    if legacy_opset_pre_ver(9):
+      raise unittest.SkipTest(
+          "ONNX version {} not supported.".format(
+              defs.onnx_opset_version()))
+
+    initial = self._get_rnd_int(0, 100, shape=[1]).astype(np.float32)
+    x1 = self._get_rnd_float32(0, 1000, shape=[20, 6, 2])
+    x2 = self._get_rnd_float32(0, 1000, shape=[20, 6, 2])
+
+    Y = initial + np.shape(x1)[0]
+    Z = np.concatenate([x1[::-1], x2], 1) + 1
+
+    output = self._run_scan_node(initial, x1, x2, [6, 2], [3, 2],
+                                 scan_input_directions=[1, 0])
+    output_z = np.concatenate([output["z1"], output["z2"],
+                               output["z3"], output["z4"]], 1)
+
+    np.testing.assert_almost_equal(output["y"], Y)
+    np.testing.assert_almost_equal(output_z, Z)
+
+  def test_scan_input_axes(self):
+    if legacy_opset_pre_ver(9):
+      raise unittest.SkipTest(
+          "ONNX version {} not supported.".format(
+              defs.onnx_opset_version()))
+
+    initial = self._get_rnd_int(0, 100, shape=[1]).astype(np.float32)
+    x1 = self._get_rnd_float32(0, 1000, shape=[20, 6, 2])
+    x2 = self._get_rnd_float32(0, 1000, shape=[20, 6, 2])
+
+    Y = initial + np.shape(x1)[1]
+    x1_transpose = np.transpose(x1, (1, 0, 2))
+    x2_transpose = np.transpose(x2, (1, 0, 2))
+    Z = np.concatenate([x1_transpose, x2_transpose], 1) + 1
+
+    output = self._run_scan_node(initial, x1, x2, [3, 2], [10, 2],
+                                 scan_input_axes=[1, 1])
+    output_z = np.concatenate([output["z1"], output["z2"],
+                               output["z3"], output["z4"]], 1)
+
+    np.testing.assert_almost_equal(output["y"], Y)
+    np.testing.assert_almost_equal(output_z, Z)
+
+  def test_scan_output_directions(self):
+    if legacy_opset_pre_ver(9):
+      raise unittest.SkipTest(
+          "ONNX version {} not supported.".format(
+              defs.onnx_opset_version()))
+
+    initial = self._get_rnd_int(0, 100, shape=[1]).astype(np.float32)
+    x1 = self._get_rnd_float32(0, 1000, shape=[20, 6, 2])
+    x2 = self._get_rnd_float32(0, 1000, shape=[20, 6, 2])
+
+    Y = initial + np.shape(x1)[0]
+    Z = np.concatenate([x1, x2], 1) + 1
+
+    output = self._run_scan_node(initial, x1, x2, [6, 2], [3, 2],
+                                 scan_output_directions=[1, 0, 0, 1])
+    output_z = np.concatenate([output["z1"][::-1], output["z2"],
+                               output["z3"], output["z4"][::-1]], 1)
+
+    np.testing.assert_almost_equal(output["y"], Y)
+    np.testing.assert_almost_equal(output_z, Z)
+
+  def test_scan_output_axes(self):
+    if legacy_opset_pre_ver(9):
+      raise unittest.SkipTest(
+          "ONNX version {} not supported.".format(
+              defs.onnx_opset_version()))
+
+    initial = self._get_rnd_int(0, 100, shape=[1]).astype(np.float32)
+    x1 = self._get_rnd_float32(0, 1000, shape=[20, 6, 2])
+    x2 = self._get_rnd_float32(0, 1000, shape=[20, 6, 2])
+
+    Y = initial + np.shape(x1)[0]
+    Z = np.concatenate([x1, x2], 1) + 1
+    Z = np.transpose(Z, (1, 0, 2))
+
+    output = self._run_scan_node(initial, x1, x2, [10, 2], [3, 2],
+                                 scan_output_axes=[1, 1, 1, 1])
+    output_z = np.concatenate([output["z1"], output["z2"],
+                               output["z3"], output["z4"]], 0)
+
+    np.testing.assert_almost_equal(output["y"], Y)
+    np.testing.assert_almost_equal(output_z, Z)
+
   def test_shape(self):
     node_def = helper.make_node("Shape", ["X"], ["Y"])
     x = self._get_rnd_float32(shape=[5, 10, 10, 3])
