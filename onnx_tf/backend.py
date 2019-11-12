@@ -221,7 +221,8 @@ class TensorflowBackend(Backend):
     handlers = handlers or cls._get_handlers(opset)
     handler = handlers[node.domain].get(node.op_type, None)
     if handler:
-      return handler.handle(node, tensor_dict=tensor_dict, strict=strict)
+      with tf.name_scope(node.name):
+        return handler.handle(node, tensor_dict=tensor_dict, strict=strict)
     else:
       exception.OP_UNIMPLEMENTED_EXCEPT(node.op_type)
 
