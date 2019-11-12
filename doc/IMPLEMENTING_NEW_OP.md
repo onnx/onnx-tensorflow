@@ -31,6 +31,6 @@ Customize op can also be implemented in similar way.
     * version is the number of since version, which can get from operator's specification
     ```
 5.  Run `gen_opset.py`.
-6.  Run `gen_status.py -v master -p /YOUR-ONNX-PATH`.
+6.  Run `gen_status.py -v master`.
 7.  Run `gen_doc.py` if there is any update to CLI or API.
 8.  Add test case to `test_node.py`.

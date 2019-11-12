@@ -10,7 +10,7 @@ class DequantizeLinear(BackendHandler):
   @classmethod
   def args_check(cls, node, **kwargs):
     tensor_dict = kwargs["tensor_dict"]
-    if node.inputs[2] in tensor_dict:
+    if len(node.inputs) == 3:
       x = tensor_dict[node.inputs[0]]
       x_scale = tensor_dict[node.inputs[1]]
       x_zero_point = tensor_dict[node.inputs[2]]
@@ -28,13 +28,13 @@ class DequantizeLinear(BackendHandler):
   def version_10(cls, node, **kwargs):
     tensor_dict = kwargs["tensor_dict"]
     x = tensor_dict[node.inputs[0]]
-    x_scale = tensor_dict[node.inputs[1]]
-    x_zero_point = tensor_dict[node.inputs[2]] if node.inputs[
-        2] in tensor_dict and x.dtype != tf.int32 else tf.zeros((), x.dtype)
-
     x = tf.cast(x, tf.float32)
-    x_zero_point = tf.cast(x_zero_point, tf.float32)
-    y = tf.subtract(x, x_zero_point)
-    y = tf.multiply(y, x_scale)
+    x_scale = tensor_dict[node.inputs[1]]
+    if len(node.inputs) == 3 and x.dtype != tf.int32:
+      x_zero_point = tensor_dict[node.inputs[2]]
+      x_zero_point = tf.cast(x_zero_point, tf.float32)
+      x = tf.subtract(x, x_zero_point)
+
+    y = tf.multiply(x, x_scale)
 
     return [y]
