@@ -36,7 +36,7 @@ The specific ONNX release version that we support in the master branch of ONNX-T
 
 To install the latest version of ONNX-TF via pip, run `pip install onnx-tf`.
 
-Because users often have their own preferences for which variant of Tensorflow to install (i.e., a GPU version instead of a CPU version), we do not explicitly require tensorflow in the installation script. It is therefore users' responsibility to ensure that the proper variant of Tensorflow is available to ONNX-TF. Moreoever, we require Tensorflow version >= 1.15.0.
+Because users often have their own preferences for which variant of Tensorflow to install (i.e., a GPU version instead of a CPU version), we do not explicitly require tensorflow in the installation script. It is therefore users' responsibility to ensure that the proper variant of Tensorflow is available to ONNX-TF. Moreoever, we require Tensorflow version >= 1.15.0 (and < 2.0 for the tf-1.x branch)
 
 ## Development:
 
@@ -48,7 +48,7 @@ Because users often have their own preferences for which variant of Tensorflow t
 
 ### Installation:
 - Install ONNX master branch from source.
-- Install Tensorflow >= 1.15.0.
+- Install Tensorflow >= 1.15.0. (and < 2.0 for the tf-1.x branch)
 - Run `git clone git@github.com:onnx/onnx-tensorflow.git && cd onnx-tensorflow`.
 - Run `pip install -e .`.
 
