@@ -12,11 +12,11 @@ from onnx_tf.handlers.handler import tf_func
 @onnx_op("OneHot")
 @tf_func(tf.one_hot)
 @partial_support(True)
-@ps_description("OneHot indices in uint16/uint32/uint64/int8/int16/"+
-                "float16/float/double, or " +
-                "OneHot depth in uint8/uint16/uint32/uint64/int8/" +
-                "int16/int64/float16/float/double " +
-                "are not supported in Tensorflow.")
+@ps_description(
+    "OneHot indices in uint16/uint32/uint64/int8/int16/" +
+    "float16/float/double, or " +
+    "OneHot depth in uint8/uint16/uint32/uint64/int8/" +
+    "int16/int64/float16/float/double " + "are not supported in Tensorflow.")
 class OneHot(BackendHandler):
 
   @classmethod
@@ -31,8 +31,8 @@ class OneHot(BackendHandler):
           "Tensorflow")
     if depth.dtype not in [tf.int32]:
       exception.OP_UNSUPPORTED_EXCEPT(
-          "OneHot depth must be in int32 but it is currently in " + str(
-              depth.dtype) + " which", "Tensorflow")
+          "OneHot depth must be in int32 but it is currently in " +
+          str(depth.dtype) + " which", "Tensorflow")
 
   @classmethod
   def _common(cls, node, **kwargs):
@@ -57,4 +57,4 @@ class OneHot(BackendHandler):
 
   @classmethod
   def version_11(cls, node, **kwargs):
-      return cls._common(node, **kwargs)
+    return cls._common(node, **kwargs)

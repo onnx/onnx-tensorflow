@@ -11,10 +11,10 @@ from .pool_mixin import PoolMixin
 
 @onnx_op("MaxPool")
 @partial_support(True)
-@ps_description("MaxPoolWithArgmax with pad is None or incompatible mode, or " +
-                "MaxPoolWithArgmax with 4D or higher input, or" +
-                "MaxPoolWithArgmax with column major " +
-                "are not supported in Tensorflow.")
+@ps_description(
+    "MaxPoolWithArgmax with pad is None or incompatible mode, or " +
+    "MaxPoolWithArgmax with 4D or higher input, or" +
+    "MaxPoolWithArgmax with column major " + "are not supported in Tensorflow.")
 class MaxPool(PoolMixin, BackendHandler):
 
   @classmethod

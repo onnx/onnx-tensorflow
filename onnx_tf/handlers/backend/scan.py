@@ -6,19 +6,18 @@ from .scan_mixin import ScanMixin
 @onnx_op("Scan")
 class Scan(ScanMixin, BackendHandler):
 
-    @classmethod
-    def _common(cls, node, **kwargs):
-        return cls.scan(node, kwargs["tensor_dict"],
-                        kwargs.get("strict", True))
+  @classmethod
+  def _common(cls, node, **kwargs):
+    return cls.scan(node, kwargs["tensor_dict"], kwargs.get("strict", True))
 
-    @classmethod
-    def version_8(cls, node, **kwargs):
-        return cls._common(node, **kwargs)
+  @classmethod
+  def version_8(cls, node, **kwargs):
+    return cls._common(node, **kwargs)
 
-    @classmethod
-    def version_9(cls, node, **kwargs):
-        return cls._common(node, **kwargs)
+  @classmethod
+  def version_9(cls, node, **kwargs):
+    return cls._common(node, **kwargs)
 
-    @classmethod
-    def version_11(cls, node, **kwargs):
-        return cls._common(node, **kwargs)
+  @classmethod
+  def version_11(cls, node, **kwargs):
+    return cls._common(node, **kwargs)

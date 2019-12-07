@@ -21,7 +21,7 @@ class QuantizeLinear(BackendHandler):
       y_dtype = y_zero_point.dtype
       y_zero_point = tf.cast(y_zero_point, tf.float32)
       y = tf.add(y, y_zero_point)
-    else: # y_zero_point default dtype = uint8
+    else:  # y_zero_point default dtype = uint8
       y_dtype = tf.uint8
 
     y = tf.saturate_cast(y, y_dtype)

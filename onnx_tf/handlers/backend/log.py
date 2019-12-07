@@ -7,7 +7,7 @@ from .math_mixin import BasicMathMixin
 
 
 @onnx_op("Log")
-@tf_func(tf.log)
+@tf_func(tf.math.log)
 class Log(BasicMathMixin, BackendHandler):
 
   @classmethod

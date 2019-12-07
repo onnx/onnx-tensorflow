@@ -24,8 +24,8 @@ class Slice(BackendHandler):
     axes = node.attrs.get("axes", list(range(slice_len)))
 
     for i in range(slice_len):
-      starts[i] = full_sizes[
-          axes[i]] + starts[i] if starts[i] < 0 else starts[i]
+      starts[i] = full_sizes[axes[i]] + starts[i] if starts[i] < 0 else starts[
+          i]
       ends[i] = full_sizes[axes[i]] + ends[i] if ends[i] < 0 else ends[i]
       if full_sizes[axes[i]] is not None:
         ends[i] = np.min([full_sizes[axes[i]], ends[i]])
@@ -54,14 +54,14 @@ class Slice(BackendHandler):
 
     # first of all, get the input tensor shape
     input_tensor_shape = tf.constant(input_tensor.shape.dims, ends.dtype)
+
     l = list(range(starts.shape[0]))
 
     axes = tensor_dict[node.inputs[3]] if len(
         node.inputs) >= 4 else tf.constant(l, ends.dtype)
 
-    axes = tf.map_fn(lambda axis: tf.where(
-        axis < 0, tf.add(tf.cast(tf.rank(
-            input_tensor), axis.dtype), axis), axis), axes)
+    is_axes_negative = tf.less(axes, tf.zeros_like(axes))
+    axes = tf.where(is_axes_negative, axes + tf.cast(tf.rank(input_tensor), axes.dtype), axes)
 
     # expand a dimension of 1 at the end
     sparse_indices = tf.expand_dims(axes, -1)
@@ -88,10 +88,10 @@ class Slice(BackendHandler):
     output_shape = tf.cast(output_shape, ends.dtype)
 
     # create dense tensor, pad 0 as default begins
-    dense_begins = tf.sparse_to_dense(sparse_indices, output_shape,
-                                      starts_final)
+    dense_begins = tf.compat.v1.sparse_to_dense(sparse_indices, output_shape,
+                                                starts_final)
     # create dense tensor, pad -1 for next step
-    dense_ends = tf.sparse_to_dense(
+    dense_ends = tf.compat.v1.sparse_to_dense(
         sparse_indices,
         output_shape,
         ends_final,
@@ -103,7 +103,7 @@ class Slice(BackendHandler):
 
     # create dense tensor for steps if not already so
     if len(node.inputs) >= 5:
-      dense_steps = tf.sparse_to_dense(
+      dense_steps = tf.compat.v1.sparse_to_dense(
           sparse_indices,
           output_shape,
           tensor_dict[node.inputs[4]],

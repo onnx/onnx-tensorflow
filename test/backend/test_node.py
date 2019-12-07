@@ -234,9 +234,9 @@ class TestNode(unittest.TestCase):
       a = helper.make_sparse_tensor(values, indices, [3, 4])
       node_def = helper.make_node("Constant", [], ["Y"], sparse_value=a)
       output = run_node(node_def, [])
-      b = tf.sparse_to_dense(output["Y"].indices, output["Y"].dense_shape,
+      b = tf.compat.v1.sparse_to_dense(output["Y"].indices, output["Y"].dense_shape,
                              output["Y"].values)
-      result = b.eval(session=tf.Session())
+      result = b.numpy()
       np.testing.assert_equal(result, expected)
 
   def test_constant_fill(self):

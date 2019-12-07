@@ -26,9 +26,8 @@ class Reshape(BackendHandler):
         tf.where(tf.equal(shape, tf.constant(0, dtype=tf.int64))), -1)
 
     indices_gathered = tf.gather(input_shape, copy_indices)
-    indices_scattered = tf.sparse_to_dense(copy_indices,
-                                           tf.cast(tf.shape(shape), tf.int64),
-                                           indices_gathered)
+    indices_scattered = tf.compat.v1.sparse_to_dense(
+        copy_indices, tf.cast(tf.shape(shape), tf.int64), indices_gathered)
 
     # Perform the copy wherever requested (wherever dim_size == 0)
     copied_shape = shape + indices_scattered

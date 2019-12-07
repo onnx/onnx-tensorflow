@@ -33,10 +33,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
          python3 python3-pip python3-dev python3-setuptools && \
      rm -rf /var/lib/apt/lists/*
 
-RUN pip install --upgrade pip
-RUN apt remove -y python-pip
-RUN pip install wheel ipython==5.0 numpy scipy pyyaml pytest
-
 RUN pip3 install --upgrade pip
 RUN apt remove -y python3-pip
 RUN pip3 install wheel ipython==5.0 numpy scipy pyyaml pytest
@@ -45,11 +41,10 @@ RUN mkdir -p /root/programs
 
 # Install ONNX
 RUN git clone --recursive https://github.com/onnx/onnx.git /root/programs/onnx
-RUN cd /root/programs/onnx; pip2 install -e .
 RUN cd /root/programs/onnx; pip3 install -e .
 
 # Install Tensorflow
-RUN pip2 install -U tensorflow
 RUN pip3 install -U tensorflow
+RUN pip3 install -U tensorflow-addons
 
 WORKDIR /root/programs

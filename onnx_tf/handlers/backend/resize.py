@@ -5,7 +5,7 @@ from onnx_tf.handlers.backend_handler import BackendHandler
 from onnx_tf.handlers.handler import onnx_op
 from onnx_tf.handlers.handler import partial_support
 from onnx_tf.handlers.handler import ps_description
-
+from onnx_tf.common.tf_helper import tf_shape
 
 @onnx_op("Resize")
 @partial_support(True)
@@ -22,7 +22,7 @@ class Resize(BackendHandler):
   @classmethod
   def version_10(cls, node, **kwargs):
     x = kwargs["tensor_dict"][node.inputs[0]]
-    x_shape = x.get_shape().as_list()
+    x_shape = tf_shape(x)
     scales = kwargs["tensor_dict"][node.inputs[1]]
 
     n_in_scales_is_one = tf.equal(scales[0], 1)
@@ -46,12 +46,12 @@ class Resize(BackendHandler):
 
       def process_NCHW_format(x):
         x_t = tf.transpose(x, perm=[0, 2, 3, 1])
-        y = tf.image.resize_images(x_t, size=new_h_w_shape, method=mode)
+        y = tf.image.resize(x_t, size=new_h_w_shape, method=mode)
         y_t = tf.transpose(y, perm=[0, 3, 1, 2])
         return y_t
 
       def process_NHWC_format(x):
-        y = tf.image.resize_images(x, size=new_h_w_shape, method=mode)
+        y = tf.image.resize(x, size=new_h_w_shape, method=mode)
         return y
 
       output = tf.cond(x_in_NCHW_format, lambda: process_NCHW_format(x),

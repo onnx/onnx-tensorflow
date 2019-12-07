@@ -33,10 +33,11 @@ class ScatterElements(BackendHandler):
     #   So we update coordinate vector tensor elements at psotion=axis with
     #   the sparse coordinate indices.
 
-    idx_tensors_per_axis = tf.meshgrid(*list(
-        map(lambda x: tf.range(x, dtype=tf.dtypes.int64),
-            sparsified_dense_idx_shape)),
-                                       indexing='ij')
+    idx_tensors_per_axis = tf.meshgrid(
+        *list(
+            map(lambda x: tf.range(x, dtype=tf.dtypes.int64),
+                sparsified_dense_idx_shape)),
+        indexing='ij')
     idx_tensors_per_axis[axis] = indices
     dim_expanded_idx_tensors_per_axis = list(
         map(lambda x: tf.expand_dims(x, axis=-1), idx_tensors_per_axis))
