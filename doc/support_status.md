@@ -1,7 +1,7 @@
 # ONNX-Tensorflow Support Status
 |||
 |-:|:-|
-|ONNX-Tensorflow Version|Master ( commit id: fa51d839acab854d986fcf8fa68615f3e34d2277 )|
+|ONNX-Tensorflow Version|Master ( commit id: e048c0a69b870d661143f561511329dae4acfcfa )|
 |ONNX Version|Master ( commit id: e108da9a9a9916880ca7d1a0cfff96637921212c )|
 |Tensorflow Version|v1.15.0|
 
@@ -88,7 +88,7 @@ Notes:
 |Max|**1**|1|1|1|1|**6**|6|**8**|8|8|8|
 |MaxPool|**1**:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|**8**:small_orange_diamond:|8:small_orange_diamond:|**10**:small_orange_diamond:|**11**:small_orange_diamond:|
 |MaxRoiPool|**1**:small_red_triangle:|1:small_red_triangle:|1:small_red_triangle:|1:small_red_triangle:|1:small_red_triangle:|1:small_red_triangle:|1:small_red_triangle:|1:small_red_triangle:|1:small_red_triangle:|1:small_red_triangle:|1:small_red_triangle:|
-|MaxUnpool|-|-|-|-|-|-|-|-|**9**|9|**11**:small_red_triangle:|
+|MaxUnpool|-|-|-|-|-|-|-|-|**9**|9|**11**|
 |Mean|**1**|1|1|1|1|**6**|6|**8**|8|8|8|
 |MeanVarianceNormalization|-|-|-|-|-|-|-|-|**9**|9|9|
 |Min|**1**|1|1|1|1|**6**|6|**8**|8|8|8|
@@ -173,7 +173,7 @@ Notes:
 |Where|-|-|-|-|-|-|-|-|**9**|9|9|
 |Xor|**1**|1|1|1|1|1|**7**|7|7|7|7|
 
-ONNX-TF Supported Operators / ONNX Operators: 128 / 156
+ONNX-TF Supported Operators / ONNX Operators: 129 / 156
 
 Notes:
 1. Cast: Cast string to float32/float64/int32/int64 are not supported in Tensorflow.
