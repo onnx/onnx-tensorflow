@@ -28,7 +28,8 @@ class RNNMixin(object):
 
   @classmethod
   def rnn(cls, x, cell_class, cell_kwargs, rnn_kwargs, activations, direction):
-    cell_kwargs["activation"] = activations[0]
+    if cell_class is not tf.contrib.cudnn_rnn.CudnnCompatibleGRUCell:
+      cell_kwargs["activation"] = activations[0]
 
     rnn_cell = [cell_class(**cell_kwargs)]
     cell_fw = tf.nn.rnn_cell.MultiRNNCell(rnn_cell)
