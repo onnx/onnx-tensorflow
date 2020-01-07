@@ -60,7 +60,7 @@ class TensorflowRep(BackendRep):
 
     # TODO: handle name scope if necessary
     with self.graph.as_default():
-      with tf.Session() as sess:
+      with tf.compat.v1.Session() as sess:
         if isinstance(inputs, dict):
           feed_dict = inputs
         elif isinstance(inputs, list) or isinstance(inputs, tuple):
@@ -78,7 +78,7 @@ class TensorflowRep(BackendRep):
             self.tensor_dict[key]: feed_dict[key] for key in self.inputs
         }
 
-        sess.run(tf.global_variables_initializer())
+        sess.run(tf.compat.v1.global_variables_initializer())
         outputs = [self.tensor_dict[output] for output in self.outputs]
 
         output_values = sess.run(outputs, feed_dict=feed_dict)

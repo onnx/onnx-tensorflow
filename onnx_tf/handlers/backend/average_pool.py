@@ -25,9 +25,9 @@ class AveragePool(PoolMixin, BackendHandler):
   @classmethod
   def version_10(cls, node, **kwargs):
     return cls.pool_v11(node, kwargs["tensor_dict"], "AVG",
-                    kwargs.get("strict", True))
+                        kwargs.get("strict", True))
 
   @classmethod
   def version_11(cls, node, **kwargs):
     return cls.pool_v11(node, kwargs["tensor_dict"], "AVG",
-                    kwargs.get("strict", True))
+                        kwargs.get("strict", True))

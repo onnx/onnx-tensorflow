@@ -149,12 +149,13 @@ class LSTM(RNNMixin, BackendHandler):
       ]
 
     # TODO(fumihwh): check if reverse and bidirectional works
-    with tf.variable_scope("LSTM_" + get_unique_suffix(),
-                           custom_getter=partial(
-                               cls._custom_getter,
-                               node=node,
-                               tensor_dict=tensor_dict,
-                               is_bidirectional=num_directions == 2)):
+    with tf.compat.v1.variable_scope(
+        "LSTM_" + get_unique_suffix(),
+        custom_getter=partial(
+            cls._custom_getter,
+            node=node,
+            tensor_dict=tensor_dict,
+            is_bidirectional=num_directions == 2)):
 
       cell_kwargs[
           "use_peepholes"] = input_size == 8 and node.inputs[7] in tensor_dict
@@ -168,10 +169,10 @@ class LSTM(RNNMixin, BackendHandler):
             node.inputs[6],
             None) if input_size >= 7 else tf.zeros_like(initial_h)
         if initial_h is not None and initial_c is not None:
-          initial_state = (tf.nn.rnn_cell.LSTMStateTuple(
+          initial_state = (tf.compat.v1.nn.rnn_cell.LSTMStateTuple(
               initial_c[0], initial_h[0]),)
           if num_directions == 2:
-            initial_state_bw = (tf.nn.rnn_cell.LSTMStateTuple(
+            initial_state_bw = (tf.compat.v1.nn.rnn_cell.LSTMStateTuple(
                 initial_c[1], initial_h[1]),)
 
       rnn_kwargs = {}
@@ -184,8 +185,9 @@ class LSTM(RNNMixin, BackendHandler):
       rnn_kwargs["time_major"] = True
       rnn_kwargs["dtype"] = tf.float32
 
-      outputs, states = cls.rnn(x, tf.nn.rnn_cell.LSTMCell, cell_kwargs,
-                                rnn_kwargs, tf_activations, direction)
+      outputs, states = cls.rnn(x, tf.compat.v1.nn.rnn_cell.LSTMCell,
+                                cell_kwargs, rnn_kwargs, tf_activations,
+                                direction)
 
     if num_directions == 1:
       state = states[0]

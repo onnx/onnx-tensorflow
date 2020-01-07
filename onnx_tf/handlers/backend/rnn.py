@@ -103,7 +103,7 @@ class RNN(RNNMixin, BackendHandler):
                                    activation_beta[1]))
 
     # TODO(fumihwh): check if reverse and bidirectional works
-    with tf.variable_scope(
+    with tf.compat.v1.variable_scope(
         "RNN_" + get_unique_suffix(),
         custom_getter=partial(
             cls._custom_getter,
@@ -131,8 +131,9 @@ class RNN(RNNMixin, BackendHandler):
       rnn_kwargs["time_major"] = True
       rnn_kwargs["dtype"] = tf.float32
 
-      outputs, states = cls.rnn(x, tf.nn.rnn_cell.BasicRNNCell, cell_kwargs,
-                                rnn_kwargs, tf_activations, direction)
+      outputs, states = cls.rnn(x, tf.compat.v1.nn.rnn_cell.BasicRNNCell,
+                                cell_kwargs, rnn_kwargs, tf_activations,
+                                direction)
 
     if num_directions == 1:
       state = states[0]

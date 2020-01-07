@@ -57,7 +57,7 @@ class TfIdfVectorizer(BackendHandler):
     # For 1gram, skip is not in use. Not clearly described in ONNX
     # spec, this code logic is based on observation of ONNX examples,
     # tf_batch_uniandbigrams_skip5 and tf_uniandbigrams_skip5,
-    # where the 1-gram results [0, 3, 0, 0] and [0, 3, 1, 0] 
+    # where the 1-gram results [0, 3, 0, 0] and [0, 3, 1, 0]
     # are not the accumulated counts from multiple skips.
     if n == 1:
       return cls._calc_ngram_skip(x, pool, n)
@@ -65,7 +65,7 @@ class TfIdfVectorizer(BackendHandler):
     # Loop through maximum allowable skip count and sum up the results
     result = tf.zeros([int(len(pool) / n)], dtype=tf.int32)
     max_allowable_skip = np.minimum(max_skip,
-            int((int(x.shape[0]) - 1) / (n - 1) - 1))
+                                    int((int(x.shape[0]) - 1) / (n - 1) - 1))
 
     for skip in range(max_allowable_skip + 1):
       # For each skip calculate the ngram counts

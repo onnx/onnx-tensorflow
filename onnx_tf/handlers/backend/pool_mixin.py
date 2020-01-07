@@ -27,8 +27,8 @@ class PoolMixin(object):
     spatial_size = x_rank - 2
 
     if spatial_size > 3:
-      exception.OP_UNSUPPORTED_EXCEPT(
-          "MaxPool with {}D input".format(x_rank), "Tensorflow")
+      exception.OP_UNSUPPORTED_EXCEPT("MaxPool with {}D input".format(x_rank),
+                                      "Tensorflow")
 
     support_cuda = supports_device("CUDA")
     storage_format, compute_format = get_data_format(x_rank)
@@ -57,9 +57,8 @@ class PoolMixin(object):
       elif auto_pad == "SAME_LOWER":
         pad = PAD_TF_INCOMPATIBLE
       if count_include_pad == 1:
-        _, pads = cls._pool_get_shapes(auto_pad, x_shape[2:],
-                                       kernel_shape, strides,
-                                       [0] * spatial_size * 2)
+        _, pads = cls._pool_get_shapes(auto_pad, x_shape[2:], kernel_shape,
+                                       strides, [0] * spatial_size * 2)
 
     if pooling_type in ("AVG", "MAX"):
       if strict and count_include_pad == 0:
@@ -85,8 +84,7 @@ class PoolMixin(object):
       if need_trans:
         x = tf.transpose(x, perm=get_perm_from_formats(storage_format, "NHWC"))
       pooled, argmax = pool_func(
-          x, [1] + kernel_shape + [1], padding=pad, strides=[1] +
-          strides + [1])
+          x, [1] + kernel_shape + [1], padding=pad, strides=[1] + strides + [1])
       if need_trans:
         pooled = tf.transpose(
             pooled, perm=get_perm_from_formats("NHWC", storage_format))
@@ -136,11 +134,11 @@ class PoolMixin(object):
 
     count_include_pad = bool(node.attrs.get("count_include_pad", 0))
     if pooling_type == "AVG":
-        pooling_name = "AveragePool"
+      pooling_name = "AveragePool"
     elif pooling_type == "MAX":
-        pooling_name = "MaxPool"
+      pooling_name = "MaxPool"
     elif pooling_type == "MAX_WITH_ARGMAX":
-        pooling_name = "MaxPoolWithArgmax"
+      pooling_name = "MaxPoolWithArgmax"
 
     if spatial_size > 3:
       exception.OP_UNSUPPORTED_EXCEPT(
@@ -157,22 +155,30 @@ class PoolMixin(object):
     need_trans = storage_format.startswith("NC")
     if need_trans:
       compute_format = "N" + storage_format[2:] + "C"
-      x = tf.transpose(x, perm=get_perm_from_formats(storage_format,
-                                                     compute_format))
+      x = tf.transpose(
+          x, perm=get_perm_from_formats(storage_format, compute_format))
 
-    dp = DilatedPooling(input=x, kernel_shape=kernel_shape, strides=strides,
-                        dilations=dilations, padding=pads, ceil_mode=ceil_mode,
-                        pooling_type=pooling_type,
-                        count_include_pad=count_include_pad)
+    dp = DilatedPooling(
+        input=x,
+        kernel_shape=kernel_shape,
+        strides=strides,
+        dilations=dilations,
+        padding=pads,
+        ceil_mode=ceil_mode,
+        pooling_type=pooling_type,
+        count_include_pad=count_include_pad)
     if not dp.is_supported():
       if strict:
-        warnings.warn(
-            "Using the pooling op in compatibility mode. "
-            "This means your graph cannot be serialized.", UserWarning)
+        warnings.warn("Using the pooling op in compatibility mode. "
+                      "This means your graph cannot be serialized.",
+                      UserWarning)
 
-        return [tf.py_func(py_pool, [orig_x, kernel_shape, strides,
-                                     dilations, pads, ceil_mode, "AVG",
-                                     False], orig_x.dtype)]
+        return [
+            tf.compat.v1.py_func(py_pool, [
+                orig_x, kernel_shape, strides, dilations, pads, ceil_mode,
+                "AVG", False
+            ], orig_x.dtype)
+        ]
       else:
         exception.OP_UNSUPPORTED_EXCEPT("strict == 0 and average pool"
                                         " arguments not compatible",
@@ -190,8 +196,8 @@ class PoolMixin(object):
 
     def postprocess(pooled, argmax):
       return (tf.transpose(pooled, perm=perm) if need_trans else pooled,
-              tf.transpose(argmax, perm=perm) if need_trans and argmax
-              is not None else argmax)
+              tf.transpose(argmax, perm=perm)
+              if need_trans and argmax is not None else argmax)
 
     pooled, argmax = pooling_op()
     pooled, argmax = postprocess(pooled, argmax)
@@ -228,15 +234,16 @@ class PoolMixin(object):
       for shape in itertools.product(
           range(x_shape[0]), range(x_shape[1]), *[
               range(
-                  int((x_shape[i + 2] + pad_shape[i] - kernel_shape[i]) /
-                      strides[i] + 1)) for i in range(spatial_size)
+                  int((x_shape[i + 2] + pad_shape[i] - kernel_shape[i]
+                      ) / strides[i] + 1)) for i in range(spatial_size)
           ]):
         window = padded[shape[0], shape[1]]
         window_vals = np.array([
             window[i] for i in list(
                 itertools.product(*[
-                    range(strides[i] * shape[i + 2], strides[i] * shape[i + 2] +
-                          kernel_shape[i]) for i in range(spatial_size)
+                    range(strides[i] * shape[i + 2],
+                          strides[i] * shape[i + 2] + kernel_shape[i])
+                    for i in range(spatial_size)
                 ]))
         ])
         if pooling_type == 'AVG':
@@ -266,7 +273,7 @@ class PoolMixin(object):
     out_shape, pads = cls._pool_get_shapes(auto_pad, x_shape[2:], kernel_shape,
                                            strides, pads)
 
-    pooled = tf.py_func(py_pool, [
+    pooled = tf.compat.v1.py_func(py_pool, [
         x, kernel_shape, strides, pads, out_shape, count_include_pad,
         pooling_type
     ], tf.float32)
@@ -334,8 +341,8 @@ class PoolMixin(object):
     if pads == [0] * num_sp_dim * 2:
       return "VALID"
 
-    _, same_pads = cls._pool_get_shapes("SAME_UPPER", input_shape,
-                                        kernel_shape, strides, pads)
+    _, same_pads = cls._pool_get_shapes("SAME_UPPER", input_shape, kernel_shape,
+                                        strides, pads)
     if pads == same_pads:
       return "SAME"
 

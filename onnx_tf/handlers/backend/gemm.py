@@ -11,7 +11,7 @@ class Gemm(BackendHandler):
   def _common(cls, node, **kwargs):
     tensor_dict = kwargs["tensor_dict"]
     x = tensor_dict[node.inputs[0]]
-    x = tf.layers.flatten(x)
+    x = tf.keras.layers.Flatten()(x)
     y = tensor_dict[node.inputs[1]]
     z = tensor_dict[node.inputs[2]]
     if node.attrs.get("transA", 0):
@@ -20,6 +20,7 @@ class Gemm(BackendHandler):
       y = tf.transpose(y)
     alpha = node.attrs.get("alpha", 1.0)
     beta = node.attrs.get("beta", 1.0)
+
     return [alpha * tf.matmul(x, y) + beta * z]
 
   @classmethod

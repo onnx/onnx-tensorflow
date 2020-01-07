@@ -9,7 +9,7 @@ from onnx_tf.handlers.handler import tf_func
 
 
 @onnx_op("SpaceToDepth")
-@tf_func(tf.space_to_depth)
+@tf_func(tf.nn.space_to_depth)
 class SpaceToDepth(BackendHandler):
 
   @classmethod

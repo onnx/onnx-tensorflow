@@ -16,9 +16,9 @@ class NonMaxSuppression(BackendHandler):
     # max_output_boxes for tf.image.non_max_suppression must be in tf.int32
     # therefore need to cast this input to tf.int32
     max_output_boxes_per_class = tf.cast(
-        tensor_dict['max_output_boxes_per_class'], tf.
-        int32) if 'max_output_boxes_per_class' in tensor_dict else tf.constant(
-            [tf.cast(boxes.shape[1], tf.int32)], tf.int32)
+        tensor_dict['max_output_boxes_per_class'], tf.int32
+    ) if 'max_output_boxes_per_class' in tensor_dict else tf.constant(
+        [tf.cast(boxes.shape[1], tf.int32)], tf.int32)
     iou_threshold = tensor_dict[
         'iou_threshold'] if 'iou_threshold' in tensor_dict else tf.constant(
             [0.5], tf.float32)

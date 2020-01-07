@@ -7,7 +7,7 @@ from .math_mixin import BasicMathMixin
 
 
 @onnx_op("Ceil")
-@tf_func(tf.ceil)
+@tf_func(tf.math.ceil)
 class Ceil(BasicMathMixin, BackendHandler):
 
   @classmethod

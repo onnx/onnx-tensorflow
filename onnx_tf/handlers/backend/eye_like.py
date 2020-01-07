@@ -22,8 +22,8 @@ class EyeLike(BackendHandler):
     # calculate upper and lower bound of max eye shape
     max_eye_shape_ub = shape[1] if offset > 0 else shape[0]
     max_eye_shape_lb = shape[0] if offset > 0 else shape[1]
-    offset = max_eye_shape_ub * np.sign(offset) if abs(
-        offset) > max_eye_shape_ub else offset
+    offset = max_eye_shape_ub * np.sign(
+        offset) if abs(offset) > max_eye_shape_ub else offset
     abs_offset = abs(offset)
     eye_shape = min(max_eye_shape_ub - abs_offset, max_eye_shape_lb)
     tensor = tf.eye(eye_shape, num_columns=eye_shape, dtype=dtype)

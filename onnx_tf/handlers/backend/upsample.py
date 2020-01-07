@@ -12,7 +12,7 @@ from onnx_tf.handlers.handler import tf_func
 
 
 @onnx_op("Upsample")
-@tf_func(tf.image.resize_images)
+@tf_func(tf.image.resize)
 @partial_support(True)
 @ps_description("Upsample required 4D input in Tensorflow.")
 class Upsample(BackendHandler):
@@ -24,7 +24,8 @@ class Upsample(BackendHandler):
     if len(x_shape) != 4:
       exception.OP_UNSUPPORTED_EXCEPT("Upsample without 4D input", "Tensorflow")
 
-    if node.attrs.get("mode", "nearest").lower() not in ["nearest", "bilinear", "linear"]:
+    if node.attrs.get(
+        "mode", "nearest").lower() not in ["nearest", "bilinear", "linear"]:
       exception.OP_UNSUPPORTED_EXCEPT("Upsample without nearest or bilinear",
                                       "Tensorflow")
 

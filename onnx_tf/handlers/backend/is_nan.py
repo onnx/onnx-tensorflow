@@ -6,7 +6,7 @@ from onnx_tf.handlers.handler import tf_func
 
 
 @onnx_op("IsNaN")
-@tf_func(tf.is_nan)
+@tf_func(tf.math.is_nan)
 class IsNaN(BackendHandler):
 
   @classmethod

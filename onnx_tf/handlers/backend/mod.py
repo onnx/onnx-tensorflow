@@ -10,9 +10,9 @@ from .math_mixin import ArithmeticMixin
 
 @onnx_op("Mod")
 @partial_support(True)
-@ps_description("Mod Dividend or Divisor in " +
-                "int8/int16/uint8/uint16/uint32/uint64 " +
-                "are not supported in Tensorflow.")
+@ps_description(
+    "Mod Dividend or Divisor in " + "int8/int16/uint8/uint16/uint32/uint64 " +
+    "are not supported in Tensorflow.")
 class Mod(ArithmeticMixin, BackendHandler):
 
   @classmethod
@@ -23,16 +23,16 @@ class Mod(ArithmeticMixin, BackendHandler):
     x = kwargs["tensor_dict"][node.inputs[0]]
     y = kwargs["tensor_dict"][node.inputs[1]]
     if x.dtype in unsupported_dtype:
-      exception.OP_UNSUPPORTED_EXCEPT(
-          "Mod Dividend in " + str(x.dtype), "Tensorflow")
+      exception.OP_UNSUPPORTED_EXCEPT("Mod Dividend in " + str(x.dtype),
+                                      "Tensorflow")
     if y.dtype in unsupported_dtype:
-      exception.OP_UNSUPPORTED_EXCEPT(
-          "Mod Divisor in " + str(y.dtype), "Tensorflow")
+      exception.OP_UNSUPPORTED_EXCEPT("Mod Divisor in " + str(y.dtype),
+                                      "Tensorflow")
 
   @classmethod
   def version_10(cls, node, **kwargs):
     fmod = node.attrs.get("fmod", 0)
-    tf_func = tf.floormod
+    tf_func = tf.math.floormod
     if fmod == 1:
       tf_func = tf.truncatemod
     return [cls.make_tensor_from_onnx_node(node, tf_func=tf_func, **kwargs)]

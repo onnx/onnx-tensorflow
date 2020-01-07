@@ -13,7 +13,7 @@ class ReduceLogSum(ReductionMixin, BackendHandler):
     x = kwargs["tensor_dict"][node.inputs[0]]
     axis = node.attrs.get("axes", list(range(len(x.get_shape().as_list()))))
     keepdims = node.attrs.get("keepdims", 1) == 1
-    return [tf.log(tf.reduce_sum(x, axis=axis, keepdims=keepdims))]
+    return [tf.math.log(tf.reduce_sum(x, axis=axis, keepdims=keepdims))]
 
   @classmethod
   def version_1(cls, node, **kwargs):

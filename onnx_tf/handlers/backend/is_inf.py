@@ -4,6 +4,7 @@ from onnx_tf.handlers.backend_handler import BackendHandler
 from onnx_tf.handlers.handler import onnx_op
 from onnx_tf.handlers.handler import tf_func
 
+
 @onnx_op("IsInf")
 @tf_func(tf.math.is_inf)
 class IsInf(BackendHandler):
@@ -22,6 +23,4 @@ class IsInf(BackendHandler):
     # detecting only negative infinity, zero out elements > 0
     if dp == 0:
       inp = tf.minimum(zero, inp)
-    return [
-      cls.make_tensor_from_onnx_node(node, inputs=[inp], **kwargs)
-    ]
+    return [cls.make_tensor_from_onnx_node(node, inputs=[inp], **kwargs)]

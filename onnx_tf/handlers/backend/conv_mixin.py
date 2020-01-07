@@ -220,9 +220,9 @@ class ConvMixin(BroadcastMixin):
           tf.nn.convolution(
               x,
               weight,
-              pad_mode,
+              padding=pad_mode,
               strides=strides,
-              dilation_rate=dilations,
+              dilations=dilations,
               data_format=compute_format)
           for (x, weight) in zip(xs, weight_groups)
       ]

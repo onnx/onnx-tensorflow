@@ -28,8 +28,8 @@ class Pad(BackendHandler):
     else:  # for opset 11
       paddings = tensor_dict[node.inputs[1]]
       # tf requires int32 paddings
-      paddings = tf.cast(tf.transpose(tf.reshape(paddings, [2, num_dim])),
-                         dtype=tf.int32)
+      paddings = tf.cast(
+          tf.transpose(tf.reshape(paddings, [2, num_dim])), dtype=tf.int32)
       constant_values = tensor_dict[node.inputs[2]] if len(
           node.inputs) == 3 else 0
 
@@ -49,7 +49,7 @@ class Pad(BackendHandler):
 
     return [
         cls.make_tensor_from_onnx_node(
-            node, inputs=[x, paddings, mode, None, constant_values], **kwargs)
+            node, inputs=[x, paddings, mode, constant_values], **kwargs)
     ]
 
   @classmethod

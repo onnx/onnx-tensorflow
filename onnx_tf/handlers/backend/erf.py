@@ -6,7 +6,7 @@ from onnx_tf.handlers.handler import tf_func
 
 
 @onnx_op("Erf")
-@tf_func(tf.erf)
+@tf_func(tf.math.erf)
 class Erf(BackendHandler):
 
   @classmethod
