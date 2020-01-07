@@ -6,7 +6,7 @@ from onnx_tf.handlers.handler import tf_func
 
 
 @onnx_op("RandomUniformLike")
-@tf_func(tf.random_uniform)
+@tf_func(tf.random.uniform)
 class RandomUniformLike(BackendHandler):
 
   @classmethod

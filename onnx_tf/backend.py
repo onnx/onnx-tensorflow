@@ -120,7 +120,7 @@ class TensorflowBackend(Backend):
             ":", "_tf_") + "_" + get_unique_suffix(
             ) if ":" in value_info.name else value_info.name
 
-        x = tf.placeholder(
+        x = tf.compat.v1.placeholder(
             data_type.onnx2tf(value_info.type.tensor_type.elem_type),
             name=value_info_name,
             shape=shape)
@@ -186,9 +186,9 @@ class TensorflowBackend(Backend):
           [(x[0], tf.constant(x[1])) for x in feed_dict_raw.items()])
       ops = cls._onnx_node_to_tensorflow_op(node, input_dict)
 
-      with tf.Session() as sess:
+      with tf.compat.v1.Session() as sess:
         with tf.device(device_option):
-          sess.run(tf.global_variables_initializer())
+          sess.run(tf.compat.v1.global_variables_initializer())
           output_vals = sess.run(ops)
 
     return namedtupledict('Outputs', node.outputs)(*output_vals)

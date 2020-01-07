@@ -27,7 +27,7 @@ class ConvInteger(ConvMixin, BackendHandler):
       if "w_zero_point" in node.inputs:
         node.inputs.remove("w_zero_point")
 
-      new_dict = { node.inputs[0]:new_x, node.inputs[1]:new_w } 
+      new_dict = {node.inputs[0]: new_x, node.inputs[1]: new_w}
 
       # Use common conv handling
       conv_node = cls.conv(node, new_dict)

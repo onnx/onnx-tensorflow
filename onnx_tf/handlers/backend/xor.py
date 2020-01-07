@@ -7,7 +7,7 @@ from .control_flow_mixin import LogicalMixin
 
 
 @onnx_op("Xor")
-@tf_func(tf.logical_xor)
+@tf_func(tf.math.logical_xor)
 class Xor(LogicalMixin, BackendHandler):
 
   @classmethod

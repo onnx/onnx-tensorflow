@@ -11,17 +11,17 @@ from .control_flow_mixin import ComparisonMixin
 @onnx_op("Equal")
 @tf_func(tf.equal)
 @partial_support(True)
-@ps_description("Equal inputs in uint16/uint32/uint64 " +
-                "are not supported in Tensorflow.")
+@ps_description(
+    "Equal inputs in uint16/uint32/uint64 " + "are not supported in Tensorflow."
+)
 class Equal(ComparisonMixin, BackendHandler):
 
   @classmethod
   def args_check(cls, node, **kwargs):
     supported_dtype = [
-        tf.bfloat16, tf.half, tf.float32, tf.float64, tf.uint8,
-        tf.int8, tf.int16, tf.int32, tf.int64, tf.complex64,
-        tf.quint8, tf.qint8, tf.qint32, tf.string, tf.bool, 
-        tf.complex128
+        tf.bfloat16, tf.half, tf.float32, tf.float64, tf.uint8, tf.int8,
+        tf.int16, tf.int32, tf.int64, tf.complex64, tf.quint8, tf.qint8,
+        tf.qint32, tf.string, tf.bool, tf.complex128
     ]
     x = kwargs["tensor_dict"][node.inputs[0]]
     if x.dtype not in supported_dtype:

@@ -7,7 +7,7 @@ from .math_mixin import ArithmeticMixin
 
 
 @onnx_op("Div")
-@tf_func(tf.div)
+@tf_func(tf.math.truediv)
 class Div(ArithmeticMixin, BackendHandler):
 
   @classmethod

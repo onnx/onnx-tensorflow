@@ -29,5 +29,8 @@ class LpNormalization(BackendHandler):
 
     return [
         cls.make_tensor_from_onnx_node(
-            node, tf_func=tf.div, inputs=[input_tensor, tf_norm], **kwargs)
+            node,
+            tf_func=tf.math.truediv,
+            inputs=[input_tensor, tf_norm],
+            **kwargs)
     ]

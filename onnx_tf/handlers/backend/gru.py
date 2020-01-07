@@ -13,13 +13,12 @@ from .rnn_mixin import RNNMixin
 
 @onnx_op("GRU")
 @partial_support(True)
-@ps_description("GRU with clip or GRU with linear_before_reset, or " +
-                "GRU not using sigmoid for z and r, or " +
-                "GRU using Elu as the activation function " +
-                "with alpha != 1, or " +
-                "GRU using HardSigmoid as the activation function " +
-                "with alpha != 0.2 or beta != 0.5 " +
-                "are not supported in TensorFlow.")
+@ps_description(
+    "GRU with clip or GRU with linear_before_reset, or " +
+    "GRU not using sigmoid for z and r, or " +
+    "GRU using Elu as the activation function " + "with alpha != 1, or " +
+    "GRU using HardSigmoid as the activation function " +
+    "with alpha != 0.2 or beta != 0.5 " + "are not supported in TensorFlow.")
 class GRU(RNNMixin, BackendHandler):
 
   @classmethod
@@ -138,7 +137,7 @@ class GRU(RNNMixin, BackendHandler):
                                    activation_beta[3]))
 
     # TODO(fumihwh): check if reverse and bidirectional works
-    with tf.variable_scope(
+    with tf.compat.v1.variable_scope(
         "GRU_" + get_unique_suffix(),
         custom_getter=partial(
             cls._custom_getter,
@@ -168,8 +167,9 @@ class GRU(RNNMixin, BackendHandler):
       rnn_kwargs["time_major"] = True
       rnn_kwargs["dtype"] = tf.float32
 
-      outputs, states = cls.rnn(x, tf.nn.rnn_cell.GRUCell, cell_kwargs,
-                                rnn_kwargs, tf_activations, direction)
+      outputs, states = cls.rnn(x, tf.compat.v1.nn.rnn_cell.GRUCell,
+                                cell_kwargs, rnn_kwargs, tf_activations,
+                                direction)
 
     if num_directions == 1:
       state = states[0]
