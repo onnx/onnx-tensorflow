@@ -20,11 +20,13 @@ def get_onnxtf_supported_ops():
   return opset_version.backend_opset_version
 
 def get_onnx_supported_ops():
-  onnx_opset_dict = {}
+  onnx_ops_dict = {}
   for schema in defs.get_all_schemas():
-    op = schema.name
-    onnx_opset_dict[op] = schema.since_version
-  return onnx_opset_dict
+    onnx_ops_dict[schema.name] = {
+        'version': schema.since_version,
+        'deprecated': schema.deprecated
+    }
+  return onnx_ops_dict
 
 def skip_not_implemented_ops_test(test):
   onnxtf_ops_list = get_onnxtf_supported_ops()
@@ -38,13 +40,14 @@ def skip_not_implemented_ops_test(test):
         i += 2
       else:
         i += 1
-    if op in onnxtf_ops_list:
-      if onnx_ops_list[op] not in onnxtf_ops_list[op]:
-        test.exclude(r'[a-z,_]*' + op.lower() + '[a-z,_]*')
-        test.exclude(r'[a-z,_]*' + op_name.lower() + '[a-z,_]*')
-    else:
-      test.exclude(r'[a-z,_]*' + op.lower() + '[a-z,_]*')
-      test.exclude(r'[a-z,_]*' + op_name.lower() + '[a-z,_]*')
+    if not onnx_ops_list[op]['deprecated']:
+      if op in onnxtf_ops_list:
+        if onnx_ops_list[op]['version'] not in onnxtf_ops_list[op]:
+          test.exclude(r'[a-z,_]*_' + op.lower() + '_[a-z,_]*')
+          test.exclude(r'[a-z,_]*_' + op_name.lower() + '_[a-z,_]*')
+      else:
+        test.exclude(r'[a-z,_]*_' + op.lower() + '_[a-z,_]*')
+        test.exclude(r'[a-z,_]*_' + op_name.lower() + '_[a-z,_]*')
   return test
 
 # This is a pytest magic variable to load extra plugins

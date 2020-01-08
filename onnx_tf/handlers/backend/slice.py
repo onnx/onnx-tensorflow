@@ -59,9 +59,9 @@ class Slice(BackendHandler):
     axes = tensor_dict[node.inputs[3]] if len(
         node.inputs) >= 4 else tf.constant(l, ends.dtype)
 
-    axes = tf.map_fn(lambda axis: tf.where(
-        axis < 0, tf.add(tf.cast(tf.rank(
-            input_tensor), axis.dtype), axis), axis), axes)
+    # process negative axes
+    input_rank = tf.cast(tf.rank(input_tensor), axes.dtype)
+    axes = tf.math.floormod(tf.add(axes, input_rank), input_rank)
 
     # expand a dimension of 1 at the end
     sparse_indices = tf.expand_dims(axes, -1)
