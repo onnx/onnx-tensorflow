@@ -550,6 +550,38 @@ class TestNode(unittest.TestCase):
         test_output[1][i][j] = x[i + 1][j]
     np.testing.assert_almost_equal(output["Z"], test_output)
 
+  def test_gather_nd(self):
+    if legacy_opset_pre_ver(11):
+      raise unittest.SkipTest("ONNX version {} doesn't support GatherND.".format(
+          defs.onnx_opset_version()))
+
+    # valid positive and negative indices for elements
+    data = np.array([[0, 1], [2, 3]], dtype=np.int64)
+    indices = np.array([[0, 0], [1, 1], [-1,-2]], dtype=np.int64)
+    ref_output = np.array([0, 3, 2], dtype=np.int64)
+    node_def = helper.make_node("GatherND", ["data", "indices"], ["outputs"])
+    output = run_node(node_def, [data, indices])
+    np.testing.assert_almost_equal(output["outputs"], ref_output)
+
+    # valid positive and negative indices for slices
+    data = np.arange(16, dtype=np.int32).reshape([2, 2, 4])
+    indices = np.array([[0, 0], [-1, -2]], dtype=np.int64)
+    ref_output = np.array([[0, 1, 2, 3], [8, 9, 10, 11]], dtype=np.int32)
+    output = run_node(node_def, [data, indices])
+    np.testing.assert_almost_equal(output["outputs"], ref_output)
+    indices = np.array([[[0, 0]], [[-1, 0]]], dtype=np.int64)
+    ref_output = np.array([[[0, 1, 2, 3]], [[8, 9, 10, 11]]], dtype=np.int32)
+    output = run_node(node_def, [data, indices])
+    np.testing.assert_almost_equal(output["outputs"], ref_output)
+
+    # indices out of bounds
+    indices = np.array([[5, 0], [-1, -3]], dtype=np.int64)
+    with np.testing.assert_raises(tf.errors.InvalidArgumentError):
+      output = run_node(node_def, [data, indices])
+    indices = np.array([[1, 1, 6], [-2, -1, -9]], dtype=np.int32)
+    with np.testing.assert_raises(tf.errors.InvalidArgumentError):
+      output = run_node(node_def, [data, indices])
+
   def test_gemm(self):
     # Compute Y = alpha * A * B + beta * C
     node_def = helper.make_node("Gemm", ["A", "B", "C"], ["Y"],
@@ -1842,6 +1874,119 @@ class TestNode(unittest.TestCase):
     np.testing.assert_almost_equal(output["y"], Y)
     np.testing.assert_almost_equal(output_z, Z)
 
+  def test_scatter_elements1(self):
+    data = np.array([[1.0, 2.0, 3.0, 4.0, 5.0]], dtype=np.float32)
+    indices = np.array([[1, 3]], dtype=np.int64)
+    updates = np.array([[1.1, 2.1]], dtype=np.float32)
+    axis = 1
+    ref_output = np.array([[1.0, 1.1, 3.0, 2.1, 5.0]], dtype=np.float32)
+
+    if legacy_opset_pre_ver(11):
+      node_def = helper.make_node("Scatter",
+                                ["data", "indices", "updates"], ["outputs"],
+                                axis=axis)
+      output = run_node(node_def, [data, indices, updates])
+      np.testing.assert_almost_equal(output["outputs"], ref_output)
+    else:
+      node_def = helper.make_node("ScatterElements",
+                                ["data", "indices", "updates"], ["outputs"],
+                                axis=axis)
+      output = run_node(node_def, [data, indices, updates])
+      np.testing.assert_almost_equal(output["outputs"], ref_output)
+
+  def test_scatter_elements2(self):
+    data = np.array([
+        [0.0, 0.0, 0.0],
+        [0.0, 0.0, 0.0],
+        [0.0, 0.0, 0.0],
+    ], dtype=np.float32)
+    indices = np.array([
+        [1, 0, 2],
+        [0, 2, 1],
+    ], dtype=np.int64)
+    updates = np.array([
+        [1.0, 1.1, 1.2],
+        [2.0, 2.1, 2.2],
+    ], dtype=np.float32)
+    ref_output = np.array([
+        [2.0, 1.1, 0.0],
+        [1.0, 0.0, 2.2],
+        [0.0, 2.1, 1.2],
+    ], dtype=np.float32)
+
+    if legacy_opset_pre_ver(11):
+      node_def = helper.make_node("Scatter",
+                                  ["data", "indices", "updates"], ["outputs"])
+      output = run_node(node_def, [data, indices, updates])
+      np.testing.assert_almost_equal(output["outputs"], ref_output)
+    else:
+      node_def = helper.make_node("ScatterElements",
+                                ["data", "indices", "updates"], ["outputs"])
+      output = run_node(node_def, [data, indices, updates])
+      np.testing.assert_almost_equal(output["outputs"], ref_output)
+
+  def test_scatter_elements3(self):
+    # indices out of bounds
+    data = np.array([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]], dtype=np.float32)
+    indices = np.array([[0, 1, 2]], dtype=np.int64)
+    updates = np.array([[1.1, 2.1, 3.1]], dtype=np.float32)
+
+    if legacy_opset_pre_ver(11):
+      node_def = helper.make_node("Scatter", ["data", "indices", "updates"],
+                                  ["outputs"])
+    else:
+      node_def = helper.make_node("ScatterElements",
+                                  ["data", "indices", "updates"], ["outputs"])
+    with np.testing.assert_raises(tf.errors.InvalidArgumentError):
+      output = run_node(node_def, [data, indices, updates])
+
+  def test_scatter_nd(self):
+    if legacy_opset_pre_ver(11):
+      raise unittest.SkipTest("ONNX version {} doesn't support ScatterND.".format(
+          defs.onnx_opset_version()))
+
+    # valid positve and negative indices for elements
+    data = np.array([1, 2, 3, 4, 5, 6, 7, 8], dtype=np.float32)
+    indices = np.array([[4], [3], [1], [7]], dtype=np.int64)
+    updates = np.array([9, 10, 11, 12], dtype=np.float32)
+    ref_output = np.array([1, 11, 3, 10, 9, 6, 7, 12], dtype=np.float32)
+    node_def = helper.make_node("ScatterND", ["data", "indices", "updates"],
+                                ["outputs"])
+    output = run_node(node_def, [data, indices, updates])
+    np.testing.assert_almost_equal(output["outputs"], ref_output)
+
+    # valid positive and negative indices for slices
+    data = np.reshape(np.arange(1, 25, dtype=np.float32), [2, 3, 4])
+    indices = np.array([[-2, -1], [1, 0]], dtype=np.int64)
+    updates = np.array([[39, 40, 41, 42], [43, 44, 45, 46]], dtype=np.float32)
+    ref_output = np.array(
+        [[[1, 2, 3, 4], [5, 6, 7, 8], [39, 40, 41, 42]],
+         [[43, 44, 45, 46], [17, 18, 19, 20], [21, 22, 23, 24]]],
+        dtype=np.float32)
+    output = run_node(node_def, [data, indices, updates])
+    np.testing.assert_almost_equal(output["outputs"], ref_output)
+    indices = np.array([[-1]], dtype=np.int64)
+    updates = np.array([[[43, 44, 45, 46], [47, 48, 49, 50], [51, 52, 53, 54]]],
+                       dtype=np.float32)
+    ref_output = np.array(
+        [[[1, 2, 3, 4], [5, 6, 7, 8], [9, 10, 11, 12]],
+         [[43, 44, 45, 46], [47, 48, 49, 50], [51, 52, 53, 54]]],
+        dtype=np.float32)
+    output = run_node(node_def, [data, indices, updates])
+    np.testing.assert_almost_equal(output["outputs"], ref_output)
+
+    # indices out of bounds
+    indices = np.array([[0, 1, 2], [-1, -1, -3], [-2, -3, -4], [0, 2, -5]],
+                       dtype=np.int64)
+    updates = np.array([37, 52, 30, 39], dtype=np.float32)
+    with np.testing.assert_raises(tf.errors.InvalidArgumentError):
+      output = run_node(node_def, [data, indices, updates])
+    indices = np.array([[0, 1], [-1, -1], [-2, -4]], dtype=np.int64)
+    updates = np.array([[35, 36, 37, 38], [51, 52, 53, 54], [31, 32, 33, 34]],
+                       dtype=np.float32)
+    with np.testing.assert_raises(tf.errors.InvalidArgumentError):
+      output = run_node(node_def, [data, indices, updates])
+
   def test_shape(self):
     node_def = helper.make_node("Shape", ["X"], ["Y"])
     x = self._get_rnd_float32(shape=[5, 10, 10, 3])
@@ -2148,81 +2293,6 @@ class TestNode(unittest.TestCase):
     y = np.array([[9, 8], [7, 6]], dtype=np.float32)
     output = run_node(node_def, [c, x, y])
     np.testing.assert_almost_equal(output["Z"], np.where(c, x, y))
-
-  def test_scatter_nd(self):
-    if legacy_opset_pre_ver(11):
-      raise unittest.SkipTest("ONNX version {} doesn't support ScatterND.".format(
-          defs.onnx_opset_version()))
-    data = np.array([1, 2, 3, 4, 5, 6, 7, 8], dtype=np.float32)
-    indices = np.array([[4], [3], [1], [7]], dtype=np.int64)
-    updates = np.array([9, 10, 11, 12], dtype=np.float32)
-    ref_output = np.array([1, 11, 3, 10, 9, 6, 7, 12], dtype=np.float32)
-    node_def = helper.make_node("ScatterND", ["data", "indices", "updates"],
-                                ["outputs"])
-    output = run_node(node_def, [data, indices, updates])
-    np.testing.assert_almost_equal(output["outputs"], ref_output)
-
-  def test_scatter_elements1(self):
-    data = np.array([[1.0, 2.0, 3.0, 4.0, 5.0]], dtype=np.float32)
-    indices = np.array([[1, 3]], dtype=np.int64)
-    updates = np.array([[1.1, 2.1]], dtype=np.float32)
-    axis = 1
-    ref_output = np.array([[1.0, 1.1, 3.0, 2.1, 5.0]], dtype=np.float32)
-
-    if legacy_opset_pre_ver(11):
-      node_def = helper.make_node("Scatter",
-                                ["data", "indices", "updates"], ["outputs"],
-                                axis=axis)
-      output = run_node(node_def, [data, indices, updates])
-      np.testing.assert_almost_equal(output["outputs"], ref_output)
-    else:
-      node_def = helper.make_node("ScatterElements",
-                                ["data", "indices", "updates"], ["outputs"],
-                                axis=axis)
-      output = run_node(node_def, [data, indices, updates])
-      np.testing.assert_almost_equal(output["outputs"], ref_output)
-
-  def test_scatter_elements2(self):
-    data = np.array([
-        [0.0, 0.0, 0.0],
-        [0.0, 0.0, 0.0],
-        [0.0, 0.0, 0.0],
-    ], dtype=np.float32)
-    indices = np.array([
-        [1, 0, 2],
-        [0, 2, 1],
-    ], dtype=np.int64)
-    updates = np.array([
-        [1.0, 1.1, 1.2],
-        [2.0, 2.1, 2.2],
-    ], dtype=np.float32)
-    ref_output = np.array([
-        [2.0, 1.1, 0.0],
-        [1.0, 0.0, 2.2],
-        [0.0, 2.1, 1.2],
-    ], dtype=np.float32)
-
-    if legacy_opset_pre_ver(11):
-      node_def = helper.make_node("Scatter",
-                                  ["data", "indices", "updates"], ["outputs"])
-      output = run_node(node_def, [data, indices, updates])
-      np.testing.assert_almost_equal(output["outputs"], ref_output)
-    else:
-      node_def = helper.make_node("ScatterElements",
-                                ["data", "indices", "updates"], ["outputs"])
-      output = run_node(node_def, [data, indices, updates])
-      np.testing.assert_almost_equal(output["outputs"], ref_output)
-
-  def test_gather_nd(self):
-    if legacy_opset_pre_ver(11):
-      raise unittest.SkipTest("ONNX version {} doesn't support GatherND.".format(
-          defs.onnx_opset_version()))
-    data = [[0, 1], [2, 3]]
-    indices = [[0, 0], [1, 1]]
-    ref_output = [0, 3]
-    node_def = helper.make_node("GatherND", ["data", "indices"], ["outputs"])
-    output = run_node(node_def, [data, indices])
-    np.testing.assert_almost_equal(output["outputs"], ref_output)
 
 
 if __name__ == '__main__':
