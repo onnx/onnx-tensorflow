@@ -28,7 +28,7 @@ backend_opset_version = {
     'ConstantOfShape': [9],
     'Conv': [1, 11],
     'ConvInteger': [10],
-    'ConvTranspose': [1],
+    'ConvTranspose': [1, 11],
     'Cos': [7],
     'Cosh': [9],
     'CumSum': [],
