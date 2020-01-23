@@ -209,7 +209,8 @@ class TensorflowBackend(Backend):
              tf.constant(
                  tensor2list(init),
                  shape=init.dims,
-                 dtype=data_type.onnx2tf(init.data_type)))
+                 dtype=data_type.onnx2tf(init.data_type),
+                 name=init.name))
             for init in initializer]
 
   @classmethod
