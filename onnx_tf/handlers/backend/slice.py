@@ -53,7 +53,7 @@ class Slice(BackendHandler):
     ends = tensor_dict[node.inputs[2]]
 
     # first of all, get the input tensor shape
-    input_tensor_shape = tf.constant(input_tensor.shape.dims, ends.dtype)
+    input_tensor_shape = tf.shape(input_tensor, out_type=ends.dtype)
     l = list(range(starts.shape[0]))
 
     axes = tensor_dict[node.inputs[3]] if len(
@@ -68,7 +68,7 @@ class Slice(BackendHandler):
 
     # build the indexed dimension sizes as sparse_shape
     sparse_shape = tf.gather_nd(
-        params=input_tensor.shape, indices=sparse_indices)
+        params=input_tensor_shape, indices=sparse_indices)
     sparse_shape = tf.cast(sparse_shape, ends.dtype)
 
     # take care of starts, ends that are larger than the dim size.
