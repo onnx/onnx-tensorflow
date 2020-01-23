@@ -59,7 +59,7 @@ Notes:
 |Flatten|**1**|1|1|1|1|1|1|1|**9**|9|**11**|
 |Floor|**1**|1|1|1|1|**6**|6|6|6|6|6|
 |GRU|**1**:small_orange_diamond:|1:small_orange_diamond:|**3**:small_orange_diamond:|3:small_orange_diamond:|3:small_orange_diamond:|3:small_orange_diamond:|**7**:small_orange_diamond:|7:small_orange_diamond:|7:small_orange_diamond:|7:small_orange_diamond:|7:small_orange_diamond:|
-|Gather|**1**|1|1|1|1|1|1|1|1|1|**11**:small_red_triangle:|
+|Gather|**1**|1|1|1|1|1|1|1|1|1|**11**|
 |GatherElements|-|-|-|-|-|-|-|-|-|-|**11**:small_red_triangle:|
 |GatherND|-|-|-|-|-|-|-|-|-|-|**11**|
 |Gemm|**1**|1|1|1|1|**6**|**7**|7|**9**|9|**11**:small_red_triangle:|
@@ -173,7 +173,7 @@ Notes:
 |Where|-|-|-|-|-|-|-|-|**9**|9|9|
 |Xor|**1**|1|1|1|1|1|**7**|7|7|7|7|
 
-ONNX-TF Supported Operators / ONNX Operators: 129 / 156
+ONNX-TF Supported Operators / ONNX Operators: 130 / 156
 
 Notes:
 1. Cast: Cast string to float32/float64/int32/int64 are not supported in Tensorflow.
