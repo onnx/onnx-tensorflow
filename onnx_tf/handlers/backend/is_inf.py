@@ -1,5 +1,6 @@
 import tensorflow as tf
 
+from onnx_tf.common.tf_helper import tf_shape
 from onnx_tf.handlers.backend_handler import BackendHandler
 from onnx_tf.handlers.handler import onnx_op
 from onnx_tf.handlers.handler import tf_func
@@ -13,7 +14,7 @@ class IsInf(BackendHandler):
   def version_10(cls, node, **kwargs):
     inp = kwargs["tensor_dict"][node.inputs[0]]
     dtype = inp.dtype
-    shape = inp.shape
+    shape = tf_shape(inp)
     zero = tf.zeros(shape, dtype)
     dn = node.attrs.get("detect_negative", 1)
     dp = node.attrs.get("detect_positive", 1)

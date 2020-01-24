@@ -48,7 +48,7 @@ Because users often have their own preferences for which variant of Tensorflow t
 
 ### Installation:
 - Install ONNX master branch from source.
-- Install Tensorflow >= 2.0. (Note for Tensorflow 1.x please refer the [tf-1.x branch](https://github.com/onnx/onnx-tensorflow/tree/tf-1.x))
+- Install Tensorflow >= 2.0 and tensorflow-addons. (Note for Tensorflow 1.x please refer the [tf-1.x branch](https://github.com/onnx/onnx-tensorflow/tree/tf-1.x))
 - Run `git clone git@github.com:onnx/onnx-tensorflow.git && cd onnx-tensorflow`.
 - Run `pip install -e .`.
 
