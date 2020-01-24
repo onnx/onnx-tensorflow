@@ -18,13 +18,16 @@ class Gather(BackendHandler):
     x = kwargs["tensor_dict"][node.inputs[0]]
     indices = kwargs["tensor_dict"][node.inputs[1]]
     axis = node.attrs.get("axis", 0)
-    x_rank = len(x.shape)
-    if axis < -x_rank or axis >= x_rank:
-      raise ValueError("axis %d is out of range. must be in [%d, %d]" % (axis, -x_rank, x_rank-1))
     dimension = tf.cast(tf.shape(x)[axis], indices.dtype)
     indices_shape = tf.shape(indices)
     dim_broadcasted = tf.broadcast_to(dimension, indices_shape)
     nonneg_indices = tf.cast(tf.greater_equal(indices, 0), dtype=indices.dtype)
     negative_indices = tf.cast(tf.less(indices, 0), dtype=indices.dtype)
     final_indices = dim_broadcasted * negative_indices + negative_indices * indices + nonneg_indices * indices
-    return [tf.gather(x, final_indices, axis=axis, name=cls.tf_node_name(node.name))]
+    cond1 = tf.greater_equal(final_indices, 0)
+    cond2 = tf.less(final_indices, dimension)
+    indice_valiation = tf.reduce_all(tf.logical_and(cond1, cond2))
+    msg = 'Gather indices are out of bounds, please double check the indices and retry.'
+    with tf.control_dependencies(
+        [tf.compat.v1.assert_equal(indice_valiation, True, message=msg)]):
+      return [tf.gather(x, final_indices, axis=axis, name=cls.tf_node_name(node.name))]

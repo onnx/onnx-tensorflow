@@ -7,6 +7,7 @@ import math
 import unittest
 import numpy as np
 import tensorflow as tf
+from tensorflow.python.framework.errors_impl import InvalidArgumentError
 from onnx_tf.backend import run_node
 from onnx_tf.common import supports_device
 from onnx_tf.common.legacy import legacy_onnx_pre_ver, legacy_opset_pre_ver
@@ -554,6 +555,14 @@ class TestNode(unittest.TestCase):
       y = [[-10, -9], [1, -8]]
       output = run_node(node_def, [x, y])
       np.testing.assert_almost_equal(output["Z"], test_output)
+      # test out of bound indices
+      for y in ([[-10, 11], [1, -8]], [[-10, -11], [1, -8]]):
+        try:
+          output = run_node(node_def, [x, y])
+          np.testing.assert_almost_equal(output["Z"], test_output)
+          raise AssertionError("Expected ValueError not raised for indices %d" % str(y))
+        except InvalidArgumentError as e:
+          assert 'Gather indices are out of bound' in str(e), str(y)
       # test non-0 and negative axis
       axis=-3
       node_def = helper.make_node("Gather", ["X", "Y"], ["Z"], axis=axis)
@@ -569,7 +578,7 @@ class TestNode(unittest.TestCase):
           run_node(node_def, [x, y])
           raise AssertionError("Expected ValueError not raised for axis value %d" % axis)
         except ValueError as e:
-          assert ('axis %d' % axis) in str(e)
+          assert 'out of bounds' in str(e), str(e) + ' for axis ' + str(axis)
 
   def test_gemm(self):
     # Compute Y = alpha * A * B + beta * C
