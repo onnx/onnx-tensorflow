@@ -2127,6 +2127,14 @@ class TestNode(unittest.TestCase):
     for a, b in zip(list(output), np.split(x, np.cumsum(split))[:-1]):
       np.testing.assert_almost_equal(a, b)
 
+    # test axis out of bound
+    node_def = helper.make_node("Split", ["X"],
+                                ["Z%i" % i for i in range(len(split))],
+                                axis=3,
+                                split=split)
+    with np.testing.assert_raises(ValueError):
+      output = run_node(node_def, [x])
+
   def test_sqrt(self):
     node_def = helper.make_node("Sqrt", ["X"], ["Y"])
     x = self._get_rnd_float32(shape=[1000]) + 1.0
