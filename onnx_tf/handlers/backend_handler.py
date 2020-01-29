@@ -64,14 +64,6 @@ class BackendHandler(Handler):
     return attrs
 
   @classmethod
-  def tf_node_name(cls, name: str):
-    if name:
-      name = name.strip()
-    if name == '':
-      return None
-    return name
-
-  @classmethod
   def make_tensor_from_onnx_node(cls,
                                  node,
                                  tf_func=None,
