@@ -1,3 +1,4 @@
+import copy
 import tensorflow as tf
 
 from onnx_tf.handlers.backend_handler import BackendHandler
@@ -18,10 +19,12 @@ class Gather(GatherAndScatterMixin, BackendHandler):
   def version_11(cls, node, **kwargs):
     x = kwargs["tensor_dict"][node.inputs[0]]
     indices = kwargs["tensor_dict"][node.inputs[1]]
-    axis = node.attrs.get("axis", 0)
+    attrs = copy.deepcopy(node.attrs)
+    axis = attrs.get("axis", 0)
     result = cls.chk_idx_out_of_bounds_along_axis(x, axis, indices)
     msg = 'Gather indices are out of bounds, please double check the indices and retry.'
     with tf.control_dependencies([tf.compat.v1.assert_equal(result, True, message=msg)]):
       indices = cls.process_neg_idx_along_axis(x, axis, indices)
       kwargs["tensor_dict"][node.inputs[1]] = indices
-      return [cls.make_tensor_from_onnx_node(node, **kwargs)]
+      attrs['axis'] = axis
+      return [cls.make_tensor_from_onnx_node(node, attrs=attrs, **kwargs)]
