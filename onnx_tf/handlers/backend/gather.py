@@ -25,6 +25,5 @@ class Gather(GatherAndScatterMixin, BackendHandler):
     msg = 'Gather indices are out of bounds, please double check the indices and retry.'
     with tf.control_dependencies([tf.compat.v1.assert_equal(result, True, message=msg)]):
       indices = cls.process_neg_idx_along_axis(x, axis, indices)
-      kwargs["tensor_dict"][node.inputs[1]] = indices
       attrs['axis'] = axis
-      return [cls.make_tensor_from_onnx_node(node, attrs=attrs, **kwargs)]
+      return [cls.make_tensor_from_onnx_node(node, attrs=attrs, inputs=[x, indices], **kwargs)]
