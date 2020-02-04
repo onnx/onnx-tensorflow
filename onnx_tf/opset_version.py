@@ -52,7 +52,7 @@ backend_opset_version = {
     'Gather': [1, 11],
     'GatherElements': [],
     'GatherND': [11],
-    'Gemm': [1, 6, 7, 9],
+    'Gemm': [1, 6, 7, 9, 11],
     'GlobalAveragePool': [1],
     'GlobalLpPool': [1, 2],
     'GlobalMaxPool': [1],
