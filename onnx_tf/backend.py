@@ -290,6 +290,22 @@ class TensorflowBackend(Backend):
       tensor_dict.update(curr_node_output_map)
     return tensor_dict
 
+  @classmethod
+  def onnx_graph_to_tensorflow_rep(cls, graph_def, strict=True):
+    """
+    Converts ONNX graph to TensorflowRep
+    Args:
+      graph_def:        the ONNX graph to be converted
+      strict:           whether to enforce semantic equivalence between the
+                        original model and the converted tensorflow model,
+                        defaults to True (yes, enforce semantic equivalence).
+    Returns:
+      TensorflowRep object.
+    """
+    # get the opset of the installed ONNX
+    opset = [make_opsetid(defs.ONNX_DOMAIN, defs.onnx_opset_version())]
+    return cls._onnx_graph_to_tensorflow_rep(graph_def, opset, strict)
+
 
 prepare = TensorflowBackend.prepare
 
@@ -300,3 +316,5 @@ run_model = TensorflowBackend.run_model
 supports_device = TensorflowBackend.supports_device
 
 onnx_graph_to_tensorflow_ops = TensorflowBackend.onnx_graph_to_tensorflow_ops
+
+onnx_graph_to_tensorflow_rep = TensorflowBackend.onnx_graph_to_tensorflow_rep

@@ -1,6 +1,9 @@
 import numpy as np
 import tensorflow as tf
-
+try:
+  from tensorflow.math import floormod as tf_floormod
+except ImportError: # for older tf-1.x versions
+  from tensorflow import floormod as tf_floormod
 from onnx_tf.handlers.backend_handler import BackendHandler
 from onnx_tf.handlers.handler import onnx_op
 from onnx_tf.handlers.handler import tf_func
@@ -54,14 +57,13 @@ class Slice(BackendHandler):
 
     # first of all, get the input tensor shape
     input_tensor_shape = tf.shape(input_tensor, out_type=ends.dtype)
-    l = list(range(starts.shape[0]))
 
     axes = tensor_dict[node.inputs[3]] if len(
-        node.inputs) >= 4 else tf.constant(l, ends.dtype)
+        node.inputs) >= 4 else tf.range(tf.shape(starts)[0], dtype=ends.dtype)
 
     # process negative axes
     input_rank = tf.cast(tf.rank(input_tensor), axes.dtype)
-    axes = tf.math.floormod(tf.add(axes, input_rank), input_rank)
+    axes = tf_floormod(tf.add(axes, input_rank), input_rank)
 
     # expand a dimension of 1 at the end
     sparse_indices = tf.expand_dims(axes, -1)
