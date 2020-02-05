@@ -30,7 +30,7 @@ class GatherAndScatterMixin(object):
 
     _, result = tf.while_loop(
         lambda i, result: tf.logical_and(tf.less(i, indices_shape[-1]), result),
-        _chk_idx_out_of_bounds, [0, True])
+        _chk_idx_out_of_bounds, [tf.zeros([], tf.int64), True])
     return result
 
   @classmethod
