@@ -2,10 +2,12 @@ import tensorflow as tf
 
 from onnx_tf.handlers.backend_handler import BackendHandler
 from onnx_tf.handlers.handler import onnx_op
+from onnx_tf.handlers.handler import tf_func
 from .gather_and_scatter_mixin import GatherAndScatterMixin
 
 
 @onnx_op("GatherND")
+@tf_func(tf.gather_nd)
 class GatherND(GatherAndScatterMixin, BackendHandler):
 
   @classmethod
@@ -18,4 +20,6 @@ class GatherND(GatherAndScatterMixin, BackendHandler):
     with tf.control_dependencies(
         [tf.compat.v1.assert_equal(result, True, message=msg)]):
       indices = cls.process_neg_idx(data, indices)
-      return [tf.gather_nd(data, indices)]
+      return [
+          cls.make_tensor_from_onnx_node(node, inputs=[data, indices], **kwargs)
+      ]

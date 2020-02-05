@@ -131,7 +131,7 @@ class ConvMixin(BroadcastMixin):
 
           # get corresponding function in tf
           if spatial_size == 1:
-            conv_func = tf.contrib.nn.conv1d_transpose
+            conv_func = tf.nn.conv1d_transpose
             strides_full = strides[0]
           elif spatial_size == 2:
             conv_func = tf.nn.conv2d_transpose
