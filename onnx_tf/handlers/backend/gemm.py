@@ -13,7 +13,12 @@ class Gemm(BackendHandler):
     x = tensor_dict[node.inputs[0]]
     x = tf.layers.flatten(x)
     y = tensor_dict[node.inputs[1]]
-    z = tensor_dict[node.inputs[2]]
+
+    if len(node.inputs) > 2:
+      z = tensor_dict[node.inputs[2]]
+    else:
+      z = 0
+
     if node.attrs.get("transA", 0):
       x = tf.transpose(x)
     if node.attrs.get("transB", 0):
@@ -36,4 +41,8 @@ class Gemm(BackendHandler):
 
   @classmethod
   def version_9(cls, node, **kwargs):
+    return cls._common(node, **kwargs)
+
+  @classmethod
+  def version_11(cls, node, **kwargs):
     return cls._common(node, **kwargs)
