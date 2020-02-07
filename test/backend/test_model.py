@@ -6,6 +6,7 @@ from __future__ import unicode_literals
 import unittest
 
 import numpy as np
+import onnx
 from onnx_tf.backend import prepare
 from onnx import helper
 from onnx import TensorProto
@@ -21,6 +22,52 @@ class TestModel(unittest.TestCase):
     return np.random.uniform(low, high, np.prod(shape)) \
                       .reshape(shape) \
                       .astype(np.float32)
+
+  def test_sequence_ops(self):
+    # test SequenceConstruct and SequenceAt
+    a = np.random.randn(2, 1, 2).astype(np.float32)
+    b = np.random.randn(1, 1, 2).astype(np.float32)
+    c = np.random.randn(3, 1, 2).astype(np.float32)
+    seq_construct_node = helper.make_node('SequenceConstruct', ['a', 'b', 'c'], ['S'])
+    seq_at_node = helper.make_node('SequenceAt', ['S','at'], ['Y'])
+    out_value_info = helper.make_tensor_value_info('Y',onnx.TensorProto.FLOAT,[None])
+    a_value_info =  helper.make_tensor_value_info('a',onnx.TensorProto.FLOAT,[2, 1, 2])
+    b_value_info =  helper.make_tensor_value_info('b',onnx.TensorProto.FLOAT,[1, 1, 2])
+    c_value_info =  helper.make_tensor_value_info('c',onnx.TensorProto.FLOAT,[3, 1, 2])
+    at_value_info =  helper.make_tensor_value_info('at',onnx.TensorProto.INT32,[])
+
+    graph = helper.make_graph([seq_construct_node, seq_at_node],
+            name='seq_construct_test',
+            inputs=[a_value_info, b_value_info, c_value_info, at_value_info],
+            outputs=[out_value_info])
+    model = helper.make_model(graph, producer_name='backend-test')
+    tf_rep = prepare(model)
+    output = tf_rep.run({'a':a, 'b':b, 'c':c, 'at':0})
+    np.testing.assert_almost_equal(output["Y"], a)
+    output = tf_rep.run({'a':a, 'b':b, 'c':c, 'at':-2})
+    np.testing.assert_almost_equal(output["Y"], b)
+    output = tf_rep.run({'a':a, 'b':b, 'c':c, 'at':2})
+    np.testing.assert_almost_equal(output["Y"], c)
+
+    # test SequenceEmpty, SequenceInsert, and SequenceAt
+    p = np.int32(0)
+    seq_empty_node = helper.make_node('SequenceEmpty', [], ['S'])
+    seq_insert_node1 = helper.make_node('SequenceInsert', ['S','a'], ['S1'])
+    seq_insert_node2 = helper.make_node('SequenceInsert', ['S1','b'], ['S2'])
+    seq_insert_node3 = helper.make_node('SequenceInsert', ['S2','c','p'], ['S3'])
+    seq_at_node = helper.make_node('SequenceAt', ['S3','at'], ['Y'])
+
+    p_value_info = helper.make_tensor_value_info('p',onnx.TensorProto.INT32,[])
+
+    graph = helper.make_graph([seq_empty_node, seq_insert_node1, seq_insert_node2, seq_insert_node3, seq_at_node],
+            name='seq_empty_insert_test',
+            inputs=[a_value_info, b_value_info, c_value_info, p_value_info, at_value_info],
+            outputs=[out_value_info])
+    model = helper.make_model(graph, producer_name='backend-test')
+    tf_rep = prepare(model)
+    output = tf_rep.run({'a':a, 'b':b, 'c':c, 'p':p, 'at':0})
+    np.testing.assert_almost_equal(output["Y"], c)
+
 
   def test_relu_node_inplace(self):
     X = np.random.randn(3, 2).astype(np.float32)

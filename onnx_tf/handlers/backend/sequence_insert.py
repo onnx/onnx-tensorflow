@@ -47,7 +47,7 @@ class SequenceInsert(BackendHandler):
       if input_sequence.shape[0] == 0:
         output_seq = tf.RaggedTensor.from_tensor(input_tensor) 
       else:
-        s1 = input_sequence[0:position]
+        s1 = input_sequence[:position]
         s2 = input_sequence[position:]
         output_seq = tf.concat([s1, input_tensor, s2], axis = 0)
 

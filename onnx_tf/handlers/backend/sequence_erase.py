@@ -3,9 +3,12 @@ import tensorflow as tf
 
 from onnx_tf.handlers.backend_handler import BackendHandler
 from onnx_tf.handlers.handler import onnx_op
+from onnx_tf.handlers.handler import tf_func
+from onnx_tf.common import data_type
+from onnx import mapping
 
-@onnx_op("SequenceAt")
-class SequenceAt(BackendHandler):
+@onnx_op("SequenceErase")
+class SequenceErase(BackendHandler):
 
   @classmethod
   def chk_pos_in_bounds(cls, input_seq, pos):
@@ -42,4 +45,6 @@ class SequenceAt(BackendHandler):
     assert_pos = tf.Assert(tf.equal(result, True), [result])
 
     with tf.control_dependencies([assert_pos]):
-      return [input_sequence[position]]
+      s1 = input_sequence[:position]
+      s2 = input_sequence[position + 1:]
+      return [tf.concat([s1, s2], axis = 0)]
