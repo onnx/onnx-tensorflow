@@ -12,4 +12,4 @@ class SequenceLength(BackendHandler):
     tensor_dict = kwargs["tensor_dict"]
     input_sequence = tensor_dict[node.inputs[0]]
    
-    return [tf.constant(input_sequence.shape[0], dtype=tf.int32)]
+    return [tf.shape(input_sequence.to_sparse())[0]]

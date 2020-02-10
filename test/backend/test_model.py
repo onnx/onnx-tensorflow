@@ -37,7 +37,7 @@ class TestModel(unittest.TestCase):
     at_value_info =  helper.make_tensor_value_info('at',onnx.TensorProto.INT32,[])
 
     graph = helper.make_graph([seq_construct_node, seq_at_node],
-            name='seq_construct_test',
+            name='seq_construct_at_test',
             inputs=[a_value_info, b_value_info, c_value_info, at_value_info],
             outputs=[out_value_info])
     model = helper.make_model(graph, producer_name='backend-test')
@@ -60,13 +60,27 @@ class TestModel(unittest.TestCase):
     p_value_info = helper.make_tensor_value_info('p',onnx.TensorProto.INT32,[])
 
     graph = helper.make_graph([seq_empty_node, seq_insert_node1, seq_insert_node2, seq_insert_node3, seq_at_node],
-            name='seq_empty_insert_test',
+            name='seq_empty_insert_at_test',
             inputs=[a_value_info, b_value_info, c_value_info, p_value_info, at_value_info],
             outputs=[out_value_info])
     model = helper.make_model(graph, producer_name='backend-test')
     tf_rep = prepare(model)
     output = tf_rep.run({'a':a, 'b':b, 'c':c, 'p':p, 'at':0})
     np.testing.assert_almost_equal(output["Y"], c)
+
+    # test SequenceConstruct, SequenceErase, and SequenceLength
+    seq_construct_node = helper.make_node('SequenceConstruct', ['a', 'b', 'c'], ['S'])
+    seq_erase_node = helper.make_node('SequenceErase', ['S','p'], ['S1'])
+    seq_length_node = helper.make_node('SequenceLength', ['S1'], ['Y'])
+
+    graph = helper.make_graph([seq_construct_node, seq_erase_node, seq_length_node],
+            name='seq_construct_erase_length_test',
+            inputs=[a_value_info, b_value_info, c_value_info, p_value_info],
+            outputs=[out_value_info])
+    model = helper.make_model(graph, producer_name='backend-test')
+    tf_rep = prepare(model)
+    output = tf_rep.run({'a':a, 'b':b, 'c':c, 'p':p})
+    np.testing.assert_almost_equal(output["Y"], 2)
 
 
   def test_relu_node_inplace(self):

@@ -22,7 +22,7 @@ class SequenceInsert(BackendHandler):
 
     :return: True if position is in-bounds.
     """
-    seq_length = tf.cast(input_seq.shape[0], tf.int32)
+    seq_length = tf.shape(input_seq.to_sparse())[0]
     pos = tf.cast(pos, tf.int32)
 
     cond1 = tf.greater_equal(pos, tf.negative(seq_length))
@@ -36,7 +36,8 @@ class SequenceInsert(BackendHandler):
     tensor_dict = kwargs["tensor_dict"]
     input_sequence = tensor_dict[node.inputs[0]]
     input_tensor = tensor_dict[node.inputs[1]]
-    position = tensor_dict[node.inputs[2]] if len(node.inputs) > 2 else input_sequence.shape[0]
+
+    position = tensor_dict[node.inputs[2]] if len(node.inputs) > 2 else tf.shape(input_sequence.to_sparse())[0]
 
     # check whether position is in-bounds and assert if not
     result = cls.chk_pos_in_bounds(input_sequence, position)

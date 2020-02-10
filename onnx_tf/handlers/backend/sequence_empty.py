@@ -13,4 +13,7 @@ class SequenceEmpty(BackendHandler):
   def version_11(cls, node, **kwargs):
     default_dtype = mapping.NP_TYPE_TO_TENSOR_TYPE[np.dtype('float32')]
     dtype = data_type.onnx2tf(node.attrs.get("dtype", default_dtype))
-    return [tf.ragged.constant([], dtype = dtype)]
+
+    ragged = tf.RaggedTensor.from_row_lengths(values=[], row_lengths=[])
+    sparse = tf.cast(ragged.to_sparse(), dtype)
+    return [tf.RaggedTensor.from_sparse(sparse)]

@@ -20,13 +20,9 @@ class SequenceErase(BackendHandler):
     :param input_seq: input sequence
     :param pos: position of the output tensor
 
-    :return: True if position is in-bounds or input length is dynamic.
+    :return: True if position is in-bounds 
     """
-    seq_length = input_seq.shape[0]
-
-    if seq_length is None: return True
-
-    seq_length = tf.cast(seq_length, tf.int32)
+    seq_length = tf.shape(input_seq.to_sparse())[0]
     pos = tf.cast(pos, tf.int32)
     cond1 = tf.greater_equal(pos, tf.negative(seq_length))
     cond2 = tf.less_equal(pos, seq_length - 1)
@@ -39,7 +35,7 @@ class SequenceErase(BackendHandler):
     tensor_dict = kwargs["tensor_dict"]
     input_sequence = tensor_dict[node.inputs[0]]
     position = tensor_dict[node.inputs[1]]
-   
+
     # check whether position is in-bounds and assert if not
     result = cls.chk_pos_in_bounds(input_sequence, position)
     assert_pos = tf.Assert(tf.equal(result, True), [result])
