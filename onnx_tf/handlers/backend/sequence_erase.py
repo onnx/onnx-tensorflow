@@ -1,11 +1,8 @@
-import numpy as np
 import tensorflow as tf
 
 from onnx_tf.handlers.backend_handler import BackendHandler
 from onnx_tf.handlers.handler import onnx_op
-from onnx_tf.handlers.handler import tf_func
-from onnx_tf.common import data_type
-from onnx import mapping
+
 
 @onnx_op("SequenceErase")
 class SequenceErase(BackendHandler):
@@ -28,7 +25,7 @@ class SequenceErase(BackendHandler):
     cond2 = tf.less_equal(pos, seq_length - 1)
 
     # pos >= -n and pos < n
-    return tf.reduce_all(tf.logical_and(cond1, cond2))    
+    return tf.reduce_all(tf.logical_and(cond1, cond2))
 
   @classmethod
   def version_11(cls, node, **kwargs):
@@ -43,4 +40,4 @@ class SequenceErase(BackendHandler):
     with tf.control_dependencies([assert_pos]):
       s1 = input_sequence[:position]
       s2 = input_sequence[position + 1:]
-      return [tf.concat([s1, s2], axis = 0)]
+      return [tf.concat([s1, s2], axis=0)]

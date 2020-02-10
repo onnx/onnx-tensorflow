@@ -6,6 +6,7 @@ from onnx_tf.handlers.handler import onnx_op
 from onnx_tf.common import data_type
 from onnx import mapping
 
+
 @onnx_op("SequenceEmpty")
 class SequenceEmpty(BackendHandler):
 
