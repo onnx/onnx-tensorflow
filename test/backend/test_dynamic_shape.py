@@ -31,6 +31,34 @@ class TestDynamicShape(unittest.TestCase):
   def _get_rnd_int(self, low, high=None, shape=None, dtype=np.int32):
     return np.random.randint(low, high, size=shape, dtype=dtype)
 
+  def test_compress(self):
+    if legacy_opset_pre_ver(9):
+      raise unittest.SkipTest(
+          "ONNX version {} doesn't support Compress.".format(
+              defs.onnx_opset_version()))
+    axis = 1
+    node_def = helper.make_node("Compress",
+                                inputs=['X', 'condition'],
+                                outputs=['Y'],
+                                axis=axis)
+    graph_def = helper.make_graph(
+        [node_def],
+        name="test_unknown_shape",
+        inputs=[
+            helper.make_tensor_value_info("X", TensorProto.FLOAT,
+                                          [None, None, None]),
+            helper.make_tensor_value_info("condition", TensorProto.BOOL, [None])
+        ],
+        outputs=[
+            helper.make_tensor_value_info("Y", TensorProto.FLOAT,
+                                          [None, None, None])
+        ])
+    x = self._get_rnd_float32(shape=[5, 5, 5])
+    cond = np.array([1, 0, 1])
+    tf_rep = onnx_graph_to_tensorflow_rep(graph_def)
+    output = tf_rep.run({"X": x, "condition": cond})
+    np.testing.assert_almost_equal(output['Y'], np.compress(cond, x, axis=axis))
+
   def test_eye_like(self):
     if legacy_opset_pre_ver(9):
       raise unittest.SkipTest("ONNX version {} doesn't support EyeLike.".format(
