@@ -7,6 +7,7 @@ import math
 import unittest
 import numpy as np
 import tensorflow as tf
+from tensorflow.python.framework.errors_impl import InvalidArgumentError
 from onnx_tf.backend import run_node
 from onnx_tf.common import supports_device
 from onnx_tf.common.legacy import legacy_onnx_pre_ver, legacy_opset_pre_ver
@@ -549,6 +550,35 @@ class TestNode(unittest.TestCase):
       for j in range(0, 10):
         test_output[1][i][j] = x[i + 1][j]
     np.testing.assert_almost_equal(output["Z"], test_output)
+    if defs.onnx_opset_version() >= 11:
+      # test negative indices
+      y = [[-10, -9], [1, -8]]
+      output = run_node(node_def, [x, y])
+      np.testing.assert_almost_equal(output["Z"], test_output)
+      # test out of bound indices
+      for y in ([[-10, 11], [1, -8]], [[-10, -11], [1, -8]]):
+        try:
+          output = run_node(node_def, [x, y])
+          np.testing.assert_almost_equal(output["Z"], test_output)
+          raise AssertionError("Expected ValueError not raised for indices %d" % str(y))
+        except InvalidArgumentError as e:
+          assert 'Gather indices are out of bound' in str(e), str(y)
+      # test non-0 and negative axis
+      axis=-3
+      node_def = helper.make_node("Gather", ["X", "Y"], ["Z"], axis=axis)
+      x = np.reshape(np.arange(5*4*3*2), (5, 4, 3, 2))
+      y = np.array([0, 1, 3])
+      test_output = np.take(x, y, axis=axis)
+      output = run_node(node_def, [x, y])
+      np.testing.assert_almost_equal(output["Z"], test_output)
+      # test axis attribute validation
+      for axis in [-5, 4, 10]:
+        try:
+          node_def = helper.make_node("Gather", ["X", "Y"], ["Z"], axis=axis)
+          run_node(node_def, [x, y])
+          raise AssertionError("Expected ValueError not raised for axis value %d" % axis)
+        except ValueError as e:
+          assert 'out of bounds' in str(e), str(e) + ' for axis ' + str(axis)
 
   def test_gather_nd(self):
     if legacy_opset_pre_ver(11):
@@ -875,7 +905,7 @@ class TestNode(unittest.TestCase):
     test_output = np.maximum(np.maximum(np.maximum(x1, x2), x3), x4)
     np.testing.assert_almost_equal(output["Z"], test_output)
 
-  def _test_pooling(self, input_shape, kernel_shape, strides=None, 
+  def _test_pooling(self, input_shape, kernel_shape, strides=None,
                     dilations=None, pads=None, auto_pad=None, ceil_mode=None,
                     count_include_pad=None, pooling_type="MAX"):
 
@@ -900,7 +930,7 @@ class TestNode(unittest.TestCase):
         node_def_kwargs["count_include_pad"] = count_include_pad
 
     node_def = helper.make_node(**node_def_kwargs)
- 
+
     x = self._get_rnd_float32(shape=input_shape)
     output = run_node(node_def, [x])
 
@@ -1228,7 +1258,7 @@ class TestNode(unittest.TestCase):
     input_shape = [10, 3, 23]
     self._test_pooling(input_shape=input_shape, kernel_shape=kernel_shape,
                        strides=strides, pooling_type="AVG")
- 
+
   def test_average_pool_2d(self):
     kernel_shape=[1, 2]
     strides=[1, 2]
@@ -1657,7 +1687,7 @@ class TestNode(unittest.TestCase):
                         |                                 [Split]
                         |                               /  |   |   \
                    state_out                  split1_out    ...     split4_out
-    """ 
+    """
     val_1 = helper.make_tensor(
         name='const_tensor',
         data_type=TensorProto.FLOAT,
@@ -1698,14 +1728,14 @@ class TestNode(unittest.TestCase):
         [state_out, split1_out, split2_out, split3_out, split4_out],
     )
 
-    node_kwargs = {"op_type": "Scan", 
+    node_kwargs = {"op_type": "Scan",
                    "inputs": ["initial", "x1", "x2"],
                    "outputs": ["y", "z1", "z2", "z3", "z4"],
                    "num_scan_inputs": 2,
                    "body": scan_body
                   }
     if sequence_lens is not None:
-        node_kwargs["inputs"] = ["" if sequence_lens is str else 
+        node_kwargs["inputs"] = ["" if sequence_lens is str else
                                  "seq_lens"] + node_kwargs["inputs"]
 
     if scan_input_axes is not None:
@@ -1779,7 +1809,7 @@ class TestNode(unittest.TestCase):
 
     Y = initial + np.shape(x1)[0]
     Z = np.concatenate([x1, x2], 1) + 1
- 
+
     output = self._run_scan_node(initial, x1, x2, [6, 2], [3, 2])
     output_z = np.concatenate([output["z1"], output["z2"],
                                output["z3"], output["z4"]], 1)

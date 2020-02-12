@@ -50,7 +50,7 @@ backend_opset_version = {
     'Flatten': [1, 9, 11],
     'Floor': [1, 6],
     'GRU': [1, 3, 7],
-    'Gather': [1],
+    'Gather': [1,11],
     'GatherElements': [],
     'GatherND': [11],
     'Gemm': [1, 6, 7, 9, 11],
