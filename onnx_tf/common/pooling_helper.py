@@ -176,6 +176,9 @@ def py_pool(input, kernel_shape, strides=None, dilations=None,
     if padding is None:
         padding = [0] * spatial_size * 2
 
+    if type(padding) is bytes:
+        padding = padding.decode()
+
     if type(padding) is not list and type(padding) is not np.ndarray:
         if padding.lower().startswith("same"):
             padding = calc_pads_same(inp_sp_shape, kernel_shape, strides,
