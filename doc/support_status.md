@@ -1,8 +1,8 @@
 # ONNX-Tensorflow Support Status
 |||
 |-:|:-|
-|ONNX-Tensorflow Version|Master ( commit id: abf3e29d7232fa1da63eb2cb0a0bf300ff36fb66 )|
-|ONNX Version|Master ( commit id: eadba733d2a72dad631bf187107916f4cca5cdfa )|
+|ONNX-Tensorflow Version|Master ( commit id: b9bb9bf1057f21e34fcd96720c819f25eaa6e2ed )|
+|ONNX Version|Master ( commit id: f8e140a9c4e7b42fb970e247478667093b5c748b )|
 |Tensorflow Version|v2.1.0|
 
 Notes:
@@ -28,7 +28,7 @@ Notes:
 |Atan|-|-|-|-|-|-|**7**|7|7|7|7|7|
 |Atanh|-|-|-|-|-|-|-|-|**9**|9|9|9|
 |AveragePool|**1**|1|1|1|1|1|**7**|7|7|**10**|**11**|11|
-|BatchNormalization|**1**|1|1|1|1|**6**|**7**|7|**9**|9|9|9|
+|BatchNormalization|**1**|1|1|1|1|**6**|**7**|7|**9**|9|9|**12**:small_red_triangle:|
 |BitShift|-|-|-|-|-|-|-|-|-|-|**11**:small_red_triangle:|11:small_red_triangle:|
 |Cast|**1**:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|**6**:small_orange_diamond:|6:small_orange_diamond:|6:small_orange_diamond:|**9**:small_orange_diamond:|9:small_orange_diamond:|9:small_orange_diamond:|9:small_orange_diamond:|
 |Ceil|**1**|1|1|1|1|**6**|6|6|6|6|6|6|
@@ -36,7 +36,7 @@ Notes:
 |Compress|-|-|-|-|-|-|-|-|**9**|9|**11**|11|
 |Concat|**1**|1|1|**4**|4|4|4|4|4|4|**11**|11|
 |ConcatFromSequence|-|-|-|-|-|-|-|-|-|-|**11**:small_red_triangle:|11:small_red_triangle:|
-|Constant|**1**|1|1|1|1|1|1|1|**9**|9|**11**|11|
+|Constant|**1**|1|1|1|1|1|1|1|**9**|9|**11**|**12**:small_red_triangle:|
 |ConstantOfShape|-|-|-|-|-|-|-|-|**9**|9|9|9|
 |Conv|**1**|1|1|1|1|1|1|1|1|1|**11**|11|
 |ConvInteger|-|-|-|-|-|-|-|-|-|**10**|10|10|
@@ -48,7 +48,7 @@ Notes:
 |DequantizeLinear|-|-|-|-|-|-|-|-|-|**10**|10|10|
 |Det|-|-|-|-|-|-|-|-|-|-|**11**:small_red_triangle:|11:small_red_triangle:|
 |Div|**1**|1|1|1|1|**6**|**7**|7|7|7|7|7|
-|Dropout|**1**|1|1|1|1|**6**|**7**|7|7|**10**|10|10|
+|Dropout|**1**|1|1|1|1|**6**|**7**|7|7|**10**|10|**12**:small_red_triangle:|
 |DynamicQuantizeLinear|-|-|-|-|-|-|-|-|-|-|**11**:small_red_triangle:|11:small_red_triangle:|
 |Einsum|-|-|-|-|-|-|-|-|-|-|-|**12**:small_red_triangle:|
 |Elu|**1**|1|1|1|1|**6**|6|6|6|6|6|6|
@@ -87,7 +87,7 @@ Notes:
 |MatMul|**1**|1|1|1|1|1|1|1|**9**|9|9|9|
 |MatMulInteger|-|-|-|-|-|-|-|-|-|**10**|10|10|
 |Max|**1**|1|1|1|1|**6**|6|**8**|8|8|8|8|
-|MaxPool|**1**:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|**8**:small_orange_diamond:|8:small_orange_diamond:|**10**:small_orange_diamond:|**11**:small_orange_diamond:|**12**:small_red_triangle:|
+|MaxPool|**1**:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|**8**:small_orange_diamond:|8:small_orange_diamond:|**10**:small_orange_diamond:|**11**:small_orange_diamond:|**12**:small_orange_diamond:|
 |MaxRoiPool|**1**:small_red_triangle:|1:small_red_triangle:|1:small_red_triangle:|1:small_red_triangle:|1:small_red_triangle:|1:small_red_triangle:|1:small_red_triangle:|1:small_red_triangle:|1:small_red_triangle:|1:small_red_triangle:|1:small_red_triangle:|1:small_red_triangle:|
 |MaxUnpool|-|-|-|-|-|-|-|-|**9**|9|**11**|11|
 |Mean|**1**|1|1|1|1|**6**|6|**8**|8|8|8|8|
@@ -97,6 +97,7 @@ Notes:
 |Mul|**1**|1|1|1|1|**6**|**7**|7|7|7|7|7|
 |Multinomial|-|-|-|-|-|-|**7**:small_red_triangle:|7:small_red_triangle:|7:small_red_triangle:|7:small_red_triangle:|7:small_red_triangle:|7:small_red_triangle:|
 |Neg|**1**|1|1|1|1|**6**|6|6|6|6|6|6|
+|NegativeLogLikelihoodLoss|-|-|-|-|-|-|-|-|-|-|-|**12**:small_red_triangle:|
 |NonMaxSuppression|-|-|-|-|-|-|-|-|-|**10**|**11**|11|
 |NonZero|-|-|-|-|-|-|-|-|**9**|9|9|9|
 |Not|**1**|1|1|1|1|1|1|1|1|1|1|1|
@@ -174,7 +175,7 @@ Notes:
 |Where|-|-|-|-|-|-|-|-|**9**|9|9|9|
 |Xor|**1**|1|1|1|1|1|**7**|7|7|7|7|7|
 
-ONNX-TF Supported Operators / ONNX Operators: 129 / 157
+ONNX-TF Supported Operators / ONNX Operators: 126 / 158
 
 Notes:
 1. Cast: Cast string to float32/float64/int32/int64 are not supported in Tensorflow.

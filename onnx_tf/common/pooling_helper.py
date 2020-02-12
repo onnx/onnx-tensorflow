@@ -1,7 +1,6 @@
 from __future__ import division
 
 from collections import namedtuple
-from numpy import inf
 import numpy as np
 import tensorflow as tf
 
@@ -112,6 +111,11 @@ def py_pool(input, kernel_shape, strides=None, dilations=None,
 
     input_shape = np.shape(input)
     inp_sp_shape = input_shape[2:]
+    input_dtype = input.dtype
+    if np.issubdtype(input_dtype, np.integer):
+        input_dtype_min = np.iinfo(input_dtype).min
+    else:
+        input_dtype_min = np.finfo(input_dtype).min
 
     def _loop_over_output(batch, channel):
         dims = [range(output_sp_shape[d]) for d in range(spatial_size)]
@@ -133,7 +137,7 @@ def py_pool(input, kernel_shape, strides=None, dilations=None,
                 val_sum = 0
                 val_count = 0
             else:
-                maxval = -inf
+                maxval = input_dtype_min
                 maxind = -1
             for input_ind in itertools.product(*input_ranges):
                 ind = (batch, channel) + input_ind
@@ -196,7 +200,7 @@ def py_pool(input, kernel_shape, strides=None, dilations=None,
         output_sp_shape.append(output_size)
 
     out_pool = np.zeros([input_shape[0], input_shape[1]] +
-                        output_sp_shape, input.dtype)
+                        output_sp_shape, input_dtype)
     out_ind = np.zeros([input_shape[0], input_shape[1]] +
                        output_sp_shape, np.int64)
 
