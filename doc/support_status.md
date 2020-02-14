@@ -1,8 +1,8 @@
 # ONNX-Tensorflow Support Status
 |||
 |-:|:-|
-|ONNX-Tensorflow Version|Master ( commit id: b9bb9bf1057f21e34fcd96720c819f25eaa6e2ed )|
-|ONNX Version|Master ( commit id: f254647a3a86a689537c6fdda330bf60d2d76459 )|
+|ONNX-Tensorflow Version|Master ( commit id: 372ac3b68b8dbb0fdbe1e4fdfc70b1a970146fdc )|
+|ONNX Version|Master ( commit id: f8e140a9c4e7b42fb970e247478667093b5c748b )|
 |Tensorflow Version|v2.1.0|
 
 Notes:
@@ -49,7 +49,7 @@ Notes:
 |Det|-|-|-|-|-|-|-|-|-|-|**11**:small_red_triangle:|11:small_red_triangle:|
 |Div|**1**|1|1|1|1|**6**|**7**|7|7|7|7|7|
 |Dropout|**1**|1|1|1|1|**6**|**7**|7|7|**10**|10|**12**:small_red_triangle:|
-|DynamicQuantizeLinear|-|-|-|-|-|-|-|-|-|-|**11**:small_red_triangle:|11:small_red_triangle:|
+|DynamicQuantizeLinear|-|-|-|-|-|-|-|-|-|-|**11**|11|
 |Einsum|-|-|-|-|-|-|-|-|-|-|-|**12**:small_red_triangle:|
 |Elu|**1**|1|1|1|1|**6**|6|6|6|6|6|6|
 |Equal|**1**:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|**7**:small_orange_diamond:|7:small_orange_diamond:|7:small_orange_diamond:|7:small_orange_diamond:|**11**:small_orange_diamond:|11:small_orange_diamond:|
@@ -175,7 +175,7 @@ Notes:
 |Where|-|-|-|-|-|-|-|-|**9**|9|9|9|
 |Xor|**1**|1|1|1|1|1|**7**|7|7|7|7|7|
 
-ONNX-TF Supported Operators / ONNX Operators: 126 / 158
+ONNX-TF Supported Operators / ONNX Operators: 127 / 158
 
 Notes:
 1. Cast: Cast string to float32/float64/int32/int64 are not supported in Tensorflow.

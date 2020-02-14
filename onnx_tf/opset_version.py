@@ -38,7 +38,7 @@ backend_opset_version = {
     'DictVectorizer': [],
     'Div': [1, 6, 7],
     'Dropout': [1, 6, 7, 10],
-    'DynamicQuantizeLinear': [],
+    'DynamicQuantizeLinear': [11],
     'Einsum': [],
     'Elu': [1, 6],
     'Equal': [1, 7, 11],
@@ -199,11 +199,12 @@ backend_partial_support = {
                'with column major are not supported in Tensorflow.',
     'Mod': 'Mod Dividend or Divisor in int8/int16/uint8/uint16/uint32/uint64 '
            'are not supported in Tensorflow.',
-    'OneHot': 'OneHot indices in '
-              'uint16/uint32/uint64/int8/int16/float16/float/double, or OneHot '
-              'depth in '
-              'uint8/uint16/uint32/uint64/int8/int16/int64/float16/float/double '
-              'are not supported in Tensorflow.',
+    'OneHot':
+        'OneHot indices in '
+        'uint16/uint32/uint64/int8/int16/float16/float/double, or OneHot '
+        'depth in '
+        'uint8/uint16/uint32/uint64/int8/int16/int64/float16/float/double '
+        'are not supported in Tensorflow.',
     'RNN': 'RNN with clip is not supported in Tensorflow.',
     'Resize': 'Resize required 4D input in Tensorflow.',
     'Upsample': 'Upsample required 4D input in Tensorflow.'
