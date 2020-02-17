@@ -19,7 +19,8 @@ backend_opset_version = {
     'CastMap': [],
     'CategoryMapper': [],
     'Ceil': [1, 6],
-    'Clip': [1, 6],
+    'Celu': [],
+    'Clip': [1, 6, 11],
     'Compress': [9, 11],
     'Concat': [1, 4, 11],
     'ConcatFromSequence': [],
@@ -50,13 +51,15 @@ backend_opset_version = {
     'Flatten': [1, 9, 11],
     'Floor': [1, 6],
     'GRU': [1, 3, 7],
-    'Gather': [1,11],
+    'Gather': [1, 11],
     'GatherElements': [],
     'GatherND': [11],
     'Gemm': [1, 6, 7, 9, 11],
     'GlobalAveragePool': [1],
     'GlobalLpPool': [1, 2],
     'GlobalMaxPool': [1],
+    'Gradient': [],
+    'GraphCall': [],
     'Greater': [1, 7, 9],
     'HardSigmoid': [1, 6],
     'Hardmax': [1, 11],
@@ -92,6 +95,7 @@ backend_opset_version = {
     'Mul': [1, 6, 7],
     'Multinomial': [],
     'Neg': [1, 6],
+    'NegativeLogLikelihoodLoss': [],
     'NonMaxSuppression': [10, 11],
     'NonZero': [9],
     'Normalizer': [],
@@ -198,11 +202,12 @@ backend_partial_support = {
                'with column major are not supported in Tensorflow.',
     'Mod': 'Mod Dividend or Divisor in int8/int16/uint8/uint16/uint32/uint64 '
            'are not supported in Tensorflow.',
-    'OneHot': 'OneHot indices in '
-              'uint16/uint32/uint64/int8/int16/float16/float/double, or OneHot '
-              'depth in '
-              'uint8/uint16/uint32/uint64/int8/int16/int64/float16/float/double '
-              'are not supported in Tensorflow.',
+    'OneHot':
+        'OneHot indices in '
+        'uint16/uint32/uint64/int8/int16/float16/float/double, or OneHot '
+        'depth in '
+        'uint8/uint16/uint32/uint64/int8/int16/int64/float16/float/double '
+        'are not supported in Tensorflow.',
     'RNN': 'RNN with clip is not supported in Tensorflow.',
     'Resize': 'Resize required 4D input in Tensorflow.',
     'Upsample': 'Upsample required 4D input in Tensorflow.'
