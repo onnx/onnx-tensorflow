@@ -19,6 +19,7 @@ backend_opset_version = {
     'CastMap': [],
     'CategoryMapper': [],
     'Ceil': [1, 6],
+    'Celu': [],
     'Clip': [1, 6, 11],
     'Compress': [9, 11],
     'Concat': [1, 4, 11],
@@ -31,7 +32,7 @@ backend_opset_version = {
     'ConvTranspose': [1, 11],
     'Cos': [7],
     'Cosh': [9],
-    'CumSum': [],
+    'CumSum': [11],
     'DepthToSpace': [1, 11],
     'DequantizeLinear': [10],
     'Det': [],
@@ -57,6 +58,8 @@ backend_opset_version = {
     'GlobalAveragePool': [1],
     'GlobalLpPool': [1, 2],
     'GlobalMaxPool': [1],
+    'Gradient': [],
+    'GraphCall': [],
     'Greater': [1, 7, 9],
     'HardSigmoid': [1, 6],
     'Hardmax': [1, 11],
@@ -185,6 +188,7 @@ backend_partial_support = {
     'ConvTranspose': 'ConvTranspose with dilations != 1, or transposed '
                      'convolution for 4D or higher are not supported in '
                      'Tensorflow.',
+    'CumSum': 'CumSum inputs in uint32/uint64 are not supported in Tensorflow.',
     'Equal': 'Equal inputs in uint16/uint32/uint64 are not supported in '
              'Tensorflow.',
     'GRU': 'GRU with clip or GRU with linear_before_reset, or GRU not using '
