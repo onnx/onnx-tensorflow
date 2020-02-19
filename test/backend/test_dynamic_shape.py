@@ -14,7 +14,7 @@ from onnx import helper
 from onnx import TensorProto
 
 # Run the following test in graph mode
-tf.compat.v1.disable_eager_execution()
+#tf.compat.v1.disable_eager_execution()
 
 
 class TestDynamicShape(unittest.TestCase):
