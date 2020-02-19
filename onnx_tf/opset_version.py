@@ -19,7 +19,7 @@ backend_opset_version = {
     'CastMap': [],
     'CategoryMapper': [],
     'Ceil': [1, 6],
-    'Clip': [1, 6],
+    'Clip': [1, 6, 11],
     'Compress': [9, 11],
     'Concat': [1, 4, 11],
     'ConcatFromSequence': [],

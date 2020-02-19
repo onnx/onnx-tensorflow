@@ -2,7 +2,7 @@
 |||
 |-:|:-|
 |ONNX-Tensorflow Version|Master ( commit id: b9bb9bf1057f21e34fcd96720c819f25eaa6e2ed )|
-|ONNX Version|Master ( commit id: f8e140a9c4e7b42fb970e247478667093b5c748b )|
+|ONNX Version|Master ( commit id: f254647a3a86a689537c6fdda330bf60d2d76459 )|
 |Tensorflow Version|v2.1.0|
 
 Notes:
@@ -32,7 +32,7 @@ Notes:
 |BitShift|-|-|-|-|-|-|-|-|-|-|**11**:small_red_triangle:|11:small_red_triangle:|
 |Cast|**1**:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|**6**:small_orange_diamond:|6:small_orange_diamond:|6:small_orange_diamond:|**9**:small_orange_diamond:|9:small_orange_diamond:|9:small_orange_diamond:|9:small_orange_diamond:|
 |Ceil|**1**|1|1|1|1|**6**|6|6|6|6|6|6|
-|Clip|**1**|1|1|1|1|**6**|6|6|6|6|**11**:small_red_triangle:|11:small_red_triangle:|
+|Clip|**1**|1|1|1|1|**6**|6|6|6|6|**11**|11|
 |Compress|-|-|-|-|-|-|-|-|**9**|9|**11**|11|
 |Concat|**1**|1|1|**4**|4|4|4|4|4|4|**11**|11|
 |ConcatFromSequence|-|-|-|-|-|-|-|-|-|-|**11**:small_red_triangle:|11:small_red_triangle:|

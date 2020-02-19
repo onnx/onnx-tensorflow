@@ -233,6 +233,125 @@ class TestDynamicShape(unittest.TestCase):
 
     np.testing.assert_almost_equal(output["Y"], test_output)
 
+  def test_slice(self):
+    # test case 1 with normal inputs
+    axes = [0, 1, 2]
+    starts = [0, 0, 0]
+    ends = [2, 2, 2]
+
+    if legacy_opset_pre_ver(10):
+      node_def = helper.make_node("Slice", ["X"], ["S"],
+                                  axes=axes,
+                                  starts=starts,
+                                  ends=ends)
+      graph_def = helper.make_graph(
+        [node_def],
+        name="test_unknown_shape",
+        inputs=[
+          helper.make_tensor_value_info("X", TensorProto.FLOAT,
+                                        [None, None, None])
+        ],
+        outputs=[
+          helper.make_tensor_value_info("S", TensorProto.FLOAT,
+                                        [None, None, None])
+        ])
+    else:
+      node_def = helper.make_node("Slice",
+                                  ["X", "starts", "ends", "axes"],
+                                  ["S"])
+      graph_def = helper.make_graph(
+        [node_def],
+        name="test_unknown_shape",
+        inputs=[
+          helper.make_tensor_value_info("X", TensorProto.FLOAT,
+                                        [None, None, None]),
+          helper.make_tensor_value_info("starts", TensorProto.INT32,
+                                        [None]),
+          helper.make_tensor_value_info("ends", TensorProto.INT32,
+                                        [None]),
+          helper.make_tensor_value_info("axes", TensorProto.INT32,
+                                        [None]),
+        ],
+        outputs=[
+          helper.make_tensor_value_info("S", TensorProto.FLOAT,
+                                        [None, None, None])
+        ])
+    tf_rep = onnx_graph_to_tensorflow_rep(graph_def)
+
+    if legacy_opset_pre_ver(10):
+      x = self._get_rnd_float32(shape=[1000]).reshape([10, 10, 10])
+      output = tf_rep.run({"X": x})
+      np.testing.assert_almost_equal(output["S"], x[0:2, 0:2, 0:2])
+    else:
+      x = self._get_rnd_float32(shape=[1000]).reshape([10, 10, 10])
+      output = tf_rep.run({"X": x, "starts": starts, "ends": ends, "axes": axes})
+      np.testing.assert_almost_equal(output["S"], x[0:2, 0:2, 0:2])
+
+    # test case 2 with negative, out-of-bound and default inputs
+    axes = [0, 2]
+    starts = [0, -7]
+    ends = [-8, 20]
+    steps = [1, 1]
+
+    if legacy_opset_pre_ver(10):
+      node_def = helper.make_node("Slice", ["X"], ["S"],
+                                  axes=axes,
+                                  starts=starts,
+                                  ends=ends)
+      graph_def = helper.make_graph(
+        [node_def],
+        name="test_unknown_shape",
+        inputs=[
+          helper.make_tensor_value_info("X", TensorProto.FLOAT,
+                                        [None, None, None])
+        ],
+        outputs=[
+          helper.make_tensor_value_info("S", TensorProto.FLOAT,
+                                        [None, None, None])
+        ])
+    else:
+      node_def = helper.make_node("Slice",
+                                  ["X", "starts", "ends", "axes", "steps"],
+                                  ["S"])
+      graph_def = helper.make_graph(
+        [node_def],
+        name="test_unknown_shape",
+        inputs=[
+          helper.make_tensor_value_info("X", TensorProto.FLOAT,
+                                        [None, None, None]),
+          helper.make_tensor_value_info("starts", TensorProto.INT32,
+                                        [None]),
+          helper.make_tensor_value_info("ends", TensorProto.INT32,
+                                        [None]),
+          helper.make_tensor_value_info("axes", TensorProto.INT32,
+                                        [None]),
+          helper.make_tensor_value_info("steps", TensorProto.INT32,
+                                        [None]),
+        ],
+        outputs=[
+          helper.make_tensor_value_info("S", TensorProto.FLOAT,
+                                        [None, None, None])
+        ])
+    tf_rep = onnx_graph_to_tensorflow_rep(graph_def)
+    if legacy_opset_pre_ver(10):
+      x = self._get_rnd_float32(shape=[1000]).reshape([10, 10, 10])
+      output = tf_rep.run({"X": x})
+      np.testing.assert_almost_equal(output["S"], x[0:-8, :, -7:20])
+    else:
+      x = self._get_rnd_float32(shape=[1000]).reshape([10, 10, 10])
+      output = tf_rep.run({"X": x, "starts": starts, "ends": ends, "axes": axes, "steps": steps})
+      np.testing.assert_almost_equal(output["S"], x[0:-8, :, -7:20])
+
+    # test case 3 with non-default steps
+    axes = [0, 1, 2]
+    starts = [0, 0, 0]
+    ends = [2, 2, 2]
+    steps = [2, -2, -1]
+
+    if not legacy_opset_pre_ver(10):
+      x = self._get_rnd_float32(shape=[1000]).reshape([10, 10, 10])
+      output = tf_rep.run({"X": x, "starts": starts, "ends": ends, "axes": axes, "steps": steps})
+      np.testing.assert_almost_equal(output["S"], x[0:2:2, 0:2:-2, 0:2:-1])
 
 if __name__ == '__main__':
   unittest.main()
