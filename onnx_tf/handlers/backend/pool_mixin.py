@@ -7,6 +7,8 @@ from onnx_tf.common import get_data_format
 from onnx_tf.common import get_perm_from_formats
 from .dilated_pooling import DilatedPooling
 from onnx_tf.common.pooling_helper import py_pool
+from onnx_tf.common.pooling_helper import calc_pads_same
+from onnx_tf.common.pooling_helper import calc_output_shape
 
 
 class PoolMixin(object):
@@ -28,6 +30,14 @@ class PoolMixin(object):
     pads = node.attrs.get("auto_pad", "NOTSET")
     if pads == "NOTSET":
       pads = node.attrs.get("pads", [0] * spatial_size * 2)
+      # In case shape is fully defined, check if pads match
+      # SAME padding in Tensorflow
+      if x.shape.is_fully_defined() and pads != [0] * spatial_size * 2:
+        in_shape = x.get_shape()
+        same_paddings = calc_pads_same(in_shape[1:3], kernel_shape, strides,
+                   dilations, "SAME_UPPER")
+        if pads == same_paddings:
+          pads = "SAME_UPPER"
 
     count_include_pad = bool(node.attrs.get("count_include_pad", 0))
     if pooling_type == "AVG":
@@ -70,12 +80,19 @@ class PoolMixin(object):
                       "This means your graph cannot be serialized.",
                       UserWarning)
 
-        return [
-            tf.compat.v1.py_func(py_pool, [
+        result = tf.numpy_function(py_pool, [
                 orig_x, kernel_shape, strides, dilations, pads, ceil_mode,
                 "AVG", False
             ], orig_x.dtype)
-        ]
+
+        if orig_x.shape.is_fully_defined():
+          shape = orig_x.get_shape()
+          output_shape = shape[0:2] + calc_output_shape(shape[2:4],
+                  kernel_shape, strides, dilations, pads, ceil_mode)
+        else:
+          output_shape = [None] * x_rank
+        result.set_shape(output_shape)
+        return [result]
       else:
         exception.OP_UNSUPPORTED_EXCEPT("strict == 0 and average pool"
                                         " arguments not compatible",
