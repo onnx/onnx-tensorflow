@@ -34,8 +34,8 @@ class PoolMixin(object):
       # SAME padding in Tensorflow
       if x.shape.is_fully_defined() and pads != [0] * spatial_size * 2:
         in_shape = x.get_shape()
-        same_paddings = calc_pads_same(in_shape[1:3], kernel_shape, strides,
-                   dilations, "SAME_UPPER")
+        same_paddings = calc_pads_same(in_shape[1:x_rank-1], kernel_shape,
+                   strides, dilations, "SAME_UPPER")
         if pads == same_paddings:
           pads = "SAME_UPPER"
 
@@ -87,7 +87,7 @@ class PoolMixin(object):
 
         if orig_x.shape.is_fully_defined():
           shape = orig_x.get_shape()
-          output_shape = shape[0:2] + calc_output_shape(shape[2:4],
+          output_shape = shape[0:2] + calc_output_shape(shape[2:x_rank],
                   kernel_shape, strides, dilations, pads, ceil_mode)
         else:
           output_shape = [None] * x_rank
