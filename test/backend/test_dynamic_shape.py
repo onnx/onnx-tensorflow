@@ -301,5 +301,33 @@ class TestDynamicShape(unittest.TestCase):
       output = tf_rep.run({"X": x, "starts": starts, "ends": ends, "axes": axes, "steps": steps})
       np.testing.assert_almost_equal(output["S"], x[0:2:2, 0:2:-2, 0:2:-1])
 
+  def test_split(self):
+    shape = [12, 12]
+    axis = 0
+    output_count = 3
+    node_def = helper.make_node("Split", ["X"],
+                                ["Z%i" % i for i in range(output_count)],
+                                axis=axis)
+    graph_def = helper.make_graph(
+        [node_def],
+        name="test_unknown_shape",
+        inputs=[
+            helper.make_tensor_value_info("X", TensorProto.FLOAT,
+                                          [None] * len(shape))
+        ],
+        outputs=[
+            helper.make_tensor_value_info("Z%i" % i, TensorProto.FLOAT,
+                                          [None] * len(shape)) for i in range(output_count)
+        ])
+
+    tf_rep = onnx_graph_to_tensorflow_rep(graph_def)
+    x = self._get_rnd_float32(shape=shape)
+    output = tf_rep.run({"X": x})
+
+    per_part = shape[axis] // output_count
+    split = [per_part] * output_count
+    for a, b in zip(list(output), np.split(x, np.cumsum(split))[:-1]):
+      np.testing.assert_almost_equal(a, b)
+
 if __name__ == '__main__':
   unittest.main()
