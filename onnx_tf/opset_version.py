@@ -14,7 +14,7 @@ backend_opset_version = {
     'AveragePool': [1, 7, 10, 11],
     'BatchNormalization': [1, 6, 7, 9],
     'Binarizer': [],
-    'BitShift': [],
+    'BitShift': [11],
     'Cast': [1, 6, 9],
     'CastMap': [],
     'CategoryMapper': [],
