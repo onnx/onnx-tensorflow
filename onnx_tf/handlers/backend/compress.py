@@ -18,11 +18,14 @@ class Compress(BackendHandler):
     condition = tensor_dict[node.inputs[1]]
 
     x = tf.reshape(x, [-1]) if node.attrs.get("axis") is None else x
-
-    indices = tf.constant(list(range(condition.shape[0])), dtype=tf.int64)
+    if condition.shape.is_fully_defined():
+      condition_shape = condition.shape[0]
+      indices = tf.constant(list(range(condition_shape)), dtype=tf.int64)
+    else:
+      condition_shape = tf.shape(condition, out_type=tf.int64)[0]
+      indices = tf.range(condition_shape, dtype=tf.int64)
     not_zero = tf.not_equal(condition, tf.zeros_like(condition))
     attrs['indices'] = tf.boolean_mask(indices, not_zero)
-
     return [
         cls.make_tensor_from_onnx_node(node, inputs=[x], attrs=attrs, **kwargs)
     ]
