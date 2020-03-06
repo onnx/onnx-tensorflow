@@ -1,8 +1,8 @@
 # ONNX-Tensorflow Support Status
 |||
 |-:|:-|
-|ONNX-Tensorflow Version|Master ( commit id: 529f08f9d0229f942e54418c37c5371ebac81fdb )|
-|ONNX Version|Master ( commit id: 61f0bbc5fcdbecafa53f43ed5d8c6aad271955bd )|
+|ONNX-Tensorflow Version|Master ( commit id: 373963c854da06f0846c2e563783b5afe7d2df81 )|
+|ONNX Version|Master ( commit id: 3d9ca57e10c76d876b5c1017e15512a9e8f6ac79 )|
 |Tensorflow Version|v1.15.0|
 
 Notes:
@@ -38,9 +38,9 @@ Notes:
 |ConcatFromSequence|-|-|-|-|-|-|-|-|-|-|**11**:small_red_triangle:|11:small_red_triangle:|
 |Constant|**1**|1|1|1|1|1|1|1|**9**|9|**11**|11|
 |ConstantOfShape|-|-|-|-|-|-|-|-|**9**|9|9|9|
-|Conv|**1**|1|1|1|1|1|1|1|1|1|**11**:small_red_triangle:|11:small_red_triangle:|
+|Conv|**1**|1|1|1|1|1|1|1|1|1|**11**|11|
 |ConvInteger|-|-|-|-|-|-|-|-|-|**10**|10|10|
-|ConvTranspose|**1**:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|**11**:small_red_triangle:|11:small_red_triangle:|
+|ConvTranspose|**1**:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|**11**:small_orange_diamond:|11:small_orange_diamond:|
 |Cos|-|-|-|-|-|-|**7**|7|7|7|7|7|
 |Cosh|-|-|-|-|-|-|-|-|**9**|9|9|9|
 |CumSum|-|-|-|-|-|-|-|-|-|-|**11**:small_red_triangle:|11:small_red_triangle:|
@@ -50,7 +50,6 @@ Notes:
 |Div|**1**|1|1|1|1|**6**|**7**|7|7|7|7|7|
 |Dropout|**1**|1|1|1|1|**6**|**7**|7|7|**10**|10|10|
 |DynamicQuantizeLinear|-|-|-|-|-|-|-|-|-|-|**11**:small_red_triangle:|11:small_red_triangle:|
-|Einsum|-|-|-|-|-|-|-|-|-|-|-|**12**:small_red_triangle:|
 |Elu|**1**|1|1|1|1|**6**|6|6|6|6|6|6|
 |Equal|**1**:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|**7**:small_orange_diamond:|7:small_orange_diamond:|7:small_orange_diamond:|7:small_orange_diamond:|**11**:small_orange_diamond:|11:small_orange_diamond:|
 |Erf|-|-|-|-|-|-|-|-|**9**|9|9|9|
@@ -174,7 +173,7 @@ Notes:
 |Where|-|-|-|-|-|-|-|-|**9**|9|9|9|
 |Xor|**1**|1|1|1|1|1|**7**|7|7|7|7|7|
 
-ONNX-TF Supported Operators / ONNX Operators: 125 / 157
+ONNX-TF Supported Operators / ONNX Operators: 126 / 156
 
 Notes:
 1. Cast: Cast string to float32/float64/int32/int64 are not supported in Tensorflow.
