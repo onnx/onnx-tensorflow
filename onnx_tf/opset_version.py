@@ -82,7 +82,7 @@ backend_opset_version = {
     'MatMul': [1, 9],
     'MatMulInteger': [10],
     'Max': [1, 6, 8],
-    'MaxPool': [1, 8, 10, 11],
+    'MaxPool': [1, 8, 10, 11, 12],
     'MaxRoiPool': [],
     'MaxUnpool': [9, 11],
     'Mean': [1, 6, 8],
