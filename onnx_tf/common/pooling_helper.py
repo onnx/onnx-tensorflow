@@ -1,7 +1,6 @@
 from __future__ import division
 
 from collections import namedtuple
-from numpy import inf
 import numpy as np
 import tensorflow as tf
 
@@ -76,6 +75,49 @@ def calc_pads_same(in_spatial_shape, kernel_shape, strides,
     return pads
 
 
+def calc_output_shape(input_spatial_shape, kernel_shape, strides, dilations,
+                      padding, ceil_mode=False):
+    """
+        Calculate output shape
+
+        Args:
+            input_spatial_shape: input spatial shape
+            kernel_shape:        the size of the kernel along each axis
+            strides:             stride along each spatial axis
+            dilations:           dilations value along each spatial axis
+            padding:             can be explicit paddings, "SAME_UPPER" or
+                                 "SAME_LOWER"
+        Return:
+            output_shape:        calculated output shape
+    """
+    spatial_size = len(input_spatial_shape)
+
+    if type(padding) is not list and type(padding) is not np.ndarray:
+        if padding.lower().startswith("same"):
+            padding = calc_pads_same(input_spatial_shape, kernel_shape,
+                                     strides, dilations, padding)
+        else:
+            padding = [0] * spatial_size * 2
+
+    output_shape = []
+    for dim in range(spatial_size):
+        output_shape.append(_pooling_output_shape(input_spatial_shape[dim],
+                            kernel_shape[dim], strides[dim], dilations[dim],
+                            padding[dim] + padding[dim + spatial_size],
+                            ceil_mode))
+
+    return output_shape
+
+
+def _pooling_output_shape(input_size, ksize, stride, dilation, pad, ceil_mode):
+    output_size = (input_size + pad - ((ksize - 1) * dilation + 1) +
+                   ((stride-1) if ceil_mode else 0)) // stride + 1
+    if (pad):
+        if ((output_size - 1) * stride >= input_size + pad):
+            output_size -= 1
+    return output_size
+
+
 def py_pool(input, kernel_shape, strides=None, dilations=None,
             padding=None, ceil_mode=False, pooling_type="MAX",
             include_indices=True):
@@ -101,17 +143,13 @@ def py_pool(input, kernel_shape, strides=None, dilations=None,
     if type(pooling_type) is not str:
         pooling_type = pooling_type.decode("UTF-8")
 
-    def _pooling_output_shape(input_size, ksize, stride,
-                              dilation, pad, ceil_mode):
-        output_size = (input_size + pad - ((ksize - 1) * dilation + 1) +
-                       ((stride-1) if ceil_mode else 0)) // stride + 1
-        if (pad):
-            if ((output_size - 1) * stride >= input_size + pad):
-                output_size -= 1
-        return output_size
-
     input_shape = np.shape(input)
     inp_sp_shape = input_shape[2:]
+    input_dtype = input.dtype
+    if np.issubdtype(input_dtype, np.integer):
+        input_dtype_min = np.iinfo(input_dtype).min
+    else:
+        input_dtype_min = np.finfo(input_dtype).min
 
     def _loop_over_output(batch, channel):
         dims = [range(output_sp_shape[d]) for d in range(spatial_size)]
@@ -133,7 +171,7 @@ def py_pool(input, kernel_shape, strides=None, dilations=None,
                 val_sum = 0
                 val_count = 0
             else:
-                maxval = -inf
+                maxval = input_dtype_min
                 maxind = -1
             for input_ind in itertools.product(*input_ranges):
                 ind = (batch, channel) + input_ind
@@ -172,6 +210,9 @@ def py_pool(input, kernel_shape, strides=None, dilations=None,
     if padding is None:
         padding = [0] * spatial_size * 2
 
+    if type(padding) is bytes:
+        padding = padding.decode()
+
     if type(padding) is not list and type(padding) is not np.ndarray:
         if padding.lower().startswith("same"):
             padding = calc_pads_same(inp_sp_shape, kernel_shape, strides,
@@ -196,7 +237,7 @@ def py_pool(input, kernel_shape, strides=None, dilations=None,
         output_sp_shape.append(output_size)
 
     out_pool = np.zeros([input_shape[0], input_shape[1]] +
-                        output_sp_shape, input.dtype)
+                        output_sp_shape, input_dtype)
     out_ind = np.zeros([input_shape[0], input_shape[1]] +
                        output_sp_shape, np.int64)
 

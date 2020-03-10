@@ -175,7 +175,7 @@ class DilatedPooling(object):
     self.input_shape = self.orig_input_shape
 
     if pooling_type.startswith("MAX"):
-      self.padding_constant = -np.inf
+      self.padding_constant = input.dtype.min
     else:
       self.padding_constant = 0
 
