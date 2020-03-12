@@ -280,10 +280,7 @@ class TestNode(unittest.TestCase):
     np.testing.assert_almost_equal(output["Y"], np.zeros(x, dtype=np.int32))
 
   def test_conv(self):
-    device = "CUDA"
-    if not supports_device(device):
-      raise unittest.SkipTest(
-          "Backend doesn't support device {}".format(device))
+    device = "CUDA" if supports_device("CUDA") else "CPU"
 
     N, C, H, W = 4, 3, 5, 5
     x_shape = [N, C, H, W]

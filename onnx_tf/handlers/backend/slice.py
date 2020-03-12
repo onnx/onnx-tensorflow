@@ -2,7 +2,7 @@ import numpy as np
 import tensorflow as tf
 try:
   from tensorflow.math import floormod as tf_floormod
-except ImportError:
+except ImportError: # for older tf-1.x versions
   from tensorflow import floormod as tf_floormod
 
 from onnx_tf.handlers.backend_handler import BackendHandler
@@ -57,11 +57,10 @@ class Slice(BackendHandler):
     ends = tensor_dict[node.inputs[2]]
 
     # first of all, get the input tensor shape
-    input_tensor_shape = tf.constant(input_tensor.shape.dims, ends.dtype)
-    l = list(range(starts.shape[0]))
+    input_tensor_shape = tf.shape(input_tensor, out_type=ends.dtype)
 
     axes = tensor_dict[node.inputs[3]] if len(
-        node.inputs) >= 4 else tf.constant(l, ends.dtype)
+        node.inputs) >= 4 else tf.range(tf.shape(starts)[0], dtype=ends.dtype)
 
     # process negative axes
     input_rank = tf.cast(tf.rank(input_tensor), axes.dtype)
@@ -72,7 +71,7 @@ class Slice(BackendHandler):
 
     # build the indexed dimension sizes as sparse_shape
     sparse_shape = tf.gather_nd(
-        params=input_tensor.shape, indices=sparse_indices)
+        params=input_tensor_shape, indices=sparse_indices)
     sparse_shape = tf.cast(sparse_shape, ends.dtype)
 
     # take care of starts, ends that are larger than the dim size.
