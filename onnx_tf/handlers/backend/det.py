@@ -11,8 +11,6 @@ class Det(BackendHandler):
 
   @classmethod
   def version_11(cls, node, **kwargs):
-    tensor_dict = kwargs["tensor_dict"]
-    x = tensor_dict[node.inputs[0]]
     return [
-        cls.make_tensor_from_onnx_node(node, inputs=[x])
+        cls.make_tensor_from_onnx_node(node, **kwargs)
     ]
