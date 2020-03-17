@@ -943,16 +943,11 @@ class TestNode(unittest.TestCase):
     test_output = np.maximum(np.maximum(np.maximum(x1, x2), x3), x4)
     np.testing.assert_almost_equal(output["Z"], test_output)
 
-  def _test_pooling(self,
-                    input_shape,
-                    kernel_shape,
-                    strides=None,
-                    dilations=None,
-                    pads=None,
-                    auto_pad=None,
-                    ceil_mode=None,
-                    count_include_pad=None,
-                    pooling_type="MAX"):
+
+  def _test_pooling(self, input_shape, kernel_shape, strides=None,
+                    dilations=None, pads=None, auto_pad=None, ceil_mode=None,
+                    count_include_pad=None, pooling_type="MAX",
+                    input_dtype=np.float32):
 
     op = "MaxPool" if pooling_type.upper().startswith("MAX") else "AveragePool"
     node_def_kwargs = {
@@ -980,7 +975,13 @@ class TestNode(unittest.TestCase):
 
     node_def = helper.make_node(**node_def_kwargs)
 
-    x = self._get_rnd_float32(shape=input_shape)
+    if input_dtype == np.float32:
+        x = self._get_rnd_float32(shape=input_shape)
+    else:
+        x = self._get_rnd_int(low = np.iinfo(input_dtype).min,
+                              high = np.iinfo(input_dtype).max,
+                              shape=input_shape, dtype=input_dtype)
+
     output = run_node(node_def, [x])
 
     test_output = py_pool(x,
@@ -1171,6 +1172,23 @@ class TestNode(unittest.TestCase):
                        dilations=dilations,
                        auto_pad=auto_pad)
 
+  def test_max_pool_2d_dilations_ceil_pads_int8(self):
+    if legacy_opset_pre_ver(12):
+      raise unittest.SkipTest(
+          "ONNX version {} does not support int8 input type.".format(
+              defs.onnx_opset_version()))
+
+    kernel_shape = [3, 3]
+    strides = [2, 2]
+    dilations = [3, 3]
+    pads = [1, 1, 2, 2]
+    ceil_mode = 1
+
+    input_shape = [10, 3, 23, 23]
+    self._test_pooling(input_shape=input_shape, kernel_shape=kernel_shape,
+                       strides=strides, dilations=dilations, pads=pads,
+                       ceil_mode=ceil_mode, input_dtype=np.int8)
+
   def test_max_pool_3d(self):
     kernel_shape = [3, 3, 3]
     strides = [2, 2, 2]
@@ -1355,10 +1373,10 @@ class TestNode(unittest.TestCase):
                        strides=strides,
                        pooling_type="AVG")
 
-  def test_average_pool_2d_same_upper_(self):
-    kernel_shape = [1, 2]
-    strides = [1, 2]
-    auto_pad = "SAME_UPPER"
+  def test_average_pool_2d_same_upper(self):
+    kernel_shape=[1, 2]
+    strides=[1, 2]
+    auto_pad="SAME_UPPER"
 
     input_shape = [10, 10, 7, 7]
     self._test_pooling(input_shape=input_shape,

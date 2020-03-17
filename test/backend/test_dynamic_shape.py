@@ -9,6 +9,7 @@ import unittest
 
 from onnx_tf.backend import onnx_graph_to_tensorflow_rep
 from onnx_tf.common.legacy import legacy_opset_pre_ver
+from onnx_tf.common.pooling_helper import py_pool
 from onnx import defs
 from onnx import helper
 from onnx import TensorProto
@@ -180,6 +181,85 @@ class TestDynamicShape(unittest.TestCase):
     tf_rep = onnx_graph_to_tensorflow_rep(graph_def)
     output = tf_rep.run({"data": data, "indices": indices, "updates": updates})
     np.testing.assert_almost_equal(output["outputs"], ref_output)
+
+  def test_max_pool_2d_dilations_ceil_pads(self):
+    if legacy_opset_pre_ver(10):
+      raise unittest.SkipTest(
+          "ONNX version {} doesn't support dilations nor ceil mode.".format(
+              defs.onnx_opset_version()))
+
+    kernel_shape = [3, 3]
+    strides = [2, 2]
+    dilations = [3, 3]
+    pads = [1, 1, 2, 2]
+    ceil_mode = 1
+
+    input_shape = [10, 3, 23, 23]
+    x = self._get_rnd_float32(shape=input_shape)
+
+    test_output = py_pool(x, kernel_shape=kernel_shape, strides=strides,
+                          dilations=dilations, padding=pads,
+                          ceil_mode=ceil_mode, pooling_type="MAX",
+                          include_indices=False)
+
+    node_def = helper.make_node(
+            op_type="MaxPool",
+            inputs=["X"],
+            outputs=["Y"],
+            kernel_shape=kernel_shape,
+            strides=strides,
+            dilations=dilations,
+            pads=pads,
+            ceil_mode=ceil_mode)
+
+    graph_def = helper.make_graph(
+        [node_def],
+        name="test_unknown_shape",
+        inputs=[
+            helper.make_tensor_value_info("X", TensorProto.FLOAT,
+                                          [None, None, None, None]),
+        ],
+        outputs=[
+            helper.make_tensor_value_info("Y", TensorProto.FLOAT,
+                                          [None, None, None, None])
+        ])
+    tf_rep = onnx_graph_to_tensorflow_rep(graph_def)
+    output = tf_rep.run({"X": x})
+
+    np.testing.assert_almost_equal(output["Y"], test_output)
+
+  def test_average_pool_2d(self):
+    kernel_shape = [1, 2]
+    strides = [1, 2]
+
+    input_shape = [10, 10, 4, 4]
+    x = self._get_rnd_float32(shape=input_shape)
+
+    test_output = py_pool(x, kernel_shape=kernel_shape, strides=strides,
+                          pooling_type="AVG", include_indices=False)
+
+    node_def = helper.make_node(
+            op_type="AveragePool",
+            inputs=["X"],
+            outputs=["Y"],
+            kernel_shape=kernel_shape,
+            strides=strides)
+
+    graph_def = helper.make_graph(
+        [node_def],
+        name="test_unknown_shape",
+        inputs=[
+            helper.make_tensor_value_info("X", TensorProto.FLOAT,
+                                          [None, None, None, None]),
+        ],
+        outputs=[
+            helper.make_tensor_value_info("Y", TensorProto.FLOAT,
+                                          [None, None, None, None])
+        ])
+    tf_rep = onnx_graph_to_tensorflow_rep(graph_def)
+    output = tf_rep.run({"X": x})
+
+    np.testing.assert_almost_equal(output["Y"], test_output)
 
   def test_slice(self):
     # test case 1 with normal inputs
