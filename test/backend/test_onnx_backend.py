@@ -43,11 +43,11 @@ def skip_not_implemented_ops_test(test):
     if not onnx_ops_list[op]['deprecated']:
       if op in onnxtf_ops_list:
         if onnx_ops_list[op]['version'] not in onnxtf_ops_list[op]:
-          test.exclude(r'[a-z,_]*_' + op.lower() + '_[a-z,_]*')
-          test.exclude(r'[a-z,_]*_' + op_name.lower() + '_[a-z,_]*')
+          test.exclude(r'test_' + op.lower() + '_[a-z,_]*')
+          test.exclude(r'test_' + op_name.lower() + '_[a-z,_]*')
       else:
-        test.exclude(r'[a-z,_]*_' + op.lower() + '_[a-z,_]*')
-        test.exclude(r'[a-z,_]*_' + op_name.lower() + '_[a-z,_]*')
+        test.exclude(r'test_' + op.lower() + '_[a-z,_]*')
+        test.exclude(r'test_' + op_name.lower() + '_[a-z,_]*')
   return test
 
 # This is a pytest magic variable to load extra plugins
