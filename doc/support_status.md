@@ -29,7 +29,7 @@ Notes:
 |Atanh|-|-|-|-|-|-|-|-|**9**|9|9|9|
 |AveragePool|**1**|1|1|1|1|1|**7**|7|7|**10**|**11**|11|
 |BatchNormalization|**1**|1|1|1|1|**6**|**7**|7|**9**|9|9|**12**:small_red_triangle:|
-|BitShift|-|-|-|-|-|-|-|-|-|-|**11**:small_red_triangle:|11:small_red_triangle:|
+|BitShift|-|-|-|-|-|-|-|-|-|-|**11**|11|
 |Cast|**1**:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|**6**:small_orange_diamond:|6:small_orange_diamond:|6:small_orange_diamond:|**9**:small_orange_diamond:|9:small_orange_diamond:|9:small_orange_diamond:|9:small_orange_diamond:|
 |Ceil|**1**|1|1|1|1|**6**|6|6|6|6|6|6|
 |Celu|-|-|-|-|-|-|-|-|-|-|-|**12**:small_red_triangle:|
@@ -47,7 +47,7 @@ Notes:
 |CumSum|-|-|-|-|-|-|-|-|-|-|**11**:small_orange_diamond:|11:small_orange_diamond:|
 |DepthToSpace|**1**|1|1|1|1|1|1|1|1|1|**11**|11|
 |DequantizeLinear|-|-|-|-|-|-|-|-|-|**10**|10|10|
-|Det|-|-|-|-|-|-|-|-|-|-|**11**:small_red_triangle:|11:small_red_triangle:|
+|Det|-|-|-|-|-|-|-|-|-|-|**11**|11|
 |Div|**1**|1|1|1|1|**6**|**7**|7|7|7|7|7|
 |Dropout|**1**|1|1|1|1|**6**|**7**|7|7|**10**|10|**12**:small_red_triangle:|
 |DynamicQuantizeLinear|-|-|-|-|-|-|-|-|-|-|**11**:small_red_triangle:|11:small_red_triangle:|
@@ -88,7 +88,7 @@ Notes:
 |MatMul|**1**|1|1|1|1|1|1|1|**9**|9|9|9|
 |MatMulInteger|-|-|-|-|-|-|-|-|-|**10**|10|10|
 |Max|**1**|1|1|1|1|**6**|6|**8**|8|8|8|8|
-|MaxPool|**1**:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|**8**:small_orange_diamond:|8:small_orange_diamond:|**10**:small_orange_diamond:|**11**:small_orange_diamond:|**12**:small_red_triangle:|
+|MaxPool|**1**:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|**8**:small_orange_diamond:|8:small_orange_diamond:|**10**:small_orange_diamond:|**11**:small_orange_diamond:|**12**:small_orange_diamond:|
 |MaxRoiPool|**1**:small_red_triangle:|1:small_red_triangle:|1:small_red_triangle:|1:small_red_triangle:|1:small_red_triangle:|1:small_red_triangle:|1:small_red_triangle:|1:small_red_triangle:|1:small_red_triangle:|1:small_red_triangle:|1:small_red_triangle:|1:small_red_triangle:|
 |MaxUnpool|-|-|-|-|-|-|-|-|**9**|9|**11**|11|
 |Mean|**1**|1|1|1|1|**6**|6|**8**|8|8|8|8|
