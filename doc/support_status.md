@@ -46,7 +46,7 @@ Notes:
 |CumSum|-|-|-|-|-|-|-|-|-|-|**11**:small_red_triangle:|11:small_red_triangle:|
 |DepthToSpace|**1**|1|1|1|1|1|1|1|1|1|**11**|11|
 |DequantizeLinear|-|-|-|-|-|-|-|-|-|**10**|10|10|
-|Det|-|-|-|-|-|-|-|-|-|-|**11**:small_red_triangle:|11:small_red_triangle:|
+|Det|-|-|-|-|-|-|-|-|-|-|**11**|11|
 |Div|**1**|1|1|1|1|**6**|**7**|7|7|7|7|7|
 |Dropout|**1**|1|1|1|1|**6**|**7**|7|7|**10**|10|**12**:small_red_triangle:|
 |DynamicQuantizeLinear|-|-|-|-|-|-|-|-|-|-|**11**:small_red_triangle:|11:small_red_triangle:|
