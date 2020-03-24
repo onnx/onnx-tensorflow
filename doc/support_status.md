@@ -3,6 +3,7 @@
 |-:|:-|
 |ONNX-Tensorflow Version|Master ( commit id: 372ac3b68b8dbb0fdbe1e4fdfc70b1a970146fdc )|
 |ONNX Version|Master ( commit id: f8e140a9c4e7b42fb970e247478667093b5c748b )|
+
 |Tensorflow Version|v2.1.0|
 
 Notes:
@@ -137,12 +138,12 @@ Notes:
 |ScatterElements|-|-|-|-|-|-|-|-|-|-|**11**|11|
 |ScatterND|-|-|-|-|-|-|-|-|-|-|**11**|11|
 |Selu|**1**|1|1|1|1|**6**|6|6|6|6|6|6|
-|SequenceAt|-|-|-|-|-|-|-|-|-|-|**11**:small_red_triangle:|11:small_red_triangle:|
-|SequenceConstruct|-|-|-|-|-|-|-|-|-|-|**11**:small_red_triangle:|11:small_red_triangle:|
-|SequenceEmpty|-|-|-|-|-|-|-|-|-|-|**11**:small_red_triangle:|11:small_red_triangle:|
-|SequenceErase|-|-|-|-|-|-|-|-|-|-|**11**:small_red_triangle:|11:small_red_triangle:|
-|SequenceInsert|-|-|-|-|-|-|-|-|-|-|**11**:small_red_triangle:|11:small_red_triangle:|
-|SequenceLength|-|-|-|-|-|-|-|-|-|-|**11**:small_red_triangle:|11:small_red_triangle:|
+|SequenceAt|-|-|-|-|-|-|-|-|-|-|**11**|11|
+|SequenceConstruct|-|-|-|-|-|-|-|-|-|-|**11**|11|
+|SequenceEmpty|-|-|-|-|-|-|-|-|-|-|**11**|11|
+|SequenceErase|-|-|-|-|-|-|-|-|-|-|**11**|11|
+|SequenceInsert|-|-|-|-|-|-|-|-|-|-|**11**|11|
+|SequenceLength|-|-|-|-|-|-|-|-|-|-|**11**|11|
 |Shape|**1**|1|1|1|1|1|1|1|1|1|1|1|
 |Shrink|-|-|-|-|-|-|-|-|**9**|9|9|9|
 |Sigmoid|**1**|1|1|1|1|**6**|6|6|6|6|6|6|
@@ -175,7 +176,7 @@ Notes:
 |Where|-|-|-|-|-|-|-|-|**9**|9|9|9|
 |Xor|**1**|1|1|1|1|1|**7**|7|7|7|7|7|
 
-ONNX-TF Supported Operators / ONNX Operators: 127 / 158
+ONNX-TF Supported Operators / ONNX Operators: 132 / 158
 
 Notes:
 1. Cast: Cast string to float32/float64/int32/int64 are not supported in Tensorflow.
