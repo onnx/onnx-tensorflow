@@ -20,7 +20,7 @@ class Reshape(BackendHandler):
       shape = tf.cast(kwargs["tensor_dict"][node.inputs[1]], tf.int64)
     input_shape = tf.shape(tensor, out_type=tf.int64)
 
-    # Extract indicies of the shape paramter where
+    # Extract indicies of the shape parameter where
     # a copy from the original dimension size is needed.
     copy_indices = tf.squeeze(
         tf.where(tf.equal(shape, tf.constant(0, dtype=tf.int64))), -1)
