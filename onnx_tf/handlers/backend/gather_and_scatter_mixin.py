@@ -1,7 +1,10 @@
 import tensorflow as tf
+try:
+  from tensorflow.math import floormod as tf_floormod
+except ImportError:
+  from tensorflow import floormod as tf_floormod
 
 from onnx_tf.common.tf_helper import tf_shape
-
 
 class GatherAndScatterMixin(object):
 
@@ -62,7 +65,7 @@ class GatherAndScatterMixin(object):
     data_shape = tf_shape(data)
     indices_shape = tf_shape(indices)
     max_i = tf.cast(data_shape[:indices_shape[-1]], indices.dtype)
-    return tf.math.floormod(tf.add(indices, max_i), max_i)
+    return tf_floormod(tf.add(indices, max_i), max_i)
 
   @classmethod
   def process_neg_idx_along_axis(cls, data, axis, indices):
@@ -73,4 +76,4 @@ class GatherAndScatterMixin(object):
     """
     data_shape = tf_shape(data)
     max_i = tf.cast(data_shape[axis], indices.dtype)
-    return tf.math.floormod(tf.add(indices, max_i), max_i)
+    return tf_floormod(tf.add(indices, max_i), max_i)
