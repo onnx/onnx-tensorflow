@@ -12,6 +12,13 @@ from onnx_tf.handlers.handler import tf_func
 class Split(BackendHandler):
 
   @classmethod
+  def args_check(cls, node, **kwargs):
+    axis = node.attrs.get("axis", 0)
+    x_rank = len(kwargs["tensor_dict"][node.inputs[0]].get_shape().as_list())
+    if axis > x_rank - 1 or axis < -x_rank:
+      raise ValueError("Axis is out of bound")
+
+  @classmethod
   def get_attrs_processor_param(cls):
     return {"default": {"axis": 0}}
 
