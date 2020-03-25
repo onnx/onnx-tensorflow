@@ -1,7 +1,7 @@
 # ONNX-Tensorflow Support Status
 |||
 |-:|:-|
-|ONNX-Tensorflow Version|Master ( commit id: b9bb9bf1057f21e34fcd96720c819f25eaa6e2ed )|
+|ONNX-Tensorflow Version|Master ( commit id: 1ab6bea1187ad085ed28064b8df77441be744a55 )|
 |ONNX Version|Master ( commit id: f254647a3a86a689537c6fdda330bf60d2d76459 )|
 |Tensorflow Version|v2.1.0|
 
@@ -46,7 +46,7 @@ Notes:
 |CumSum|-|-|-|-|-|-|-|-|-|-|**11**:small_red_triangle:|11:small_red_triangle:|
 |DepthToSpace|**1**|1|1|1|1|1|1|1|1|1|**11**|11|
 |DequantizeLinear|-|-|-|-|-|-|-|-|-|**10**|10|10|
-|Det|-|-|-|-|-|-|-|-|-|-|**11**:small_red_triangle:|11:small_red_triangle:|
+|Det|-|-|-|-|-|-|-|-|-|-|**11**|11|
 |Div|**1**|1|1|1|1|**6**|**7**|7|7|7|7|7|
 |Dropout|**1**|1|1|1|1|**6**|**7**|7|7|**10**|10|**12**:small_red_triangle:|
 |DynamicQuantizeLinear|-|-|-|-|-|-|-|-|-|-|**11**:small_red_triangle:|11:small_red_triangle:|
@@ -137,12 +137,12 @@ Notes:
 |ScatterElements|-|-|-|-|-|-|-|-|-|-|**11**|11|
 |ScatterND|-|-|-|-|-|-|-|-|-|-|**11**|11|
 |Selu|**1**|1|1|1|1|**6**|6|6|6|6|6|6|
-|SequenceAt|-|-|-|-|-|-|-|-|-|-|**11**:small_red_triangle:|11:small_red_triangle:|
-|SequenceConstruct|-|-|-|-|-|-|-|-|-|-|**11**:small_red_triangle:|11:small_red_triangle:|
-|SequenceEmpty|-|-|-|-|-|-|-|-|-|-|**11**:small_red_triangle:|11:small_red_triangle:|
-|SequenceErase|-|-|-|-|-|-|-|-|-|-|**11**:small_red_triangle:|11:small_red_triangle:|
-|SequenceInsert|-|-|-|-|-|-|-|-|-|-|**11**:small_red_triangle:|11:small_red_triangle:|
-|SequenceLength|-|-|-|-|-|-|-|-|-|-|**11**:small_red_triangle:|11:small_red_triangle:|
+|SequenceAt|-|-|-|-|-|-|-|-|-|-|**11**|11|
+|SequenceConstruct|-|-|-|-|-|-|-|-|-|-|**11**|11|
+|SequenceEmpty|-|-|-|-|-|-|-|-|-|-|**11**|11|
+|SequenceErase|-|-|-|-|-|-|-|-|-|-|**11**|11|
+|SequenceInsert|-|-|-|-|-|-|-|-|-|-|**11**|11|
+|SequenceLength|-|-|-|-|-|-|-|-|-|-|**11**|11|
 |Shape|**1**|1|1|1|1|1|1|1|1|1|1|1|
 |Shrink|-|-|-|-|-|-|-|-|**9**|9|9|9|
 |Sigmoid|**1**|1|1|1|1|**6**|6|6|6|6|6|6|
@@ -175,7 +175,7 @@ Notes:
 |Where|-|-|-|-|-|-|-|-|**9**|9|9|9|
 |Xor|**1**|1|1|1|1|1|**7**|7|7|7|7|7|
 
-ONNX-TF Supported Operators / ONNX Operators: 126 / 158
+ONNX-TF Supported Operators / ONNX Operators: 131 / 158
 
 Notes:
 1. Cast: Cast string to float32/float64/int32/int64 are not supported in Tensorflow.
