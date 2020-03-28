@@ -1955,9 +1955,10 @@ class TestNode(unittest.TestCase):
       x = np.pad(x, ((2, 2), (2, 2)), 'constant')
       output = run_node(node_def, [x, pads])
       np.testing.assert_almost_equal(output["Y"], y)
+
       # negative pads with 3 dimensions
       node_def = helper.make_node("Pad", ["X", "pads"], ["Y"], mode="constant")
-      pads = np.array([-1, 0, 0, -1, 0, 0], dtype=np.int64)
+      pads = np.array([-1, 0, 0, 0, -1, 0], dtype=np.int64)
       x = np.array([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]).reshape((2, 3, 2))
       y = np.array([7, 8, 9, 10]).reshape((1, 2, 2))
       output = run_node(node_def, [x, pads])

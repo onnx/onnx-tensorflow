@@ -1,4 +1,3 @@
-import numpy as np
 import tensorflow as tf
 
 from onnx_tf.handlers.backend_handler import BackendHandler
@@ -23,62 +22,17 @@ class Pad(BackendHandler):
       return r
 
     def process_neg_pads(x, paddings):
-      # process negative paddings differently since TF.pad
+      # Process negative paddings differently since tf.pad
       # doesn't support negative paddings
+      # The ONNX logic is similar to tf.slice. So we just
+      # need to compute the begins and sizes for slice op
 
-      i_shape = tf.shape(x)
-      cond_less = lambda i1, i2, o1: tf.less(i1, i2)
-      body_concat = lambda i1, i2, o1: [
-          i1 + 1, i2, tf.concat([o1, [i1]], axis=0)
-      ]
-      cond_neg_pads = lambda i1, i2, i3, o1: tf.less(i1, i2)
-
-      def _loop_neg_pads(i, i_x, p, result):
-        # process one dimension at a time
-
-        i_min = tf.negative(tf.gather(p, i * 2))
-        i_max = i_shape[i] + tf.gather(p, i * 2 + 1)
-        t = tf.constant([0])
-        _, _, r = tf.while_loop(cond_less,
-                                body_concat, [i_min, i_max, t],
-                                shape_invariants=[
-                                    i_min.get_shape(),
-                                    i_max.get_shape(),
-                                    tf.TensorShape([None])
-                                ],
-                                parallel_iterations=1)
-        gather_indices = tf.gather(r, tf.range(1, tf.size(r)))
-        result = tf.gather(result, gather_indices)
-
-        # prepare for the next loop
-        i_min = tf.constant(0)
-        i_max = i_x
-        _, _, r = tf.while_loop(cond_less,
-                                body_concat, [i_min, i_max, t],
-                                shape_invariants=[
-                                    i_min.get_shape(),
-                                    i_max.get_shape(),
-                                    tf.TensorShape([None])
-                                ],
-                                parallel_iterations=1)
-        transpose_indices = tf.gather(r, tf.range(1, tf.size(r)))
-        transpose_indices = tf.roll(transpose_indices, shift=-1, axis=0)
-        result = tf.transpose(result, transpose_indices)
-        return i + 1, i_x, p, result
-
-      # tf requires int32 paddings
-      paddings = tf.cast(paddings, dtype=tf.int32)
-      i = tf.constant(0)
-      i_rank = tf.rank(x)
-      _, _, _, result = tf.while_loop(cond_neg_pads,
-                                      _loop_neg_pads, [i, i_rank, paddings, x],
-                                      shape_invariants=[
-                                          i.get_shape(),
-                                          i_rank.get_shape(),
-                                          paddings.get_shape(),
-                                          tf.TensorShape(None)
-                                      ],
-                                      parallel_iterations=1)
+      i_shape = tf.shape(x, out_type=paddings.dtype)
+      i_rank = tf.cast(tf.rank(x), paddings.dtype)
+      begins = tf.negative(tf.gather(paddings, tf.range(i_rank)))
+      ends = i_shape + tf.gather(paddings, tf.range(i_rank, i_rank*2))
+      sizes = ends - begins
+      result=tf.slice(x, begins, sizes)
       return [result]
 
     def process_pos_pads(x, paddings):
@@ -94,6 +48,10 @@ class Pad(BackendHandler):
                          dtype=tf.int32)
 
       if mode.lower() == "edge":
+        # Tensorflow doesn't support edge mode so we need to implement the
+        # np.pad(x, paddings, mode="edge") logic using Tensorflow ops. A
+        # while loop is used to go through the tf.pad 'SYMMETRIC' mode to pad
+        # one value at a time for both sides and all dimensions.
         paddings = tf.reshape(paddings, [-1])
         max_i = tf.reduce_max(paddings)
         _, x = tf.while_loop(
