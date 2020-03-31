@@ -205,12 +205,18 @@ class TensorflowBackend(Backend):
       # Use the onnx.numpy_helper because the data may be raw
       return numpy_helper.to_array(onnx_tensor).flatten().tolist()
 
+    def validate_initializer_name(name):
+      # Replace ":" with "_tf_" and append a unique suffix for
+      # traceability
+      return name.replace(
+          ":", "_tf_") + "_" + get_unique_suffix() if ":" in name else name
+
     return [(init.name,
              tf.constant(
                  tensor2list(init),
                  shape=init.dims,
                  dtype=data_type.onnx2tf(init.data_type),
-                 name=init.name))
+                 name=validate_initializer_name(init.name)))
             for init in initializer]
 
   @classmethod
@@ -256,8 +262,11 @@ class TensorflowBackend(Backend):
     return common_supports_device(device)
 
   @classmethod
-  def onnx_graph_to_tensorflow_ops(cls, graph_def, input_values,
-                                   opset=None, strict=True):
+  def onnx_graph_to_tensorflow_ops(cls,
+                                   graph_def,
+                                   input_values,
+                                   opset=None,
+                                   strict=True):
     """
     Converts ONNX graph to Tensorflow operations
     Args:
@@ -283,8 +292,8 @@ class TensorflowBackend(Backend):
 
     for node in graph_def.node:
       onnx_node = OnnxNode(node)
-      output_ops = cls._onnx_node_to_tensorflow_op(onnx_node, tensor_dict,
-                                                   opset=opset,strict=strict)
+      output_ops = cls._onnx_node_to_tensorflow_op(
+          onnx_node, tensor_dict, opset=opset, strict=strict)
       curr_node_output_map = \
           dict(zip(onnx_node.outputs, output_ops))
       tensor_dict.update(curr_node_output_map)
