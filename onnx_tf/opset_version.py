@@ -83,7 +83,7 @@ backend_opset_version = {
     'LinearRegressor': [],
     'Log': [1, 6],
     'LogSoftmax': [1, 11],
-    'Loop': [],
+    'Loop': [1, 11],
     'LpNormalization': [1],
     'LpPool': [],
     'MatMul': [1, 9],
