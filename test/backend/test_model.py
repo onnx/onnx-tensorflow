@@ -98,6 +98,26 @@ class TestModel(unittest.TestCase):
     output = tf_rep.run({'a':a, 'b':b, 'c':c, 'p':p, 'at':1})
     np.testing.assert_almost_equal(output["Y"], c)
 
+    # test SequenceConstruct and ConcatFromSequence
+    seq_construct_node = helper.make_node('SequenceConstruct', ['a', 'b', 'c'], ['S'])
+    concat_from_seq_node = helper.make_node('ConcatFromSequence', ['S'], ['Y'], axis=1)
+    a = [[1, 2],[3, 4]]
+    b = [[5, 6],[7, 8]]
+    c = [[9, 10],[11, 12]]
+    a_value_info =  helper.make_tensor_value_info('a',onnx.TensorProto.FLOAT,[2, 2])
+    b_value_info =  helper.make_tensor_value_info('b',onnx.TensorProto.FLOAT,[2, 2])
+    c_value_info =  helper.make_tensor_value_info('c',onnx.TensorProto.FLOAT,[2, 2])
+
+    graph = helper.make_graph([seq_construct_node, concat_from_seq_node],
+            name='seq_construct_concat_test',
+            inputs=[a_value_info, b_value_info, c_value_info],
+            outputs=[out_value_info])
+    model = helper.make_model(graph, producer_name='backend-test')
+    tf_rep = prepare(model)
+    output = tf_rep.run({'a':a, 'b':b, 'c':c})
+    d = np.concatenate((a, b, c), axis=1).astype(np.float32)
+    np.testing.assert_almost_equal(output["Y"], d)
+
   def test_relu_node_inplace(self):
     X = np.random.randn(3, 2).astype(np.float32)
     Y_ref = np.clip(X, 0, np.inf)
