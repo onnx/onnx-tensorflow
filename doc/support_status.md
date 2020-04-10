@@ -3,6 +3,7 @@
 |-:|:-|
 |ONNX-Tensorflow Version|Master ( commit id: b829bc4a5cb8d5e70c4f00c1f07f854d6d8b76ce )|
 |ONNX Version|Master ( commit id: 807c62cf7e4c96ce49040bcf073b7e4a054f28a5 )|
+
 |Tensorflow Version|v2.1.0|
 
 Notes:
@@ -50,7 +51,7 @@ Notes:
 |Det|-|-|-|-|-|-|-|-|-|-|**11**|11|
 |Div|**1**|1|1|1|1|**6**|**7**|7|7|7|7|7|
 |Dropout|**1**|1|1|1|1|**6**|**7**|7|7|**10**|10|**12**:small_red_triangle:|
-|DynamicQuantizeLinear|-|-|-|-|-|-|-|-|-|-|**11**:small_red_triangle:|11:small_red_triangle:|
+|DynamicQuantizeLinear|-|-|-|-|-|-|-|-|-|-|**11**|11|
 |Einsum|-|-|-|-|-|-|-|-|-|-|-|**12**:small_red_triangle:|
 |Elu|**1**|1|1|1|1|**6**|6|6|6|6|6|6|
 |Equal|**1**:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|**7**:small_orange_diamond:|7:small_orange_diamond:|7:small_orange_diamond:|7:small_orange_diamond:|**11**:small_orange_diamond:|11:small_orange_diamond:|
@@ -138,12 +139,12 @@ Notes:
 |ScatterElements|-|-|-|-|-|-|-|-|-|-|**11**|11|
 |ScatterND|-|-|-|-|-|-|-|-|-|-|**11**|11|
 |Selu|**1**|1|1|1|1|**6**|6|6|6|6|6|6|
-|SequenceAt|-|-|-|-|-|-|-|-|-|-|**11**:small_red_triangle:|11:small_red_triangle:|
-|SequenceConstruct|-|-|-|-|-|-|-|-|-|-|**11**:small_red_triangle:|11:small_red_triangle:|
-|SequenceEmpty|-|-|-|-|-|-|-|-|-|-|**11**:small_red_triangle:|11:small_red_triangle:|
-|SequenceErase|-|-|-|-|-|-|-|-|-|-|**11**:small_red_triangle:|11:small_red_triangle:|
-|SequenceInsert|-|-|-|-|-|-|-|-|-|-|**11**:small_red_triangle:|11:small_red_triangle:|
-|SequenceLength|-|-|-|-|-|-|-|-|-|-|**11**:small_red_triangle:|11:small_red_triangle:|
+|SequenceAt|-|-|-|-|-|-|-|-|-|-|**11**|11|
+|SequenceConstruct|-|-|-|-|-|-|-|-|-|-|**11**|11|
+|SequenceEmpty|-|-|-|-|-|-|-|-|-|-|**11**|11|
+|SequenceErase|-|-|-|-|-|-|-|-|-|-|**11**|11|
+|SequenceInsert|-|-|-|-|-|-|-|-|-|-|**11**|11|
+|SequenceLength|-|-|-|-|-|-|-|-|-|-|**11**|11|
 |Shape|**1**|1|1|1|1|1|1|1|1|1|1|1|
 |Shrink|-|-|-|-|-|-|-|-|**9**|9|9|9|
 |Sigmoid|**1**|1|1|1|1|**6**|6|6|6|6|6|6|
