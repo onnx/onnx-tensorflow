@@ -2,7 +2,8 @@ import tensorflow as tf
 
 from onnx_tf.handlers.backend_handler import BackendHandler
 from onnx_tf.handlers.handler import onnx_op
-
+from onnx_tf.handlers.handler import partial_support
+from onnx_tf.handlers.handler import ps_description
 
 @onnx_op("ConcatFromSequence")
 @partial_support(True)
