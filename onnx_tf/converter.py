@@ -127,7 +127,10 @@ def convert(infile, outfile, **kwargs):
   Returns:
     None.
   """
-  common.logger.setLevel(kwargs.get("logging_level", "INFO"))
+  logging_level = kwargs.get("logging_level", "INFO")
+  common.logger.setLevel(logging_level)
+  common.logger.handlers[0].setLevel(logging_level)
+
   common.logger.info("Start converting onnx pb to tf pb:")
   onnx_model = onnx.load(infile)
   tf_rep = backend.prepare(onnx_model, **kwargs)
