@@ -9,12 +9,10 @@ import unittest
 
 from onnx_tf.backend import onnx_graph_to_tensorflow_rep
 from onnx_tf.common.legacy import legacy_opset_pre_ver
+from onnx_tf.common.pooling_helper import py_pool
 from onnx import defs
 from onnx import helper
 from onnx import TensorProto
-
-# Run the following test in graph mode
-#tf.compat.v1.disable_eager_execution()
 
 
 class TestDynamicShape(unittest.TestCase):
@@ -30,6 +28,34 @@ class TestDynamicShape(unittest.TestCase):
 
   def _get_rnd_int(self, low, high=None, shape=None, dtype=np.int32):
     return np.random.randint(low, high, size=shape, dtype=dtype)
+
+  def test_compress(self):
+    if legacy_opset_pre_ver(9):
+      raise unittest.SkipTest(
+          "ONNX version {} doesn't support Compress.".format(
+              defs.onnx_opset_version()))
+    axis = 1
+    node_def = helper.make_node("Compress",
+                                inputs=['X', 'condition'],
+                                outputs=['Y'],
+                                axis=axis)
+    graph_def = helper.make_graph(
+        [node_def],
+        name="test_unknown_shape",
+        inputs=[
+            helper.make_tensor_value_info("X", TensorProto.FLOAT,
+                                          [None, None, None]),
+            helper.make_tensor_value_info("condition", TensorProto.BOOL, [None])
+        ],
+        outputs=[
+            helper.make_tensor_value_info("Y", TensorProto.FLOAT,
+                                          [None, None, None])
+        ])
+    x = self._get_rnd_float32(shape=[5, 5, 5])
+    cond = np.array([1, 0, 1])
+    tf_rep = onnx_graph_to_tensorflow_rep(graph_def)
+    output = tf_rep.run({"X": x, "condition": cond})
+    np.testing.assert_almost_equal(output['Y'], np.compress(cond, x, axis=axis))
 
   def test_eye_like(self):
     if legacy_opset_pre_ver(9):
@@ -118,6 +144,91 @@ class TestDynamicShape(unittest.TestCase):
     output = tf_rep.run({"X": inp})
     np.testing.assert_equal(output["Y"], expected_output)
 
+  def test_matmul_integer(self):
+    if legacy_opset_pre_ver(10):
+      raise unittest.SkipTest(
+          "ONNX version {} doesn't support MatMulInteger.".format(
+              defs.onnx_opset_version()))
+
+    node_def = helper.make_node("MatMulInteger",
+                                ["A", "B", "a_zero_point", "b_zero_point"],
+                                ["Z"])
+    # A & B are 3-D tensor and a_zero_point & b_zero_point are scalar
+    A = self._get_rnd_int(-20, 20, shape=(2, 3, 4), dtype=np.int8)
+    B = self._get_rnd_int(-20, 20, shape=(2, 4, 6), dtype=np.int8)
+    a_zero_point = self._get_rnd_int(-20, 20, dtype=np.int8)
+    b_zero_point = self._get_rnd_int(-20, 20, dtype=np.int8)
+    A_minus_zero_point = np.subtract(A.astype(np.int32),
+                                     a_zero_point.astype(np.int32))
+    B_minus_zero_point = np.subtract(B.astype(np.int32),
+                                     b_zero_point.astype(np.int32))
+    z = np.matmul(A_minus_zero_point, B_minus_zero_point)
+    graph_def = helper.make_graph(
+        [node_def],
+        name="test_unknown_shape",
+        inputs=[
+            helper.make_tensor_value_info("A", TensorProto.INT8,
+                                          [None, None, None]),
+            helper.make_tensor_value_info("B", TensorProto.INT8,
+                                          [None, None, None]),
+            helper.make_tensor_value_info("a_zero_point", TensorProto.INT8, []),
+            helper.make_tensor_value_info("b_zero_point", TensorProto.INT8, [])
+        ],
+        outputs=[
+            helper.make_tensor_value_info("Z", TensorProto.INT32,
+                                          [None, None, None])
+        ])
+    tf_rep = onnx_graph_to_tensorflow_rep(graph_def)
+    output = tf_rep.run({
+        "A": A,
+        "B": B,
+        "a_zero_point": a_zero_point,
+        "b_zero_point": b_zero_point
+    })
+    np.testing.assert_almost_equal(output["Z"], z)
+    # A & B are 4-D tensor and a_zero_point & b_zero_point are 1-D tensor
+    A = self._get_rnd_int(-20, 20, shape=(2, 5, 3, 4), dtype=np.int8)
+    B = self._get_rnd_int(-20, 20, shape=(2, 1, 4, 6), dtype=np.int8)
+    a_zero_point = self._get_rnd_int(-20,
+                                     20,
+                                     shape=(A.shape[-2]),
+                                     dtype=np.int8)
+    b_zero_point = self._get_rnd_int(-20,
+                                     20,
+                                     shape=(B.shape[-1]),
+                                     dtype=np.int8)
+    a_zero_point_with_reshape = np.reshape(a_zero_point, [A.shape[-2], 1])
+    A_minus_zero_point = np.subtract(A.astype(np.int32),
+                                     a_zero_point_with_reshape.astype(np.int32))
+    B_minus_zero_point = np.subtract(B.astype(np.int32),
+                                     b_zero_point.astype(np.int32))
+    z = np.matmul(A_minus_zero_point, B_minus_zero_point)
+    graph_def = helper.make_graph(
+        [node_def],
+        name="test_unknown_shape",
+        inputs=[
+            helper.make_tensor_value_info("A", TensorProto.INT8,
+                                          [None, None, None, None]),
+            helper.make_tensor_value_info("B", TensorProto.INT8,
+                                          [None, None, None, None]),
+            helper.make_tensor_value_info("a_zero_point", TensorProto.INT8,
+                                          [None]),
+            helper.make_tensor_value_info("b_zero_point", TensorProto.INT8,
+                                          [None])
+        ],
+        outputs=[
+            helper.make_tensor_value_info("Z", TensorProto.INT32,
+                                          [None, None, None, None])
+        ])
+    tf_rep = onnx_graph_to_tensorflow_rep(graph_def)
+    output = tf_rep.run({
+        "A": A,
+        "B": B,
+        "a_zero_point": a_zero_point,
+        "b_zero_point": b_zero_point
+    })
+    np.testing.assert_almost_equal(output["Z"], z)
+
   def test_scatter_nd(self):
     if legacy_opset_pre_ver(11):
       raise unittest.SkipTest(
@@ -153,6 +264,232 @@ class TestDynamicShape(unittest.TestCase):
     output = tf_rep.run({"data": data, "indices": indices, "updates": updates})
     np.testing.assert_almost_equal(output["outputs"], ref_output)
 
+  def test_max_pool_2d_dilations_ceil_pads(self):
+    if legacy_opset_pre_ver(10):
+      raise unittest.SkipTest(
+          "ONNX version {} doesn't support dilations nor ceil mode.".format(
+              defs.onnx_opset_version()))
+
+    kernel_shape = [3, 3]
+    strides = [2, 2]
+    dilations = [3, 3]
+    pads = [1, 1, 2, 2]
+    ceil_mode = 1
+
+    input_shape = [10, 3, 23, 23]
+    x = self._get_rnd_float32(shape=input_shape)
+
+    test_output = py_pool(x, kernel_shape=kernel_shape, strides=strides,
+                          dilations=dilations, padding=pads,
+                          ceil_mode=ceil_mode, pooling_type="MAX",
+                          include_indices=False)
+
+    node_def = helper.make_node(
+            op_type="MaxPool",
+            inputs=["X"],
+            outputs=["Y"],
+            kernel_shape=kernel_shape,
+            strides=strides,
+            dilations=dilations,
+            pads=pads,
+            ceil_mode=ceil_mode)
+
+    graph_def = helper.make_graph(
+        [node_def],
+        name="test_unknown_shape",
+        inputs=[
+            helper.make_tensor_value_info("X", TensorProto.FLOAT,
+                                          [None, None, None, None]),
+        ],
+        outputs=[
+            helper.make_tensor_value_info("Y", TensorProto.FLOAT,
+                                          [None, None, None, None])
+        ])
+    tf_rep = onnx_graph_to_tensorflow_rep(graph_def)
+    output = tf_rep.run({"X": x})
+
+    np.testing.assert_almost_equal(output["Y"], test_output)
+
+  def test_average_pool_2d(self):
+    kernel_shape = [1, 2]
+    strides = [1, 2]
+
+    input_shape = [10, 10, 4, 4]
+    x = self._get_rnd_float32(shape=input_shape)
+
+    test_output = py_pool(x, kernel_shape=kernel_shape, strides=strides,
+                          pooling_type="AVG", include_indices=False)
+
+    node_def = helper.make_node(
+            op_type="AveragePool",
+            inputs=["X"],
+            outputs=["Y"],
+            kernel_shape=kernel_shape,
+            strides=strides)
+
+    graph_def = helper.make_graph(
+        [node_def],
+        name="test_unknown_shape",
+        inputs=[
+            helper.make_tensor_value_info("X", TensorProto.FLOAT,
+                                          [None, None, None, None]),
+        ],
+        outputs=[
+            helper.make_tensor_value_info("Y", TensorProto.FLOAT,
+                                          [None, None, None, None])
+        ])
+    tf_rep = onnx_graph_to_tensorflow_rep(graph_def)
+    output = tf_rep.run({"X": x})
+
+    np.testing.assert_almost_equal(output["Y"], test_output)
+
+  def test_slice(self):
+    # test case 1 with normal inputs
+    axes = [0, 1, 2]
+    starts = [0, 0, 0]
+    ends = [2, 2, 2]
+
+    if legacy_opset_pre_ver(10):
+      node_def = helper.make_node("Slice", ["X"], ["S"],
+                                  axes=axes,
+                                  starts=starts,
+                                  ends=ends)
+      graph_def = helper.make_graph(
+        [node_def],
+        name="test_unknown_shape",
+        inputs=[
+          helper.make_tensor_value_info("X", TensorProto.FLOAT,
+                                        [None, None, None])
+        ],
+        outputs=[
+          helper.make_tensor_value_info("S", TensorProto.FLOAT,
+                                        [None, None, None])
+        ])
+    else:
+      node_def = helper.make_node("Slice",
+                                  ["X", "starts", "ends", "axes"],
+                                  ["S"])
+      graph_def = helper.make_graph(
+        [node_def],
+        name="test_unknown_shape",
+        inputs=[
+          helper.make_tensor_value_info("X", TensorProto.FLOAT,
+                                        [None, None, None]),
+          helper.make_tensor_value_info("starts", TensorProto.INT32,
+                                        [None]),
+          helper.make_tensor_value_info("ends", TensorProto.INT32,
+                                        [None]),
+          helper.make_tensor_value_info("axes", TensorProto.INT32,
+                                        [None]),
+        ],
+        outputs=[
+          helper.make_tensor_value_info("S", TensorProto.FLOAT,
+                                        [None, None, None])
+        ])
+    tf_rep = onnx_graph_to_tensorflow_rep(graph_def)
+
+    if legacy_opset_pre_ver(10):
+      x = self._get_rnd_float32(shape=[1000]).reshape([10, 10, 10])
+      output = tf_rep.run({"X": x})
+      np.testing.assert_almost_equal(output["S"], x[0:2, 0:2, 0:2])
+    else:
+      x = self._get_rnd_float32(shape=[1000]).reshape([10, 10, 10])
+      output = tf_rep.run({"X": x, "starts": starts, "ends": ends, "axes": axes})
+      np.testing.assert_almost_equal(output["S"], x[0:2, 0:2, 0:2])
+
+    # test case 2 with negative, out-of-bound and default inputs
+    axes = [0, 2]
+    starts = [0, -7]
+    ends = [-8, 20]
+    steps = [1, 1]
+
+    if legacy_opset_pre_ver(10):
+      node_def = helper.make_node("Slice", ["X"], ["S"],
+                                  axes=axes,
+                                  starts=starts,
+                                  ends=ends)
+      graph_def = helper.make_graph(
+        [node_def],
+        name="test_unknown_shape",
+        inputs=[
+          helper.make_tensor_value_info("X", TensorProto.FLOAT,
+                                        [None, None, None])
+        ],
+        outputs=[
+          helper.make_tensor_value_info("S", TensorProto.FLOAT,
+                                        [None, None, None])
+        ])
+    else:
+      node_def = helper.make_node("Slice",
+                                  ["X", "starts", "ends", "axes", "steps"],
+                                  ["S"])
+      graph_def = helper.make_graph(
+        [node_def],
+        name="test_unknown_shape",
+        inputs=[
+          helper.make_tensor_value_info("X", TensorProto.FLOAT,
+                                        [None, None, None]),
+          helper.make_tensor_value_info("starts", TensorProto.INT32,
+                                        [None]),
+          helper.make_tensor_value_info("ends", TensorProto.INT32,
+                                        [None]),
+          helper.make_tensor_value_info("axes", TensorProto.INT32,
+                                        [None]),
+          helper.make_tensor_value_info("steps", TensorProto.INT32,
+                                        [None]),
+        ],
+        outputs=[
+          helper.make_tensor_value_info("S", TensorProto.FLOAT,
+                                        [None, None, None])
+        ])
+    tf_rep = onnx_graph_to_tensorflow_rep(graph_def)
+    if legacy_opset_pre_ver(10):
+      x = self._get_rnd_float32(shape=[1000]).reshape([10, 10, 10])
+      output = tf_rep.run({"X": x})
+      np.testing.assert_almost_equal(output["S"], x[0:-8, :, -7:20])
+    else:
+      x = self._get_rnd_float32(shape=[1000]).reshape([10, 10, 10])
+      output = tf_rep.run({"X": x, "starts": starts, "ends": ends, "axes": axes, "steps": steps})
+      np.testing.assert_almost_equal(output["S"], x[0:-8, :, -7:20])
+
+    # test case 3 with non-default steps
+    axes = [0, 1, 2]
+    starts = [0, 0, 0]
+    ends = [2, 2, 2]
+    steps = [2, -2, -1]
+
+    if not legacy_opset_pre_ver(10):
+      x = self._get_rnd_float32(shape=[1000]).reshape([10, 10, 10])
+      output = tf_rep.run({"X": x, "starts": starts, "ends": ends, "axes": axes, "steps": steps})
+      np.testing.assert_almost_equal(output["S"], x[0:2:2, 0:2:-2, 0:2:-1])
+
+  def test_split(self):
+    shape = [12, 12]
+    axis = 0
+    output_count = 3
+    node_def = helper.make_node("Split", ["X"],
+                                ["Z%i" % i for i in range(output_count)],
+                                axis=axis)
+    graph_def = helper.make_graph(
+        [node_def],
+        name="test_unknown_shape",
+        inputs=[
+            helper.make_tensor_value_info("X", TensorProto.FLOAT,
+                                          [None] * len(shape))
+        ],
+        outputs=[
+            helper.make_tensor_value_info("Z%i" % i, TensorProto.FLOAT,
+                                          [None] * len(shape)) for i in range(output_count)
+        ])
+
+    tf_rep = onnx_graph_to_tensorflow_rep(graph_def)
+    x = self._get_rnd_float32(shape=shape)
+    output = tf_rep.run({"X": x})
+
+    per_part = shape[axis] // output_count
+    split = [per_part] * output_count
+    for a, b in zip(list(output), np.split(x, np.cumsum(split))[:-1]):
+      np.testing.assert_almost_equal(a, b)
 
 if __name__ == '__main__':
   unittest.main()

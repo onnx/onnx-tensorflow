@@ -30,7 +30,8 @@ Customize op can also be implemented in similar way.
 
     * version is the number of since version, which can get from operator's specification
     ```
-5.  Run `gen_opset.py`.
-6.  Run `gen_status.py -v master`.
-7.  Run `gen_doc.py` if there is any update to CLI or API.
-8.  Add test case to `test_node.py`.
+5.  From within the `onnx_tf` directory, run `gen_opset.py`.
+6.  From within the `onnx_tf` directory, run `gen_status.py -v master`.
+7.  From within the `onnx_tf` directory, run `gen_doc.py` if there is any update to CLI or API.
+8.  Verify the operator's test cases in `test/backend/test_onnx_backend.py` all pass.
+9.  Add any additional test cases to `test/backend/test_node.py`.
