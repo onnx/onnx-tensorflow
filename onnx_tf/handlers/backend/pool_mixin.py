@@ -14,6 +14,7 @@ from onnx_tf.common.pooling_helper import calc_output_shape
 class PoolMixin(object):
 
   @classmethod
+  @tf.autograph.experimental.do_not_convert()
   def pool(cls, node, input_dict, pooling_type, strict=True):
     x = input_dict[node.inputs[0]]
     orig_x = x
@@ -98,8 +99,16 @@ class PoolMixin(object):
                                         " arguments not compatible",
                                         "Tensorflow")
 
+    from absl import logging
+    logging.set_verbosity(logging.INFO)
+
     def dilated_pool():
       return (dp.dilated_pool(), None)
+
+    def postprocess(pooled, argmax, perm):
+      return (tf.transpose(pooled, perm=perm) if need_trans else pooled,
+              tf.transpose(argmax, perm=perm) if need_trans and argmax
+              is not None else argmax)
 
     # select correct op depending on the pooling type
     pooling_op = dilated_pool if pooling_type in ["MAX", "AVG"] else \
@@ -108,13 +117,8 @@ class PoolMixin(object):
     # select the correct transpose ops depending on the input storage format
     perm = get_perm_from_formats(compute_format, storage_format)
 
-    def postprocess(pooled, argmax):
-      return (tf.transpose(pooled, perm=perm) if need_trans else pooled,
-              tf.transpose(argmax, perm=perm)
-              if need_trans and argmax is not None else argmax)
-
     pooled, argmax = pooling_op()
-    pooled, argmax = postprocess(pooled, argmax)
+    pooled, argmax = postprocess(pooled, argmax, perm)
 
     result = [pooled] if argmax is None else [pooled, argmax]
 

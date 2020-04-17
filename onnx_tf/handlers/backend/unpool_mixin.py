@@ -7,6 +7,7 @@ from onnx_tf.common import get_perm_from_formats
 class UnpoolMixin(object):
 
   @classmethod
+  @tf.autograph.experimental.do_not_convert()
   def max_unpool(cls, node, input_dict):
     """
             MaxUnpooling operation

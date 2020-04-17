@@ -54,8 +54,6 @@ class EyeLike(BackendHandler):
     # our python code would be the best option in this case to get the
     # smallest graph possible
     else:
-
-#      @tf.function
       def create_nodes(inp, offset):
         shape = tf.shape(inp, out_type=tf.int32)
         # calculate upper and lower bound of max eye shape
@@ -73,11 +71,9 @@ class EyeLike(BackendHandler):
         else:
           tb_paddings = [abs_offset, shape[0] - abs_offset - eye_shape]
           lr_paddings = [0, shape[1] - eye_shape]
-        #paddings = paddings.assign([tb_paddings, lr_paddings])
         paddings = [tb_paddings, lr_paddings]
         return tensor, paddings
 
-#      paddings = tf.Variable([[0, 0], [0, 0]], dtype=tf.int32)
       paddings = tf.constant([[0, 0], [0, 0]], dtype=tf.int32)
       tensor, paddings = create_nodes(inp, offset)
       return [

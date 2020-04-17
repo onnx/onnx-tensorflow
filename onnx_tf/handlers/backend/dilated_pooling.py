@@ -549,6 +549,7 @@ class DilatedPooling(object):
           new_input, ksize=kernel_shape, strides=kernel_shape, padding="VALID")
       new_ind = self._calc_orig_argmax(new_ind)
     else:
+      self.pads = np.array([0] * self.spatial_size * 2)
       if type(self.padding) is list or \
          self.padding.lower() == "same_lower":
         # pad the input

@@ -30,7 +30,6 @@ from onnx_tf.common.handler_helper import get_all_backend_handlers
 from onnx_tf.pb_wrapper import OnnxNode
 from onnx_tf.backend_tf_module import BackendTFModule
 import onnx_tf.common as common
-import numpy as np
 
 
 class TensorflowBackend(Backend):

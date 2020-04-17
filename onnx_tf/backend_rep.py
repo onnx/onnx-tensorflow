@@ -4,7 +4,6 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import tensorflow as tf
-import numpy as np
 
 from onnx.backend.base import BackendRep, namedtupledict
 

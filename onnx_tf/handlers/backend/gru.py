@@ -75,6 +75,9 @@ class GRU(RNNMixin, BackendHandler):
       elif names[-2] == "candidate":
         new_w = tf.transpose(w_h)
         new_r = tf.transpose(r_h)
+      else:
+        new_w = None
+        new_r = None
       kernel = tf.concat([new_w, new_r], 0)
       return kernel
     if names[-1] == "bias":
