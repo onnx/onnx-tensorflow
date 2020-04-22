@@ -7,7 +7,7 @@
 
 [Command Line Interface Documentation](https://github.com/onnx/onnx-tensorflow/blob/master/doc/CLI.md)
 
-From ONNX to Tensorflow: `onnx-tf convert -t tf -i /path/to/input.onnx -o /path/to/output.pb`
+From ONNX to Tensorflow: `onnx-tf convert -i /path/to/input.onnx -o /path/to/output.pb`
 
 ### Convert programmatically:
 
@@ -49,7 +49,7 @@ Because users often have their own preferences for which variant of Tensorflow t
 ### Installation:
 - Install ONNX master branch from source.
 - Install Tensorflow >= 2.0 and tensorflow-addons. (Note for Tensorflow 1.x please refer the [tf-1.x branch](https://github.com/onnx/onnx-tensorflow/tree/tf-1.x))
-- Run `git clone git@github.com:onnx/onnx-tensorflow.git && cd onnx-tensorflow`.
+- Run `git clone https://github.com/onnx/onnx-tensorflow.git && cd onnx-tensorflow`.
 - Run `pip install -e .`.
 
 ### Folder Structure:
