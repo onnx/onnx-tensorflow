@@ -15,13 +15,13 @@ backend_opset_version = {
     'AveragePool': [1, 7, 10, 11],
     'BatchNormalization': [1, 6, 7, 9],
     'Binarizer': [],
-    'BitShift': [],
+    'BitShift': [11],
     'Cast': [1, 6, 9],
     'CastMap': [],
     'CategoryMapper': [],
     'Ceil': [1, 6],
     'Celu': [],
-    'Clip': [1, 6],
+    'Clip': [1, 6, 11],
     'Compress': [9, 11],
     'Concat': [1, 4, 11],
     'ConcatFromSequence': [],
@@ -210,11 +210,12 @@ backend_partial_support = {
                'with column major are not supported in Tensorflow.',
     'Mod': 'Mod Dividend or Divisor in int8/int16/uint8/uint16/uint32/uint64 '
            'are not supported in Tensorflow.',
-    'OneHot': 'OneHot indices in '
-              'uint16/uint32/uint64/int8/int16/float16/float/double, or OneHot '
-              'depth in '
-              'uint8/uint16/uint32/uint64/int8/int16/int64/float16/float/double '
-              'are not supported in Tensorflow.',
+    'OneHot':
+        'OneHot indices in '
+        'uint16/uint32/uint64/int8/int16/float16/float/double, or OneHot '
+        'depth in '
+        'uint8/uint16/uint32/uint64/int8/int16/int64/float16/float/double '
+        'are not supported in Tensorflow.',
     'RNN': 'RNN with clip is not supported in Tensorflow.',
     'Resize': 'Resize required 4D input in Tensorflow.',
     'Upsample': 'Upsample required 4D input in Tensorflow.'
