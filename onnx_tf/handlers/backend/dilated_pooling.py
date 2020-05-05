@@ -591,9 +591,11 @@ class DilatedPooling(object):
     else:
       padding_ = self.padding
 
-    # if spatial_size == 2 and maxpool we can use tf.nn.dilation2d directly
+    # if maxpool op with dialtions != 1 and spatial_size == 2
+    # we can use tf.nn.dilation2d directly
     if self.spatial_size == 2 and self.pooling_type.startswith("MAX") \
-            and not force_custom_impl:
+            and self.dilations != [1] * self.spatial_size and \
+            not force_custom_impl:
       strides = [1] + list(self.strides) + [1]
       dilations = [1] + list(self.dilations) + [1]
 
