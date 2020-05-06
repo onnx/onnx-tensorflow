@@ -1,6 +1,5 @@
 import inspect
-import warnings
-
+import onnx_tf.common as common
 
 class CustomException(object):
 
@@ -27,7 +26,7 @@ class OpUnimplementedException(CustomException):
 
   def __call__(self, op, version=None, domain=None):
     if IGNORE_UNIMPLEMENTED:
-      self._func = warnings.warn
+      self._func = common.logger.warning
     super(OpUnimplementedException, self).__call__(op, version, domain)
 
   def get_message(self, op, version=None, domain=None):
