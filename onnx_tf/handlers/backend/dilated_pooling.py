@@ -10,136 +10,137 @@ from onnx_tf.common.tf_helper import tf_product
 
 class DilatedPooling(object):
   """
-    This class implements two main methods:
-        dilated_pool:
-            calculates a max or average pool over the input
+        This class implements two main methods:
+            dilated_pool:
+                calculates a max or average pool over the input
 
-        dilated_maxpool_with_argmax:
-            calculates a maxpool over the input and returns the
-            indices/argmax of the selected values
+            dilated_maxpool_with_argmax:
+                calculates a maxpool over the input and returns the
+                indices/argmax of the selected values
 
-    In addition to the standard features of pooling operations in
-    Tensorflow, these methods support dilations, ceil mode, SAME_LOWER and
-    explicit padding.
+        In addition to the standard features of pooling operations in
+        Tensorflow, these methods support dilations, ceil mode, SAME_LOWER and
+        explicit padding.
 
-    Dilations are partly supported in Tensorflow in `tf.nn.pool` and
-    `tf.nn.dilation2d`. The code will try to use the Tensoflow build-in
-    functions as much as poosible.
+        Dilations are partly supported in Tensorflow in `tf.nn.pool` and
+        `tf.nn.dilation2d`. The code will try to use the Tensoflow build-in
+        functions as much as poosible.
 
-    In cases, not supported by Tensorflow there is a custom algorith of
-    dilated pooling `_remove_dilations`.
+        In cases, not supported by Tensorflow there is a custom algorith of
+        dilated pooling `_remove_dilations`.
 
-    The idea behind `_remove_dilations` is to transform the input N-D data
-    into a supported input for the standard tf.nn.pool operation.
-    This is achieved by calculating N-D indicies for the values which will
-    be selected from the input when applying the dilations and
-    then extracting the values using tf.gather_nd. Next step is to execute
-    `tf.nn.pool` on this new input data with **strides=kernel_shape** and
-    no dilations. The resulting pool will be the result we are looking for.
+        The idea behind `_remove_dilations` is to transform the input N-D data
+        into a supported input for the standard tf.nn.pool operation.
+        This is achieved by calculating N-D indicies for the values which will
+        be selected from the input when applying the dilations and
+        then extracting the values using tf.gather_nd. Next step is to execute
+        `tf.nn.pool` on this new input data with **strides=kernel_shape** and
+        no dilations. The resulting pool will be the result we are looking for.
 
-    In case of `deilated_maxpool_with_argmax` an additional step is needed
-    to recalculated the resulting indices back into the original
-    data indices. It is done with `_calc_orig_argmax`
+        In case of `deilated_maxpool_with_argmax` an additional step is needed
+        to recalculated the resulting indices back into the original
+        data indices. It is done with `_calc_orig_argmax`
 
-    Here is a simple example of how the algorithm works:
+        Here is a simple example of how the algorithm works:
 
-    kernel_shape = [3]
-    strides = [2]
-    dilations = [3]
+        kernel_shape = [3]
+        strides = [2]
+        dilations = [3]
 
-    Input 1D data:
+        Input 1D data:
 
-        x-----x-----x-----x-----x-----x-----x-----x-----x-----x-----x
-        |  *  |     | **  |  *  |     | **  |  *  |     | **  |     |
-        | 10  |  9  | 30  |  7  |  6  | 15  | 16  | 17  | 18  | 19  |
-        x-----x-----x-----x-----x-----x-----x-----x-----x-----x-----x
-          (0)   (1)   (2)   (3)   (4)   (5)   (6)   (7)   (8)   (9)
+            x-----x-----x-----x-----x-----x-----x-----x-----x-----x-----x
+            |  *  |     | **  |  *  |     | **  |  *  |     | **  |     |
+            | 10  |  9  | 30  |  7  |  6  | 15  | 16  | 17  | 18  | 19  |
+            x-----x-----x-----x-----x-----x-----x-----x-----x-----x-----x
+              (0)   (1)   (2)   (3)   (4)   (5)   (6)   (7)   (8)   (9)
 
-    where * represents the values selected during the first sliding window
-    step and ** during the second sliding window step
+        where * represents the values selected during the first sliding window
+        step and ** during the second sliding window step
 
-    the resulting indices will be:
+        the resulting indices will be:
 
-        [0, 3, 6, 2, 5, 8]
-         |     |  |     |
-          First    Second
-          step     step
+            [0, 3, 6, 2, 5, 8]
+             |     |  |     |
+              First    Second
+              step     step
 
-    after tf.gather_nd operation we get a new input data with
-    removed dilations:
+        after tf.gather_nd operation we get a new input data with
+        removed dilations:
 
-        [10, 7, 16, 30, 15, 18]
+            [10, 7, 16, 30, 15, 18]
 
-    and apllying tf.nn.maxpool (or avgpool) with strides = kernel_shape = 3
-    will result into:
+        and apllying tf.nn.maxpool (or avgpool) with strides = kernel_shape = 3
+        will result into:
 
-        [16, 30]
+            [16, 30]
 
-    which is the result of the dilated maxpooling.
+        which is the result of the dilated maxpooling.
 
-    Here is pseudo code of the algorithm with comments:
+        Here is pseudo code of the algorithm with comments:
 
-    FUNCTION _remove_dilations:
-        /* Calculate N-D index of the values to be selected by the
-           dilations and strides */
+        FUNCTION _remove_dilations:
+            /* Calculate N-D index of the values to be selected by the
+               dilations and strides */
 
-        /* Do a loop over the input spatial dimensions starting from the
-           last (most internal) going up to the first dimension
+            /* Do a loop over the input spatial dimensions starting from the
+               last (most internal) going up to the first dimension
 
-           On every step of the loop calculate the input indices and
-           "combine" them with the already calculated indices from the
-           previous dimensions using cartesian product.
-        */
-        LOOP with **dimension** from **dimensions_count** to **0**:
-
-            // Initialize empty gather_nd index
-            gather_ind = []
-
-            // Calculate the output size for the current dimension
-            dim_filter_size = (dim_kernel_size - 1) * dim_dilations
-            dim_output_size = (((dim_input_size - dim_filter_size) //
-                               dim_strides) + 1) * dim_kernel_size)
-
-            /* For every output index, calculate the corresponding index
-               into the input data */
-            dim_input_indices = range(0, dim_output_size)
-            dim_input_indices = calculate_input_indicies(dim_input_indices)
-
-            /* combine the calculated indices with the previous dimensions
+               On every step of the loop calculate the input indices and
+               "combine" them with the already calculated indices from the
+               previous dimensions using cartesian product.
             */
-            gather_ind = cartesian_product(dim_input_indices, gather_ind)
-        END LOOP
+            LOOP with **dimension** from **dimensions_count** to **0**:
 
-        /* For example for 2D input the resulting gather_ind will
-           look like this:
+                // Initialize empty gather_nd index
+                gather_ind = []
 
-           [[y1, x1], [y2, x2], ..., [yn, xm]]
+                // Calculate the output size for the current dimension
+                dim_filter_size = (dim_kernel_size - 1) * dim_dilations
+                dim_output_size = (((dim_input_size - dim_filter_size) //
+                                   dim_strides) + 1) * dim_kernel_size)
 
-           where:
-           n is the height
-           m is the width and
-           [xi, yi] are the 2D indices in the input data
-        */
+                /* For every output index, calculate the corresponding index
+                   into the input data */
+                dim_input_indices = range(0, dim_output_size)
+                dim_input_indices = calculate_input_indicies(dim_input_indices)
 
-        new_data = tf.gather_nd(input, gather_ind)
+                /* combine the calculated indices with the previous dimensions
+                */
+                gather_ind = cartesian_product(dim_input_indices, gather_ind)
+            END LOOP
 
-        reshape new_data to the correct output shape
+            /* For example for 2D input the resulting gather_ind will
+               look like this:
 
-        RETURN new_data
+               [[y1, x1], [y2, x2], ..., [yn, xm]]
+
+               where:
+               n is the height
+               m is the width and
+               [xi, yi] are the 2D indices in the input data
+            */
+
+            new_data = tf.gather_nd(input, gather_ind)
+
+            reshape new_data to the correct output shape
+
+            RETURN new_data
 
 
-      Before executing _remove_dilations the code will apply paddings to the
-      input data if needed. Padding is done using tf.pad with -inf values.
-      Check `_remove_dilations` code for more details explanation of the
-      implementation
+        Before executing _remove_dilations the code will apply paddings to the
+        input data if needed. Padding is done using tf.pad with -inf values.
+        Check `_remove_dilations` code for more details explanation of the
+        implementation
 
-      In case of dilated_maxpool_with_argmax the returned indices from
-      tf.nn.max_pool_with_argmax will point into our "no dilations" data.
-      That is why they need to be mapped back to the original input data.
-      It is done with `_calc_orig_argmax` function which will apply the same
-      calculations, that are used in _remove_dilations when calculating the
-      input data indices from output indices (check `_calc_orig_argmax` for
-      detailed inline comments explaining the calculations)
+        In case of dilated_maxpool_with_argmax the returned indices from
+        tf.nn.max_pool_with_argmax will point into our "no dilations" data.
+        That is why they need to be mapped back to the original input data.
+        It is done with `_calc_orig_argmax` function which will apply the same
+        calculations, that are used in _remove_dilations when calculating the
+        input data indices from output indices (check `_calc_orig_argmax` for
+        detailed inline comments explaining the calculations)
+
     """
 
   def __init__(self,
@@ -180,52 +181,52 @@ class DilatedPooling(object):
 
   def _calc_input_ind(self, output_ind, kernel, dilation, stride):
     """
-      This function maps index from the output of _remove_dilations
-      to index from the original input along single axis. It calculates
-      the index inside the input data from the index of the output.
-      It is used to generate the correct indexes of the values to be
-      extracted by gather_nd.
+            This function maps index from the output of _remove_dilations
+            to index from the original input along single axis. It calculates
+            the index inside the input data from the index of the output.
+            It is used to generate the correct indexes of the values to be
+            extracted by gather_nd.
 
-      Args:
-          output_ind: vector with indices from the output to be mapped
-          kernel:     kernel size along the axis
-          dilation:   dilations along the axis
-          stride:     strides along the axis
-      Return:
-          input_ind: calculated indices
+            Args:
+                output_ind: vector with indices from the output to be mapped
+                kernel:     kernel size along the axis
+                dilation:   dilations along the axis
+                stride:     strides along the axis
+            Return:
+                input_ind: calculated indices
 
-      The formula is:
-          input_ind = (output_ind // kernel) * stride +
-                      (output_ind % kernel) * dilation
+            The formula is:
+                input_ind = (output_ind // kernel) * stride +
+                            (output_ind % kernel) * dilation
 
-      Example:
-        If we have following 2D input to _remove_dilations:
-                   [[  0,  1,  2,  3],
-                    [  4,  5,  6,  7],
-                    [  8,  9, 10, 11],
-                    [ 12, 13, 14, 15]]
-        and Kernel = [2, 2], Dilations: [2, 2], Strides: [1, 1]
+            Example:
+              If we have following 2D input to _remove_dilations:
+                         [[  0,  1,  2,  3],
+                          [  4,  5,  6,  7],
+                          [  8,  9, 10, 11],
+                          [ 12, 13, 14, 15]]
+              and Kernel = [2, 2], Dilations: [2, 2], Strides: [1, 1]
 
-        the output of _remove_dilations will have shape [4, 4] and
-        _calc_input_ind will be called twice for the two axis 0 (along
-        height) and axis 1 (along width) with
+              the output of _remove_dilations will have shape [4, 4] and
+              _calc_input_ind will be called twice for the two axis 0 (along
+              height) and axis 1 (along width) with
 
-            output_ind = [0, 1, 2, 3]
+                  output_ind = [0, 1, 2, 3]
 
-        which will result in:
+              which will result in:
 
-            input_ind = [0, 2, 1, 3]
-    """
+                  input_ind = [0, 2, 1, 3]
+        """
     return (output_ind // kernel) * (stride - kernel * dilation) + \
         output_ind * dilation
 
   def _calc_orig_argmax(self, ind):
     """
-      Map result argxmax to the original input indices
+            Map result argxmax to the original input indices
 
-      Maps indices generated by maxpool_with_argmax on top of the
-      dilation reduced input to the orignal input indices
-    """
+            Maps indices generated by maxpool_with_argmax on top of the
+            dilation reduced input to the orignal input indices
+        """
 
     in_width = self.orig_input_shape[2]
     num_channels = self.orig_input_shape[3]
@@ -255,33 +256,33 @@ class DilatedPooling(object):
 
   def _remove_dilations(self):
     """
-      This method removes the dilations by extracting the values from
-      the input for every sliding window according to the dilations,
-      strides and kernel size and generates output that can be used by
-      pooling operations with strides = kernel_shape to accomplish
-      dilated pooling
+            This method removes the dilations by extracting the values from
+            the input for every sliding window according to the dilations,
+            strides and kernel size and generates output that can be used by
+            pooling operations with strides = kernel_shape to accomplish
+            dilated pooling
 
-      Example:
-        Input:     [[  0,  1,  2,  3],
-                    [  4,  5,  6,  7],
-                    [  8,  9, 10, 11],
-                    [ 12, 13, 14, 15]]
+            Example:
+              Input:     [[  0,  1,  2,  3],
+                          [  4,  5,  6,  7],
+                          [  8,  9, 10, 11],
+                          [ 12, 13, 14, 15]]
 
-        Kernel:    [2, 2]
-        Dilations: [2, 2]
-        Strides:   [1, 1]
+              Kernel:    [2, 2]
+              Dilations: [2, 2]
+              Strides:   [1, 1]
 
-        Will return:
-                   [[  0,  2,  1,  3],
-                    [  8, 10,  9, 11],
-                    [  4,  6,  5,  7],
-                    [ 12, 14, 13, 15]]
+              Will return:
+                         [[  0,  2,  1,  3],
+                          [  8, 10,  9, 11],
+                          [  4,  6,  5,  7],
+                          [ 12, 14, 13, 15]]
 
-        After max_pool2d with kernel_shape = strides = [2, 2]
-        the result is:
-                   [[ 10, 11],
-                    [ 14, 15]]
-    """
+              After max_pool2d with kernel_shape = strides = [2, 2]
+              the result is:
+                         [[ 10, 11],
+                          [ 14, 15]]
+        """
 
     input_shape = tf_shape(self.input)
     in_spatial_shape = input_shape[1:self.spatial_size + 1]
@@ -300,70 +301,70 @@ class DilatedPooling(object):
     self.output_shape = [0] * (self.spatial_size + 2)
     self.output_shape[0] = input_shape[0]
     """
-      Loop over the input spatial dimensions starting from the
-      last (most internal) going up to the first dimension
+            Loop over the input spatial dimensions starting from the
+            last (most internal) going up to the first dimension
 
-      On every step of the loop calculate the output indices and
-      map them to the input indices using `_calc_input_ind`,
-      then "combine" with the already calculated indices from the
-      previous dimensions using cartesian product.
+            On every step of the loop calculate the output indices and
+            map them to the input indices using `_calc_input_ind`,
+            then "combine" with the already calculated indices from the
+            previous dimensions using cartesian product.
 
-      For the following example input:
+            For the following example input:
 
-        Input:     [[  0,  1,  2,  3],
-                    [  4,  5,  6,  7],
-                    [  8,  9, 10, 11],
-                    [ 12, 13, 14, 15]]
+              Input:     [[  0,  1,  2,  3],
+                          [  4,  5,  6,  7],
+                          [  8,  9, 10, 11],
+                          [ 12, 13, 14, 15]]
 
-        Kernel:    [2, 2]
-        Dilations: [2, 2]
-        Strides:   [1, 1]
+              Kernel:    [2, 2]
+              Dilations: [2, 2]
+              Strides:   [1, 1]
 
-      these are the steps that will be executed:
+            these are the steps that will be executed:
 
-      1. Initilize gather_ind = [[0]]     # we have only 1 channel
+            1. Initilize gather_ind = [[0]]     # we have only 1 channel
 
-      2. Loop step 0 (axis 1):
-            filter_size = 3
-            output_size = 4
-            dim_ind = [[0]
-                       [2]
-                       [1]
-                       [3]]
+            2. Loop step 0 (axis 1):
+                  filter_size = 3
+                  output_size = 4
+                  dim_ind = [[0]
+                             [2]
+                             [1]
+                             [3]]
 
-            gather_ind = [[0 0]
-                          [2 0]
-                          [1 0]
-                          [3 0]]
+                  gather_ind = [[0 0]
+                                [2 0]
+                                [1 0]
+                                [3 0]]
 
-      3. Loop step 1 (axis 0):
-            filter_size = 3
-            output_size = 4
-            dim_ind = [[0]
-                       [2]
-                       [1]
-                       [3]]
+            3. Loop step 1 (axis 0):
+                  filter_size = 3
+                  output_size = 4
+                  dim_ind = [[0]
+                             [2]
+                             [1]
+                             [3]]
 
-            gather_ind = [[0 0 0]
-                          [0 2 0]
-                          [0 1 0]
-                          [0 3 0]
-                          [2 0 0]
-                          [2 2 0]
-                          [2 1 0]
-                          [2 3 0]
-                          [1 0 0]
-                          [1 2 0]
-                          [1 1 0]
-                          [1 3 0]
-                          [3 0 0]
-                          [3 2 0]
-                          [3 1 0]
-                          [3 3 0]]
+                  gather_ind = [[0 0 0]
+                                [0 2 0]
+                                [0 1 0]
+                                [0 3 0]
+                                [2 0 0]
+                                [2 2 0]
+                                [2 1 0]
+                                [2 3 0]
+                                [1 0 0]
+                                [1 2 0]
+                                [1 1 0]
+                                [1 3 0]
+                                [3 0 0]
+                                [3 2 0]
+                                [3 1 0]
+                                [3 3 0]]
 
-      These are the indices used for gather_nd operation to collect
-      the values from the input data.
-    """
+            These are the indices used for gather_nd operation to collect
+            the values from the input data.
+        """
 
     for dim in range(self.spatial_size - 1, -1, -1):
       filter_size = (self.kernel_shape[dim] - 1) * \
@@ -412,8 +413,8 @@ class DilatedPooling(object):
 
   def _calc_pads_same(self, in_spatial_shape):
     """
-      Calculate SAME_* paddings.
-    """
+            Calculate SAME_* paddings.
+        """
 
     pad_ops = pooling_helper.pad_numpy_ops if self.is_known_shape else \
         pooling_helper.pad_tf_ops
@@ -424,8 +425,8 @@ class DilatedPooling(object):
 
   def _calc_pads_explicit(self):
     """
-      Calculate explicit padding
-    """
+            Calculate explicit padding
+        """
     assert type(self.padding) is list
 
     pads = []
@@ -435,8 +436,8 @@ class DilatedPooling(object):
 
   def _calc_pads_ceil_mode(self, in_spatial_shape):
     """
-      Calculate padding in ceil_mode
-    """
+            Calculate padding in ceil_mode
+        """
 
     pads = []
     for i in range(self.spatial_size):
@@ -477,8 +478,8 @@ class DilatedPooling(object):
 
   def _pad_input(self):
     """
-      Pad the input according to the parameters
-    """
+            Pad the input according to the parameters
+        """
     # check if we need to do any padding at all
     if not self.ceil_mode and ((type(self.padding) is list and
                                 self.padding == [0] * self.spatial_size * 2) or
@@ -509,8 +510,8 @@ class DilatedPooling(object):
 
   def _calc_argmax_without_padding(self, ind):
     """
-      Calculate the original indices as they would be without padding
-    """
+            Calculate the original indices as they would be without padding
+        """
     in_width = self.orig_input_shape[2]
     padded_width = self.input_shape[2]
     num_channels = self.input_shape[3]
@@ -531,8 +532,8 @@ class DilatedPooling(object):
 
   def dilated_maxpool_with_argmax(self, force_custom_impl=False):
     """
-      Do a dilated maxpool and return indices/argmax
-    """
+            Do a dilated maxpool and return indices/argmax
+        """
     # Tensorflow does not support maxpool_with_argmax on
     # spatial_size != 2
     assert self.spatial_size == 2
@@ -573,9 +574,9 @@ class DilatedPooling(object):
 
   def dilated_pool(self, force_custom_impl=False):
     """
-      Does N-D dilated max/avg pooling. Pads the input if explicit or
-      SAME_* padding is provided or ceil_mode is True
-    """
+            Does N-D dilated max/avg pooling. Pads the input if explicit or
+            SAME_* padding is provided or ceil_mode is True
+        """
 
     assert self.is_supported()
 
@@ -653,9 +654,9 @@ class DilatedPooling(object):
 
   def is_supported(self):
     """
-      Function to check if the current set of arguments are
-      supported for average pool
-    """
+            Function to check if the current set of arguments are
+            supported for average pool
+        """
     # check for maxpool
     if self.pooling_type.startswith("MAX"):
       return True
