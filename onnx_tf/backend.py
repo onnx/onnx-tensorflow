@@ -61,6 +61,7 @@ class TensorflowBackend(Backend):
     """
     super(TensorflowBackend, cls).prepare(model, device, **kwargs)
     common.logger.setLevel(logging_level)
+    common.logger.handlers[0].setLevel(logging_level)
 
     return cls.onnx_model_to_tensorflow_rep(model, strict)
 
@@ -120,10 +121,10 @@ class TensorflowBackend(Backend):
             ":", "_tf_") + "_" + get_unique_suffix(
             ) if ":" in value_info.name else value_info.name
 
-        x = tf.compat.v1.placeholder(
-            data_type.onnx2tf(value_info.type.tensor_type.elem_type),
-            name=value_info_name,
-            shape=shape)
+        x = tf.compat.v1.placeholder(data_type.onnx2tf(
+            value_info.type.tensor_type.elem_type),
+                                     name=value_info_name,
+                                     shape=shape)
         input_dict_items.append((value_info.name, x))
 
       # tensor dict: this dictionary is a map from variable names
@@ -139,8 +140,11 @@ class TensorflowBackend(Backend):
 
       for node in graph_def.node:
         onnx_node = OnnxNode(node)
-        output_ops = cls._onnx_node_to_tensorflow_op(
-            onnx_node, tensor_dict, handlers, opset=opset, strict=strict)
+        output_ops = cls._onnx_node_to_tensorflow_op(onnx_node,
+                                                     tensor_dict,
+                                                     handlers,
+                                                     opset=opset,
+                                                     strict=strict)
         curr_node_output_map = dict(zip(onnx_node.outputs, output_ops))
         tensor_dict.update(curr_node_output_map)
 
@@ -182,8 +186,9 @@ class TensorflowBackend(Backend):
         feed_dict_raw = dict(zip(node.inputs, inputs))
 
       # TODO: is constant the best way for feeding inputs?
-      input_dict = dict(
-          [(x[0], tf.constant(x[1])) for x in feed_dict_raw.items()])
+      input_dict = dict([
+          (x[0], tf.constant(x[1])) for x in feed_dict_raw.items()
+      ])
       ops = cls._onnx_node_to_tensorflow_op(node, input_dict)
 
       with tf.compat.v1.Session() as sess:
@@ -212,11 +217,10 @@ class TensorflowBackend(Backend):
           ":", "_tf_") + "_" + get_unique_suffix() if ":" in name else name
 
     return [(init.name,
-             tf.constant(
-                 tensor2list(init),
-                 shape=init.dims,
-                 dtype=data_type.onnx2tf(init.data_type),
-                 name=validate_initializer_name(init.name)))
+             tf.constant(tensor2list(init),
+                         shape=init.dims,
+                         dtype=data_type.onnx2tf(init.data_type),
+                         name=validate_initializer_name(init.name)))
             for init in initializer]
 
   @classmethod
@@ -292,8 +296,10 @@ class TensorflowBackend(Backend):
 
     for node in graph_def.node:
       onnx_node = OnnxNode(node)
-      output_ops = cls._onnx_node_to_tensorflow_op(
-          onnx_node, tensor_dict, opset=opset, strict=strict)
+      output_ops = cls._onnx_node_to_tensorflow_op(onnx_node,
+                                                   tensor_dict,
+                                                   opset=opset,
+                                                   strict=strict)
       curr_node_output_map = \
           dict(zip(onnx_node.outputs, output_ops))
       tensor_dict.update(curr_node_output_map)

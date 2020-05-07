@@ -1,5 +1,4 @@
 from numbers import Number
-import warnings
 
 import numpy as np
 from onnx import mapping
@@ -32,7 +31,7 @@ def tf2onnx(dtype):
         tf_dype.as_numpy_dtype)]
   finally:
     if onnx_dtype is None:
-      warnings.warn(
+      common.logger.warning(
           "Can't convert tf dtype {} to ONNX dtype. Return 0 (TensorProto.UNDEFINED)."
           .format(tf_dype))
       onnx_dtype = TensorProto.UNDEFINED
