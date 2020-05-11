@@ -36,7 +36,7 @@ backend_opset_version = {
     'CumSum': [],
     'DepthToSpace': [1, 11],
     'DequantizeLinear': [10],
-    'Det': [],
+    'Det': [11],
     'DictVectorizer': [],
     'Div': [1, 6, 7],
     'Dropout': [1, 6, 7, 10],
