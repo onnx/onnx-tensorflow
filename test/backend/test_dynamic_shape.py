@@ -401,6 +401,54 @@ class TestDynamicShape(unittest.TestCase):
 
     np.testing.assert_almost_equal(output["Y"], test_output)
 
+  def test_max_unpool(self):
+    input_shape = [10, 3, 24, 24]
+    x = self._get_rnd_float32(shape=input_shape)
+
+    kernel_shape = [2, 2]
+    strides = [2, 2]
+
+    maxpool_node_def = helper.make_node(
+            op_type="MaxPool",
+            inputs=["X"],
+            outputs=["Pool", "Indices"],
+            kernel_shape=kernel_shape,
+            strides=strides)
+
+    maxunpool_node_def = helper.make_node(
+        "MaxUnpool", ["Pool", "Indices"], ["Y"],
+        kernel_shape=kernel_shape,
+        strides=strides)
+
+    graph_def = helper.make_graph(
+        [maxpool_node_def,maxunpool_node_def],
+        name="test_unknown_shape",
+        inputs=[
+            helper.make_tensor_value_info("X", TensorProto.FLOAT,
+                                          [None, None, None, None]),
+        ],
+        outputs=[
+            helper.make_tensor_value_info("Y", TensorProto.FLOAT,
+                                          [None, None, None, None])
+        ])
+    tf_rep = onnx_graph_to_tensorflow_rep(graph_def)
+    output_unpool = tf_rep.run({"X": x})
+
+    test_output = np.zeros(input_shape)
+    for i1 in range(0, input_shape[0]):
+      for i2 in range(0, input_shape[1]):
+        for i3 in range(0, input_shape[2], 2):
+          for i4 in range(0, input_shape[3], 2):
+            max_val = float('-inf')
+            for j1 in range(i3,i3+2):
+              for j2 in range(i4,i4+2):
+                if x[i1][i2][j1][j2] > max_val:
+                  max_val = x[i1][i2][j1][j2]
+                  max_ind = (j1, j2)
+            j1, j2 = max_ind
+            test_output[i1][i2][j1][j2] = max_val
+    np.testing.assert_almost_equal(output_unpool["Y"], test_output)
+
   def test_slice(self):
     # test case 1 with normal inputs
     axes = [0, 1, 2]
