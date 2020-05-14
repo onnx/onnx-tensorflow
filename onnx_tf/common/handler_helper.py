@@ -1,10 +1,8 @@
-import warnings
-
 from onnx import defs
 
 from onnx_tf.handlers.backend import *  # noqa
 from onnx_tf.handlers.backend_handler import BackendHandler
-
+import onnx_tf.common as common
 
 def get_all_backend_handlers(opset_dict):
   """ Get a dict of all backend handler classes.
@@ -29,11 +27,11 @@ def get_all_backend_handlers(opset_dict):
             domain=handler.DOMAIN,
             max_inclusive_version=version).since_version
       except RuntimeError:
-        warnings.warn("Fail to get since_version of {} in domain `{}` "
+        common.logger.info("Fail to get since_version of {} in domain `{}` "
                       "with max_inclusive_version={}. Set to 1.".format(
                           handler.ONNX_OP, handler.DOMAIN, version))
     else:
-      warnings.warn("Unknown op {} in domain `{}`.".format(
+      common.logger.info("Unknown op {} in domain `{}`.".format(
           handler.ONNX_OP, handler.DOMAIN or "ai.onnx"))
     handler.SINCE_VERSION = since_version
     handlers.setdefault(domain, {})[handler.ONNX_OP] = handler
