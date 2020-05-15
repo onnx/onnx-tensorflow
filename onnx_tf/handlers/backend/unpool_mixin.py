@@ -2,6 +2,7 @@ import tensorflow as tf
 
 from onnx_tf.common import get_data_format
 from onnx_tf.common import get_perm_from_formats
+from onnx_tf.common.tf_helper import tf_shape
 
 
 class UnpoolMixin(object):
@@ -18,16 +19,17 @@ class UnpoolMixin(object):
     else:
       output_shape = None
 
-    input_shape = x.get_shape()
-    x_rank = len(x.get_shape())
-    spatial_size = x_rank - 2
+    kernel_shape = node.attrs["kernel_shape"]
+
+    spatial_size = len(kernel_shape)
+    x_rank = spatial_size + 2
     storage_format, _ = get_data_format(x_rank)
 
-    kernel_shape = node.attrs["kernel_shape"]
     # if strides are not provided default is 1 along each spatial axis
     strides = node.attrs.get("strides", [1] * spatial_size)
     pads = node.attrs.get("pads", None)
 
+    input_shape = tf_shape(x)
     default_shape = cls._get_default_shape(input_shape, kernel_shape, strides)
 
     need_trans = storage_format != "NHWC"
@@ -37,8 +39,8 @@ class UnpoolMixin(object):
           ind, perm=get_perm_from_formats(storage_format, "NHWC"))
 
     # default_shape to NHWC storage format
-    default_shape = [int(input_shape[0])] + default_shape + \
-                    [int(input_shape[1])]
+    default_shape = [input_shape[0]] + default_shape + \
+                    [input_shape[1]]
 
     unpooled = cls._unpool(x, ind, default_shape)
 
@@ -67,7 +69,7 @@ class UnpoolMixin(object):
     default_shape = []
     for d in range(len(kernel_shape)):
       default_shape.append((
-          int(input_shape[d + 2]) - 1) * int(strides[d]) + int(kernel_shape[d]))
+          input_shape[d + 2] - 1) * int(strides[d]) + int(kernel_shape[d]))
     return default_shape
 
   @classmethod
