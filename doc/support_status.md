@@ -1,7 +1,7 @@
 # ONNX-Tensorflow Support Status
 |||
 |-:|:-|
-|ONNX-Tensorflow Version|Master ( commit id: cb046245a204d846816eb88b711c57e0e7b5f45c )|
+|ONNX-Tensorflow Version|Master ( commit id: 9b63df73ed84cdfe5993747985e42d39b362eb72 )|
 |ONNX Version|Master ( commit id: 6801d7e46f4768ae2a304615edb69ff1a388c624 )|
 |Tensorflow Version|v2.2.0|
 
@@ -84,7 +84,7 @@ Notes:
 |LessOrEqual|-|-|-|-|-|-|-|-|-|-|-|**12**:small_red_triangle:|
 |Log|**1**|1|1|1|1|**6**|6|6|6|6|6|6|
 |LogSoftmax|**1**|1|1|1|1|1|1|1|1|1|**11**|11|
-|Loop|**1**:small_red_triangle:|1:small_red_triangle:|1:small_red_triangle:|1:small_red_triangle:|1:small_red_triangle:|1:small_red_triangle:|1:small_red_triangle:|1:small_red_triangle:|1:small_red_triangle:|1:small_red_triangle:|**11**:small_red_triangle:|11:small_red_triangle:|
+|Loop|**1**|1|1|1|1|1|1|1|1|1|**11**|11|
 |LpNormalization|**1**|1|1|1|1|1|1|1|1|1|1|1|
 |LpPool|**1**:small_red_triangle:|**2**:small_red_triangle:|2:small_red_triangle:|2:small_red_triangle:|2:small_red_triangle:|2:small_red_triangle:|2:small_red_triangle:|2:small_red_triangle:|2:small_red_triangle:|2:small_red_triangle:|**11**:small_red_triangle:|11:small_red_triangle:|
 |MatMul|**1**|1|1|1|1|1|1|1|**9**|9|9|9|
@@ -179,7 +179,7 @@ Notes:
 |Where|-|-|-|-|-|-|-|-|**9**|9|9|9|
 |Xor|**1**|1|1|1|1|1|**7**|7|7|7|7|7|
 
-ONNX-TF Supported Operators / ONNX Operators: 133 / 162
+ONNX-TF Supported Operators / ONNX Operators: 134 / 162
 
 Notes:
 1. Cast: Cast string to float32/float64/int32/int64 are not supported in Tensorflow.
