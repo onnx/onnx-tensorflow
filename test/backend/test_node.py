@@ -107,9 +107,12 @@ class TestNode(unittest.TestCase):
                                     keepdims=0,
                                     select_last_index=1)
         data = self._get_rnd_float32(shape=[10, 10])
+        data = np.array([[ 1, 2, 3, 5, 3, 4, 5, 1 ], [ 2, 9, 3, 5, 9, 4, 5, 1 ]])
         output = run_node(node_def, [data])
-        np.testing.assert_almost_equal(output["reduced"],
-                                      np.argmax(data, axis=axis))
+        data = np.flip(data, axis)
+        result = np.argmax(data, axis=axis)
+        result = data.shape[axis] - result - 1
+        np.testing.assert_almost_equal(output["reduced"], result)
 
   def test_arg_min(self):
     for axis in [0, 1]:
