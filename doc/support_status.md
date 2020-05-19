@@ -1,9 +1,11 @@
 # ONNX-Tensorflow Support Status
 |||
 |-:|:-|
-|ONNX-Tensorflow Version|Master ( commit id: 9b63df73ed84cdfe5993747985e42d39b362eb72 )|
-|ONNX Version|Master ( commit id: 6801d7e46f4768ae2a304615edb69ff1a388c624 )|
-|Tensorflow Version|v2.2.0|
+|ONNX-Tensorflow Version|Master ( commit id: b829bc4a5cb8d5e70c4f00c1f07f854d6d8b76ce )|
+|ONNX Version|Master ( commit id: 807c62cf7e4c96ce49040bcf073b7e4a054f28a5 )|
+
+|Tensorflow Version|v2.1.0|
+
 
 Notes:
 * Values that are new or updated from a previous opset version are in bold.
@@ -44,7 +46,7 @@ Notes:
 |ConvTranspose|**1**:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|**11**:small_orange_diamond:|11:small_orange_diamond:|
 |Cos|-|-|-|-|-|-|**7**|7|7|7|7|7|
 |Cosh|-|-|-|-|-|-|-|-|**9**|9|9|9|
-|CumSum|-|-|-|-|-|-|-|-|-|-|**11**:small_red_triangle:|11:small_red_triangle:|
+|CumSum|-|-|-|-|-|-|-|-|-|-|**11**:small_orange_diamond:|11:small_orange_diamond:|
 |DepthToSpace|**1**|1|1|1|1|1|1|1|1|1|**11**|11|
 |DequantizeLinear|-|-|-|-|-|-|-|-|-|**10**|10|10|
 |Det|-|-|-|-|-|-|-|-|-|-|**11**|11|
@@ -184,12 +186,13 @@ ONNX-TF Supported Operators / ONNX Operators: 134 / 162
 Notes:
 1. Cast: Cast string to float32/float64/int32/int64 are not supported in Tensorflow.
 2. ConvTranspose: ConvTranspose with dilations != 1, or transposed convolution for 4D or higher are not supported in Tensorflow.
-3. Equal: Equal inputs in uint16/uint32/uint64 are not supported in Tensorflow.
-4. GRU: GRU with clip or GRU with linear_before_reset, or GRU not using sigmoid for z and r, or GRU using Elu as the activation function with alpha != 1, or GRU using HardSigmoid as the activation function with alpha != 0.2 or beta != 0.5 are not supported in TensorFlow.
-5. LSTM: LSTM not using sigmoid for `f`, or LSTM not using the same activation for `g` and `h` are not supported in Tensorflow.
-6. MaxPool: MaxPoolWithArgmax with pad is None or incompatible mode, or MaxPoolWithArgmax with 4D or higher input, orMaxPoolWithArgmax with column major are not supported in Tensorflow.
-7. Mod: Mod Dividend or Divisor in int8/int16/uint8/uint16/uint32/uint64 are not supported in Tensorflow.
-8. OneHot: OneHot indices in uint16/uint32/uint64/int8/int16/float16/float/double, or OneHot depth in uint8/uint16/uint32/uint64/int8/int16/int64/float16/float/double are not supported in Tensorflow.
-9. RNN: RNN with clip is not supported in Tensorflow.
-10. Resize: Resize required 4D input in Tensorflow.
-11. Upsample: Upsample required 4D input in Tensorflow.
+3. CumSum: CumSum inputs in uint32/uint64 are not supported in Tensorflow.
+4. Equal: Equal inputs in uint16/uint32/uint64 are not supported in Tensorflow.
+5. GRU: GRU with clip or GRU with linear_before_reset, or GRU not using sigmoid for z and r, or GRU using Elu as the activation function with alpha != 1, or GRU using HardSigmoid as the activation function with alpha != 0.2 or beta != 0.5 are not supported in TensorFlow.
+6. LSTM: LSTM not using sigmoid for `f`, or LSTM not using the same activation for `g` and `h` are not supported in Tensorflow.
+7. MaxPool: MaxPoolWithArgmax with pad is None or incompatible mode, or MaxPoolWithArgmax with 4D or higher input, orMaxPoolWithArgmax with column major are not supported in Tensorflow.
+8. Mod: Mod Dividend or Divisor in int8/int16/uint8/uint16/uint32/uint64 are not supported in Tensorflow.
+9. OneHot: OneHot indices in uint16/uint32/uint64/int8/int16/float16/float/double, or OneHot depth in uint8/uint16/uint32/uint64/int8/int16/int64/float16/float/double are not supported in Tensorflow.
+10. RNN: RNN with clip is not supported in Tensorflow.
+11. Resize: Resize required 4D input in Tensorflow.
+12. Upsample: Upsample required 4D input in Tensorflow.
