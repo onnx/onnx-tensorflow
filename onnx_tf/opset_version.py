@@ -6,7 +6,7 @@ backend_opset_version = {
     'Adam': [],
     'Add': [1, 6, 7],
     'And': [1, 7],
-    'ArgMax': [1, 11],
+    'ArgMax': [1, 11, 12],
     'ArgMin': [1, 11],
     'ArrayFeatureExtractor': [],
     'Asin': [7],
