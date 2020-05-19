@@ -90,9 +90,12 @@ backend_test.exclude(r'test_onehot_[a-z,_]*')
 # skip resize downsample with mode=linear
 backend_test.exclude(r'test_resize_downsample_linear[a-z,_]*')
 
-# range is using loop in the unit test but
-# loop is not supported in tf-onnx converter
-backend_test.exclude(r'test_range[a-z,_]*')
+# range is using loop in the model test but all the outputs datatype are
+# missing in the body attribute of the loop
+backend_test.exclude(
+    r'test_range_float_type_positive_delta_expanded[a-z,_]*')
+backend_test.exclude(
+    r'test_range_int32_type_negative_delta_expanded[a-z,_]*')
 
 if legacy_opset_pre_ver(7):
   backend_test.exclude(r'[a-z,_]*Upsample[a-z,_]*')

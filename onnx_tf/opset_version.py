@@ -2,6 +2,8 @@ backend_opset_version = {
     'Abs': [1, 6],
     'Acos': [7],
     'Acosh': [9],
+    'Adagrad': [],
+    'Adam': [],
     'Add': [1, 6, 7],
     'And': [1, 7],
     'ArgMax': [1, 11],
@@ -19,11 +21,12 @@ backend_opset_version = {
     'CastMap': [],
     'CategoryMapper': [],
     'Ceil': [1, 6],
+    'Celu': [],
     'Clip': [1, 6, 11],
     'Compress': [9, 11],
     'Concat': [1, 4, 11],
     'ConcatFromSequence': [],
-    'Constant': [1, 9, 11],
+    'Constant': [1, 9, 11, 12],
     'ConstantFill': [1],
     'ConstantOfShape': [9],
     'Conv': [1, 11],
@@ -31,7 +34,7 @@ backend_opset_version = {
     'ConvTranspose': [1, 11],
     'Cos': [7],
     'Cosh': [9],
-    'CumSum': [],
+    'CumSum': [11],
     'DepthToSpace': [1, 11],
     'DequantizeLinear': [10],
     'Det': [11],
@@ -57,7 +60,10 @@ backend_opset_version = {
     'GlobalAveragePool': [1],
     'GlobalLpPool': [1, 2],
     'GlobalMaxPool': [1],
+    'Gradient': [],
+    'GraphCall': [],
     'Greater': [1, 7, 9],
+    'GreaterOrEqual': [],
     'HardSigmoid': [1, 6],
     'Hardmax': [1, 11],
     'Identity': [1],
@@ -72,11 +78,12 @@ backend_opset_version = {
     'LabelEncoder': [],
     'LeakyRelu': [1, 6],
     'Less': [1, 7, 9],
+    'LessOrEqual': [],
     'LinearClassifier': [],
     'LinearRegressor': [],
     'Log': [1, 6],
     'LogSoftmax': [1, 11],
-    'Loop': [],
+    'Loop': [1, 11],
     'LpNormalization': [1],
     'LpPool': [],
     'MatMul': [1, 9],
@@ -89,6 +96,7 @@ backend_opset_version = {
     'MeanVarianceNormalization': [1, 9],
     'Min': [1, 6, 8],
     'Mod': [10],
+    'Momentum': [],
     'Mul': [1, 6, 7],
     'Multinomial': [],
     'Neg': [1, 6],
@@ -152,6 +160,7 @@ backend_opset_version = {
     'Size': [1],
     'Slice': [1, 10, 11],
     'Softmax': [1, 11],
+    'SoftmaxCrossEntropyLoss': [],
     'Softplus': [1],
     'Softsign': [1],
     'SpaceToDepth': [1],
@@ -185,6 +194,7 @@ backend_partial_support = {
     'ConvTranspose': 'ConvTranspose with dilations != 1, or transposed '
                      'convolution for 4D or higher are not supported in '
                      'Tensorflow.',
+    'CumSum': 'CumSum inputs in uint32/uint64 are not supported in Tensorflow.',
     'Equal': 'Equal inputs in uint16/uint32/uint64 are not supported in '
              'Tensorflow.',
     'GRU': 'GRU with clip or GRU with linear_before_reset, or GRU not using '
@@ -199,12 +209,11 @@ backend_partial_support = {
                'with column major are not supported in Tensorflow.',
     'Mod': 'Mod Dividend or Divisor in int8/int16/uint8/uint16/uint32/uint64 '
            'are not supported in Tensorflow.',
-    'OneHot':
-        'OneHot indices in '
-        'uint16/uint32/uint64/int8/int16/float16/float/double, or OneHot '
-        'depth in '
-        'uint8/uint16/uint32/uint64/int8/int16/int64/float16/float/double '
-        'are not supported in Tensorflow.',
+    'OneHot': 'OneHot indices in '
+              'uint16/uint32/uint64/int8/int16/float16/float/double, or OneHot '
+              'depth in '
+              'uint8/uint16/uint32/uint64/int8/int16/int64/float16/float/double '
+              'are not supported in Tensorflow.',
     'RNN': 'RNN with clip is not supported in Tensorflow.',
     'Resize': 'Resize required 4D input in Tensorflow.',
     'Upsample': 'Upsample required 4D input in Tensorflow.'
