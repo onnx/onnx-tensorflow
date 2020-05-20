@@ -97,6 +97,11 @@ backend_test.exclude(
 backend_test.exclude(
     r'test_range_int32_type_negative_delta_expanded[a-z,_]*')
 
+# skip all the cumsum testcases because all the axis in the testcases
+# are created as a 1-D 1 element tensor, but the spec clearly state
+# that axis should be a 0-D tensor(scalar)
+backend_test.exclude(r'test_cumsum_[a-z,_]*')
+
 if legacy_opset_pre_ver(7):
   backend_test.exclude(r'[a-z,_]*Upsample[a-z,_]*')
 
