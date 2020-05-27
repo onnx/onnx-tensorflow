@@ -16,15 +16,24 @@ class NonMaxSuppression(BackendHandler):
     # max_output_boxes for tf.image.non_max_suppression must be in tf.int32
     # therefore need to cast this input to tf.int32
     max_output_boxes_per_class = tf.cast(
-        tensor_dict['max_output_boxes_per_class'], tf.
-        int32) if 'max_output_boxes_per_class' in tensor_dict else tf.constant(
-            [tf.cast(boxes.shape[1], tf.int32)], tf.int32)
-    iou_threshold = tensor_dict[
-        'iou_threshold'] if 'iou_threshold' in tensor_dict else tf.constant(
-            [0.5], tf.float32)
-    score_threshold = tensor_dict[
-        'score_threshold'] if 'score_threshold' in tensor_dict else tf.constant(
-            [float('-inf')], tf.float32)
+        tensor_dict[node.inputs[2]],
+        tf.int32) if (len(node.inputs) > 2 and
+                      node.inputs[2] != "") else tf.constant(0, tf.int32)
+    # make sure max_output_boxes_per_class is a scalar not a 1-D 1 element tensor
+    max_output_boxes_per_class = tf.squeeze(max_output_boxes_per_class) if len(
+        max_output_boxes_per_class.shape) == 1 else max_output_boxes_per_class
+    iou_threshold = tensor_dict[node.inputs[3]] if (
+        len(node.inputs) > 3 and node.inputs[3] != "") else tf.constant(
+            0, tf.float32)
+    # make sure iou_threshold is a scalar not a 1-D 1 element tensor
+    iou_threshold = tf.squeeze(iou_threshold) if len(
+        iou_threshold.shape) == 1 else iou_threshold
+    score_threshold = tensor_dict[node.inputs[4]] if (
+        len(node.inputs) > 4 and node.inputs[4] != "") else tf.constant(
+            float('-inf'))
+    # make sure score_threshold is a scalar not a 1-D 1 element tensor
+    score_threshold = tf.squeeze(score_threshold) if len(
+        score_threshold.shape) == 1 else score_threshold
     center_point_box = node.attrs.get("center_point_box", 0)
 
     if center_point_box == 1:
@@ -54,8 +63,8 @@ class NonMaxSuppression(BackendHandler):
         tf_scores = tf.squeeze(tf.gather(batch_i_scores, [class_j]), axis=0)
         # get the selected boxes indices
         selected_indices = tf.image.non_max_suppression(
-            tf_boxes, tf_scores, max_output_boxes_per_class[0],
-            iou_threshold[0], score_threshold[0])
+            tf_boxes, tf_scores, max_output_boxes_per_class, iou_threshold,
+            score_threshold)
         # add batch and class information into the indices
         output = tf.transpose([tf.cast(selected_indices, dtype=tf.int64)])
         paddings = tf.constant([[0, 0], [1, 0]])
