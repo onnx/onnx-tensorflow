@@ -29,6 +29,62 @@ class TestDynamicShape(unittest.TestCase):
   def _get_rnd_int(self, low, high=None, shape=None, dtype=np.int32):
     return np.random.randint(low, high, size=shape, dtype=dtype)
 
+  def test_arg_max(self):
+    if legacy_opset_pre_ver(12):
+      raise unittest.SkipTest(
+          "ONNX version {} doesn't support select_last_index attribute for ArgMax that depends on shape.".format(
+              defs.onnx_opset_version()))
+    axis = 1
+    node_def = helper.make_node("ArgMax",
+                                inputs=['X'],
+                                outputs=['Y'],
+                                axis=axis,
+                                keepdims=0,
+                                select_last_index=1)
+    graph_def = helper.make_graph(
+        [node_def],
+        name="test_unknown_shape",
+        inputs=[
+            helper.make_tensor_value_info("X", TensorProto.FLOAT, [None, None])
+        ],
+        outputs=[
+            helper.make_tensor_value_info("Y", TensorProto.FLOAT, [None, None])
+        ])
+    x = np.array([[ 1, 2, 3, 5, 3, 4, 5, 1 ], [ 2, 9, 3, 5, 9, 4, 5, 1 ]])
+    tf_rep = onnx_graph_to_tensorflow_rep(graph_def)
+    output = tf_rep.run({"X": x})
+    expected_output = np.argmax(np.flip(x, axis), axis=axis)
+    expected_output = x.shape[axis] - expected_output - 1
+    np.testing.assert_almost_equal(output['Y'], expected_output)
+
+  def test_arg_min(self):
+    if legacy_opset_pre_ver(12):
+      raise unittest.SkipTest(
+          "ONNX version {} doesn't support select_last_index attribute for ArgMin that depends on shape.".format(
+              defs.onnx_opset_version()))
+    axis = 1
+    node_def = helper.make_node("ArgMin",
+                                inputs=['X'],
+                                outputs=['Y'],
+                                axis=axis,
+                                keepdims=0,
+                                select_last_index=1)
+    graph_def = helper.make_graph(
+        [node_def],
+        name="test_unknown_shape",
+        inputs=[
+            helper.make_tensor_value_info("X", TensorProto.FLOAT, [None, None])
+        ],
+        outputs=[
+            helper.make_tensor_value_info("Y", TensorProto.FLOAT, [None, None])
+        ])
+    x = np.array([[ 1, 2, 3, 5, 3, 4, 5, 1 ], [ 2, 7, 3, 5, 2, 4, 5, 6 ]])
+    tf_rep = onnx_graph_to_tensorflow_rep(graph_def)
+    output = tf_rep.run({"X": x})
+    expected_output = np.argmin(np.flip(x, axis), axis=axis)
+    expected_output = x.shape[axis] - expected_output - 1
+    np.testing.assert_almost_equal(output['Y'], expected_output)
+
   def test_compress(self):
     if legacy_opset_pre_ver(9):
       raise unittest.SkipTest(
