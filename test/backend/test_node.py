@@ -1583,6 +1583,21 @@ class TestNode(unittest.TestCase):
                                np.max(x, (1, 2), keepdims=True),
                                rtol=1e-3)
 
+    # test tensor(uint8), tensor(int8)
+    node_def = helper.make_node("ReduceMax", ["X"], ["Y"], axes=[1, 2])
+    x = self._get_rnd_int(0, 100, [5, 10, 10, 3], np.uint8)
+    output = run_node(node_def, [x])
+    np.testing.assert_allclose(output["Y"],
+                               np.max(x, (1, 2), keepdims=True),
+                               rtol=1e-3)
+
+    node_def = helper.make_node("ReduceMax", ["X"], ["Y"], axes=[1, 2])
+    x = self._get_rnd_int(-100, 100, [5, 10, 10, 3], np.int8)
+    output = run_node(node_def, [x])
+    np.testing.assert_allclose(output["Y"],
+                               np.max(x, (1, 2), keepdims=True),
+                               rtol=1e-3)
+
   def test_reduce_mean(self):
     node_def = helper.make_node("ReduceMean", ["X"], ["Y"], axes=[1, 2])
     x = self._get_rnd_float32(shape=[5, 10, 10, 3])
@@ -1594,6 +1609,21 @@ class TestNode(unittest.TestCase):
   def test_reduce_min(self):
     node_def = helper.make_node("ReduceMin", ["X"], ["Y"], axes=[1, 2])
     x = self._get_rnd_float32(shape=[5, 10, 10, 3])
+    output = run_node(node_def, [x])
+    np.testing.assert_allclose(output["Y"],
+                               np.min(x, (1, 2), keepdims=True),
+                               rtol=1e-3)
+
+    # test tensor(uint8), tensor(int8)
+    node_def = helper.make_node("ReduceMin", ["X"], ["Y"], axes=[1, 2])
+    x = self._get_rnd_int(0, 100, [5, 10, 10, 3], np.uint8)
+    output = run_node(node_def, [x])
+    np.testing.assert_allclose(output["Y"],
+                               np.min(x, (1, 2), keepdims=True),
+                               rtol=1e-3)
+
+    node_def = helper.make_node("ReduceMin", ["X"], ["Y"], axes=[1, 2])
+    x = self._get_rnd_int(-100, 100, [5, 10, 10, 3], np.int8)
     output = run_node(node_def, [x])
     np.testing.assert_allclose(output["Y"],
                                np.min(x, (1, 2), keepdims=True),
