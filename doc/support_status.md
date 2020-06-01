@@ -1,7 +1,7 @@
 # ONNX-Tensorflow Support Status
 |||
 |-:|:-|
-|ONNX-Tensorflow Version|Master ( commit id: d5d6a41239213641c06892e40fe5c30bede4b2ad )|
+|ONNX-Tensorflow Version|Master ( commit id: 1980caca5a128e2f7fb8b82e1dada5b3989140c0 )|
 |ONNX Version|Master ( commit id: 6801d7e46f4768ae2a304615edb69ff1a388c624 )|
 |Tensorflow Version|v2.2.0|
 
@@ -22,7 +22,7 @@ Notes:
 |Add|**1**|1|1|1|1|**6**|**7**|7|7|7|7|7|
 |And|**1**|1|1|1|1|1|**7**|7|7|7|7|7|
 |ArgMax|**1**|1|1|1|1|1|1|1|1|1|**11**|**12**|
-|ArgMin|**1**|1|1|1|1|1|1|1|1|1|**11**|**12**:small_red_triangle:|
+|ArgMin|**1**|1|1|1|1|1|1|1|1|1|**11**|**12**|
 |Asin|-|-|-|-|-|-|**7**|7|7|7|7|7|
 |Asinh|-|-|-|-|-|-|-|-|**9**|9|9|9|
 |Atan|-|-|-|-|-|-|**7**|7|7|7|7|7|
@@ -179,7 +179,7 @@ Notes:
 |Where|-|-|-|-|-|-|-|-|**9**|9|9|9|
 |Xor|**1**|1|1|1|1|1|**7**|7|7|7|7|7|
 
-ONNX-TF Supported Operators / ONNX Operators: 136 / 162
+ONNX-TF Supported Operators / ONNX Operators: 137 / 162
 
 Notes:
 1. Cast: Cast string to float32/float64/int32/int64 are not supported in Tensorflow.
