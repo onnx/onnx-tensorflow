@@ -74,7 +74,7 @@ class TensorflowRep(BackendRep):
     input_dict = dict(
         [(x[0], tf.constant(x[1])) for x in feed_dict.items()])
 
-    output_values = self.tf_module(**input_dict)
+    output_values = self.tf_concrete_function(**input_dict)
     output_values = [val.numpy() if isinstance(val, tf.Tensor) else val for val in output_values]
 
     return namedtupledict('Outputs', self.outputs)(*output_values)
@@ -90,5 +90,4 @@ class TensorflowRep(BackendRep):
 
     :returns: none.
     """
-    tf.saved_model.save(self.tf_module, path, signatures=self.tf_signatures)
-
+    tf.saved_model.save(self.tf_module, path, signatures=self.tf_concrete_function)

@@ -156,7 +156,6 @@ class LSTM(RNNMixin, BackendHandler):
             node=node,
             tensor_dict=tensor_dict,
             is_bidirectional=num_directions == 2)):
-
       cell_kwargs[
           "use_peepholes"] = input_size == 8 and node.inputs[7] in tensor_dict
       cell_kwargs["forget_bias"] = 0.

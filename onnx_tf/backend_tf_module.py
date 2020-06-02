@@ -32,6 +32,4 @@ class BackendTFModule(tf.Module):
           onnx_node, tensor_dict, self.handlers, opset=self.opset, strict=self.strict)
       curr_node_output_map = dict(zip(onnx_node.outputs, output_ops))
       tensor_dict.update(curr_node_output_map)
-
     return output_ops
-

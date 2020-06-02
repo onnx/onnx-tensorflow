@@ -79,6 +79,7 @@ class GRU(RNNMixin, BackendHandler):
         new_w = None
         new_r = None
       kernel = tf.concat([new_w, new_r], 0)
+
       return kernel
     if names[-1] == "bias":
       if len(node.inputs) >= 4:
@@ -97,9 +98,9 @@ class GRU(RNNMixin, BackendHandler):
           w_b = tf.transpose(w_b_h)
           r_b = tf.transpose(r_b_h)
         return tf.add(w_b, r_b)
-      return getter(name, *args, **kwargs)
     return getter(name, *args, **kwargs)
 
+  scope = None
   @classmethod
   def _common(cls, node, **kwargs):
     tensor_dict = kwargs["tensor_dict"]
@@ -140,14 +141,17 @@ class GRU(RNNMixin, BackendHandler):
                                    activation_beta[3]))
 
     # TODO(fumihwh): check if reverse and bidirectional works
-    with tf.compat.v1.variable_scope(
-        "GRU_" + get_unique_suffix(),
-        custom_getter=partial(
-            cls._custom_getter,
-            node=node,
-            tensor_dict=tensor_dict,
-            is_bidirectional=num_directions == 2)):
+    if cls.scope is None:
+      with tf.compat.v1.variable_scope(
+          "GRU_" + get_unique_suffix(),
+          custom_getter=partial(
+              cls._custom_getter,
+              node=node,
+              tensor_dict=tensor_dict,
+              is_bidirectional=num_directions == 2)) as cls.scope:
+        pass
 
+    with tf.compat.v1.variable_scope(cls.scope):
       cell_kwargs["num_units"] = hidden_size
       if input_size < 4 or node.inputs[3] not in tensor_dict:
         cell_kwargs["bias_initializer"] = tf.zeros_initializer

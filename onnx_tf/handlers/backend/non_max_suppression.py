@@ -7,6 +7,8 @@ from onnx_tf.handlers.handler import onnx_op
 @onnx_op("NonMaxSuppression")
 class NonMaxSuppression(BackendHandler):
 
+  result = None
+
   @classmethod
   def _common(cls, node, **kwargs):
     tensor_dict = kwargs["tensor_dict"]
@@ -40,7 +42,6 @@ class NonMaxSuppression(BackendHandler):
       boxes_t = tf.concat([y1, x1, y2, x2], 1)
       boxes = tf.transpose(boxes_t, perm=[0, 2, 1])
 
-    @tf.function
     def create_nodes(boxes, scores, max_output_boxes_per_class, iou_threshold,
                      score_threshold, result):
       # get number of batches in boxes
@@ -79,12 +80,13 @@ class NonMaxSuppression(BackendHandler):
     # are defined before use in the "for loop" before it will perform any auto
     # convertion of the python code. Therefore need to define "result" as a
     # Variable here and send it in as a parameter to "create_nodes"
-    result = tf.Variable([[0, 0, 0]],
-                         dtype=tf.int64,
-                         shape=tf.TensorShape([None, 3]))
+    if cls.result is None:
+      cls.result = tf.Variable([[0, 0, 0]],
+                           dtype=tf.int64,
+                           shape=tf.TensorShape([None, 3]))
     return [
         create_nodes(boxes, scores, max_output_boxes_per_class, iou_threshold,
-                     score_threshold, result)
+                     score_threshold, cls.result)
     ]
 
   @classmethod

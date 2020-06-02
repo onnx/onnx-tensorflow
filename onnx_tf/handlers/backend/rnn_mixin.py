@@ -6,7 +6,6 @@ from tensorflow.python.ops import array_ops
 
 from onnx_tf.common import exception
 
-
 class RNNMixin(object):
 
   ONNX_ACTIVATION_MAPPING = {
@@ -26,11 +25,15 @@ class RNNMixin(object):
       "thresholded_relu": tf.keras.layers.ThresholdedReLU,
   }
 
+  rnn_cell = None
+
   @classmethod
   def rnn(cls, x, cell_class, cell_kwargs, rnn_kwargs, activations, direction):
     cell_kwargs["activation"] = activations[0]
 
-    rnn_cell = [cell_class(**cell_kwargs)]
+    if cls.rnn_cell is None:
+      cls.rnn_cell = [cell_class(**cell_kwargs)]
+    rnn_cell = cls.rnn_cell
     cell_fw = tf.compat.v1.nn.rnn_cell.MultiRNNCell(rnn_cell)
 
     if direction == "bidirectional":

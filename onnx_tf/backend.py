@@ -122,7 +122,7 @@ class TensorflowBackend(Backend):
       tf_spec = tf.TensorSpec(shape, data_type.onnx2tf(value_info.type.tensor_type.elem_type), value_info_name)
       signature_kwargs[value_info.name] = tf_spec
 
-    signatures = module.__call__.get_concrete_function(**signature_kwargs)
+    concrete_function = module.__call__.get_concrete_function(**signature_kwargs)
 
     tf_rep = TensorflowRep()
     tf_rep.inputs = [
@@ -132,7 +132,7 @@ class TensorflowBackend(Backend):
     ]
     tf_rep.outputs = [value_info.name for value_info in graph_def.output]
     tf_rep.tf_module = module
-    tf_rep.tf_signatures = signatures
+    tf_rep.tf_concrete_function = concrete_function
     return tf_rep
 
   @classmethod
