@@ -282,9 +282,8 @@ class TestNode(unittest.TestCase):
       a = helper.make_sparse_tensor(values, indices, [3, 4])
       node_def = helper.make_node("Constant", [], ["Y"], sparse_value=a)
       output = run_node(node_def, [])
-      b = tf.compat.v1.sparse_to_dense(output["Y"].indices,
-                                       output["Y"].dense_shape,
-                                       output["Y"].values)
+      b = tf.sparse.SparseTensor(output["Y"].indices, output["Y"].values, output["Y"].dense_shape)
+      b = tf.sparse.to_dense(b)
       result = b.numpy()
       np.testing.assert_equal(result, expected)
 
