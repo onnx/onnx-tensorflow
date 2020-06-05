@@ -34,7 +34,7 @@ class CumSum(BackendHandler):
 
     if len(node.inputs) > 1:
       # optional 0-D tensor, range [-rank(x), rank(x)-1]
-      axis = tensor_dict["axis"]
+      axis = tensor_dict[node.inputs[1]]
       inputs.append(axis)
 
     attrs = {
