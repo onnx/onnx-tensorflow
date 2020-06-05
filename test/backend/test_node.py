@@ -240,6 +240,31 @@ class TestNode(unittest.TestCase):
       result = b.eval(session=tf.Session())
       np.testing.assert_equal(result, expected)
 
+    if not legacy_opset_pre_ver(12):
+      float_attr = 1.0
+      floats_attr = [1.0, 2.0, 3.0]
+      int_attr =  np.int64(123)
+      ints_attr = [np.int64(4), np.int64(5), np.int64(6)]
+      string_attr = 'The Cat in the Hat'
+      strings_attr= ['Green Eggs and Ham', 'How the Grinch Stole Christmas!', 'The Cat in the Hat Comes Back']
+      testcases = [
+          (helper.make_node("Constant", [], ["Y"], value_float=float_attr), float_attr),
+          (helper.make_node("Constant", [], ["Y"], value_floats=floats_attr), floats_attr),
+          (helper.make_node("Constant", [], ["Y"], value_int=int_attr), int_attr),
+          (helper.make_node("Constant", [], ["Y"], value_ints=ints_attr), ints_attr),
+          (helper.make_node("Constant", [], ["Y"], value_string=string_attr), string_attr),
+          (helper.make_node("Constant", [], ["Y"], value_strings=strings_attr), strings_attr)
+      ]
+      for node_def, expected in testcases:
+        output = run_node(node_def, [])
+        if isinstance(expected, str):
+          np.testing.assert_string_equal(output["Y"].decode('UTF-8'), expected)
+        elif isinstance(expected, list) and isinstance(expected[0], str):
+            for i in range(len(expected)):
+              np.testing.assert_string_equal(output['Y'][i].decode('UTF-8'), expected[i])
+        else:
+          np.testing.assert_equal(output["Y"], expected)
+
   def test_constant_fill(self):
     if not legacy_opset_pre_ver(9):
       raise unittest.SkipTest(
