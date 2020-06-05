@@ -3,6 +3,7 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
+import sys
 import math
 import unittest
 import numpy as np
@@ -114,6 +115,7 @@ class TestNode(unittest.TestCase):
         result = data.shape[axis] - result - 1
         np.testing.assert_almost_equal(output["reduced"], result)
 
+
   def test_arg_min(self):
     for axis in [0, 1]:
       node_def = helper.make_node("ArgMin", ["data"], ["reduced"],
@@ -146,6 +148,7 @@ class TestNode(unittest.TestCase):
         result = np.argmin(data, axis=axis)
         result = data.shape[axis] - result - 1
         np.testing.assert_almost_equal(output["reduced"], result)
+
 
   def test_asinh(self):
     if legacy_opset_pre_ver(9):
@@ -196,32 +199,45 @@ class TestNode(unittest.TestCase):
 
   def test_cast(self):
     if legacy_onnx_pre_ver(1, 2) or legacy_opset_pre_ver(6):
-      test_cases = [("FLOAT", tf.float32), ("UINT8", tf.uint8),
+      test_cases = [("FLOAT", tf.float32),
+                    ("UINT8", tf.uint8),
                     ("INT8", tf.int8),
-                    ("UINT16", tf.uint16), ("INT16", tf.int16),
-                    ("INT32", tf.int32), ("INT64", tf.int64), ("BOOL", tf.bool),
-                    ("FLOAT16", tf.float16), ("DOUBLE", tf.float64),
-                    ("COMPLEX64", tf.complex64), ("COMPLEX128", tf.complex128)]
+                    ("UINT16", tf.uint16),
+                    ("INT16", tf.int16),
+                    ("INT32", tf.int32),
+                    ("INT64", tf.int64),
+                    ("BOOL", tf.bool),
+                    ("FLOAT16", tf.float16),
+                    ("DOUBLE", tf.float64),
+                    ("COMPLEX64", tf.complex64),
+                    ("COMPLEX128", tf.complex128)]
     else:
       test_cases = [(TensorProto.FLOAT, tf.float32),
-                    (TensorProto.UINT8, tf.uint8), (TensorProto.INT8, tf.int8),
+                    (TensorProto.UINT8, tf.uint8),
+                    (TensorProto.INT8, tf.int8),
                     (TensorProto.UINT16, tf.uint16),
                     (TensorProto.INT16, tf.int16),
                     (TensorProto.INT32, tf.int32),
-                    (TensorProto.INT64, tf.int64), (TensorProto.BOOL, tf.bool),
+                    (TensorProto.INT64, tf.int64),
+                    (TensorProto.BOOL, tf.bool),
                     (TensorProto.FLOAT16, tf.float16),
                     (TensorProto.DOUBLE, tf.float64),
                     (TensorProto.COMPLEX64, tf.complex64),
                     (TensorProto.COMPLEX128, tf.complex128)]
       if not legacy_opset_pre_ver(9):
         test_cases.append((TensorProto.STRING, tf.string))
+      # added casting to bfloat16 from number in opset 13
+      if not legacy_opset_pre_ver(13):
+        test_cases.append((TensorProto.BFLOAT16, tf.bfloat16))
     for ty, tf_type in test_cases:
       node_def = helper.make_node("Cast", ["input"], ["output"], to=ty)
       vector = [2, 3]
       output = run_node(node_def, [vector])
       np.testing.assert_equal(output["output"].dtype, tf_type)
-
     if not legacy_opset_pre_ver(9):
+      # test_cases2 is focused on Strings to Numbers
+      # Note: casting from string to bfloat16 is not allowed by tf.strings.to_number
+      # so no BFLOAT16 in test_cases2.
       test_cases2 = [(TensorProto.FLOAT, tf.float32),
                      (TensorProto.INT32, tf.int32),
                      (TensorProto.INT64, tf.int64),
@@ -229,6 +245,16 @@ class TestNode(unittest.TestCase):
       for ty, tf_type in test_cases2:
         node_def = helper.make_node("Cast", ["input"], ["output"], to=ty)
         vector = ['2', '3']
+        output = run_node(node_def, [vector])
+        np.testing.assert_equal(output["output"].dtype, tf_type)
+
+    if not legacy_opset_pre_ver(9):
+      # test_case3 is focused on Strings to float and the special floating-point values.
+      test_cases3 = [(TensorProto.FLOAT, tf.float32),
+                     (TensorProto.DOUBLE, tf.float64)]
+      for ty, tf_type in test_cases3:
+        node_def = helper.make_node("Cast", ["input"], ["output"], to=ty)
+        vector = ['3.14159', '1e-5', '1E8', 'NaN', '-INF', '+INF']
         output = run_node(node_def, [vector])
         np.testing.assert_equal(output["output"].dtype, tf_type)
 

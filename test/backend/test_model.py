@@ -183,6 +183,42 @@ class TestModel(unittest.TestCase):
     output = tf_rep.run({"X": X})
     np.testing.assert_almost_equal(output.X1, Y_ref)
 
+  def test_argmax_node_bfloat(self):
+    X = np.random.randn(2, 8).astype(np.float32)
+    Y_ref = np.argmax(X, axis=0)
+
+    graph_def = helper.make_graph(
+        [
+            helper.make_node("Cast", ["X0"], ["X1"], to=TensorProto.BFLOAT16),
+            helper.make_node("ArgMax", ["X1"], ["X2"], axis=0, keepdims=0, select_last_index=0)
+        ],
+        name="test",
+        inputs=[helper.make_tensor_value_info("X0", TensorProto.FLOAT, [2, 8])],
+        outputs=[
+            helper.make_tensor_value_info("X2", TensorProto.BFLOAT16, [2, 8])
+        ])
+    tf_rep = prepare(helper.make_model(graph_def))
+    output = tf_rep.run({"X0": X})
+    np.testing.assert_almost_equal(output.X2, Y_ref)
+
+  def test_argmin_node_bfloat(self):
+    X = np.random.randn(2, 8).astype(np.float32)
+    Y_ref = np.argmin(X, axis=0)
+
+    graph_def = helper.make_graph(
+        [
+            helper.make_node("Cast", ["X0"], ["X1"], to=TensorProto.BFLOAT16),
+            helper.make_node("ArgMin", ["X1"], ["X2"], axis=0, keepdims=0, select_last_index=0)
+        ],
+        name="test",
+        inputs=[helper.make_tensor_value_info("X0", TensorProto.FLOAT, [2, 8])],
+        outputs=[
+            helper.make_tensor_value_info("X2", TensorProto.BFLOAT16, [2, 8])
+        ])
+    tf_rep = prepare(helper.make_model(graph_def))
+    output = tf_rep.run({"X0": X})
+    np.testing.assert_almost_equal(output.X2, Y_ref)
+
   def test_initializer(self):
     if legacy_onnx_pre_ver(1, 2):
       raise unittest.SkipTest(
