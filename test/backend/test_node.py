@@ -89,6 +89,28 @@ class TestNode(unittest.TestCase):
       output = run_node(node_def, [data])
       np.testing.assert_almost_equal(output["reduced"],
                                      np.argmax(data, axis=axis))
+      # test select_last_index
+      if not legacy_opset_pre_ver(12):
+        # select_last_index = 0
+        node_def = helper.make_node("ArgMax", ["data"], ["reduced"],
+                                    axis=axis,
+                                    keepdims=0,
+                                    select_last_index=0)
+        data = self._get_rnd_float32(shape=[10, 10])
+        output = run_node(node_def, [data])
+        np.testing.assert_almost_equal(output["reduced"],
+                                      np.argmax(data, axis=axis))
+        # select_last_index = 1
+        node_def = helper.make_node("ArgMax", ["data"], ["reduced"],
+                                    axis=axis,
+                                    keepdims=0,
+                                    select_last_index=1)
+        data = np.array([[ 1, 2, 3, 5, 3, 4, 5, 1 ], [ 2, 9, 3, 5, 9, 4, 5, 1 ]])
+        output = run_node(node_def, [data])
+        data = np.flip(data, axis)
+        result = np.argmax(data, axis=axis)
+        result = data.shape[axis] - result - 1
+        np.testing.assert_almost_equal(output["reduced"], result)
 
   def test_arg_min(self):
     for axis in [0, 1]:
@@ -99,6 +121,28 @@ class TestNode(unittest.TestCase):
       output = run_node(node_def, [data])
       np.testing.assert_almost_equal(output["reduced"],
                                      np.argmin(data, axis=axis))
+      # test select_last_index
+      if not legacy_opset_pre_ver(12):
+        # select_last_index = 0
+        node_def = helper.make_node("ArgMin", ["data"], ["reduced"],
+                                    axis=axis,
+                                    keepdims=0,
+                                    select_last_index=0)
+        data = self._get_rnd_float32(shape=[10, 10])
+        output = run_node(node_def, [data])
+        np.testing.assert_almost_equal(output["reduced"],
+                                      np.argmin(data, axis=axis))
+        # select_last_index = 1
+        node_def = helper.make_node("ArgMin", ["data"], ["reduced"],
+                                    axis=axis,
+                                    keepdims=0,
+                                    select_last_index=1)
+        data = np.array([[ 1, 2, 3, 5, 3, 4, 5, 1 ], [ 2, 7, 3, 5, 2, 4, 5, 6 ]])
+        output = run_node(node_def, [data])
+        data = np.flip(data, axis)
+        result = np.argmin(data, axis=axis)
+        result = data.shape[axis] - result - 1
+        np.testing.assert_almost_equal(output["reduced"], result)
 
   def test_asinh(self):
     if legacy_opset_pre_ver(9):
