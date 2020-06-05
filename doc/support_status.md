@@ -2,7 +2,8 @@
 |||
 |-:|:-|
 |ONNX-Tensorflow Version|Master ( commit id: bfba16a7cf1d02074cfacd4a603fec50c9caf504 )|
-|ONNX Version|Master ( commit id: d1afd738e10ef11628a5ffa7b14cbfa6ec67125e )|
+
+|ONNX Version|Master ( commit id: 6801d7e46f4768ae2a304615edb69ff1a388c624 )|
 |Tensorflow Version|v1.15.0|
 
 Notes:
@@ -37,7 +38,7 @@ Notes:
 |Compress|-|-|-|-|-|-|-|-|**9**|9|**11**|11|
 |Concat|**1**|1|1|**4**|4|4|4|4|4|4|**11**|11|
 |ConcatFromSequence|-|-|-|-|-|-|-|-|-|-|**11**:small_red_triangle:|11:small_red_triangle:|
-|Constant|**1**|1|1|1|1|1|1|1|**9**|9|**11**|**12**:small_red_triangle:|
+|Constant|**1**|1|1|1|1|1|1|1|**9**|9|**11**|**12**|
 |ConstantOfShape|-|-|-|-|-|-|-|-|**9**|9|9|9|
 |Conv|**1**|1|1|1|1|1|1|1|1|1|**11**|11|
 |ConvInteger|-|-|-|-|-|-|-|-|-|**10**|10|10|

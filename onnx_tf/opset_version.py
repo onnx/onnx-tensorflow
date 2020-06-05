@@ -26,7 +26,7 @@ backend_opset_version = {
     'Compress': [9, 11],
     'Concat': [1, 4, 11],
     'ConcatFromSequence': [],
-    'Constant': [1, 9, 11],
+    'Constant': [1, 9, 11, 12],
     'ConstantFill': [1],
     'ConstantOfShape': [9],
     'Conv': [1, 11],
