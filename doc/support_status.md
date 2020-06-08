@@ -1,7 +1,7 @@
 # ONNX-Tensorflow Support Status
 |||
 |-:|:-|
-|ONNX-Tensorflow Version|Master ( commit id: 1980caca5a128e2f7fb8b82e1dada5b3989140c0 )|
+|ONNX-Tensorflow Version|Master ( commit id: 6fdd5187abfb84114936cb8096f6bed12f463936 )|
 |ONNX Version|Master ( commit id: 6801d7e46f4768ae2a304615edb69ff1a388c624 )|
 |Tensorflow Version|v2.2.0|
 
@@ -73,7 +73,7 @@ Notes:
 |HardSigmoid|**1**|1|1|1|1|**6**|6|6|6|6|6|6|
 |Hardmax|**1**|1|1|1|1|1|1|1|1|1|**11**|11|
 |Identity|**1**|1|1|1|1|1|1|1|1|1|1|1|
-|If|**1**:small_red_triangle:|1:small_red_triangle:|1:small_red_triangle:|1:small_red_triangle:|1:small_red_triangle:|1:small_red_triangle:|1:small_red_triangle:|1:small_red_triangle:|1:small_red_triangle:|1:small_red_triangle:|**11**:small_red_triangle:|11:small_red_triangle:|
+|If|**1**|1|1|1|1|1|1|1|1|1|**11**|11|
 |InstanceNormalization|**1**|1|1|1|1|**6**|6|6|6|6|6|6|
 |IsInf|-|-|-|-|-|-|-|-|-|**10**|10|10|
 |IsNaN|-|-|-|-|-|-|-|-|**9**|9|9|9|
