@@ -22,7 +22,7 @@ backend_opset_version = {
     'CategoryMapper': [],
     'Ceil': [1, 6],
     'Celu': [],
-    'Clip': [1, 6, 11],
+    'Clip': [1, 6, 11, 12, 13],
     'Compress': [9, 11],
     'Concat': [1, 4, 11],
     'ConcatFromSequence': [],
