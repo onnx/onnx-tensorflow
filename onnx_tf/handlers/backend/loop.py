@@ -15,10 +15,9 @@ class Loop(BackendHandler):
   def _common(cls, node, **kwargs):
     body = node.attrs["body"]
     tensor_dict = kwargs["tensor_dict"]
-    M = tensor_dict[node.inputs[0]] if tensor_dict[
-        node.inputs[0]].dtype == tf.int64 else None
-    cond = None if tensor_dict[node.inputs[1]].dtype == tf.string else tf.cast(
-        tensor_dict[node.inputs[1]], tf.bool)
+    M = tensor_dict[node.inputs[0]] if node.inputs[0] != "" else None
+    cond = tf.cast(tensor_dict[node.inputs[1]],
+                   tf.bool) if node.inputs[1] != "" else None
     v_initial = [tensor_dict[graph_input] for graph_input in node.inputs[2:]]
     v_shapes = [v.get_shape() for v in v_initial]
     current_opset = [make_opsetid(cls.DOMAIN, cls.VERSION)]
@@ -40,9 +39,12 @@ class Loop(BackendHandler):
       input_values[body.input[1].name] = cond
       for i in range(2, len(body.input)):
         input_values[body.input[i].name] = v[i - 2]
-      tensor_dict = onnx_tf.backend.onnx_graph_to_tensorflow_ops(
-          graph_def=body, input_values=input_values, opset=current_opset)
-      outputs = [tensor_dict[output.name] for output in body.output]
+      subgraph_tensor_dict = onnx_tf.backend.onnx_graph_to_tensorflow_ops(
+          subgraph=body,
+          input_values=input_values,
+          tensor_dict=tensor_dict,
+          opset=current_opset)
+      outputs = [subgraph_tensor_dict[output.name] for output in body.output]
       for i in range(scan_outputs_start_index, len(outputs)):
         s_index = i - scan_outputs_start_index
         insert_index = scan_outputs[s_index].size()
