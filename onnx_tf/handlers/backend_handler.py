@@ -178,5 +178,10 @@ class BackendHandler(Handler):
         params = inspect.getargspec(tf_func).args
 
     attrs = cls._process_attrs(attrs)
-    return tf_func(*inputs,
-                   **dict([(p, attrs[p]) for p in params if p in attrs]))
+    kwargs = dict(zip(params, inputs))
+    ambiguous_arguments = any(kwargs.get(p) is not None and v is not None
+                              for p, v in attrs.items())
+    if ambiguous_arguments:
+      raise TypeError('Ambiguous arguments for {}()'.format(tf_func.__name__))
+    kwargs.update((p, v) for p, v in attrs.items() if p in params)
+    return tf_func(**kwargs)
