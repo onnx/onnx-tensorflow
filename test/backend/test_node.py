@@ -485,6 +485,19 @@ class TestNode(unittest.TestCase):
     output = run_node(node_def, [x])
     np.testing.assert_almost_equal(output["Y"], np.cosh(x))
 
+  def test_cumsum(self):
+    if legacy_opset_pre_ver(11):
+      raise unittest.SkipTest("ONNX version {} doesn't support CumSum.".format(
+          defs.onnx_opset_version()))
+    x = np.array([[1, 2, 3], [4, 5,6]]).astype(np.int32)
+    axis = 0
+    node_def = helper.make_node("CumSum", ["x", "axis"], ["y"])
+    # note: if axis is not provided, np.cumsum() will compute over flattened array,
+    # which is different than the TensorFlow behavior
+    y = np.cumsum(x, axis).astype(np.int32)
+    output = run_node(node_def, [x, axis])
+    np.testing.assert_almost_equal(output["y"], y)
+
   def test_depth_to_space(self):
     node_def = helper.make_node("DepthToSpace", ["X"], ["Y"], blocksize=2)
     x_shape = [1, 12, 1, 1]
