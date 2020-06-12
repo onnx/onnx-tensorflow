@@ -122,3 +122,7 @@ class Slice(BackendHandler):
   @classmethod
   def version_11(cls, node, **kwargs):
     return cls.version_10(node, **kwargs)
+
+  @classmethod
+  def version_13(cls, node, **kwargs):
+    return cls.version_10(node, **kwargs)

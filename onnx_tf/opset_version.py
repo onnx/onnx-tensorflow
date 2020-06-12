@@ -158,7 +158,7 @@ backend_opset_version = {
     'Sin': [7],
     'Sinh': [9],
     'Size': [1],
-    'Slice': [1, 10, 11],
+    'Slice': [1, 10, 11, 13],
     'Softmax': [1, 11],
     'SoftmaxCrossEntropyLoss': [],
     'Softplus': [1],
