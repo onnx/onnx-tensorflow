@@ -60,6 +60,16 @@ class QLinearConv(ConvMixin, BackendHandler):
     new_dict[node.inputs[0]] = x
     new_dict[node.inputs[3]] = w
 
+    # if bias is defined save it here
+    B = tensor_dict[node.inputs[8]] if len(node.inputs) == 9 else tf.constant(
+        [0], tf.float32)
+    if len(node.inputs) == 9:
+      B = tf.cast(B, tf.float32)
+      B_scale = x_scale * w_scale
+      B = tf.round(B / B_scale)
+      # Remore bias from inputs
+      node.inputs.remove(node.inputs[8])
+
     # Remove scales and zero-points from inputs
     for i in [7, 6, 5, 4, 2, 1]:
       node.inputs.remove(node.inputs[i])
@@ -69,5 +79,8 @@ class QLinearConv(ConvMixin, BackendHandler):
 
     # Process output
     y = tf.round(conv_node / y_scale) + y_zero_point
+
+    # Add bias to the convolution
+    y = y + B
 
     return [tf.cast(y, output_dtype)]
