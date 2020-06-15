@@ -1,7 +1,7 @@
 # ONNX-Tensorflow Support Status
 |||
 |-:|:-|
-|ONNX-Tensorflow Version|Master ( commit id: ad918710664360e2422b4bdebc30e5b512a8794a )|
+|ONNX-Tensorflow Version|Master ( commit id: e3f8919ae1becfc16b3f522e89c52c47d9f6a6d8 )|
 |ONNX Version|Master ( commit id: 925b3657924c0c16cd20b54595f41e76159b03ab )|
 |Tensorflow Version|v2.2.0|
 
@@ -73,7 +73,7 @@ Notes:
 |HardSigmoid|**1**|1|1|1|1|**6**|6|6|6|6|6|6|6|
 |Hardmax|**1**|1|1|1|1|1|1|1|1|1|**11**|11|**13**:small_red_triangle:|
 |Identity|**1**|1|1|1|1|1|1|1|1|1|1|1|**13**:small_red_triangle:|
-|If|**1**:small_red_triangle:|1:small_red_triangle:|1:small_red_triangle:|1:small_red_triangle:|1:small_red_triangle:|1:small_red_triangle:|1:small_red_triangle:|1:small_red_triangle:|1:small_red_triangle:|1:small_red_triangle:|**11**:small_red_triangle:|11:small_red_triangle:|11:small_red_triangle:|
+|If|**1**|1|1|1|1|1|1|1|1|1|**11**|11|11|
 |InstanceNormalization|**1**|1|1|1|1|**6**|6|6|6|6|6|6|6|
 |IsInf|-|-|-|-|-|-|-|-|-|**10**|10|10|10|
 |IsNaN|-|-|-|-|-|-|-|-|**9**|9|9|9|**13**:small_red_triangle:|
@@ -179,7 +179,7 @@ Notes:
 |Where|-|-|-|-|-|-|-|-|**9**|9|9|9|9|
 |Xor|**1**|1|1|1|1|1|**7**|7|7|7|7|7|7|
 
-ONNX-TF Supported Operators / ONNX Operators: 76 / 162
+ONNX-TF Supported Operators / ONNX Operators: 77 / 162
 
 Notes:
 1. Cast: Cast string to float32/float64/int32/int64 are not supported in Tensorflow.
