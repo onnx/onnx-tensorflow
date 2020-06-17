@@ -40,7 +40,7 @@ backend_opset_version = {
     'Det': [11],
     'DictVectorizer': [],
     'Div': [1, 6, 7],
-    'Dropout': [1, 6, 7, 10],
+    'Dropout': [1, 6, 7, 10, 12, 13],
     'DynamicQuantizeLinear': [11],
     'Einsum': [],
     'Elu': [1, 6],
