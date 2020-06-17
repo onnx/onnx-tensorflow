@@ -164,7 +164,7 @@ backend_opset_version = {
     'Softplus': [1],
     'Softsign': [1],
     'SpaceToDepth': [1],
-    'Split': [1, 2, 11],
+    'Split': [1, 2, 11, 13],
     'SplitToSequence': [],
     'Sqrt': [1, 6],
     'Squeeze': [1, 11],
@@ -191,6 +191,7 @@ backend_opset_version = {
 backend_partial_support = {
     'Cast': 'Cast string to float32/float64/int32/int64 are not supported in '
             'Tensorflow.',
+    'Clip': 'Clip input in uint64 is not supported in Tensorflow.',
     'ConvTranspose': 'ConvTranspose with dilations != 1, or transposed '
                      'convolution for 4D or higher are not supported in '
                      'Tensorflow.',
