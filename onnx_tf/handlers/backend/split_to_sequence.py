@@ -14,7 +14,7 @@ class SplitToSequence(BackendHandler):
   @classmethod
   def args_check(cls, node, **kwargs):
     axis = node.attrs.get("axis", 0)
-    input_shape = tf_shape(kwargs["tensor_dict"][node.inputs[0]])
+    input_shape = kwargs["tensor_dict"][node.inputs[0]].get_shape()
     x_rank = len(input_shape) 
     if axis > x_rank - 1 or axis < -x_rank:
         raise ValueError("Axis is out of bound")
