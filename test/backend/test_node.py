@@ -408,11 +408,13 @@ class TestNode(unittest.TestCase):
     w_zero_point = np.int8(1)
     y = np.array([16, 20, 28, 32]).astype(np.int32).reshape((1, 1, 2, 2))
 
-    node = helper.make_node("ConvInteger", ["X", "W", "w_zero_point"], ["Y"],
+    node = helper.make_node("ConvInteger",
+                            ["X", "W", "x_zero_point", "w_zero_point"],
+                            ["Y"],
                             kernel_shape=[2, 2],
                             pads=[0, 0, 0, 0],
                             dilations=[1, 1])
-    output = run_node(node, [x, w, w_zero_point])
+    output = run_node(node, [x, w, np.int8(0), w_zero_point])
     np.testing.assert_almost_equal(output["Y"], y)
 
     # Test x_zero_point and w_zero_point
@@ -424,7 +426,8 @@ class TestNode(unittest.TestCase):
     y = np.array([12, 16, 24, 28]).astype(np.int32).reshape((1, 1, 2, 2))
 
     node = helper.make_node("ConvInteger",
-                            ["X", "W", "x_zero_point", "w_zero_point"], ["Y"],
+                            ["X", "W", "x_zero_point", "w_zero_point"],
+                            ["Y"],
                             kernel_shape=[2, 2],
                             pads=[0, 0, 0, 0],
                             dilations=[1, 1])
@@ -438,11 +441,13 @@ class TestNode(unittest.TestCase):
     w_zero_point = np.array([1]).astype(np.int8)
     y = np.array([16, 20, 28, 32]).astype(np.int32).reshape((1, 1, 2, 2))
 
-    node = helper.make_node("ConvInteger", ["X", "W", "w_zero_point"], ["Y"],
+    node = helper.make_node("ConvInteger",
+                            ["X", "W", "x_zero_point", "w_zero_point"],
+                            ["Y"],
                             kernel_shape=[2, 2],
                             pads=[0, 0, 0, 0],
                             dilations=[1, 1])
-    output = run_node(node, [x, w, w_zero_point])
+    output = run_node(node, [x, w, np.int8(0), w_zero_point])
     np.testing.assert_almost_equal(output["Y"], y)
 
     # Test w_zero_point as 1d tensor shape 2
@@ -453,11 +458,13 @@ class TestNode(unittest.TestCase):
     y = np.array([12, 16, 24, 28, 0, 0, 0, 0]).astype(np.int32).reshape(
         (1, 2, 2, 2))
 
-    node = helper.make_node("ConvInteger", ["X", "W", "w_zero_point"], ["Y"],
+    node = helper.make_node("ConvInteger",
+                            ["X", "W", "x_zero_point", "w_zero_point"],
+                            ["Y"],
                             kernel_shape=[2, 2],
                             pads=[0, 0, 0, 0],
                             dilations=[1, 1])
-    output = run_node(node, [x, w, w_zero_point])
+    output = run_node(node, [x, w, np.int8(0), w_zero_point])
     np.testing.assert_almost_equal(output["Y"], y)
 
   def test_conv_transpose(self):
