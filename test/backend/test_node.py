@@ -89,6 +89,28 @@ class TestNode(unittest.TestCase):
       output = run_node(node_def, [data])
       np.testing.assert_almost_equal(output["reduced"],
                                      np.argmax(data, axis=axis))
+      # test select_last_index
+      if not legacy_opset_pre_ver(12):
+        # select_last_index = 0
+        node_def = helper.make_node("ArgMax", ["data"], ["reduced"],
+                                    axis=axis,
+                                    keepdims=0,
+                                    select_last_index=0)
+        data = self._get_rnd_float32(shape=[10, 10])
+        output = run_node(node_def, [data])
+        np.testing.assert_almost_equal(output["reduced"],
+                                      np.argmax(data, axis=axis))
+        # select_last_index = 1
+        node_def = helper.make_node("ArgMax", ["data"], ["reduced"],
+                                    axis=axis,
+                                    keepdims=0,
+                                    select_last_index=1)
+        data = np.array([[ 1, 2, 3, 5, 3, 4, 5, 1 ], [ 2, 9, 3, 5, 9, 4, 5, 1 ]])
+        output = run_node(node_def, [data])
+        data = np.flip(data, axis)
+        result = np.argmax(data, axis=axis)
+        result = data.shape[axis] - result - 1
+        np.testing.assert_almost_equal(output["reduced"], result)
 
   def test_arg_min(self):
     for axis in [0, 1]:
@@ -99,6 +121,28 @@ class TestNode(unittest.TestCase):
       output = run_node(node_def, [data])
       np.testing.assert_almost_equal(output["reduced"],
                                      np.argmin(data, axis=axis))
+      # test select_last_index
+      if not legacy_opset_pre_ver(12):
+        # select_last_index = 0
+        node_def = helper.make_node("ArgMin", ["data"], ["reduced"],
+                                    axis=axis,
+                                    keepdims=0,
+                                    select_last_index=0)
+        data = self._get_rnd_float32(shape=[10, 10])
+        output = run_node(node_def, [data])
+        np.testing.assert_almost_equal(output["reduced"],
+                                      np.argmin(data, axis=axis))
+        # select_last_index = 1
+        node_def = helper.make_node("ArgMin", ["data"], ["reduced"],
+                                    axis=axis,
+                                    keepdims=0,
+                                    select_last_index=1)
+        data = np.array([[ 1, 2, 3, 5, 3, 4, 5, 1 ], [ 2, 7, 3, 5, 2, 4, 5, 6 ]])
+        output = run_node(node_def, [data])
+        data = np.flip(data, axis)
+        result = np.argmin(data, axis=axis)
+        result = data.shape[axis] - result - 1
+        np.testing.assert_almost_equal(output["reduced"], result)
 
   def test_asinh(self):
     if legacy_opset_pre_ver(9):
@@ -239,6 +283,31 @@ class TestNode(unittest.TestCase):
                              output["Y"].values)
       result = b.eval(session=tf.Session())
       np.testing.assert_equal(result, expected)
+
+    if not legacy_opset_pre_ver(12):
+      float_attr = 1.0
+      floats_attr = [1.0, 2.0, 3.0]
+      int_attr =  np.int64(123)
+      ints_attr = [np.int64(4), np.int64(5), np.int64(6)]
+      string_attr = 'The Cat in the Hat'
+      strings_attr= ['Green Eggs and Ham', 'How the Grinch Stole Christmas!', 'The Cat in the Hat Comes Back']
+      testcases = [
+          (helper.make_node("Constant", [], ["Y"], value_float=float_attr), float_attr),
+          (helper.make_node("Constant", [], ["Y"], value_floats=floats_attr), floats_attr),
+          (helper.make_node("Constant", [], ["Y"], value_int=int_attr), int_attr),
+          (helper.make_node("Constant", [], ["Y"], value_ints=ints_attr), ints_attr),
+          (helper.make_node("Constant", [], ["Y"], value_string=string_attr), string_attr),
+          (helper.make_node("Constant", [], ["Y"], value_strings=strings_attr), strings_attr)
+      ]
+      for node_def, expected in testcases:
+        output = run_node(node_def, [])
+        if isinstance(expected, str):
+          np.testing.assert_string_equal(output["Y"].decode('UTF-8'), expected)
+        elif isinstance(expected, list) and isinstance(expected[0], str):
+            for i in range(len(expected)):
+              np.testing.assert_string_equal(output['Y'][i].decode('UTF-8'), expected[i])
+        else:
+          np.testing.assert_equal(output["Y"], expected)
 
   def test_constant_fill(self):
     if not legacy_opset_pre_ver(9):
