@@ -2,8 +2,7 @@
 |||
 |-:|:-|
 |ONNX-Tensorflow Version|Master ( commit id: bfba16a7cf1d02074cfacd4a603fec50c9caf504 )|
-
-|ONNX Version|Master ( commit id: 6801d7e46f4768ae2a304615edb69ff1a388c624 )|
+|ONNX Version|Master ( commit id: d1afd738e10ef11628a5ffa7b14cbfa6ec67125e )|
 |Tensorflow Version|v1.15.0|
 
 Notes:
@@ -124,9 +123,9 @@ Notes:
 |ReduceL2|**1**|1|1|1|1|1|1|1|1|1|**11**|11|
 |ReduceLogSum|**1**|1|1|1|1|1|1|1|1|1|**11**|11|
 |ReduceLogSumExp|**1**|1|1|1|1|1|1|1|1|1|**11**|11|
-|ReduceMax|**1**|1|1|1|1|1|1|1|1|1|**11**|**12**:small_red_triangle:|
+|ReduceMax|**1**|1|1|1|1|1|1|1|1|1|**11**|**12**|
 |ReduceMean|**1**|1|1|1|1|1|1|1|1|1|**11**|11|
-|ReduceMin|**1**|1|1|1|1|1|1|1|1|1|**11**|**12**:small_red_triangle:|
+|ReduceMin|**1**|1|1|1|1|1|1|1|1|1|**11**|**12**|
 |ReduceProd|**1**|1|1|1|1|1|1|1|1|1|**11**|11|
 |ReduceSum|**1**|1|1|1|1|1|1|1|1|1|**11**|11|
 |ReduceSumSquare|**1**|1|1|1|1|1|1|1|1|1|**11**|11|
