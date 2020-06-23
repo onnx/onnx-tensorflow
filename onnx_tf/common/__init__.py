@@ -16,6 +16,13 @@ from tensorflow.python.client import device_lib
 IS_PYTHON3 = sys.version_info > (3,)
 logger = logging.getLogger('onnx-tf')
 
+# create console handler and formatter for logger
+console = logging.StreamHandler()
+formatter = logging.Formatter(
+    '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+console.setFormatter(formatter)
+logger.addHandler(console)
+
 
 class Deprecated:
   """Add deprecated message when function is called.
