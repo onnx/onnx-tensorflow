@@ -19,8 +19,8 @@ class SequenceErase(BackendHandler):
 
     :return: True if position is in-bounds 
     """
-    seq_length = tf.shape(input_seq.to_sparse())[0]
-    pos = tf.cast(pos, tf.int32)
+    seq_length = tf.shape(input_seq.to_sparse(), out_type=pos.dtype)[0]
+
     cond1 = tf.greater_equal(pos, tf.negative(seq_length))
     cond2 = tf.less_equal(pos, seq_length - 1)
 
