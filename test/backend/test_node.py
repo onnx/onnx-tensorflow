@@ -829,16 +829,26 @@ class TestNode(unittest.TestCase):
       np.testing.assert_almost_equal(output["Y"], np.reshape(y, shape))
 
   def test_if(self):
-    true_val = np.int64(1)
-    false_val = np.int64(0)
+    true_val = helper.make_tensor(
+        name='true_tensor',
+        data_type=TensorProto.INT64,
+        dims=(),
+        vals=[np.int64(1)]
+    )
+    false_val = helper.make_tensor(
+        name='false_tensor',
+        data_type=TensorProto.INT64,
+        dims=(),
+        vals=[np.int64(0)]
+    )
     true_node = helper.make_node('Constant',
                                  inputs=[],
                                  outputs=['true'],
-                                 value_int=true_val)
+                                 value=true_val)
     false_node = helper.make_node('Constant',
                                   inputs=[],
                                   outputs=['false'],
-                                  value_int=false_val)
+                                  value=false_val)
 
     true_out = helper.make_tensor_value_info('true', TensorProto.INT64, [])
     false_out = helper.make_tensor_value_info('false', TensorProto.INT64, [])
@@ -858,14 +868,32 @@ class TestNode(unittest.TestCase):
 
     for cond, exp in [[True, true_val], [False, false_val]]:
       output = run_node(node_def, [cond])
-      np.testing.assert_equal(output['outputs'], [exp])
+      np.testing.assert_equal(output['outputs'], exp.int64_data)
 
     x = self._get_rnd_int(low=-50, high=50, dtype=np.int64)
     y = self._get_rnd_int(low=-50, high=50, dtype=np.int64)
     z = self._get_rnd_int(low=-50, high=50, dtype=np.int64)
-    x_node = helper.make_node('Constant', inputs=[], outputs=['x'], value_int=x)
-    y_node = helper.make_node('Constant', inputs=[], outputs=['y'], value_int=y)
-    z_node = helper.make_node('Constant', inputs=[], outputs=['z'], value_int=z)
+    x_val = helper.make_tensor(
+        name='x_tensor',
+        data_type=TensorProto.INT64,
+        dims=(),
+        vals=[x]
+    )
+    y_val = helper.make_tensor(
+        name='y_tensor',
+        data_type=TensorProto.INT64,
+        dims=(),
+        vals=[y]
+    )
+    z_val = helper.make_tensor(
+        name='z_tensor',
+        data_type=TensorProto.INT64,
+        dims=(),
+        vals=[z]
+    )
+    x_node = helper.make_node('Constant', inputs=[], outputs=['x'], value=x_val)
+    y_node = helper.make_node('Constant', inputs=[], outputs=['y'], value=y_val)
+    z_node = helper.make_node('Constant', inputs=[], outputs=['z'], value=z_val)
     add_node = helper.make_node('Add', inputs=['x', 'y'], outputs=['sum'])
     sub_node = helper.make_node('Sub', inputs=['x', 'y'], outputs=['diff'])
     mul1_node = helper.make_node('Mul', inputs=['sum', 'z'], outputs=['prod1'])
