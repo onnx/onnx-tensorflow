@@ -60,7 +60,7 @@ class Slice(BackendHandler):
     input_tensor_shape = tf.shape(input_tensor, out_type=ends.dtype)
 
     axes = tensor_dict[node.inputs[3]] if len(
-        node.inputs) >= 4 else tf.range(tf.shape(starts)[0], dtype=ends.dtype)
+        node.inputs) >= 4 else tf.range(tf.shape(starts, out_type=ends.dtype)[0])
 
     # process negative axes
     input_rank = tf.cast(tf.rank(input_tensor), axes.dtype)
