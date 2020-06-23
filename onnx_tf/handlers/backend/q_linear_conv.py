@@ -67,7 +67,7 @@ class QLinearConv(ConvMixin, BackendHandler):
       B = tf.cast(B, tf.float32)
       B_scale = x_scale * w_scale
       B = tf.round(B / B_scale)
-      # Remore bias from inputs
+      # Remove bias from inputs
       node.inputs.remove(node.inputs[8])
 
     # Remove scales and zero-points from inputs

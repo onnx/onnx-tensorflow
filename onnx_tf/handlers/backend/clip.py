@@ -1,10 +1,15 @@
 import tensorflow as tf
 
+from onnx_tf.common import exception
 from onnx_tf.handlers.backend_handler import BackendHandler
 from onnx_tf.handlers.handler import onnx_op
+from onnx_tf.handlers.handler import partial_support
+from onnx_tf.handlers.handler import ps_description
 
 
 @onnx_op("Clip")
+@partial_support(True)
+@ps_description("Clip input in uint64 is not supported in Tensorflow.")
 class Clip(BackendHandler):
 
   @classmethod
@@ -30,9 +35,9 @@ class Clip(BackendHandler):
     else:
       # min/max are optional and passed as inputs
       clip_value_min = tensor_dict[node.inputs[1]] if len(
-          node.inputs) > 1 else x_dtype.min
+          node.inputs) > 1 and node.inputs[1] != "" else x_dtype.min
       clip_value_max = tensor_dict[node.inputs[2]] if len(
-          node.inputs) > 2 else x_dtype.max
+          node.inputs) > 2 and node.inputs[2] != "" else x_dtype.max
 
     # tf.clip_by_value doesn't support uint8, uint16, uint32, int8 and int16
     # dtype for x, therefore need to upcast it to tf.int32 or tf.int64
