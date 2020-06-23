@@ -1,5 +1,4 @@
 import itertools
-import warnings
 
 import numpy as np
 import tensorflow as tf
@@ -8,6 +7,7 @@ from onnx_tf.common import exception
 from onnx_tf.common import get_data_format
 from onnx_tf.common import get_perm_from_formats
 from onnx_tf.common import supports_device
+from onnx_tf.common import logger
 from .pad_mixin import PadMixin
 from .dilated_pooling import DilatedPooling
 from onnx_tf.common.pooling_helper import py_pool
@@ -166,7 +166,7 @@ class PoolMixin(object):
                         count_include_pad=count_include_pad)
     if not dp.is_supported():
       if strict:
-        warnings.warn(
+        logger.warning(
             "Using the pooling op in compatibility mode. "
             "This means your graph cannot be serialized.", UserWarning)
 
@@ -202,7 +202,7 @@ class PoolMixin(object):
 
   @classmethod
   def _compatibility_pool(cls, node, input_dict, pooling_type):
-    warnings.warn(
+    logger.warning(
         "Using the pooling op in compatibility mode."
         "This means your graph cannot be serialized."
         "Please configure your pooling operation to only use paddings that "
