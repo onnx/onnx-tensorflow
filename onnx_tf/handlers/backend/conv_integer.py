@@ -22,10 +22,10 @@ class ConvInteger(ConvMixin, BackendHandler):
 
     def process_conv(new_x, new_w):
       # Remove zero-points from inputs
-      if "x_zero_point" in node.inputs:
-        node.inputs.remove("x_zero_point")
-      if "w_zero_point" in node.inputs:
-        node.inputs.remove("w_zero_point")
+      if len(node.inputs) == 4:
+        node.inputs.remove(node.inputs[3])
+      if len(node.inputs) == 3:
+        node.inputs.remove(node.inputs[2])
 
       new_dict = {node.inputs[0]: new_x, node.inputs[1]: new_w}
 
@@ -35,13 +35,13 @@ class ConvInteger(ConvMixin, BackendHandler):
       return conv_node
 
     # Apply x_zero_point first
-    x = cls._apply_zero_point(x, tensor_dict[
-        "x_zero_point"]) if "x_zero_point" in node.inputs else tf.cast(
+    x = cls._apply_zero_point(
+        x, tensor_dict[node.inputs[2]]) if len(node.inputs) > 2 else tf.cast(
             x, tf.float32)
 
     # Apply w_zero_point next
-    if "w_zero_point" in node.inputs:
-      w_zero_point = tensor_dict["w_zero_point"]
+    if len(node.inputs) == 4:
+      w_zero_point = tensor_dict[node.inputs[3]]
       if w_zero_point.shape.rank == 0:
         # Simply apply w_zero_point for scalar
         w = cls._apply_zero_point(w, w_zero_point)

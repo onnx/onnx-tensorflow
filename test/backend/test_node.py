@@ -407,11 +407,13 @@ class TestNode(unittest.TestCase):
     w_zero_point = np.int8(1)
     y = np.array([16, 20, 28, 32]).astype(np.int32).reshape((1, 1, 2, 2))
 
-    node = helper.make_node("ConvInteger", ["X", "W", "w_zero_point"], ["Y"],
+    node = helper.make_node("ConvInteger",
+                            ["X", "W", "x_zero_point", "w_zero_point"],
+                            ["Y"],
                             kernel_shape=[2, 2],
                             pads=[0, 0, 0, 0],
                             dilations=[1, 1])
-    output = run_node(node, [x, w, w_zero_point])
+    output = run_node(node, [x, w, np.int8(0), w_zero_point])
     np.testing.assert_almost_equal(output["Y"], y)
 
     # Test x_zero_point and w_zero_point
@@ -423,7 +425,8 @@ class TestNode(unittest.TestCase):
     y = np.array([12, 16, 24, 28]).astype(np.int32).reshape((1, 1, 2, 2))
 
     node = helper.make_node("ConvInteger",
-                            ["X", "W", "x_zero_point", "w_zero_point"], ["Y"],
+                            ["X", "W", "x_zero_point", "w_zero_point"],
+                            ["Y"],
                             kernel_shape=[2, 2],
                             pads=[0, 0, 0, 0],
                             dilations=[1, 1])
@@ -437,11 +440,13 @@ class TestNode(unittest.TestCase):
     w_zero_point = np.array([1]).astype(np.int8)
     y = np.array([16, 20, 28, 32]).astype(np.int32).reshape((1, 1, 2, 2))
 
-    node = helper.make_node("ConvInteger", ["X", "W", "w_zero_point"], ["Y"],
+    node = helper.make_node("ConvInteger",
+                            ["X", "W", "x_zero_point", "w_zero_point"],
+                            ["Y"],
                             kernel_shape=[2, 2],
                             pads=[0, 0, 0, 0],
                             dilations=[1, 1])
-    output = run_node(node, [x, w, w_zero_point])
+    output = run_node(node, [x, w, np.int8(0), w_zero_point])
     np.testing.assert_almost_equal(output["Y"], y)
 
     # Test w_zero_point as 1d tensor shape 2
@@ -452,11 +457,13 @@ class TestNode(unittest.TestCase):
     y = np.array([12, 16, 24, 28, 0, 0, 0, 0]).astype(np.int32).reshape(
         (1, 2, 2, 2))
 
-    node = helper.make_node("ConvInteger", ["X", "W", "w_zero_point"], ["Y"],
+    node = helper.make_node("ConvInteger",
+                            ["X", "W", "x_zero_point", "w_zero_point"],
+                            ["Y"],
                             kernel_shape=[2, 2],
                             pads=[0, 0, 0, 0],
                             dilations=[1, 1])
-    output = run_node(node, [x, w, w_zero_point])
+    output = run_node(node, [x, w, np.int8(0), w_zero_point])
     np.testing.assert_almost_equal(output["Y"], y)
 
   def test_conv_transpose(self):
@@ -660,6 +667,14 @@ class TestNode(unittest.TestCase):
     output = run_node(node_def, [x])
     np.testing.assert_almost_equal(output["Y"], np.exp(x))
 
+  def test_expand(self):
+    node_def = helper.make_node("Expand", ["X", "shape"], ["Y"])
+    x = [[True], [False], [True]]
+    shape = [2, 1, 6]
+    y = x * np.ones(shape, dtype=np.bool)
+    output = run_node(node_def, [x, shape])
+    np.testing.assert_almost_equal(output["Y"], y)
+
   def test_eye_like(self):
     if legacy_opset_pre_ver(9):
       raise unittest.SkipTest("ONNX version {} doesn't support EyeLike.".format(
@@ -813,16 +828,26 @@ class TestNode(unittest.TestCase):
       np.testing.assert_almost_equal(output["Y"], np.reshape(y, shape))
 
   def test_if(self):
-    true_val = np.int64(1)
-    false_val = np.int64(0)
+    true_val = helper.make_tensor(
+        name='true_tensor',
+        data_type=TensorProto.INT64,
+        dims=(),
+        vals=[np.int64(1)]
+    )
+    false_val = helper.make_tensor(
+        name='false_tensor',
+        data_type=TensorProto.INT64,
+        dims=(),
+        vals=[np.int64(0)]
+    )
     true_node = helper.make_node('Constant',
                                  inputs=[],
                                  outputs=['true'],
-                                 value_int=true_val)
+                                 value=true_val)
     false_node = helper.make_node('Constant',
                                   inputs=[],
                                   outputs=['false'],
-                                  value_int=false_val)
+                                  value=false_val)
 
     true_out = helper.make_tensor_value_info('true', TensorProto.INT64, [])
     false_out = helper.make_tensor_value_info('false', TensorProto.INT64, [])
@@ -842,14 +867,32 @@ class TestNode(unittest.TestCase):
 
     for cond, exp in [[True, true_val], [False, false_val]]:
       output = run_node(node_def, [cond])
-      np.testing.assert_equal(output['outputs'], [exp])
+      np.testing.assert_equal(output['outputs'], exp.int64_data)
 
     x = self._get_rnd_int(low=-50, high=50, dtype=np.int64)
     y = self._get_rnd_int(low=-50, high=50, dtype=np.int64)
     z = self._get_rnd_int(low=-50, high=50, dtype=np.int64)
-    x_node = helper.make_node('Constant', inputs=[], outputs=['x'], value_int=x)
-    y_node = helper.make_node('Constant', inputs=[], outputs=['y'], value_int=y)
-    z_node = helper.make_node('Constant', inputs=[], outputs=['z'], value_int=z)
+    x_val = helper.make_tensor(
+        name='x_tensor',
+        data_type=TensorProto.INT64,
+        dims=(),
+        vals=[x]
+    )
+    y_val = helper.make_tensor(
+        name='y_tensor',
+        data_type=TensorProto.INT64,
+        dims=(),
+        vals=[y]
+    )
+    z_val = helper.make_tensor(
+        name='z_tensor',
+        data_type=TensorProto.INT64,
+        dims=(),
+        vals=[z]
+    )
+    x_node = helper.make_node('Constant', inputs=[], outputs=['x'], value=x_val)
+    y_node = helper.make_node('Constant', inputs=[], outputs=['y'], value=y_val)
+    z_node = helper.make_node('Constant', inputs=[], outputs=['z'], value=z_val)
     add_node = helper.make_node('Add', inputs=['x', 'y'], outputs=['sum'])
     sub_node = helper.make_node('Sub', inputs=['x', 'y'], outputs=['diff'])
     mul1_node = helper.make_node('Mul', inputs=['sum', 'z'], outputs=['prod1'])
