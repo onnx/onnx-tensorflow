@@ -1484,7 +1484,7 @@ class TestNode(unittest.TestCase):
     kernel_shape = [3, 3]
     strides = [2, 2]
     dilations = [3, 3]
-    auto_pad = "same_lower"
+    auto_pad = "SAME_LOWER"
 
     input_shape = [10, 3, 24, 24]
     self._test_pooling(input_shape=input_shape, kernel_shape=kernel_shape,
