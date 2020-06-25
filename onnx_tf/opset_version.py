@@ -85,7 +85,7 @@ backend_opset_version = {
     'LogSoftmax': [1, 11],
     'Loop': [1, 11],
     'LpNormalization': [1],
-    'LpPool': [],
+    'LpPool': [1, 2, 11],
     'MatMul': [1, 9],
     'MatMulInteger': [10],
     'Max': [1, 6, 8, 12, 13],

@@ -1,8 +1,8 @@
 # ONNX-Tensorflow Support Status
 |||
 |-:|:-|
-|ONNX-Tensorflow Version|Master ( commit id: 355ee1c69f60fe350761fe57a0b7ba8319496af6 )|
-|ONNX Version|Master ( commit id: 925b3657924c0c16cd20b54595f41e76159b03ab )|
+|ONNX-Tensorflow Version|Master ( commit id: 5e17be08813b637c1a426c6ece4d3918af99a852 )|
+|ONNX Version|Master ( commit id: 14a7477618ec418d987fd5207178e91bb4c98dfc )|
 |Tensorflow Version|v2.2.0|
 
 Notes:
@@ -46,7 +46,7 @@ Notes:
 |Cosh|-|-|-|-|-|-|-|-|**9**|9|9|9|9|
 |CumSum|-|-|-|-|-|-|-|-|-|-|**11**:small_orange_diamond:|11:small_orange_diamond:|11:small_orange_diamond:|
 |DepthToSpace|**1**|1|1|1|1|1|1|1|1|1|**11**|11|**13**:small_red_triangle:|
-|DequantizeLinear|-|-|-|-|-|-|-|-|-|**10**|10|10|10|
+|DequantizeLinear|-|-|-|-|-|-|-|-|-|**10**|10|10|**13**:small_red_triangle:|
 |Det|-|-|-|-|-|-|-|-|-|-|**11**|11|11|
 |Div|**1**|1|1|1|1|**6**|**7**|7|7|7|7|7|**13**:small_red_triangle:|
 |Dropout|**1**|1|1|1|1|**6**|**7**|7|7|**10**|10|**12**:small_red_triangle:|**13**:small_red_triangle:|
@@ -86,7 +86,7 @@ Notes:
 |LogSoftmax|**1**|1|1|1|1|1|1|1|1|1|**11**|11|**13**:small_red_triangle:|
 |Loop|**1**|1|1|1|1|1|1|1|1|1|**11**|11|11|
 |LpNormalization|**1**|1|1|1|1|1|1|1|1|1|1|1|1|
-|LpPool|**1**:small_red_triangle:|**2**:small_red_triangle:|2:small_red_triangle:|2:small_red_triangle:|2:small_red_triangle:|2:small_red_triangle:|2:small_red_triangle:|2:small_red_triangle:|2:small_red_triangle:|2:small_red_triangle:|**11**:small_red_triangle:|11:small_red_triangle:|11:small_red_triangle:|
+|LpPool|**1**|**2**|2|2|2|2|2|2|2|2|**11**|11|11|
 |MatMul|**1**|1|1|1|1|1|1|1|**9**|9|9|9|**13**:small_red_triangle:|
 |MatMulInteger|-|-|-|-|-|-|-|-|-|**10**|10|10|10|
 |Max|**1**|1|1|1|1|**6**|6|**8**|8|8|8|**12**|**13**|
@@ -111,7 +111,7 @@ Notes:
 |Pow|**1**|1|1|1|1|1|**7**|7|7|7|7|**12**:small_red_triangle:|**13**:small_red_triangle:|
 |QLinearConv|-|-|-|-|-|-|-|-|-|**10**|10|10|10|
 |QLinearMatMul|-|-|-|-|-|-|-|-|-|**10**|10|10|10|
-|QuantizeLinear|-|-|-|-|-|-|-|-|-|**10**|10|10|10|
+|QuantizeLinear|-|-|-|-|-|-|-|-|-|**10**|10|10|**13**:small_red_triangle:|
 |RNN|**1**:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|**7**:small_orange_diamond:|7:small_orange_diamond:|7:small_orange_diamond:|7:small_orange_diamond:|7:small_orange_diamond:|7:small_orange_diamond:|7:small_orange_diamond:|
 |RandomNormal|**1**|1|1|1|1|1|1|1|1|1|1|1|1|
 |RandomNormalLike|**1**|1|1|1|1|1|1|1|1|1|1|1|1|
@@ -179,7 +179,7 @@ Notes:
 |Where|-|-|-|-|-|-|-|-|**9**|9|9|9|9|
 |Xor|**1**|1|1|1|1|1|**7**|7|7|7|7|7|7|
 
-ONNX-TF Supported Operators / ONNX Operators: 78 / 162
+ONNX-TF Supported Operators / ONNX Operators: 77 / 162
 
 Notes:
 1. Cast: Cast string to float32/float64/int32/int64 are not supported in Tensorflow.
