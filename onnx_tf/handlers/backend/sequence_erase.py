@@ -31,7 +31,9 @@ class SequenceErase(BackendHandler):
   def version_11(cls, node, **kwargs):
     tensor_dict = kwargs["tensor_dict"]
     input_sequence = tensor_dict[node.inputs[0]]
-    position = tensor_dict[node.inputs[1]]
+    seq_length = tf.shape(input_sequence.to_sparse())[0]
+    position = tensor_dict[node.inputs[1]] if len(
+        node.inputs) == 2 else seq_length - 1
 
     # check whether position is in-bounds and assert if not
     result = cls.chk_pos_in_bounds(input_sequence, position)
