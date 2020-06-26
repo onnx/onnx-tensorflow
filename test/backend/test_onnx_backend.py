@@ -87,8 +87,9 @@ backend_test.exclude(r'test_mod_[a-z,_]*int(8|(16))+')
 # tf.one_hot
 backend_test.exclude(r'test_onehot_[a-z,_]*')
 
-# skip resize downsample with mode=linear
-backend_test.exclude(r'test_resize_downsample_linear[a-z,_]*')
+# TF doesn't support most of the attributes in resize op
+# test_node.py will cover the test
+backend_test.exclude(r'test_resize_[a-z,_]*')
 
 # range is using loop in the model test but all the outputs datatype are
 # missing in the body attribute of the loop
