@@ -63,7 +63,7 @@ Notes:
 |Floor|**1**|1|1|1|1|**6**|6|6|6|6|6|6|**13**:small_red_triangle:|
 |GRU|**1**:small_orange_diamond:|1:small_orange_diamond:|**3**:small_orange_diamond:|3:small_orange_diamond:|3:small_orange_diamond:|3:small_orange_diamond:|**7**:small_orange_diamond:|7:small_orange_diamond:|7:small_orange_diamond:|7:small_orange_diamond:|7:small_orange_diamond:|7:small_orange_diamond:|7:small_orange_diamond:|
 |Gather|**1**|1|1|1|1|1|1|1|1|1|**11**|11|**13**:small_red_triangle:|
-|GatherElements|-|-|-|-|-|-|-|-|-|-|**11**:small_red_triangle:|11:small_red_triangle:|**13**:small_red_triangle:|
+|GatherElements|-|-|-|-|-|-|-|-|-|-|**11**|11|**13**:small_red_triangle:|
 |GatherND|-|-|-|-|-|-|-|-|-|-|**11**|**12**:small_red_triangle:|**13**:small_red_triangle:|
 |Gemm|**1**|1|1|1|1|**6**|**7**|7|**9**|9|**11**|11|**13**:small_red_triangle:|
 |GlobalAveragePool|**1**|1|1|1|1|1|1|1|1|1|1|1|1|
