@@ -577,7 +577,7 @@ class DilatedPooling(object):
   def _lp_pool(self, input, ksize, strides, padding):
     window_size = np.prod(ksize)
 
-    input = tf.math.pow(input, self.p) * window_size
+    input = tf.math.pow(tf.math.abs(input), self.p) * window_size
     pooled = tf.nn.avg_pool(input, ksize=ksize, strides=strides, padding=padding)
     pooled = tf.math.pow(pooled, 1.0 / self.p)
 
@@ -593,7 +593,7 @@ class DilatedPooling(object):
 
     if self.is_explicit_padding or self.padding.lower() == "same_lower" \
             or (self.padding.lower() == "same_upper" and
-                self.count_include_pad):
+                self.count_include_pad) or self.pooling_type.upper() == "LP":
       # pad the input
       self._pad_input()
 

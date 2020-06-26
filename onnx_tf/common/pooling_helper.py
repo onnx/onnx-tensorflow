@@ -153,6 +153,9 @@ def py_pool(input, kernel_shape, strides=None, dilations=None,
     else:
         input_dtype_min = np.finfo(input_dtype).min
 
+    if pooling_type == "LP":
+      rootN = (1.0 / p)
+
     def _loop_over_output(batch, channel):
         dims = [range(output_sp_shape[d]) for d in range(spatial_size)]
         for counters in itertools.product(*dims):
@@ -182,8 +185,7 @@ def py_pool(input, kernel_shape, strides=None, dilations=None,
                     val_sum += val
                     val_count += 1
                 elif pooling_type == "LP":
-                    val_sum += (val ** p)
-                    val_count += 1
+                    val_sum += abs(val ** p)
                 else:
                     if val > maxval:
                         maxval = val
@@ -198,7 +200,7 @@ def py_pool(input, kernel_shape, strides=None, dilations=None,
             if pooling_type == "AVG":
                 out_pool[ind] = val_sum / val_count
             elif pooling_type == "LP":
-                out_pool[ind] = val_sum ** (1.0 / p)
+                out_pool[ind] = val_sum ** rootN
             else:
                 out_pool[ind] = maxval
                 out_ind[ind] = maxind
