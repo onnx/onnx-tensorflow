@@ -71,6 +71,7 @@ backend_opset_version = {
     'ImageScaler': [1],
     'Imputer': [],
     'InstanceNormalization': [1, 6],
+    'Inverse': [],
     'IsInf': [10],
     'IsNaN': [9],
     'LRN': [1],
@@ -93,6 +94,7 @@ backend_opset_version = {
     'MaxRoiPool': [],
     'MaxUnpool': [9, 11],
     'Mean': [1, 6, 8],
+    'MeanSquaredDistance': [],
     'MeanVarianceNormalization': [1, 9],
     'Min': [1, 6, 8, 12, 13],
     'Mod': [10],
@@ -133,7 +135,7 @@ backend_opset_version = {
     'ReduceSumSquare': [1, 11],
     'Relu': [1, 6],
     'Reshape': [1, 5],
-    'Resize': [10],
+    'Resize': [10, 11],
     'ReverseSequence': [10],
     'RoiAlign': [],
     'Round': [11],
@@ -164,7 +166,7 @@ backend_opset_version = {
     'Softplus': [1],
     'Softsign': [1],
     'SpaceToDepth': [1],
-    'Split': [1, 2, 11],
+    'Split': [1, 2, 11, 13],
     'SplitToSequence': [],
     'Sqrt': [1, 6],
     'Squeeze': [1, 11],
@@ -180,6 +182,7 @@ backend_opset_version = {
     'Transpose': [1],
     'TreeEnsembleClassifier': [],
     'TreeEnsembleRegressor': [],
+    'UnfoldToDepth': [],
     'Unique': [],
     'Unsqueeze': [1, 11],
     'Upsample': [7, 9],
@@ -191,6 +194,8 @@ backend_opset_version = {
 backend_partial_support = {
     'Cast': 'Cast string to float32/float64/int32/int64 are not supported in '
             'Tensorflow.',
+    'ConcatFromSequence': 'new_axis=1 not supported in Tensorflow.',
+    'Clip': 'Clip input in uint64 is not supported in Tensorflow.',
     'ConvTranspose': 'ConvTranspose with dilations != 1, or transposed '
                      'convolution for 4D or higher are not supported in '
                      'Tensorflow.',
@@ -205,8 +210,9 @@ backend_partial_support = {
     'LSTM': 'LSTM not using sigmoid for `f`, or LSTM not using the same '
             'activation for `g` and `h` are not supported in Tensorflow.',
     'MaxPool': 'MaxPoolWithArgmax with pad is None or incompatible mode, or '
-               'MaxPoolWithArgmax with 4D or higher input, orMaxPoolWithArgmax '
-               'with column major are not supported in Tensorflow.',
+               'MaxPoolWithArgmax with 4D or higher input, or '
+               'MaxPoolWithArgmax with column major are not supported in '
+               'Tensorflow.',
     'Mod': 'Mod Dividend or Divisor in int8/int16/uint8/uint16/uint32/uint64 '
            'are not supported in Tensorflow.',
     'OneHot': 'OneHot indices in '
@@ -215,6 +221,41 @@ backend_partial_support = {
               'uint8/uint16/uint32/uint64/int8/int16/int64/float16/float/double '
               'are not supported in Tensorflow.',
     'RNN': 'RNN with clip is not supported in Tensorflow.',
-    'Resize': 'Resize required 4D input in Tensorflow.',
+    'Resize': 'Resize required 4D input in Tensorflow. For opset 11, only the '
+              'following attributes and inputs conbination are supported in '
+              'Tensorflow:\n'
+              '\ta. mode=nearest, '
+              'coordinate_transformation_mode=align_corners, '
+              'nearest_mode=round_prefer_ceil, can use scales(*) or sizes.\n'
+              '\tb. mode=nearest, coordinate_transformation_mode=asymmetric, '
+              'nearest_mode=floor, can use scales(*) or sizes.\n'
+              '\tc. mode=nearest, '
+              'coordinate_transformation_mode=tf_half_pixel_for_nn, '
+              'nearest_mode=floor, can use scales(*) or sizes.\n'
+              '\td. mode=linear, coordinate_transformation_mode=align_corners, '
+              'can use scales(*) or sizes.\n'
+              '\te. mode=linear, coordinate_transformation_mode=asymmetric, '
+              'can use scales(*) or sizes.\n'
+              '\tf. mode=linear, coordinate_transformation_mode=half_pixel, '
+              'can use scales(*) or sizes.\n'
+              '\tg. mode=cubic, coordinate_transformation_mode=align_corners, '
+              'cubic_coeff_a=-0.5, exclude_outside=1, can use scales(*) or '
+              'sizes.\n'
+              '\th. mode=cubic, coordinate_transformation_mode=asymmetric, '
+              'cubic_coeff_a=-0.5, exclude_outside=1, can use scales(*) or '
+              'sizes.\n'
+              '\ti. mode=cubic, coordinate_transformation_mode=half_pixel, '
+              'cubic_coeff_a=-0.5, exclude_outside=1, can use scales(*) or '
+              'sizes.\n'
+              '\tj. mode=nearest, '
+              'coordinate_transformation_mode=tf_crop_and_resize, '
+              'extrapolation_value=any_float_value, '
+              'nearest_mode=round_prefer_ceil, can use scales or sizes.\n'
+              '\tk. mode=linear, '
+              'coordinate_transformation_mode=tf_crop_and_resize, '
+              'extrapolation_value=any_float_value, can use scales or sizes.\n'
+              '\tNote (*): The accuracy of your model will go down, if the '
+              'height and the width of the new sizes(scales * origial sizes) '
+              'are not in whole numbers.',
     'Upsample': 'Upsample required 4D input in Tensorflow.'
 }
