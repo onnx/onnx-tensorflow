@@ -11,7 +11,7 @@ from .math_mixin import ArithmeticMixin
 @onnx_op("Mod")
 @partial_support(True)
 @ps_description(
-    "Mod Dividend or Divisor in " + "int8/int16/uint8/uint16/uint32/uint64 " +
+    "Mod Dividend or Divisor in int8/int16/uint8/uint16/uint32/uint64 " +
     "are not supported in Tensorflow.")
 class Mod(ArithmeticMixin, BackendHandler):
 
