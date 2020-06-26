@@ -1,7 +1,7 @@
 # ONNX-Tensorflow Support Status
 |||
 |-:|:-|
-|ONNX-Tensorflow Version|Master ( commit id: e2917f8d2458b96332ace3ede45a3b8a32d2ec41 )|
+|ONNX-Tensorflow Version|Master ( commit id: d2228b9b6008a38965ff7d42776fb3438edaa734 )|
 |ONNX Version|Master ( commit id: 0c070abb0c40fec649f81a73a75b0098662ec486 )|
 |Tensorflow Version|v1.15.0|
 
@@ -73,7 +73,7 @@ Notes:
 |HardSigmoid|**1**|1|1|1|1|**6**|6|6|6|6|6|6|
 |Hardmax|**1**|1|1|1|1|1|1|1|1|1|**11**|11|
 |Identity|**1**|1|1|1|1|1|1|1|1|1|1|1|
-|If|**1**:small_red_triangle:|1:small_red_triangle:|1:small_red_triangle:|1:small_red_triangle:|1:small_red_triangle:|1:small_red_triangle:|1:small_red_triangle:|1:small_red_triangle:|1:small_red_triangle:|1:small_red_triangle:|**11**:small_red_triangle:|11:small_red_triangle:|
+|If|**1**|1|1|1|1|1|1|1|1|1|**11**|11|
 |InstanceNormalization|**1**|1|1|1|1|**6**|6|6|6|6|6|6|
 |IsInf|-|-|-|-|-|-|-|-|-|**10**|10|10|
 |IsNaN|-|-|-|-|-|-|-|-|**9**|9|9|9|
@@ -84,7 +84,7 @@ Notes:
 |LessOrEqual|-|-|-|-|-|-|-|-|-|-|-|**12**:small_red_triangle:|
 |Log|**1**|1|1|1|1|**6**|6|6|6|6|6|6|
 |LogSoftmax|**1**|1|1|1|1|1|1|1|1|1|**11**|11|
-|Loop|**1**:small_red_triangle:|1:small_red_triangle:|1:small_red_triangle:|1:small_red_triangle:|1:small_red_triangle:|1:small_red_triangle:|1:small_red_triangle:|1:small_red_triangle:|1:small_red_triangle:|1:small_red_triangle:|**11**:small_red_triangle:|11:small_red_triangle:|
+|Loop|**1**|1|1|1|1|1|1|1|1|1|**11**|11|
 |LpNormalization|**1**|1|1|1|1|1|1|1|1|1|1|1|
 |LpPool|**1**:small_red_triangle:|**2**:small_red_triangle:|2:small_red_triangle:|2:small_red_triangle:|2:small_red_triangle:|2:small_red_triangle:|2:small_red_triangle:|2:small_red_triangle:|2:small_red_triangle:|2:small_red_triangle:|**11**:small_red_triangle:|11:small_red_triangle:|
 |MatMul|**1**|1|1|1|1|1|1|1|**9**|9|9|9|
@@ -123,9 +123,9 @@ Notes:
 |ReduceL2|**1**|1|1|1|1|1|1|1|1|1|**11**|11|
 |ReduceLogSum|**1**|1|1|1|1|1|1|1|1|1|**11**|11|
 |ReduceLogSumExp|**1**|1|1|1|1|1|1|1|1|1|**11**|11|
-|ReduceMax|**1**|1|1|1|1|1|1|1|1|1|**11**|**12**:small_red_triangle:|
+|ReduceMax|**1**|1|1|1|1|1|1|1|1|1|**11**|**12**|
 |ReduceMean|**1**|1|1|1|1|1|1|1|1|1|**11**|11|
-|ReduceMin|**1**|1|1|1|1|1|1|1|1|1|**11**|**12**:small_red_triangle:|
+|ReduceMin|**1**|1|1|1|1|1|1|1|1|1|**11**|**12**|
 |ReduceProd|**1**|1|1|1|1|1|1|1|1|1|**11**|11|
 |ReduceSum|**1**|1|1|1|1|1|1|1|1|1|**11**|11|
 |ReduceSumSquare|**1**|1|1|1|1|1|1|1|1|1|**11**|11|
@@ -179,7 +179,7 @@ Notes:
 |Where|-|-|-|-|-|-|-|-|**9**|9|9|9|
 |Xor|**1**|1|1|1|1|1|**7**|7|7|7|7|7|
 
-ONNX-TF Supported Operators / ONNX Operators: 128 / 162
+ONNX-TF Supported Operators / ONNX Operators: 131 / 162
 
 Notes:
 1. Cast: Cast string to float32/float64/int32/int64 are not supported in Tensorflow.
