@@ -1,6 +1,7 @@
 # ONNX-Tensorflow Support Status
 |||
 |-:|:-|
+
 |ONNX-Tensorflow Version|Master ( commit id: b39500a6855ed2066d9575d946e0b9f15e095509 )|
 |ONNX Version|Master ( commit id: cc2230603422bae893d5bc900d2d773ab34400a4 )|
 |Tensorflow Version|v2.2.0|
