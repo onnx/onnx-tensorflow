@@ -118,6 +118,54 @@ class TestModel(unittest.TestCase):
     d = np.concatenate((a, b, c), axis=1).astype(np.float32)
     np.testing.assert_almost_equal(output["Y"], d)
 
+    # test SplitToSequence and SequenceAt
+    a= np.array([[1,2,3,4,5,6,7],
+        [11,12,13,14,15,16,17],
+        [21,22,23,24,25,26,27]]).astype(np.float32)
+    b = np.int32([2,1])
+    seq_split_node = helper.make_node('SplitToSequence', ['a','b'], ['S'])
+    seq_at_node = helper.make_node('SequenceAt', ['S','at'], ['Y'])
+    a_value_info =  helper.make_tensor_value_info('a',onnx.TensorProto.FLOAT,[3,7])
+    b_value_info =  helper.make_tensor_value_info('b',onnx.TensorProto.INT32,[2])
+    at_value_info =  helper.make_tensor_value_info('at',onnx.TensorProto.INT32,[])
+
+    graph = helper.make_graph([seq_split_node, seq_at_node],
+            name='split_to_seq_test',
+            inputs=[a_value_info, b_value_info, at_value_info],
+            outputs=[out_value_info])
+    model = helper.make_model(graph, producer_name='backend-test')
+    tf_rep = prepare(model)
+    output = tf_rep.run({'a':a, 'b':b, 'at':1})
+    np.testing.assert_almost_equal(output["Y"], np.split(a, [2,3])[1])
+
+    axis=1
+    seq_split_node = helper.make_node('SplitToSequence', ['a'], ['S'], axis=axis)
+    seq_at_node = helper.make_node('SequenceAt', ['S','at'], ['Y'])
+    at_value_info =  helper.make_tensor_value_info('at',onnx.TensorProto.INT32,[])
+
+    graph = helper.make_graph([seq_split_node, seq_at_node],
+            name='split_to_seq_test',
+            inputs=[a_value_info, at_value_info],
+            outputs=[out_value_info])
+    model = helper.make_model(graph, producer_name='backend-test')
+    tf_rep = prepare(model)
+    output = tf_rep.run({'a':a, 'at':0})
+    np.testing.assert_almost_equal(output["Y"], np.split(a, 7, axis=1)[0])
+
+    seq_split_node = helper.make_node('SplitToSequence', ['a'], ['S'], keepdims=0)
+    seq_at_node = helper.make_node('SequenceAt', ['S','at'], ['Y'])
+    at_value_info =  helper.make_tensor_value_info('at',onnx.TensorProto.INT32,[])
+
+    graph = helper.make_graph([seq_split_node, seq_at_node],
+            name='split_to_seq_test',
+            inputs=[a_value_info, at_value_info],
+            outputs=[out_value_info])
+    model = helper.make_model(graph, producer_name='backend-test')
+    tf_rep = prepare(model)
+    output = tf_rep.run({'a':a, 'at':0})
+    expected = [np.squeeze(res) for res in np.split(a, 3)]
+    np.testing.assert_almost_equal(output["Y"], expected[0])
+
   def test_relu_node_inplace(self):
     X = np.random.randn(3, 2).astype(np.float32)
     Y_ref = np.clip(X, 0, np.inf)
