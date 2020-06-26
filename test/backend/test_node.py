@@ -282,9 +282,8 @@ class TestNode(unittest.TestCase):
       a = helper.make_sparse_tensor(values, indices, [3, 4])
       node_def = helper.make_node("Constant", [], ["Y"], sparse_value=a)
       output = run_node(node_def, [])
-      b = tf.compat.v1.sparse_to_dense(output["Y"].indices,
-                                       output["Y"].dense_shape,
-                                       output["Y"].values)
+      b = tf.sparse.SparseTensor(output["Y"].indices, output["Y"].values, output["Y"].dense_shape)
+      b = tf.sparse.to_dense(b)
       result = b.numpy()
       np.testing.assert_equal(result, expected)
 
@@ -746,6 +745,58 @@ class TestNode(unittest.TestCase):
               "Expected ValueError not raised for axis value %d" % axis)
         except ValueError as e:
           assert 'out of bounds' in str(e), str(e) + ' for axis ' + str(axis)
+
+  def test_gather_elements(self):
+    if legacy_opset_pre_ver(11):
+      raise unittest.SkipTest(
+          "ONNX version {} doesn't support GatherElements.".format(
+              defs.onnx_opset_version()))
+
+    data_dtype = np.int32
+    data = np.array([
+        [[10, 11], [12, 13], [14, 15], [16, 17], [18, 19]],
+        [[20, 21], [22, 23], [24, 25], [26, 27], [28, 29]],
+        [[30, 31], [32, 33], [34, 35], [36, 37], [38, 39]],
+        [[40, 41], [42, 43], [44, 45], [46, 47], [48, 49]],
+    ],
+                    dtype=data_dtype)
+
+    # test default axis
+    indices = np.array([[[3, 0], [2, 0], [1, 0], [0, 0], [3, 1]]],
+                       dtype=np.int64)
+    ref_output = np.array([[[40, 11], [32, 13], [24, 15], [16, 17], [48, 29]]],
+                          dtype=data_dtype)
+    node_def = helper.make_node("GatherElements", ["data", "indices"],
+                                ["outputs"])
+    output = run_node(node_def, [data, indices])
+    np.testing.assert_almost_equal(output["outputs"], ref_output)
+
+    # test non-default axis
+    indices = np.array([[[3, 0], [2, 1], [1, 2], [0, 3]]], dtype=data_dtype)
+    ref_output = np.array([
+        [[16, 11], [14, 13], [12, 15], [10, 17]],
+    ],
+                          dtype=data_dtype)
+    node_def = helper.make_node("GatherElements", ["data", "indices"],
+                                ["outputs"],
+                                axis=1)
+    output = run_node(node_def, [data, indices])
+    np.testing.assert_almost_equal(output["outputs"], ref_output)
+
+    # test negative axis
+    indices = np.array([
+        [[1, 1, -2], [1, -2, 1], [-1, 1, -1], [-2, 1, -2], [-2, 1, 1]],
+    ],
+                       dtype=data_dtype)
+    ref_output = np.array([
+        [[11, 11, 10], [13, 12, 13], [15, 15, 15], [16, 17, 16], [18, 19, 19]],
+    ],
+                          dtype=data_dtype)
+    node_def = helper.make_node("GatherElements", ["data", "indices"],
+                                ["outputs"],
+                                axis=2)
+    output = run_node(node_def, [data, indices])
+    np.testing.assert_almost_equal(output["outputs"], ref_output)
 
   def test_gather_nd(self):
     if legacy_opset_pre_ver(11):
@@ -2785,6 +2836,22 @@ class TestNode(unittest.TestCase):
         output = run_node(node_def, [x, pads])
         y = np.pad(x, ((1, 1), (1, 1)), mode)
         np.testing.assert_almost_equal(output["Y"], y)
+      # negative pads
+      node_def = helper.make_node("Pad", ["X", "pads"], ["Y"], mode="constant")
+      pads = np.array([-2, -2, -2, -2], dtype=np.int64)
+      x = np.array([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]).reshape((3, 4))
+      y = x
+      x = np.pad(x, ((2, 2), (2, 2)), 'constant')
+      output = run_node(node_def, [x, pads])
+      np.testing.assert_almost_equal(output["Y"], y)
+
+      # negative pads with 3 dimensions
+      node_def = helper.make_node("Pad", ["X", "pads"], ["Y"], mode="constant")
+      pads = np.array([-1, 0, 0, 0, -1, 0], dtype=np.int64)
+      x = np.array([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]).reshape((2, 3, 2))
+      y = np.array([7, 8, 9, 10]).reshape((1, 2, 2))
+      output = run_node(node_def, [x, pads])
+      np.testing.assert_almost_equal(output["Y"], y)
 
   def test_qlinearconv(self):
     if legacy_opset_pre_ver(10):

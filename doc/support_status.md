@@ -1,8 +1,9 @@
 # ONNX-Tensorflow Support Status
 |||
 |-:|:-|
-|ONNX-Tensorflow Version|Master ( commit id: 5e17be08813b637c1a426c6ece4d3918af99a852 )|
-|ONNX Version|Master ( commit id: 14a7477618ec418d987fd5207178e91bb4c98dfc )|
+
+|ONNX-Tensorflow Version|Master ( commit id: b39500a6855ed2066d9575d946e0b9f15e095509 )|
+|ONNX Version|Master ( commit id: cc2230603422bae893d5bc900d2d773ab34400a4 )|
 |Tensorflow Version|v2.2.0|
 
 Notes:
@@ -62,7 +63,7 @@ Notes:
 |Floor|**1**|1|1|1|1|**6**|6|6|6|6|6|6|**13**:small_red_triangle:|
 |GRU|**1**:small_orange_diamond:|1:small_orange_diamond:|**3**:small_orange_diamond:|3:small_orange_diamond:|3:small_orange_diamond:|3:small_orange_diamond:|**7**:small_orange_diamond:|7:small_orange_diamond:|7:small_orange_diamond:|7:small_orange_diamond:|7:small_orange_diamond:|7:small_orange_diamond:|7:small_orange_diamond:|
 |Gather|**1**|1|1|1|1|1|1|1|1|1|**11**|11|**13**:small_red_triangle:|
-|GatherElements|-|-|-|-|-|-|-|-|-|-|**11**:small_red_triangle:|11:small_red_triangle:|**13**:small_red_triangle:|
+|GatherElements|-|-|-|-|-|-|-|-|-|-|**11**|11|**13**:small_red_triangle:|
 |GatherND|-|-|-|-|-|-|-|-|-|-|**11**|**12**:small_red_triangle:|**13**:small_red_triangle:|
 |Gemm|**1**|1|1|1|1|**6**|**7**|7|**9**|9|**11**|11|**13**:small_red_triangle:|
 |GlobalAveragePool|**1**|1|1|1|1|1|1|1|1|1|1|1|1|

@@ -54,7 +54,7 @@ backend_opset_version = {
     'Floor': [1, 6],
     'GRU': [1, 3, 7],
     'Gather': [1, 11],
-    'GatherElements': [],
+    'GatherElements': [11],
     'GatherND': [11],
     'Gemm': [1, 6, 7, 9, 11],
     'GlobalAveragePool': [1],
@@ -71,6 +71,7 @@ backend_opset_version = {
     'ImageScaler': [1],
     'Imputer': [],
     'InstanceNormalization': [1, 6],
+    'Inverse': [],
     'IsInf': [10],
     'IsNaN': [9],
     'LRN': [1],
@@ -93,6 +94,7 @@ backend_opset_version = {
     'MaxRoiPool': [],
     'MaxUnpool': [9, 11],
     'Mean': [1, 6, 8],
+    'MeanSquaredDistance': [],
     'MeanVarianceNormalization': [1, 9],
     'Min': [1, 6, 8, 12, 13],
     'Mod': [10],
@@ -180,6 +182,7 @@ backend_opset_version = {
     'Transpose': [1],
     'TreeEnsembleClassifier': [],
     'TreeEnsembleRegressor': [],
+    'UnfoldToDepth': [],
     'Unique': [],
     'Unsqueeze': [1, 11],
     'Upsample': [7, 9],
@@ -191,6 +194,7 @@ backend_opset_version = {
 backend_partial_support = {
     'Cast': 'Cast string to float32/float64/int32/int64 are not supported in '
             'Tensorflow.',
+    'ConcatFromSequence': 'new_axis=1 not supported in Tensorflow.',
     'Clip': 'Clip input in uint64 is not supported in Tensorflow.',
     'ConvTranspose': 'ConvTranspose with dilations != 1, or transposed '
                      'convolution for 4D or higher are not supported in '
