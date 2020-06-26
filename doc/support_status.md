@@ -1,7 +1,7 @@
 # ONNX-Tensorflow Support Status
 |||
 |-:|:-|
-|ONNX-Tensorflow Version|Master ( commit id: d2228b9b6008a38965ff7d42776fb3438edaa734 )|
+|ONNX-Tensorflow Version|Master ( commit id: 034e6d210b40d7c66cd35be316e333a8b22287f3 )|
 |ONNX Version|Master ( commit id: 0c070abb0c40fec649f81a73a75b0098662ec486 )|
 |Tensorflow Version|v1.15.0|
 
@@ -62,7 +62,7 @@ Notes:
 |Floor|**1**|1|1|1|1|**6**|6|6|6|6|6|6|
 |GRU|**1**:small_orange_diamond:|1:small_orange_diamond:|**3**:small_orange_diamond:|3:small_orange_diamond:|3:small_orange_diamond:|3:small_orange_diamond:|**7**:small_orange_diamond:|7:small_orange_diamond:|7:small_orange_diamond:|7:small_orange_diamond:|7:small_orange_diamond:|7:small_orange_diamond:|
 |Gather|**1**|1|1|1|1|1|1|1|1|1|**11**|11|
-|GatherElements|-|-|-|-|-|-|-|-|-|-|**11**:small_red_triangle:|11:small_red_triangle:|
+|GatherElements|-|-|-|-|-|-|-|-|-|-|**11**|11|
 |GatherND|-|-|-|-|-|-|-|-|-|-|**11**|**12**:small_red_triangle:|
 |Gemm|**1**|1|1|1|1|**6**|**7**|7|**9**|9|**11**|11|
 |GlobalAveragePool|**1**|1|1|1|1|1|1|1|1|1|1|1|
@@ -179,7 +179,7 @@ Notes:
 |Where|-|-|-|-|-|-|-|-|**9**|9|9|9|
 |Xor|**1**|1|1|1|1|1|**7**|7|7|7|7|7|
 
-ONNX-TF Supported Operators / ONNX Operators: 131 / 162
+ONNX-TF Supported Operators / ONNX Operators: 132 / 162
 
 Notes:
 1. Cast: Cast string to float32/float64/int32/int64 are not supported in Tensorflow.
