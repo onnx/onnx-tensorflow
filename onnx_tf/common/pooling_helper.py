@@ -120,7 +120,7 @@ def _pooling_output_shape(input_size, ksize, stride, dilation, pad, ceil_mode):
 
 def py_pool(input, kernel_shape, strides=None, dilations=None,
             padding=None, ceil_mode=False, pooling_type="MAX",
-            include_indices=True):
+            include_indices=True, p=2):
     """
         Implementation of Max and Average pool operations in Python
         Args:
@@ -133,8 +133,10 @@ def py_pool(input, kernel_shape, strides=None, dilations=None,
                           [x1_begin, x2_begin...x1_end, x2_end,...]
             ceil_mode:    whether to use ceil or floor (default) to compute
                           the output shape.
-            pooling_type: specify pooling type. Values can be "MAX" or "AVG".
+            pooling_type: specifies pooling type. Values can be "MAX", "AVG" or
+                          "LP"
             include_indices: should indices be included in the output
+            p:            specifies the p parameter for LpPooling
       Return:
             pooled:       output data from max pooling across the input
             ind:          indices of the selected max values from the input
@@ -150,6 +152,9 @@ def py_pool(input, kernel_shape, strides=None, dilations=None,
         input_dtype_min = np.iinfo(input_dtype).min
     else:
         input_dtype_min = np.finfo(input_dtype).min
+
+    if pooling_type == "LP":
+      rootN = (1.0 / p)
 
     def _loop_over_output(batch, channel):
         dims = [range(output_sp_shape[d]) for d in range(spatial_size)]
@@ -167,7 +172,7 @@ def py_pool(input, kernel_shape, strides=None, dilations=None,
                 cur_range = [i for i in range(dim_start,
                                               dim_end, dilations[dim])]
                 input_ranges.append(cur_range)
-            if pooling_type == "AVG":
+            if pooling_type in ["AVG", "LP"]:
                 val_sum = 0
                 val_count = 0
             else:
@@ -179,6 +184,8 @@ def py_pool(input, kernel_shape, strides=None, dilations=None,
                 if pooling_type == "AVG":
                     val_sum += val
                     val_count += 1
+                elif pooling_type == "LP":
+                    val_sum += abs(val ** p)
                 else:
                     if val > maxval:
                         maxval = val
@@ -192,6 +199,8 @@ def py_pool(input, kernel_shape, strides=None, dilations=None,
             ind = (batch, channel) + counters
             if pooling_type == "AVG":
                 out_pool[ind] = val_sum / val_count
+            elif pooling_type == "LP":
+                out_pool[ind] = val_sum ** rootN
             else:
                 out_pool[ind] = maxval
                 out_ind[ind] = maxind
