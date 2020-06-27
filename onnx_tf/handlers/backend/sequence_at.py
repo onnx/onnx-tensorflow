@@ -23,8 +23,8 @@ class SequenceAt(BackendHandler):
 
     if seq_length is None: return True
 
-    seq_length = tf.cast(seq_length, tf.int32)
-    pos = tf.cast(pos, tf.int32)
+    seq_length = tf.cast(seq_length, pos.dtype)
+
     cond1 = tf.greater_equal(pos, tf.negative(seq_length))
     cond2 = tf.less_equal(pos, seq_length - 1)
 
