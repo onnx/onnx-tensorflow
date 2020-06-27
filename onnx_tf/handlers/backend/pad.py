@@ -65,7 +65,7 @@ class Pad(BackendHandler):
       ]
 
     if cls.SINCE_VERSION < 11:  # for opset 1 and opset 2
-      paddings = node.attrs.pop("pads", None)
+      paddings = tf.constant(node.attrs.pop("pads", None), tf.int32)
       constant_values = node.attrs.pop("value", 0.)
 
     else:  # for opset 11

@@ -13,31 +13,31 @@ from onnx_tf.common.tf_helper import tf_shape
 @ps_description(
     "Resize required 4D input in Tensorflow. " +
     "For opset 11, only the following attributes and inputs " +
-    "conbination are supported in Tensorflow:\n\ta. mode=nearest, " +
+    "conbination are supported in Tensorflow:\n\t1. mode=nearest, " +
     "coordinate_transformation_mode=align_corners, " +
     "nearest_mode=round_prefer_ceil, can use scales(*) or sizes.\n" +
-    "\tb. mode=nearest, coordinate_transformation_mode=asymmetric, " +
-    "nearest_mode=floor, can use scales(*) or sizes.\n\tc. mode=" +
+    "\t2. mode=nearest, coordinate_transformation_mode=asymmetric, " +
+    "nearest_mode=floor, can use scales(*) or sizes.\n\t3. mode=" +
     "nearest, coordinate_transformation_mode=tf_half_pixel_for_nn, " +
-    "nearest_mode=floor, can use scales(*) or sizes.\n\td. mode=" +
+    "nearest_mode=floor, can use scales(*) or sizes.\n\t4. mode=" +
     "linear, coordinate_transformation_mode=align_corners, " +
-    "can use scales(*) or sizes.\n\te. mode=linear, coordinate_" +
+    "can use scales(*) or sizes.\n\t5. mode=linear, coordinate_" +
     "transformation_mode=asymmetric, can use scales(*) or sizes.\n" +
-    "\tf. mode=linear, coordinate_transformation_mode=half_pixel, " +
-    "can use scales(*) or sizes.\n\tg. mode=cubic, coordinate_" +
+    "\t6. mode=linear, coordinate_transformation_mode=half_pixel, " +
+    "can use scales(*) or sizes.\n\t7. mode=cubic, coordinate_" +
     "transformation_mode=align_corners, cubic_coeff_a=-0.5, " +
-    "exclude_outside=1, can use scales(*) or sizes.\n\th. mode=" +
+    "exclude_outside=1, can use scales(*) or sizes.\n\t8. mode=" +
     "cubic, coordinate_transformation_mode=asymmetric, " +
     "cubic_coeff_a=-0.5, exclude_outside=1, can use scales(*) " +
-    "or sizes.\n\ti. mode=cubic, coordinate_transformation_mode=" +
+    "or sizes.\n\t9. mode=cubic, coordinate_transformation_mode=" +
     "half_pixel, cubic_coeff_a=-0.5, exclude_outside=1, " +
-    "can use scales(*) or sizes.\n\tj. mode=nearest, " +
+    "can use scales(*) or sizes.\n\t10. mode=nearest, " +
     "coordinate_transformation_mode=tf_crop_and_resize, " +
     "extrapolation_value=any_float_value, nearest_mode=" +
-    "round_prefer_ceil, can use scales or sizes.\n\tk. mode=linear, " +
+    "round_prefer_ceil, can use scales or sizes.\n\t11. mode=linear, " +
     "coordinate_transformation_mode=tf_crop_and_resize, " +
     "extrapolation_value=any_float_value, can use scales or sizes." +
-    "\n\tNote (*): The accuracy of your model will go down, if the height and " +
+    "\n\t- Note (*): The accuracy of your model will go down, if the height and " +
     "the width of the new sizes(scales * origial sizes) are not in whole numbers."
 )
 class Resize(BackendHandler):
