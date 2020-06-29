@@ -34,7 +34,7 @@ backend_opset_version = {
     'ConvTranspose': [1, 11],
     'Cos': [7],
     'Cosh': [9],
-    'CumSum': [],
+    'CumSum': [11],
     'DepthToSpace': [1, 11],
     'DequantizeLinear': [10],
     'Det': [11],
@@ -194,6 +194,7 @@ backend_partial_support = {
     'ConvTranspose': 'ConvTranspose with dilations != 1, or transposed '
                      'convolution for 4D or higher are not supported in '
                      'Tensorflow.',
+    'CumSum': 'CumSum inputs in uint32/uint64 are not supported in Tensorflow.',
     'Equal': 'Equal inputs in uint16/uint32/uint64 are not supported in '
              'Tensorflow.',
     'GRU': 'GRU with clip or GRU with linear_before_reset, or GRU not using '
