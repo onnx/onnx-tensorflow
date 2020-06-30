@@ -44,7 +44,7 @@ Notes:
 |ConvTranspose|**1**:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|**11**:small_orange_diamond:|11:small_orange_diamond:|
 |Cos|-|-|-|-|-|-|**7**|7|7|7|7|7|
 |Cosh|-|-|-|-|-|-|-|-|**9**|9|9|9|
-|CumSum|-|-|-|-|-|-|-|-|-|-|**11**:small_red_triangle:|11:small_red_triangle:|
+|CumSum|-|-|-|-|-|-|-|-|-|-|**11**:small_orange_diamond:|11:small_orange_diamond:|
 |DepthToSpace|**1**|1|1|1|1|1|1|1|1|1|**11**|11|
 |DequantizeLinear|-|-|-|-|-|-|-|-|-|**10**|10|10|
 |Det|-|-|-|-|-|-|-|-|-|-|**11**|11|
@@ -205,3 +205,4 @@ Notes:
 	11. mode=linear, coordinate_transformation_mode=tf_crop_and_resize, extrapolation_value=any_float_value, can use scales or sizes.
 	- Note (*): The accuracy of your model will go down, if the height and the width of the new sizes(scales * origial sizes) are not in whole numbers.
 11. Upsample: Upsample required 4D input in Tensorflow.
+
