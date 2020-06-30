@@ -34,7 +34,7 @@ backend_opset_version = {
     'ConvTranspose': [1, 11],
     'Cos': [7],
     'Cosh': [9],
-    'CumSum': [],
+    'CumSum': [11],
     'DepthToSpace': [1, 11],
     'DequantizeLinear': [10],
     'Det': [11],
@@ -67,7 +67,7 @@ backend_opset_version = {
     'HardSigmoid': [1, 6],
     'Hardmax': [1, 11],
     'Identity': [1],
-    'If': [],
+    'If': [1, 11],
     'ImageScaler': [1],
     'Imputer': [],
     'InstanceNormalization': [1, 6],
@@ -83,7 +83,7 @@ backend_opset_version = {
     'LinearRegressor': [],
     'Log': [1, 6],
     'LogSoftmax': [1, 11],
-    'Loop': [],
+    'Loop': [1, 11],
     'LpNormalization': [1],
     'LpPool': [],
     'MatMul': [1, 9],
@@ -125,9 +125,9 @@ backend_opset_version = {
     'ReduceL2': [1, 11],
     'ReduceLogSum': [1, 11],
     'ReduceLogSumExp': [1, 11],
-    'ReduceMax': [1, 11],
+    'ReduceMax': [1, 11, 12],
     'ReduceMean': [1, 11],
-    'ReduceMin': [1, 11],
+    'ReduceMin': [1, 11, 12],
     'ReduceProd': [1, 11],
     'ReduceSum': [1, 11],
     'ReduceSumSquare': [1, 11],
@@ -194,6 +194,7 @@ backend_partial_support = {
     'ConvTranspose': 'ConvTranspose with dilations != 1, or transposed '
                      'convolution for 4D or higher are not supported in '
                      'Tensorflow.',
+    'CumSum': 'CumSum inputs in uint32/uint64 are not supported in Tensorflow.',
     'Equal': 'Equal inputs in uint16/uint32/uint64 are not supported in '
              'Tensorflow.',
     'GRU': 'GRU with clip or GRU with linear_before_reset, or GRU not using '
