@@ -87,12 +87,21 @@ backend_test.exclude(r'test_mod_[a-z,_]*int(8|(16))+')
 # tf.one_hot
 backend_test.exclude(r'test_onehot_[a-z,_]*')
 
-# skip resize downsample with mode=linear
-backend_test.exclude(r'test_resize_downsample_linear[a-z,_]*')
+# TF doesn't support most of the attributes in resize op
+# test_node.py will cover the test
+backend_test.exclude(r'test_resize_[a-z,_]*')
 
-# range is using loop in the unit test but
-# loop is not supported in tf-onnx converter
-backend_test.exclude(r'test_range[a-z,_]*')
+# range is using loop in the model test but all the outputs datatype are
+# missing in the body attribute of the loop
+backend_test.exclude(
+    r'test_range_float_type_positive_delta_expanded[a-z,_]*')
+backend_test.exclude(
+    r'test_range_int32_type_negative_delta_expanded[a-z,_]*')
+
+# skip all the cumsum testcases because all the axis in the testcases
+# are created as a 1-D 1 element tensor, but the spec clearly state
+# that axis should be a 0-D tensor(scalar)
+backend_test.exclude(r'test_cumsum_[a-z,_]*')
 
 if legacy_opset_pre_ver(7):
   backend_test.exclude(r'[a-z,_]*Upsample[a-z,_]*')

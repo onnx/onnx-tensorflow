@@ -8,6 +8,7 @@ import unittest
 import numpy as np
 import tensorflow as tf
 from tensorflow.python.framework.errors_impl import InvalidArgumentError
+from onnx_tf.backend import onnx_graph_to_tensorflow_rep
 from onnx_tf.backend import run_node
 from onnx_tf.common import supports_device
 from onnx_tf.common.legacy import legacy_onnx_pre_ver, legacy_opset_pre_ver
@@ -90,6 +91,29 @@ class TestNode(unittest.TestCase):
       np.testing.assert_almost_equal(output["reduced"],
                                      np.argmax(data, axis=axis))
 
+      # test select_last_index
+      if not legacy_opset_pre_ver(12):
+        # select_last_index = 0
+        node_def = helper.make_node("ArgMax", ["data"], ["reduced"],
+                                    axis=axis,
+                                    keepdims=0,
+                                    select_last_index=0)
+        data = self._get_rnd_float32(shape=[10, 10])
+        output = run_node(node_def, [data])
+        np.testing.assert_almost_equal(output["reduced"],
+                                       np.argmax(data, axis=axis))
+        # select_last_index = 1
+        node_def = helper.make_node("ArgMax", ["data"], ["reduced"],
+                                    axis=axis,
+                                    keepdims=0,
+                                    select_last_index=1)
+        data = np.array([[1, 2, 3, 5, 3, 4, 5, 1], [2, 9, 3, 5, 9, 4, 5, 1]])
+        output = run_node(node_def, [data])
+        data = np.flip(data, axis)
+        result = np.argmax(data, axis=axis)
+        result = data.shape[axis] - result - 1
+        np.testing.assert_almost_equal(output["reduced"], result)
+
   def test_arg_min(self):
     for axis in [0, 1]:
       node_def = helper.make_node("ArgMin", ["data"], ["reduced"],
@@ -99,6 +123,29 @@ class TestNode(unittest.TestCase):
       output = run_node(node_def, [data])
       np.testing.assert_almost_equal(output["reduced"],
                                      np.argmin(data, axis=axis))
+
+      # test select_last_index
+      if not legacy_opset_pre_ver(12):
+        # select_last_index = 0
+        node_def = helper.make_node("ArgMin", ["data"], ["reduced"],
+                                    axis=axis,
+                                    keepdims=0,
+                                    select_last_index=0)
+        data = self._get_rnd_float32(shape=[10, 10])
+        output = run_node(node_def, [data])
+        np.testing.assert_almost_equal(output["reduced"],
+                                       np.argmin(data, axis=axis))
+        # select_last_index = 1
+        node_def = helper.make_node("ArgMin", ["data"], ["reduced"],
+                                    axis=axis,
+                                    keepdims=0,
+                                    select_last_index=1)
+        data = np.array([[1, 2, 3, 5, 3, 4, 5, 1], [2, 7, 3, 5, 2, 4, 5, 6]])
+        output = run_node(node_def, [data])
+        data = np.flip(data, axis)
+        result = np.argmin(data, axis=axis)
+        result = data.shape[axis] - result - 1
+        np.testing.assert_almost_equal(output["reduced"], result)
 
   def test_asinh(self):
     if legacy_opset_pre_ver(9):
@@ -235,11 +282,43 @@ class TestNode(unittest.TestCase):
       a = helper.make_sparse_tensor(values, indices, [3, 4])
       node_def = helper.make_node("Constant", [], ["Y"], sparse_value=a)
       output = run_node(node_def, [])
-      b = tf.compat.v1.sparse_to_dense(output["Y"].indices,
-                                       output["Y"].dense_shape,
-                                       output["Y"].values)
+      b = tf.sparse.SparseTensor(output["Y"].indices, output["Y"].values, output["Y"].dense_shape)
+      b = tf.sparse.to_dense(b)
       result = b.numpy()
       np.testing.assert_equal(result, expected)
+
+    if not legacy_opset_pre_ver(12):
+      float_attr = 1.0
+      floats_attr = [1.0, 2.0, 3.0]
+      int_attr = np.int64(123)
+      ints_attr = [np.int64(4), np.int64(5), np.int64(6)]
+      string_attr = 'The Cat in the Hat'
+      strings_attr = [
+          'Green Eggs and Ham', 'How the Grinch Stole Christmas!',
+          'The Cat in the Hat Comes Back'
+      ]
+      testcases = [(helper.make_node("Constant", [], ["Y"],
+                                     value_float=float_attr), float_attr),
+                   (helper.make_node("Constant", [], ["Y"],
+                                     value_floats=floats_attr), floats_attr),
+                   (helper.make_node("Constant", [], ["Y"],
+                                     value_int=int_attr), int_attr),
+                   (helper.make_node("Constant", [], ["Y"],
+                                     value_ints=ints_attr), ints_attr),
+                   (helper.make_node("Constant", [], ["Y"],
+                                     value_string=string_attr), string_attr),
+                   (helper.make_node("Constant", [], ["Y"],
+                                     value_strings=strings_attr), strings_attr)]
+      for node_def, expected in testcases:
+        output = run_node(node_def, [])
+        if isinstance(expected, str):
+          np.testing.assert_string_equal(output["Y"].decode('UTF-8'), expected)
+        elif isinstance(expected, list) and isinstance(expected[0], str):
+          for i in range(len(expected)):
+            np.testing.assert_string_equal(output['Y'][i].decode('UTF-8'),
+                                           expected[i])
+        else:
+          np.testing.assert_equal(output["Y"], expected)
 
   def test_constant_fill(self):
     if not legacy_opset_pre_ver(9):
@@ -328,11 +407,13 @@ class TestNode(unittest.TestCase):
     w_zero_point = np.int8(1)
     y = np.array([16, 20, 28, 32]).astype(np.int32).reshape((1, 1, 2, 2))
 
-    node = helper.make_node("ConvInteger", ["X", "W", "w_zero_point"], ["Y"],
+    node = helper.make_node("ConvInteger",
+                            ["X", "W", "x_zero_point", "w_zero_point"],
+                            ["Y"],
                             kernel_shape=[2, 2],
                             pads=[0, 0, 0, 0],
                             dilations=[1, 1])
-    output = run_node(node, [x, w, w_zero_point])
+    output = run_node(node, [x, w, np.int8(0), w_zero_point])
     np.testing.assert_almost_equal(output["Y"], y)
 
     # Test x_zero_point and w_zero_point
@@ -344,7 +425,8 @@ class TestNode(unittest.TestCase):
     y = np.array([12, 16, 24, 28]).astype(np.int32).reshape((1, 1, 2, 2))
 
     node = helper.make_node("ConvInteger",
-                            ["X", "W", "x_zero_point", "w_zero_point"], ["Y"],
+                            ["X", "W", "x_zero_point", "w_zero_point"],
+                            ["Y"],
                             kernel_shape=[2, 2],
                             pads=[0, 0, 0, 0],
                             dilations=[1, 1])
@@ -358,11 +440,13 @@ class TestNode(unittest.TestCase):
     w_zero_point = np.array([1]).astype(np.int8)
     y = np.array([16, 20, 28, 32]).astype(np.int32).reshape((1, 1, 2, 2))
 
-    node = helper.make_node("ConvInteger", ["X", "W", "w_zero_point"], ["Y"],
+    node = helper.make_node("ConvInteger",
+                            ["X", "W", "x_zero_point", "w_zero_point"],
+                            ["Y"],
                             kernel_shape=[2, 2],
                             pads=[0, 0, 0, 0],
                             dilations=[1, 1])
-    output = run_node(node, [x, w, w_zero_point])
+    output = run_node(node, [x, w, np.int8(0), w_zero_point])
     np.testing.assert_almost_equal(output["Y"], y)
 
     # Test w_zero_point as 1d tensor shape 2
@@ -373,37 +457,81 @@ class TestNode(unittest.TestCase):
     y = np.array([12, 16, 24, 28, 0, 0, 0, 0]).astype(np.int32).reshape(
         (1, 2, 2, 2))
 
-    node = helper.make_node("ConvInteger", ["X", "W", "w_zero_point"], ["Y"],
+    node = helper.make_node("ConvInteger",
+                            ["X", "W", "x_zero_point", "w_zero_point"],
+                            ["Y"],
                             kernel_shape=[2, 2],
                             pads=[0, 0, 0, 0],
                             dilations=[1, 1])
-    output = run_node(node, [x, w, w_zero_point])
+    output = run_node(node, [x, w, np.int8(0), w_zero_point])
     np.testing.assert_almost_equal(output["Y"], y)
 
   def test_conv_transpose(self):
-    # Fix test in the future.
-    return
-    device = "CUDA"
-    if not supports_device(device):
-      raise unittest.SkipTest(
-          "Backend doesn't support device {}".format(device))
+    device = "CUDA" if supports_device("CUDA") else "CPU"
+
+    pads = [1, 1]
     node_def = helper.make_node("ConvTranspose", ["X", "weights"], ["Y"],
-                                pads=[1, 1])
-    x_shape = [1, 5, 4]
+                                pads=pads)
+    x_shape = [1, 3, 4]
     x = self._get_rnd_float32(shape=x_shape)
-    weight_shape = [5, 3, 2]
+    weight_shape = [3, 5, 2]
     weights = self._get_rnd_float32(shape=weight_shape)
     output = run_node(node_def, [x, weights], device=device)
-    out_shape = [x_shape[0], weight_shape[1], x_shape[2]]
+
+    padh_left = weight_shape[2] - 1 - pads[0]
+    padh_right = weight_shape[2] - 1 - pads[1]
+    kh = weight_shape[2]
+    outh = x_shape[2] + padh_right + padh_right - (kh - 1)
+
+    out_shape = [x_shape[0], weight_shape[1], outh]
+
     test_output = np.zeros(out_shape)
     for b in range(0, x_shape[0]):
       for m in range(0, weight_shape[1]):
-        for h in range(0, x_shape[2]):
-          v = 0
-          for c in range(0, x_shape[1]):
-            for k in range(h, min(h + weight_shape[2], x_shape[2])):
-              v += x[b][c][k] * weights[c][m][k - h]
-          test_output[b][m][h] = v
+        for c in range(0, x_shape[1]):
+          for h in range(0, outh):
+            for k in range(h, h + kh):
+              if (k - padh_left >= 0):
+                test_output[b][m][h] += x[b][c][k - padh_left] * weights[c][m][
+                    kh + h - 1 - k]
+
+    np.testing.assert_almost_equal(output["Y"], test_output, decimal=5)
+
+    # test for spatial dimension of colnolution is 2
+    pads = [1, 1, 1, 1]
+    node_def = helper.make_node("ConvTranspose", ["X", "weights"], ["Y"],
+                                pads=pads)
+    x_shape = [1, 3, 4, 6]
+    x = self._get_rnd_float32(shape=x_shape)
+    weight_shape = [3, 5, 2, 2]
+    weights = self._get_rnd_float32(shape=weight_shape)
+    output = run_node(node_def, [x, weights], device=device)
+
+    padh_left = weight_shape[2] - 1 - pads[0]
+    padh_right = weight_shape[2] - 1 - pads[1]
+    padw_left = weight_shape[3] - 1 - pads[2]
+    padw_right = weight_shape[3] - 1 - pads[3]
+
+    kh = weight_shape[2]
+    kw = weight_shape[3]
+    outh = x_shape[2] + padh_right + padh_right - (kh - 1)
+    outw = x_shape[3] + padw_right + padw_right - (kw - 1)
+
+    out_shape = [x_shape[0], weight_shape[1], outh, outw]
+
+    test_output = np.zeros(out_shape)
+    for b in range(0, x_shape[0]):
+      for m in range(0, weight_shape[1]):
+        for c in range(0, x_shape[1]):
+          for h in range(0, outh):
+            for w in range(0, outw):
+              for k1 in range(h, h + kh):
+                for k2 in range(w, w + kw):
+                  if (k1 - padh_left >= 0 and k2 - padw_left >= 0):
+                    test_output[b][m][h][w] += x[b][c][k1 - padh_left][
+                        k2 - padw_left] * weights[c][m][kh + h - 1 -
+                                                        k1][kw + w - 1 - k2]
+
     np.testing.assert_almost_equal(output["Y"], test_output, decimal=5)
 
   def test_cosh(self):
@@ -414,6 +542,19 @@ class TestNode(unittest.TestCase):
     x = self._get_rnd_float32(shape=[3, 4, 5])
     output = run_node(node_def, [x])
     np.testing.assert_almost_equal(output["Y"], np.cosh(x))
+
+  def test_cumsum(self):
+    if legacy_opset_pre_ver(11):
+      raise unittest.SkipTest("ONNX version {} doesn't support CumSum.".format(
+          defs.onnx_opset_version()))
+    x = np.array([[1, 2, 3], [4, 5, 6]]).astype(np.int32)
+    axis = 0
+    node_def = helper.make_node("CumSum", ["x", "axis"], ["y"])
+    # note: if axis is not provided, np.cumsum() will compute over flattened array,
+    # which is different than the TensorFlow behavior
+    y = np.cumsum(x, axis).astype(np.int32)
+    output = run_node(node_def, [x, axis])
+    np.testing.assert_almost_equal(output["y"], y)
 
   def test_depth_to_space(self):
     node_def = helper.make_node("DepthToSpace", ["X"], ["Y"], blocksize=2)
@@ -477,8 +618,9 @@ class TestNode(unittest.TestCase):
 
   def test_dynamic_quantize_linear(self):
     if legacy_opset_pre_ver(11):
-      raise unittest.SkipTest("ONNX version {} doesn't support DynamicQuantizeLinear.".format(
-          defs.onnx_opset_version()))
+      raise unittest.SkipTest(
+          "ONNX version {} doesn't support DynamicQuantizeLinear.".format(
+              defs.onnx_opset_version()))
     node_def = helper.make_node("DynamicQuantizeLinear", ["X"],
                                 ["Y", "Y_Scale", "Y_Zero_Point"])
     x = self._get_rnd_float32(shape=[3, 4])
@@ -516,7 +658,7 @@ class TestNode(unittest.TestCase):
     x = self._get_rnd_float32(shape=[3, 4, 5])
     output = run_node(node_def, [x])
     exp_output = np.vectorize(math.erf)(x).astype(np.float32)
-    np.testing.assert_almost_equal(output["Y"], exp_output)
+    np.testing.assert_allclose(output['Y'], exp_output, rtol=1e-6, atol=1e-6)
 
   def test_exp(self):
     node_def = helper.make_node("Exp", ["X"], ["Y"])
@@ -524,6 +666,14 @@ class TestNode(unittest.TestCase):
     x = x - 3.6
     output = run_node(node_def, [x])
     np.testing.assert_almost_equal(output["Y"], np.exp(x))
+
+  def test_expand(self):
+    node_def = helper.make_node("Expand", ["X", "shape"], ["Y"])
+    x = [[True], [False], [True]]
+    shape = [2, 1, 6]
+    y = x * np.ones(shape, dtype=np.bool)
+    output = run_node(node_def, [x, shape])
+    np.testing.assert_almost_equal(output["Y"], y)
 
   def test_eye_like(self):
     if legacy_opset_pre_ver(9):
@@ -595,6 +745,58 @@ class TestNode(unittest.TestCase):
               "Expected ValueError not raised for axis value %d" % axis)
         except ValueError as e:
           assert 'out of bounds' in str(e), str(e) + ' for axis ' + str(axis)
+
+  def test_gather_elements(self):
+    if legacy_opset_pre_ver(11):
+      raise unittest.SkipTest(
+          "ONNX version {} doesn't support GatherElements.".format(
+              defs.onnx_opset_version()))
+
+    data_dtype = np.int32
+    data = np.array([
+        [[10, 11], [12, 13], [14, 15], [16, 17], [18, 19]],
+        [[20, 21], [22, 23], [24, 25], [26, 27], [28, 29]],
+        [[30, 31], [32, 33], [34, 35], [36, 37], [38, 39]],
+        [[40, 41], [42, 43], [44, 45], [46, 47], [48, 49]],
+    ],
+                    dtype=data_dtype)
+
+    # test default axis
+    indices = np.array([[[3, 0], [2, 0], [1, 0], [0, 0], [3, 1]]],
+                       dtype=np.int64)
+    ref_output = np.array([[[40, 11], [32, 13], [24, 15], [16, 17], [48, 29]]],
+                          dtype=data_dtype)
+    node_def = helper.make_node("GatherElements", ["data", "indices"],
+                                ["outputs"])
+    output = run_node(node_def, [data, indices])
+    np.testing.assert_almost_equal(output["outputs"], ref_output)
+
+    # test non-default axis
+    indices = np.array([[[3, 0], [2, 1], [1, 2], [0, 3]]], dtype=data_dtype)
+    ref_output = np.array([
+        [[16, 11], [14, 13], [12, 15], [10, 17]],
+    ],
+                          dtype=data_dtype)
+    node_def = helper.make_node("GatherElements", ["data", "indices"],
+                                ["outputs"],
+                                axis=1)
+    output = run_node(node_def, [data, indices])
+    np.testing.assert_almost_equal(output["outputs"], ref_output)
+
+    # test negative axis
+    indices = np.array([
+        [[1, 1, -2], [1, -2, 1], [-1, 1, -1], [-2, 1, -2], [-2, 1, 1]],
+    ],
+                       dtype=data_dtype)
+    ref_output = np.array([
+        [[11, 11, 10], [13, 12, 13], [15, 15, 15], [16, 17, 16], [18, 19, 19]],
+    ],
+                          dtype=data_dtype)
+    node_def = helper.make_node("GatherElements", ["data", "indices"],
+                                ["outputs"],
+                                axis=2)
+    output = run_node(node_def, [data, indices])
+    np.testing.assert_almost_equal(output["outputs"], ref_output)
 
   def test_gather_nd(self):
     if legacy_opset_pre_ver(11):
@@ -676,6 +878,114 @@ class TestNode(unittest.TestCase):
       x_in_2d = np.reshape(x, shape_in_2d)
       y = np.eye(x_in_2d.shape[1], dtype=x.dtype)[np.argmax(x_in_2d, axis=1)]
       np.testing.assert_almost_equal(output["Y"], np.reshape(y, shape))
+
+  def test_if(self):
+    true_val = helper.make_tensor(
+        name='true_tensor',
+        data_type=TensorProto.INT64,
+        dims=(),
+        vals=[np.int64(1)]
+    )
+    false_val = helper.make_tensor(
+        name='false_tensor',
+        data_type=TensorProto.INT64,
+        dims=(),
+        vals=[np.int64(0)]
+    )
+    true_node = helper.make_node('Constant',
+                                 inputs=[],
+                                 outputs=['true'],
+                                 value=true_val)
+    false_node = helper.make_node('Constant',
+                                  inputs=[],
+                                  outputs=['false'],
+                                  value=false_val)
+
+    true_out = helper.make_tensor_value_info('true', TensorProto.INT64, [])
+    false_out = helper.make_tensor_value_info('false', TensorProto.INT64, [])
+
+    true_graph = helper.make_graph(nodes=[true_node],
+                                   name="true_graph",
+                                   inputs=[],
+                                   outputs=[true_out])
+    false_graph = helper.make_graph(nodes=[false_node],
+                                    name="false_graph",
+                                    inputs=[],
+                                    outputs=[false_out])
+
+    node_def = helper.make_node('If', ['cond'], ['outputs'],
+                                then_branch=true_graph,
+                                else_branch=false_graph)
+
+    for cond, exp in [[True, true_val], [False, false_val]]:
+      output = run_node(node_def, [cond])
+      np.testing.assert_almost_equal(output['outputs'], exp.int64_data)
+
+    x = self._get_rnd_int(low=-50, high=50, dtype=np.int64)
+    y = self._get_rnd_int(low=-50, high=50, dtype=np.int64)
+    z = self._get_rnd_int(low=-50, high=50, dtype=np.int64)
+    x_val = helper.make_tensor(
+        name='x_tensor',
+        data_type=TensorProto.INT64,
+        dims=(),
+        vals=[x]
+    )
+    y_val = helper.make_tensor(
+        name='y_tensor',
+        data_type=TensorProto.INT64,
+        dims=(),
+        vals=[y]
+    )
+    z_val = helper.make_tensor(
+        name='z_tensor',
+        data_type=TensorProto.INT64,
+        dims=(),
+        vals=[z]
+    )
+    x_node = helper.make_node('Constant', inputs=[], outputs=['x'], value=x_val)
+    y_node = helper.make_node('Constant', inputs=[], outputs=['y'], value=y_val)
+    z_node = helper.make_node('Constant', inputs=[], outputs=['z'], value=z_val)
+    add_node = helper.make_node('Add', inputs=['x', 'y'], outputs=['sum'])
+    sub_node = helper.make_node('Sub', inputs=['x', 'y'], outputs=['diff'])
+    mul1_node = helper.make_node('Mul', inputs=['sum', 'z'], outputs=['prod1'])
+    mul2_node = helper.make_node('Mul', inputs=['diff', 'z'], outputs=['prod2'])
+
+    x_out = helper.make_tensor_value_info('x', TensorProto.INT64, [])
+    y_out = helper.make_tensor_value_info('y', TensorProto.INT64, [])
+    z_out = helper.make_tensor_value_info('z', TensorProto.INT64, [])
+    sum_out = helper.make_tensor_value_info('sum', TensorProto.INT64, [])
+    diff_out = helper.make_tensor_value_info('diff', TensorProto.INT64, [])
+    prod1_out = helper.make_tensor_value_info('prod1', TensorProto.INT64, [])
+    prod2_out = helper.make_tensor_value_info('prod2', TensorProto.INT64, [])
+
+    true_graph = helper.make_graph(nodes=[add_node, mul1_node],
+                                   name="true_graph",
+                                   inputs=[x_out, y_out, z_out],
+                                   outputs=[sum_out, prod1_out])
+    false_graph = helper.make_graph(nodes=[sub_node, mul2_node],
+                                    name="false_graph",
+                                    inputs=[x_out, y_out, z_out],
+                                    outputs=[diff_out, prod2_out])
+
+    less_node = helper.make_node('Less', inputs=['x', 'y'], outputs=['cond'])
+    if_node = helper.make_node('If',
+                               inputs=['cond'],
+                               outputs=['result'],
+                               then_branch=true_graph,
+                               else_branch=false_graph)
+
+    result_out = helper.make_tensor_value_info('result', TensorProto.INT64, [])
+
+    graph = helper.make_graph(
+        nodes=[x_node, y_node, z_node, less_node, if_node],
+        name="test_if",
+        inputs=[],
+        outputs=[result_out])
+
+    tf_rep = onnx_graph_to_tensorflow_rep(graph)
+    output = tf_rep.run({})
+    expected = [x + y, (x + y) * z] if x < y else [x - y, (x - y) * z]
+    np.testing.assert_almost_equal(output['result'], expected)
 
   def test_image_sacler(self):
     # Input:  (N x C x H x W), where N is the batch size,
@@ -851,6 +1161,240 @@ class TestNode(unittest.TestCase):
     output = run_node(node_def, [x])
     np.testing.assert_almost_equal(output["Y"], np.log(x))
 
+  def test_loop(self):
+    add1_node = helper.make_node('Add', inputs=['x', 'x'], outputs=['sum1'])
+    neg_node = helper.make_node('Neg', inputs=['sum1'], outputs=['neg_sum1'])
+    add2_node = helper.make_node('Add',
+                                 inputs=['y', 'neg_sum1'],
+                                 outputs=['sum2'])
+    add3_node = helper.make_node('Add',
+                                 inputs=['sum1', 'sum2'],
+                                 outputs=['sum3'])
+    less_node = helper.make_node('Less',
+                                 inputs=['sum1', 'sum2'],
+                                 outputs=['new_cond'])
+    greater_node = helper.make_node('Greater',
+                                    inputs=['sum1', 'sum2'],
+                                    outputs=['new_cond'])
+
+    m_in = helper.make_tensor_value_info('M', TensorProto.INT64, [])
+    cond_in = helper.make_tensor_value_info('cond', TensorProto.BOOL, [])
+    cond_int_in = helper.make_tensor_value_info('cond', TensorProto.INT32, [])
+    x_in = helper.make_tensor_value_info('x', TensorProto.INT32, [None])
+    y_in = helper.make_tensor_value_info('y', TensorProto.INT32, [None])
+
+    cond_out = helper.make_tensor_value_info('cond', TensorProto.BOOL, [])
+    new_cond_out = helper.make_tensor_value_info('new_cond', TensorProto.BOOL,
+                                                 [])
+    sum1_out = helper.make_tensor_value_info('sum1', TensorProto.INT32, [None])
+    sum2_out = helper.make_tensor_value_info('sum2', TensorProto.INT32, [None])
+    sum3_out = helper.make_tensor_value_info('sum3', TensorProto.INT32, [None])
+
+    v1_initial = np.array([1, 1], dtype=np.int32)
+    v2_initial = np.array([100, 100], dtype=np.int32)
+
+    # test for loop
+    M = np.int64(10)
+    cond = True # value will be ignore because optional "cond" input will be skip
+    graph = helper.make_graph(nodes=[add1_node, neg_node, add2_node, add3_node],
+                              name="for_loop_graph",
+                              inputs=[m_in, cond_in, x_in, y_in],
+                              outputs=[cond_out, sum1_out, sum2_out, sum3_out])
+    node_def = helper.make_node('Loop',
+                                ['M', '', 'v1_initial', 'v2_initial'],
+                                ['v_final', 'scan_outputs'],
+                                body=graph)
+    output = run_node(node_def, [M, cond, v1_initial, v2_initial])
+    v_final = [
+        np.array([1024, 1024], dtype=np.int32),
+        np.array([-1946, -1946], dtype=np.int32)
+    ]
+    scan_outputs = [
+        np.array([[100, 100], [98, 98], [94, 94], [86, 86], [70, 70], [38, 38],
+                  [-26, -26], [-154, -154], [-410, -410], [-922, -922]],
+                 dtype=np.int32)
+    ]
+    np.testing.assert_almost_equal(output['v_final'], v_final)
+    np.testing.assert_almost_equal(output['scan_outputs'], scan_outputs)
+
+    # test while loop
+    M = 0 # value will be ignore because optional "M" input will be skip
+    cond = v1_initial < v2_initial
+    graph = helper.make_graph(
+        nodes=[add1_node, neg_node, add2_node, add3_node, less_node],
+        name="while_loop_graph",
+        inputs=[m_in, cond_in, x_in, y_in],
+        outputs=[new_cond_out, sum1_out, sum2_out, sum3_out])
+    node_def = helper.make_node('Loop',
+                                ['', 'cond', 'v1_initial', 'v2_initial'],
+                                ['v_final', 'scan_outputs'],
+                                body=graph)
+    output = run_node(node_def, [M, cond, v1_initial, v2_initial])
+    v_final = [
+        np.array([64, 64], dtype=np.int32),
+        np.array([-26, -26], dtype=np.int32)
+    ]
+    scan_outputs = [
+        np.array([[100, 100], [98, 98], [94, 94], [86, 86], [70, 70], [38, 38]],
+                 dtype=np.int32)
+    ]
+    np.testing.assert_almost_equal(output['v_final'], v_final)
+    np.testing.assert_almost_equal(output['scan_outputs'], scan_outputs)
+
+    # test do-while loop
+    M = 0 # value will be ignore because optional "M" input will be skip
+    cond = 1
+    graph = helper.make_graph(
+        nodes=[add1_node, neg_node, add2_node, add3_node, greater_node],
+        name="do_while_loop_graph",
+        inputs=[m_in, cond_int_in, x_in, y_in],
+        outputs=[new_cond_out, sum1_out, sum2_out, sum3_out])
+    node_def = helper.make_node('Loop',
+                                ['', 'cond', 'v1_initial', 'v2_initial'],
+                                ['v_final', 'scan_outputs'],
+                                body=graph)
+    output = run_node(node_def, [M, cond, v1_initial, v2_initial])
+    v_final = [
+        np.array([2, 2], dtype=np.int32),
+        np.array([98, 98], dtype=np.int32)
+    ]
+    scan_outputs = [np.array([[100, 100]], dtype=np.int32)]
+    np.testing.assert_almost_equal(output['v_final'], v_final)
+    np.testing.assert_almost_equal(output['scan_outputs'], scan_outputs)
+
+    # test for loop and while loop conbine
+    M = np.int64(4)
+    cond = v1_initial < v2_initial
+    graph = helper.make_graph(
+        nodes=[add1_node, neg_node, add2_node, add3_node, less_node],
+        name="for_and_while_loop_graph",
+        inputs=[m_in, cond_in, x_in, y_in],
+        outputs=[new_cond_out, sum1_out, sum2_out, sum3_out])
+    node_def = helper.make_node('Loop',
+                                ['M', 'cond', 'v1_initial', 'v2_initial'],
+                                ['v_final', 'scan_outputs'],
+                                body=graph)
+    output = run_node(node_def, [M, cond, v1_initial, v2_initial])
+    v_final = [
+        np.array([16, 16], dtype=np.int32),
+        np.array([70, 70], dtype=np.int32)
+    ]
+    scan_outputs = [
+        np.array([[100, 100], [98, 98], [94, 94], [86, 86]], dtype=np.int32)
+    ]
+    np.testing.assert_almost_equal(output['v_final'], v_final)
+    np.testing.assert_almost_equal(output['scan_outputs'], scan_outputs)
+
+    # test for loop that doesn't run at all (M = 0)
+    M = np.int64(0)
+    cond = True # value will be ignore because optional "cond" input will be skip
+    graph = helper.make_graph(nodes=[add1_node, neg_node, add2_node, add3_node],
+                              name="for_loop_graph",
+                              inputs=[m_in, cond_in, x_in, y_in],
+                              outputs=[cond_out, sum1_out, sum2_out, sum3_out])
+    node_def = helper.make_node('Loop',
+                                ['M', '', 'v1_initial', 'v2_initial'],
+                                ['v_final', 'scan_outputs'],
+                                body=graph)
+    output = run_node(node_def, [M, cond, v1_initial, v2_initial])
+    v_final = [
+        np.array([1, 1], dtype=np.int32),
+        np.array([100, 100], dtype=np.int32)
+    ]
+    scan_outputs = np.array([], dtype=np.int32).reshape(1, 0, 2)
+    np.testing.assert_almost_equal(output['v_final'], v_final)
+    np.testing.assert_almost_equal(output['scan_outputs'], scan_outputs)
+
+    # test while loop that doesn't run at all (cond = False)
+    M = 0 # value will be ignore because optional "M" input will be skip
+    cond = False
+    graph = helper.make_graph(
+        nodes=[add1_node, neg_node, add2_node, add3_node, less_node],
+        name="while_loop_graph",
+        inputs=[m_in, cond_in, x_in, y_in],
+        outputs=[new_cond_out, sum1_out, sum2_out, sum3_out])
+    node_def = helper.make_node('Loop',
+                                ['', 'cond', 'v1_initial', 'v2_initial'],
+                                ['v_final', 'scan_outputs'],
+                                body=graph)
+    output = run_node(node_def, [M, cond, v1_initial, v2_initial])
+    v_final = [
+        np.array([1, 1], dtype=np.int32),
+        np.array([100, 100], dtype=np.int32)
+    ]
+    scan_outputs = np.array([], dtype=np.int32).reshape(1, 0, 2)
+    np.testing.assert_almost_equal(output['v_final'], v_final)
+    np.testing.assert_almost_equal(output['scan_outputs'], scan_outputs)
+
+    # test while loop that doesn't have any scan_outputs
+    M = np.int64(4)
+    cond = v1_initial < v2_initial
+    graph = helper.make_graph(nodes=[add1_node, neg_node, add2_node, less_node],
+                              name="while_loop_graph",
+                              inputs=[m_in, cond_in, x_in, y_in],
+                              outputs=[new_cond_out, sum1_out, sum2_out])
+    node_def = helper.make_node('Loop',
+                                ['M', 'cond', 'v1_initial', 'v2_initial'],
+                                ['v_final'],
+                                body=graph)
+    output = run_node(node_def, [M, cond, v1_initial, v2_initial])
+    v_final = [
+        np.array([16, 16], dtype=np.int32),
+        np.array([70, 70], dtype=np.int32)
+    ]
+    np.testing.assert_almost_equal(output['v_final'], v_final)
+
+    # test for loop that doesn't run at all (M = 0)
+    # and the scan_outputs shape is not the same as the inputs
+    v1_initial = np.array([[1, 1, 1], [2, 2, 2]], dtype=np.int32)
+    v3_initial = np.array([[1, 1], [2, 2], [3, 3]], dtype=np.int32)
+    matmul_node = helper.make_node('MatMul',
+                                   inputs=['x', 'z'],
+                                   outputs=['product'])
+    x_in = helper.make_tensor_value_info('x', TensorProto.INT32, [None, None])
+    z_in = helper.make_tensor_value_info('z', TensorProto.INT32, [None, None])
+    sum1_out = helper.make_tensor_value_info('sum1', TensorProto.INT32,
+                                             [None, None])
+    z_out = helper.make_tensor_value_info('z', TensorProto.INT32, [None, None])
+    product_out = helper.make_tensor_value_info('product', TensorProto.INT32,
+                                                [None, None])
+
+    M = np.int64(0)
+    cond = True # value will be ignore because optional "cond" input will be skip
+    graph = helper.make_graph(nodes=[add1_node, matmul_node],
+                              name="for_loop_graph",
+                              inputs=[m_in, cond_in, x_in, z_in],
+                              outputs=[cond_out, sum1_out, z_out, product_out])
+    node_def = helper.make_node('Loop',
+                                ['M', '', 'v1_initial', 'v3_initial'],
+                                ['v_final', 'scan_outputs'],
+                                body=graph)
+    output = run_node(node_def, [M, cond, v1_initial, v3_initial])
+    v_final = [v1_initial, v3_initial]
+    scan_outputs = np.array([], dtype=np.int32).reshape(1, 0, 2, 2)
+    for i in range(len(output['v_final'])):
+      np.testing.assert_almost_equal(output['v_final'][i], v_final[i])
+    np.testing.assert_almost_equal(output['scan_outputs'], scan_outputs)
+
+    # verify infinite loop will get exception
+    M = 0 # value will be ignore because optional "M" input will be skip
+    cond = True # value will be ignore because optional "cond" input will be skip
+    graph = helper.make_graph(
+        nodes=[add1_node, neg_node, add2_node, add3_node, less_node],
+        name="while_loop_graph",
+        inputs=[m_in, cond_in, x_in, y_in],
+        outputs=[cond_out, sum1_out, sum2_out, sum3_out])
+    node_def = helper.make_node('Loop',
+                                ['', '', 'v1_initial', 'v2_initial'],
+                                ['v_final', 'scan_outputs'],
+                                body=graph)
+    try:
+      output = run_node(node_def, [M, cond, v1_initial, v2_initial])
+      raise AssertionError("Expected RuntimeError not raise when Loop inputs " +
+                           "M and cond are both not set at the same time")
+    except RuntimeError as e:
+      assert "M and cond in Loop are not set" in str(e)
+
   def test_matmul_integer(self):
     if legacy_opset_pre_ver(10):
       raise unittest.SkipTest(
@@ -943,13 +1487,21 @@ class TestNode(unittest.TestCase):
     test_output = np.maximum(np.maximum(np.maximum(x1, x2), x3), x4)
     np.testing.assert_almost_equal(output["Z"], test_output)
 
+  def _test_pooling(self,
+                    input_shape,
+                    kernel_shape,
+                    strides=None,
+                    dilations=None,
+                    pads=None,
+                    auto_pad=None,
+                    ceil_mode=None,
+                    count_include_pad=None,
+                    pooling_type="MAX",
+                    input_dtype=np.float32,
+                    p=None):
 
-  def _test_pooling(self, input_shape, kernel_shape, strides=None,
-                    dilations=None, pads=None, auto_pad=None, ceil_mode=None,
-                    count_include_pad=None, pooling_type="MAX",
-                    input_dtype=np.float32):
-
-    op = "MaxPool" if pooling_type.upper().startswith("MAX") else "AveragePool"
+    op = "MaxPool" if pooling_type.upper().startswith("MAX") else \
+         "AveragePool" if pooling_type.upper() == "AVG" else "LpPool"
     node_def_kwargs = {
         "op_type": op,
         "inputs": ["X"],
@@ -972,15 +1524,18 @@ class TestNode(unittest.TestCase):
       ceil_mode = 0
     if count_include_pad is not None:
       node_def_kwargs["count_include_pad"] = count_include_pad
+    if p is not None:
+      node_def_kwargs["p"] = p
 
     node_def = helper.make_node(**node_def_kwargs)
 
     if input_dtype == np.float32:
-        x = self._get_rnd_float32(shape=input_shape)
+      x = self._get_rnd_float32(shape=input_shape)
     else:
-        x = self._get_rnd_int(low = np.iinfo(input_dtype).min,
-                              high = np.iinfo(input_dtype).max,
-                              shape=input_shape, dtype=input_dtype)
+      x = self._get_rnd_int(low=np.iinfo(input_dtype).min,
+                            high=np.iinfo(input_dtype).max,
+                            shape=input_shape,
+                            dtype=input_dtype)
 
     output = run_node(node_def, [x])
 
@@ -991,9 +1546,11 @@ class TestNode(unittest.TestCase):
                           padding=pads,
                           ceil_mode=ceil_mode,
                           pooling_type=pooling_type,
-                          include_indices=False)
+                          include_indices=False,
+                          p=p)
 
-    np.testing.assert_almost_equal(output["Y"], test_output)
+    np.testing.assert_almost_equal(output["Y"], test_output,
+                                   decimal=5 if pooling_type=="LP" else 7)
 
   def test_max_pool_2d(self):
     kernel_shape = [1, 2]
@@ -1185,9 +1742,13 @@ class TestNode(unittest.TestCase):
     ceil_mode = 1
 
     input_shape = [10, 3, 23, 23]
-    self._test_pooling(input_shape=input_shape, kernel_shape=kernel_shape,
-                       strides=strides, dilations=dilations, pads=pads,
-                       ceil_mode=ceil_mode, input_dtype=np.int8)
+    self._test_pooling(input_shape=input_shape,
+                       kernel_shape=kernel_shape,
+                       strides=strides,
+                       dilations=dilations,
+                       pads=pads,
+                       ceil_mode=ceil_mode,
+                       input_dtype=np.int8)
 
   def test_max_pool_3d(self):
     kernel_shape = [3, 3, 3]
@@ -1374,9 +1935,9 @@ class TestNode(unittest.TestCase):
                        pooling_type="AVG")
 
   def test_average_pool_2d_same_upper(self):
-    kernel_shape=[1, 2]
-    strides=[1, 2]
-    auto_pad="SAME_UPPER"
+    kernel_shape = [1, 2]
+    strides = [1, 2]
+    auto_pad = "SAME_UPPER"
 
     input_shape = [10, 10, 7, 7]
     self._test_pooling(input_shape=input_shape,
@@ -1394,6 +1955,110 @@ class TestNode(unittest.TestCase):
                        kernel_shape=kernel_shape,
                        strides=strides,
                        pooling_type="AVG")
+
+  def test_lp2_pool_2d(self):
+    kernel_shape = [1, 2]
+    strides = [1, 2]
+    p = 2
+
+    input_shape = [10, 10, 4, 4]
+    self._test_pooling(input_shape=input_shape,
+                       kernel_shape=kernel_shape,
+                       strides=strides,
+                       pooling_type="LP",
+                       p=p)
+
+  def test_lp2_pool_2d_same_lower(self):
+    kernel_shape = [1, 2]
+    strides = [1, 2]
+    p = 2
+    auto_pad = "SAME_LOWER"
+
+    input_shape = [10, 10, 7, 7]
+    self._test_pooling(input_shape=input_shape,
+                       kernel_shape=kernel_shape,
+                       strides=strides,
+                       auto_pad=auto_pad,
+                       pooling_type="LP",
+                       p=p)
+
+  def test_lp2_pool_2d_same_upper(self):
+    kernel_shape = [1, 2]
+    strides = [1, 2]
+    p = 2
+    auto_pad = "SAME_UPPER"
+
+    input_shape = [10, 10, 7, 7]
+    self._test_pooling(input_shape=input_shape,
+                       kernel_shape=kernel_shape,
+                       strides=strides,
+                       auto_pad=auto_pad,
+                       pooling_type="LP",
+                       p=p)
+
+  def test_lp2_pool_2d_pads(self):
+    kernel_shape = [3, 3]
+    strides = [2, 2]
+    p = 2
+    pads = [1, 1, 2, 2]
+
+    input_shape = [10, 3, 24, 24]
+    self._test_pooling(input_shape=input_shape,
+                       kernel_shape=kernel_shape,
+                       strides=strides,
+                       pads=pads,
+                       pooling_type="LP",
+                       p=p)
+
+  def test_lp2_pool_3d(self):
+    kernel_shape = [3, 3, 3]
+    strides = [2, 2, 2]
+    p = 2
+
+    input_shape = [10, 3, 23, 23, 23]
+    self._test_pooling(input_shape=input_shape,
+                       kernel_shape=kernel_shape,
+                       strides=strides,
+                       pooling_type="LP",
+                       p=p)
+
+  def test_lp2_pool_1d(self):
+    kernel_shape = [3]
+    strides = [2]
+    p = 2
+
+    input_shape = [10, 3, 23]
+    self._test_pooling(input_shape=input_shape,
+                       kernel_shape=kernel_shape,
+                       strides=strides,
+                       pooling_type="LP",
+                       p=p)
+
+  def test_lp3_pool_2d_pads(self):
+    kernel_shape = [3, 3]
+    strides = [2, 2]
+    p = 3
+    pads = [1, 1, 2, 2]
+
+    input_shape = [10, 3, 24, 24]
+    self._test_pooling(input_shape=input_shape,
+                       kernel_shape=kernel_shape,
+                       strides=strides,
+                       pads=pads,
+                       pooling_type="LP",
+                       p=p)
+
+  def test_lp3_pool_3d(self):
+    kernel_shape = [3, 3, 3]
+    strides = [2, 2, 2]
+    p = 3
+
+    input_shape = [10, 3, 23, 23, 23]
+    self._test_pooling(input_shape=input_shape,
+                       kernel_shape=kernel_shape,
+                       strides=strides,
+                       pooling_type="LP",
+                       p=p)
 
   def test_mean_variance_normalization(self):
     if legacy_opset_pre_ver(9):
@@ -1494,6 +2159,568 @@ class TestNode(unittest.TestCase):
     delta = np.int32(-2)
     output = run_node(node_def, [start, limit, delta])
     np.testing.assert_equal(output['y'], range(start, limit, delta))
+
+  def test_resize(self):
+    if legacy_opset_pre_ver(11):
+        raise unittest.SkipTest("ONNX version {} doesn't support Resize with attributes: " +
+            "coordinate_transformation_mode, cubic_coeff_a, exclude_outside, " +
+            "extrapolation_value, nearest_mode and inputs: roi and sizes".format(
+          defs.onnx_opset_version()))
+    data = np.reshape(np.arange(1, 101, dtype=np.float32), [1, 1, 10, 10])
+    roi = np.array([], dtype=np.float32)
+
+    # resize_nearest_round_prefer_ceil_align_corners_scales
+    node_def = helper.make_node("Resize",
+                                inputs=['X', 'roi', 'scales'],
+                                outputs=['Y'],
+                                coordinate_transformation_mode='align_corners',
+                                mode='nearest',
+                                nearest_mode='round_prefer_ceil')
+    scales = np.array([1, 1, 0.9, 0.9], dtype=np.float32)
+    expected = np.array(
+        [[[[1, 2, 3, 4, 6, 7, 8, 9, 10], [11, 12, 13, 14, 16, 17, 18, 19, 20],
+           [21, 22, 23, 24, 26, 27, 28, 29, 30],
+           [31, 32, 33, 34, 36, 37, 38, 39, 40],
+           [51, 52, 53, 54, 56, 57, 58, 59, 60],
+           [61, 62, 63, 64, 66, 67, 68, 69, 70],
+           [71, 72, 73, 74, 76, 77, 78, 79, 80],
+           [81, 82, 83, 84, 86, 87, 88, 89, 90],
+           [91, 92, 93, 94, 96, 97, 98, 99, 100]]]],
+        dtype=np.float32)  # expected value is calculated by onnx-runtime
+    output = run_node(node_def, [data, roi, scales])
+    np.testing.assert_almost_equal(output["Y"], expected)
+
+    # resize_nearest_round_prefer_ceil_align_corners_sizes
+    node_def = helper.make_node("Resize",
+                                inputs=['X', 'roi', 'scales', 'sizes'],
+                                outputs=['Y'],
+                                coordinate_transformation_mode='align_corners',
+                                mode='nearest',
+                                nearest_mode='round_prefer_ceil')
+    scales = np.array([], dtype=np.float32)
+    sizes = np.array([1, 1, 7, 7], dtype=np.int64)
+    expected = np.array(
+        [[[[1, 3, 4, 6, 7, 9, 10], [21, 23, 24, 26, 27, 29, 30],
+           [31, 33, 34, 36, 37, 39, 40], [51, 53, 54, 56, 57, 59, 60],
+           [61, 63, 64, 66, 67, 69, 70], [81, 83, 84, 86, 87, 89, 90],
+           [91, 93, 94, 96, 97, 99, 100]]]],
+        dtype=np.float32)  # expected value is calculated by onnx-runtime
+    output = run_node(node_def, [data, roi, scales, sizes])
+    np.testing.assert_almost_equal(output["Y"], expected)
+
+    # resize_nearest_floor_asymmetric_scales
+    node_def = helper.make_node("Resize",
+                                inputs=['X', 'roi', 'scales'],
+                                outputs=['Y'],
+                                coordinate_transformation_mode='asymmetric',
+                                mode='nearest',
+                                nearest_mode='floor')
+    scales = np.array([1.0, 1.0, 0.8, 0.8], dtype=np.float32)
+    expected = np.array(
+        [[[[1, 2, 3, 4, 6, 7, 8, 9], [11, 12, 13, 14, 16, 17, 18, 19],
+           [21, 22, 23, 24, 26, 27, 28, 29], [31, 32, 33, 34, 36, 37, 38, 39],
+           [51, 52, 53, 54, 56, 57, 58, 59], [61, 62, 63, 64, 66, 67, 68, 69],
+           [71, 72, 73, 74, 76, 77, 78, 79], [81, 82, 83, 84, 86, 87, 88, 89]]]
+        ],
+        dtype=np.float32)  # expected value is calculated by onnx-runtime
+    output = run_node(node_def, [data, roi, scales])
+    np.testing.assert_almost_equal(output["Y"], expected)
+
+    # resize_nearest_floor_asymmetric_sizes
+    node_def = helper.make_node("Resize",
+                                inputs=['X', 'roi', 'scales', 'sizes'],
+                                outputs=['Y'],
+                                coordinate_transformation_mode='asymmetric',
+                                mode='nearest',
+                                nearest_mode='floor')
+    scales = np.array([], dtype=np.float32)
+    sizes = np.array([1, 1, 7, 7], dtype=np.int64)
+    expected = np.array(
+        [[[[1, 2, 3, 5, 6, 8, 9], [11, 12, 13, 15, 16, 18, 19],
+           [21, 22, 23, 25, 26, 28, 29], [41, 42, 43, 45, 46, 48, 49],
+           [51, 52, 53, 55, 56, 58, 59], [71, 72, 73, 75, 76, 78, 79],
+           [81, 82, 83, 85, 86, 88, 89]]]],
+        dtype=np.float32)  # expected value is calculated by onnx-runtime
+    output = run_node(node_def, [data, roi, scales, sizes])
+    np.testing.assert_almost_equal(output["Y"], expected)
+
+    # resize_nearest_floor_half_pixel_scales
+    node_def = helper.make_node(
+        "Resize",
+        inputs=['X', 'roi', 'scales'],
+        outputs=['Y'],
+        coordinate_transformation_mode='tf_half_pixel_for_nn',
+        mode='nearest',
+        nearest_mode='floor')
+    scales = np.array([1, 1, 0.8, 0.8], dtype=np.float32)
+    expected = np.array(
+        [[[[1, 2, 4, 5, 6, 7, 9, 10], [11, 12, 14, 15, 16, 17, 19, 20],
+           [31, 32, 34, 35, 36, 37, 39, 40], [41, 42, 44, 45, 46, 47, 49, 50],
+           [51, 52, 54, 55, 56, 57, 59, 60], [61, 62, 64, 65, 66, 67, 69, 70],
+           [81, 82, 84, 85, 86, 87, 89, 90], [91, 92, 94, 95, 96, 97, 99, 100]]]
+        ],
+        dtype=np.float32)  # expected value is calculated by onnx-runtime
+    output = run_node(node_def, [data, roi, scales])
+    np.testing.assert_almost_equal(output["Y"], expected)
+
+    # resize_nearest_floor_half_pixel_sizes
+    node_def = helper.make_node(
+        "Resize",
+        inputs=['X', 'roi', 'scales', 'sizes'],
+        outputs=['Y'],
+        coordinate_transformation_mode='tf_half_pixel_for_nn',
+        mode='nearest',
+        nearest_mode='floor')
+    scales = np.array([], dtype=np.float32)
+    sizes = np.array([1, 1, 7, 7], dtype=np.int64)
+    expected = np.array(
+        [[[[1, 3, 4, 6, 7, 8, 10], [21, 23, 24, 26, 27, 28, 30],
+           [31, 33, 34, 36, 37, 38, 40], [51, 53, 54, 56, 57, 58, 60],
+           [61, 63, 64, 66, 67, 68, 70], [71, 73, 74, 76, 77, 78, 80],
+           [91, 93, 94, 96, 97, 98, 100]]]],
+        dtype=np.float32)  # expected value is calculated by onnx-runtime
+    output = run_node(node_def, [data, roi, scales, sizes])
+    np.testing.assert_almost_equal(output["Y"], expected)
+
+    # resize_linear_align_corners_scales
+    node_def = helper.make_node("Resize",
+                                inputs=['X', 'roi', 'scales'],
+                                outputs=['Y'],
+                                coordinate_transformation_mode="align_corners",
+                                mode='linear')
+    scales = np.array([1, 1, 0.8, 0.8], dtype=np.float32)
+    expected = np.array(
+        [[[[
+            1., 2.2857141, 3.5714285, 4.857143, 6.142857, 7.428571, 8.714286,
+            10.
+        ],
+           [
+               13.857142, 15.142857, 16.428572, 17.714287, 19., 20.285715,
+               21.571428, 22.857143
+           ],
+           [
+               26.714287, 28., 29.285713, 30.571426, 31.857141, 33.142857,
+               34.428574, 35.714283
+           ],
+           [
+               39.57143, 40.857143, 42.14286, 43.428574, 44.714287, 46.,
+               47.285717, 48.57143
+           ],
+           [
+               52.428574, 53.714283, 55., 56.285713, 57.571426, 58.857143,
+               60.142857, 61.428566
+           ],
+           [
+               65.28571, 66.57143, 67.85714, 69.14285, 70.428566, 71.71428, 73.,
+               74.28571
+           ],
+           [
+               78.14286, 79.42857, 80.71428, 82., 83.28572, 84.57143, 85.85715,
+               87.14286
+           ],
+           [
+               91., 92.28571, 93.57143, 94.85715, 96.14285, 97.42857, 98.71429,
+               100.
+           ]]]],
+        dtype=np.float32)  # expected value is calculated by onnx-runtime
+    output = run_node(node_def, [data, roi, scales])
+    np.testing.assert_allclose(output['Y'], expected, rtol=1e-6, atol=1e-6)
+
+    # resize_linear_align_corners_sizes
+    node_def = helper.make_node("Resize",
+                                inputs=['X', 'roi', 'scales', 'sizes'],
+                                outputs=['Y'],
+                                coordinate_transformation_mode="align_corners",
+                                mode='linear')
+    scales = np.array([], dtype=np.float32)
+    sizes = np.array([1, 1, 7, 7], dtype=np.int64)
+    expected = np.array(
+        [[[[1., 2.5, 4., 5.5, 7., 8.5, 10.],
+           [16., 17.5, 19., 20.5, 22., 23.5, 25.],
+           [31., 32.5, 34., 35.5, 37., 38.5, 40.],
+           [46., 47.5, 49., 50.5, 52., 53.5, 55.],
+           [61., 62.5, 64., 65.5, 67., 68.5, 70.],
+           [76., 77.5, 79., 80.5, 82., 83.5, 85.],
+           [91., 92.5, 94., 95.5, 97., 98.5, 100.]]]],
+        dtype=np.float32)  # expected value is calculated by onnx-runtime
+    output = run_node(node_def, [data, roi, scales, sizes])
+    np.testing.assert_almost_equal(output["Y"], expected)
+
+    # resize_linear_asymmetric_scales
+    node_def = helper.make_node("Resize",
+                                inputs=['X', 'roi', 'scales'],
+                                outputs=['Y'],
+                                coordinate_transformation_mode="asymmetric",
+                                mode='linear')
+    scales = np.array([1, 1, 0.8, 0.8], dtype=np.float32)
+    expected = np.array(
+        [[[[1., 2.25, 3.5, 4.75, 6., 7.25, 8.5, 9.75],
+           [13.5, 14.75, 16., 17.25, 18.5, 19.75, 21., 22.25],
+           [26., 27.25, 28.5, 29.75, 31., 32.25, 33.5, 34.75],
+           [38.5, 39.75, 41., 42.25, 43.5, 44.75, 46., 47.25],
+           [51., 52.25, 53.5, 54.75, 56., 57.25, 58.5, 59.75],
+           [63.5, 64.75, 66., 67.25, 68.5, 69.75, 71., 72.25],
+           [76., 77.25, 78.5, 79.75, 81., 82.25, 83.5, 84.75],
+           [88.5, 89.75, 91., 92.25, 93.5, 94.75, 96., 97.25]]]],
+        dtype=np.float32)  # expected value is calculated by onnx-runtime
+    output = run_node(node_def, [data, roi, scales])
+    np.testing.assert_almost_equal(output["Y"], expected)
+
+    # resize_linear_asymmetric_sizes
+    node_def = helper.make_node("Resize",
+                                inputs=['X', 'roi', 'scales', 'sizes'],
+                                outputs=['Y'],
+                                coordinate_transformation_mode="asymmetric",
+                                mode='linear')
+    scales = np.array([], dtype=np.float32)
+    sizes = np.array([1, 1, 7, 7], dtype=np.int64)
+    expected = np.array([[
+        [[1., 2.4285715, 3.857143, 5.285714, 6.714286, 8.142857, 9.571428],
+         [15.285715, 16.714287, 18.142857, 19.571428, 21., 22.42857, 23.857141],
+         [29.571428, 31., 32.428574, 33.857143, 35.285717, 36.714287, 38.14286],
+         [43.857143, 45.28571, 46.714283, 48.14286, 49.571434, 51., 52.42857],
+         [
+             58.14286, 59.57143, 61.000004, 62.428574, 63.857143, 65.28572,
+             66.71429
+         ], [72.42857, 73.85713, 75.28572, 76.71429, 78.14286, 79.57143, 81.],
+         [86.71429, 88.14285, 89.57143, 91., 92.42857, 93.85714, 95.28571]]
+    ]],
+                        dtype=np.float32
+                       )  # expected value is calculated by onnx-runtime
+    output = run_node(node_def, [data, roi, scales, sizes])
+    np.testing.assert_allclose(output['Y'], expected, rtol=1e-6, atol=1e-6)
+
+    # resize_linear_half_pixel_scales
+    node_def = helper.make_node("Resize",
+                                inputs=['X', 'roi', 'scales'],
+                                outputs=['Y'],
+                                mode='linear')
+    scales = np.array([1, 1, 0.8, 0.8], dtype=np.float32)
+    expected = np.array(
+        [[[[2.375, 3.625, 4.875, 6.125, 7.375, 8.625, 9.875, 11.125],
+           [14.875, 16.125, 17.375, 18.625, 19.875, 21.125, 22.375, 23.625],
+           [27.375, 28.625, 29.875, 31.125, 32.375, 33.625, 34.875, 36.125],
+           [39.875, 41.125, 42.375, 43.625, 44.875, 46.125, 47.375, 48.625],
+           [52.375, 53.625, 54.875, 56.125, 57.375, 58.625, 59.875, 61.125],
+           [64.875, 66.125, 67.375, 68.625, 69.875, 71.125, 72.375, 73.625],
+           [77.375, 78.625, 79.875, 81.125, 82.375, 83.625, 84.875, 86.125],
+           [89.875, 91.125, 92.375, 93.625, 94.875, 96.125, 97.375, 98.625]]]],
+        dtype=np.float32)  # expected value is calculated by onnx-runtime
+    output = run_node(node_def, [data, roi, scales])
+    np.testing.assert_almost_equal(output["Y"], expected)
+
+    # resize_linear_half_pixel_sizes
+    node_def = helper.make_node("Resize",
+                                inputs=['X', 'roi', 'scales', 'sizes'],
+                                outputs=['Y'],
+                                mode='linear')
+    scales = np.array([], dtype=np.float32)
+    sizes = np.array([1, 1, 7, 7], dtype=np.int64)
+    expected = np.array([[[[
+        3.357143, 4.785714, 6.214286, 7.642857, 9.071428, 10.5, 11.928572
+    ], [
+        17.642857, 19.071428, 20.5, 21.92857, 23.357141, 24.785713, 26.214285
+    ], [
+        31.928572, 33.357143, 34.785713, 36.214287, 37.642857, 39.071426, 40.5
+    ], [
+        46.214287, 47.642857, 49.071426, 50.5, 51.928574, 53.357143, 54.785713
+    ], [60.5, 61.928577, 63.357147, 64.78572, 66.21429, 67.64286, 69.07143
+       ], [
+           74.78572, 76.21429, 77.64285, 79.07143, 80.50001, 81.92857, 83.35715
+       ], [89.07143, 90.5, 91.928566, 93.35715, 94.78571, 96.21428, 97.64285]]]
+                        ],
+                        dtype=np.float32
+                       )  # expected value is calculated by onnx-runtime
+    output = run_node(node_def, [data, roi, scales, sizes])
+    np.testing.assert_allclose(output['Y'], expected, rtol=1e-6, atol=1e-6)
+
+    # resize_cubic_align_corners_scales
+    node_def = helper.make_node("Resize",
+                                inputs=['X', 'roi', 'scales'],
+                                outputs=['Y'],
+                                coordinate_transformation_mode="align_corners",
+                                mode='cubic',
+                                cubic_coeff_a=-0.5,
+                                exclude_outside=1)
+    scales = np.array([1, 1, 0.8, 0.8], dtype=np.float32)
+    expected = np.array(
+        [[[[
+            1., 2.285714, 3.5714293, 4.857143, 6.142857, 7.4285717, 8.714287,
+            10.
+        ],
+           [
+               13.857139, 15.142854, 16.42857, 17.714281, 18.999994, 20.28571,
+               21.571426, 22.857138
+           ],
+           [
+               26.71429, 28.000004, 29.285723, 30.571436, 31.85715, 33.142864,
+               34.428577, 35.71429
+           ],
+           [
+               39.57143, 40.857143, 42.142864, 43.428574, 44.714287, 46.000004,
+               47.28572, 48.57143
+           ],
+           [
+               52.42857, 53.714287, 55., 56.285717, 57.571423, 58.857143,
+               60.14286, 61.42857
+           ],
+           [
+               65.28571, 66.57144, 67.85715, 69.14285, 70.428566, 71.71429,
+               73.00001, 74.28571
+           ],
+           [
+               78.14287, 79.42857, 80.7143, 82.00001, 83.28573, 84.571434,
+               85.857155, 87.14287
+           ],
+           [
+               91., 92.28572, 93.57144, 94.85715, 96.14285, 97.42858, 98.714294,
+               100.
+           ]]]],
+        dtype=np.float32)  # expected value is calculated by onnx-runtime
+    output = run_node(node_def, [data, roi, scales])
+    np.testing.assert_allclose(output['Y'], expected, rtol=1e-1, atol=1e-6)
+
+    # resize_cubic_align_corners_sizes
+    node_def = helper.make_node("Resize",
+                                inputs=['X', 'roi', 'scales', 'sizes'],
+                                outputs=['Y'],
+                                coordinate_transformation_mode="align_corners",
+                                mode='cubic',
+                                cubic_coeff_a=-0.5,
+                                exclude_outside=1)
+    scales = np.array([], dtype=np.float32)
+    sizes = np.array([1, 1, 7, 7], dtype=np.int64)
+    expected = np.array(
+        [[[[1., 2.5, 4., 5.5, 7., 8.5, 10.],
+           [16., 17.5, 19., 20.5, 22., 23.5, 25.],
+           [31., 32.5, 34., 35.5, 37., 38.5, 40.],
+           [46., 47.5, 49., 50.5, 52., 53.5, 55.],
+           [61., 62.5, 64., 65.5, 67., 68.5, 70.],
+           [76., 77.5, 79., 80.5, 82., 83.5, 85.],
+           [91., 92.5, 94., 95.5, 97., 98.5, 100.]]]],
+        dtype=np.float32)  # expected value is calculated by onnx-runtime
+    output = run_node(node_def, [data, roi, scales, sizes])
+    np.testing.assert_almost_equal(output["Y"], expected)
+
+    # resize_cubic_asymmetric_scales
+    node_def = helper.make_node("Resize",
+                                inputs=['X', 'roi', 'scales'],
+                                outputs=['Y'],
+                                coordinate_transformation_mode="asymmetric",
+                                mode='cubic',
+                                cubic_coeff_a=-0.5,
+                                exclude_outside=1)
+    scales = np.array([1, 1, 0.8, 0.8], dtype=np.float32)
+    expected = np.array(
+        [[[[1., 2.25, 3.5, 4.75, 6., 7.25, 8.5, 9.832117],
+           [13.5, 14.75, 16., 17.25, 18.5, 19.75, 21., 22.332117],
+           [26., 27.25, 28.5, 29.75, 31., 32.25, 33.5, 34.83212],
+           [38.5, 39.75, 41., 42.25, 43.5, 44.75, 46., 47.332115],
+           [51., 52.25, 53.5, 54.75, 56., 57.25, 58.5, 59.83212],
+           [63.5, 64.75, 66., 67.25, 68.5, 69.75, 71., 72.332115],
+           [76., 77.25, 78.5, 79.75, 81., 82.25, 83.5, 84.832115],
+           [
+               89.32117, 90.57117, 91.82117, 93.07117, 94.32117, 95.57117,
+               96.82117, 98.15329
+           ]]]],
+        dtype=np.float32)  # expected value is calculated by onnx-runtime
+    output = run_node(node_def, [data, roi, scales])
+    np.testing.assert_allclose(output['Y'], expected, rtol=1e-1, atol=1e-6)
+
+    # resize_cubic_asymmetric_sizes
+    node_def = helper.make_node("Resize",
+                                inputs=['X', 'roi', 'scales', 'sizes'],
+                                outputs=['Y'],
+                                coordinate_transformation_mode="asymmetric",
+                                mode='cubic',
+                                cubic_coeff_a=-0.5,
+                                exclude_outside=1)
+    scales = np.array([], dtype=np.float32)
+    sizes = np.array([1, 1, 7, 7], dtype=np.int64)
+    expected = np.array(
+        [[[[1., 2.4285715, 3.8571432, 5.285714, 6.7142863, 8.142857, 9.66485],
+           [
+               15.285712, 16.714287, 18.142855, 19.571426, 21., 22.428568,
+               23.950563
+           ],
+           [
+               29.57143, 31.000004, 32.428574, 33.857147, 35.285713, 36.714283,
+               38.236282
+           ],
+           [
+               43.857143, 45.285717, 46.714287, 48.142868, 49.571434, 50.999992,
+               52.52199
+           ],
+           [
+               58.142864, 59.57144, 61.000004, 62.428585, 63.857155, 65.28572,
+               66.80771
+           ],
+           [
+               72.428566, 73.85715, 75.28572, 76.714294, 78.14285, 79.57143,
+               81.09343
+           ],
+           [
+               87.6485, 89.07708, 90.505646, 91.93422, 93.36279, 94.79135,
+               96.313354
+           ]]]],
+        dtype=np.float32)  # expected value is calculated by onnx-runtime
+    output = run_node(node_def, [data, roi, scales, sizes])
+    np.testing.assert_allclose(output['Y'], expected, rtol=1e-1, atol=1e-6)
+
+    # resize_cubic_half_pixel_scales
+    node_def = helper.make_node("Resize",
+                                inputs=['X', 'roi', 'scales'],
+                                outputs=['Y'],
+                                mode='cubic',
+                                cubic_coeff_a=-0.5,
+                                exclude_outside=1)
+    scales = np.array([1, 1, 0.8, 0.8], dtype=np.float32)
+    expected = np.array([[
+        [[
+            1.8098788, 3.1112535, 4.3612537, 5.6112533, 6.8612533, 8.111254,
+            9.361254, 10.662629
+        ],
+         [14.823625, 16.125, 17.375, 18.625, 19.875, 21.125, 22.375, 23.676373],
+         [27.323626, 28.625, 29.875, 31.125, 32.375, 33.625, 34.875, 36.176376],
+         [39.823627, 41.125, 42.375, 43.625, 44.875, 46.125, 47.375, 48.676376],
+         [52.323624, 53.625, 54.875, 56.125, 57.375, 58.625, 59.875, 61.176373],
+         [64.82362, 66.125, 67.375, 68.625, 69.875, 71.125, 72.375, 73.67638],
+         [77.32362, 78.625, 79.875, 81.125, 82.375, 83.625, 84.875, 86.17638],
+         [
+             90.33737, 91.63874, 92.88875, 94.13875, 95.38875, 96.63875,
+             97.88875, 99.190125
+         ]]
+    ]],
+                        dtype=np.float32
+                       )  # expected value is calculated by onnx-runtime
+    output = run_node(node_def, [data, roi, scales])
+    np.testing.assert_allclose(output['Y'], expected, rtol=1e-6, atol=1e-6)
+
+    # resize_cubic_half_pixel_sizes
+    node_def = helper.make_node("Resize",
+                                inputs=['X', 'roi', 'scales', 'sizes'],
+                                outputs=['Y'],
+                                mode='cubic',
+                                cubic_coeff_a=-0.5,
+                                exclude_outside=1)
+    scales = np.array([], dtype=np.float32)
+    sizes = np.array([1, 1, 7, 7], dtype=np.int64)
+    expected = np.array([[[
+        [2.52846, 4.0323663, 5.460938, 6.889509, 8.318081, 9.746653, 11.250559],
+        [
+            17.567522, 19.071426, 20.499996, 21.928568, 23.357141, 24.785715,
+            26.28962
+        ],
+        [
+            31.853237, 33.357143, 34.785713, 36.21429, 37.64286, 39.07143,
+            40.575344
+        ],
+        [46.13895, 47.642857, 49.071434, 50.5, 51.928566, 53.357147, 54.861053],
+        [
+            60.42467, 61.92858, 63.357147, 64.78572, 66.214294, 67.64287,
+            69.14677
+        ],
+        [
+            74.710396, 76.214294, 77.64286, 79.07144, 80.50001, 81.92858,
+            83.432495
+        ],
+        [89.749466, 91.253365, 92.68193, 94.1105, 95.53907, 96.96766, 98.47156]
+    ]]],
+                        dtype=np.float32
+                       )  # expected value is calculated by onnx-runtime
+    output = run_node(node_def, [data, roi, scales, sizes])
+    np.testing.assert_allclose(output['Y'], expected, rtol=1e-2, atol=1e-6)
+
+    # crop_and_resize_nearest with scales
+    node_def = helper.make_node(
+        "Resize",
+        inputs=['X', 'roi', 'scales'],
+        outputs=['Y'],
+        coordinate_transformation_mode='tf_crop_and_resize',
+        mode='nearest',
+        nearest_mode='round_prefer_ceil',
+        extrapolation_value=-20.0)
+    roi = np.array([0, 0, 0.4, 0.6, 1, 1, 1.2, 1.7], dtype=np.float32)
+    scales = np.array([1.0, 1.0, 0.8, 0.8], dtype=np.float32)
+    expected = np.array(
+        [[[[46., 48., 49., -20., -20., -20., -20., -20.],
+           [56., 58., 59., -20., -20., -20., -20., -20.],
+           [66., 68., 69., -20., -20., -20., -20., -20.],
+           [76., 78., 79., -20., -20., -20., -20., -20.],
+           [86., 88., 89., -20., -20., -20., -20., -20.],
+           [96., 98., 99., -20., -20., -20., -20., -20.],
+           [-20., -20., -20., -20., -20., -20., -20., -20.],
+           [-20., -20., -20., -20., -20., -20., -20., -20.]]]],
+        dtype=np.float32)  # expected value is calculated by onnx-runtime
+    output = run_node(node_def, [data, roi, scales])
+    np.testing.assert_almost_equal(output["Y"], expected)
+
+    # crop_and_resize_nearest with sizes
+    node_def = helper.make_node(
+        "Resize",
+        inputs=['X', 'roi', 'scales', 'sizes'],
+        outputs=['Y'],
+        coordinate_transformation_mode='tf_crop_and_resize',
+        mode='nearest',
+        nearest_mode='round_prefer_ceil',
+    )
+    roi = np.array([0, 0, 0.4, 0.6, 1, 1, 1.2, 1.7], dtype=np.float32)
+    scales = np.array([], dtype=np.float32)
+    sizes = np.array([1, 1, 7, 7], dtype=np.int64)
+    expected = np.array(
+        [[[[46., 48., 50., 0., 0., 0., 0.], [56., 58., 60., 0., 0., 0., 0.],
+           [66., 68., 70., 0., 0., 0., 0.], [76., 78., 80., 0., 0., 0., 0.],
+           [86., 88., 90., 0., 0., 0., 0.], [0., 0., 0., 0., 0., 0., 0.],
+           [0., 0., 0., 0., 0., 0., 0.]]]],
+        dtype=np.float32)  # expected value is calculated by onnx-runtime
+    output = run_node(node_def, [data, roi, scales, sizes])
+    np.testing.assert_almost_equal(output["Y"], expected)
+
+    # crop_and_resize_linear with scales
+    node_def = helper.make_node(
+        "Resize",
+        inputs=['X', 'roi', 'scales'],
+        outputs=['Y'],
+        mode='linear',
+        coordinate_transformation_mode='tf_crop_and_resize',
+        extrapolation_value=20.0)
+    roi = np.array([0, 0, 0.4, 0.6, 1, 1, 1.2, 1.7], dtype=np.float32)
+    scales = np.array([1.0, 1.0, 0.8, 0.8], dtype=np.float32)
+    expected = np.array(
+        [[[[42.4, 43.814285, 45.228573, 20., 20., 20., 20., 20.],
+           [52.685715, 54.100002, 55.514286, 20., 20., 20., 20., 20.],
+           [62.971436, 64.38572, 65.80001, 20., 20., 20., 20., 20.],
+           [73.25715, 74.67143, 76.08572, 20., 20., 20., 20., 20.],
+           [83.54286, 84.957146, 86.37143, 20., 20., 20., 20., 20.],
+           [93.82858, 95.24287, 96.65715, 20., 20., 20., 20., 20.],
+           [20., 20., 20., 20., 20., 20., 20., 20.],
+           [20., 20., 20., 20., 20., 20., 20., 20.]]]],
+        dtype=np.float32)  # expected value is calculated by onnx-runtime
+    output = run_node(node_def, [data, roi, scales])
+    np.testing.assert_allclose(output["Y"], expected, rtol=1e-6, atol=1e-6)
+
+    # crop_and_resize_linear with sizes
+    node_def = helper.make_node(
+        "Resize",
+        inputs=['X', 'roi', 'scales', 'sizes'],
+        outputs=['Y'],
+        mode='linear',
+        coordinate_transformation_mode='tf_crop_and_resize',
+        extrapolation_value=50.0)
+    roi = np.array([0, 0, 0.4, 0.6, 1, 1, 1.2, 1.7], dtype=np.float32)
+    scales = np.array([], dtype=np.float32)
+    sizes = np.array([1, 1, 7, 7], dtype=np.int64)
+    expected = np.array(
+        [[[[42.4, 44.05, 45.7, 50., 50., 50., 50.],
+           [54.4, 56.050003, 57.700005, 50., 50., 50., 50.],
+           [66.40001, 68.05, 69.700005, 50., 50., 50., 50.],
+           [78.40001, 80.05001, 81.700005, 50., 50., 50., 50.],
+           [90.40001, 92.05, 93.70001, 50., 50., 50., 50.],
+           [50., 50., 50., 50., 50., 50., 50.],
+           [50., 50., 50., 50., 50., 50., 50.]]]],
+        dtype=np.float32)  # expected value is calculated by onnx-runtime
+    output = run_node(node_def, [data, roi, scales, sizes])
+    np.testing.assert_allclose(output["Y"], expected, rtol=1e-6, atol=1e-6)
 
   def test_round(self):
     if legacy_opset_pre_ver(11):
@@ -1609,6 +2836,22 @@ class TestNode(unittest.TestCase):
         output = run_node(node_def, [x, pads])
         y = np.pad(x, ((1, 1), (1, 1)), mode)
         np.testing.assert_almost_equal(output["Y"], y)
+      # negative pads
+      node_def = helper.make_node("Pad", ["X", "pads"], ["Y"], mode="constant")
+      pads = np.array([-2, -2, -2, -2], dtype=np.int64)
+      x = np.array([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]).reshape((3, 4))
+      y = x
+      x = np.pad(x, ((2, 2), (2, 2)), 'constant')
+      output = run_node(node_def, [x, pads])
+      np.testing.assert_almost_equal(output["Y"], y)
+
+      # negative pads with 3 dimensions
+      node_def = helper.make_node("Pad", ["X", "pads"], ["Y"], mode="constant")
+      pads = np.array([-1, 0, 0, 0, -1, 0], dtype=np.int64)
+      x = np.array([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]).reshape((2, 3, 2))
+      y = np.array([7, 8, 9, 10]).reshape((1, 2, 2))
+      output = run_node(node_def, [x, pads])
+      np.testing.assert_almost_equal(output["Y"], y)
 
   def test_qlinearconv(self):
     if legacy_opset_pre_ver(10):

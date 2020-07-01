@@ -52,6 +52,8 @@ class ConvMixin(BroadcastMixin):
           "passed to this operation, attr {}, actual {}").format(
               kernel_shape,
               in_weights.get_shape().as_list())
+    else:
+      kernel_shape = in_weights.get_shape().as_list()[2:]
 
     weights = tf.transpose(in_weights, perm)
     dilations = node.attrs.get("dilations", [1] * spatial_size)
@@ -94,8 +96,9 @@ class ConvMixin(BroadcastMixin):
     if support_cuda:
       xs = tf.split(x, num_or_size_splits=group, axis=1)
     else:
-      x = tf.transpose(
-          x, perm=get_perm_from_formats(storage_format, compute_format))
+      x = tf.transpose(x,
+                       perm=get_perm_from_formats(storage_format,
+                                                  compute_format))
       xs = tf.split(x, num_or_size_splits=group, axis=-1)
 
     if transpose:
@@ -117,8 +120,8 @@ class ConvMixin(BroadcastMixin):
         if pad_mode == "NOTSET":
           if output_shape is None:
             conv_output_shape += [
-                strides[i] * x_spatial_shape[i] +
-                max(weights_shape[i] - strides[i], 0)
+                strides[i] * x_spatial_shape[i] - strides[i] +
+                (kernel_shape[i] - 1) * dilations[i] + 1
                 for i in list(range(spatial_size))
             ]
           else:
@@ -142,17 +145,16 @@ class ConvMixin(BroadcastMixin):
             conv_func = tf.nn.conv3d_transpose
           else:
             raise NotImplementedError(
-                "Transposed convolution for {}d is not implemented in Tensorflow".
-                format(spatial_size))
+                "Transposed convolution for {}d is not implemented in Tensorflow"
+                .format(spatial_size))
 
           # use raw input x to do transposed conv
-          conv_rs = conv_func(
-              x,
-              weight,
-              conv_output_shape,
-              strides_full,
-              padding="VALID",
-              data_format=compute_format)
+          conv_rs = conv_func(x,
+                              weight,
+                              conv_output_shape,
+                              strides_full,
+                              padding="VALID",
+                              data_format=compute_format)
 
           # pad output first by output_padding attr
           if "output_padding" in node.attrs and output_shape is None:
@@ -205,28 +207,26 @@ class ConvMixin(BroadcastMixin):
             conv_func = tf.nn.conv3d_transpose
           else:
             raise NotImplementedError(
-                "Transposed convolution for {}d is not implemented in Tensorflow".
-                format(spatial_size))
+                "Transposed convolution for {}d is not implemented in Tensorflow"
+                .format(spatial_size))
 
           # use raw input x to do transposed conv
-          conv_rs = conv_func(
-              x,
-              weight,
-              conv_output_shape,
-              strides_full,
-              padding=pad_mode,
-              data_format=compute_format)
+          conv_rs = conv_func(x,
+                              weight,
+                              conv_output_shape,
+                              strides_full,
+                              padding=pad_mode,
+                              data_format=compute_format)
           convolved.append(conv_rs)
 
     else:
       convolved = [
-          tf.nn.convolution(
-              x,
-              weight,
-              padding=pad_mode,
-              strides=strides,
-              dilations=dilations,
-              data_format=compute_format)
+          tf.nn.convolution(x,
+                            weight,
+                            padding=pad_mode,
+                            strides=strides,
+                            dilations=dilations,
+                            data_format=compute_format)
           for (x, weight) in zip(xs, weight_groups)
       ]
 
@@ -235,8 +235,9 @@ class ConvMixin(BroadcastMixin):
         output = tf.concat(convolved, axis=1)
       else:
         output = tf.concat(convolved, axis=-1)
-        output = tf.transpose(
-            output, perm=get_perm_from_formats(compute_format, storage_format))
+        output = tf.transpose(output,
+                              perm=get_perm_from_formats(
+                                  compute_format, storage_format))
     else:
       bias = input_dict[node.inputs[2]]
       bias = cls.explicit_broadcast([x, bias], compute_c_idx)
@@ -247,7 +248,8 @@ class ConvMixin(BroadcastMixin):
       else:
         output = tf.concat(convolved, axis=-1)
         output = tf.add(output, bias)
-        output = tf.transpose(
-            output, perm=get_perm_from_formats(compute_format, storage_format))
+        output = tf.transpose(output,
+                              perm=get_perm_from_formats(
+                                  compute_format, storage_format))
 
     return [output]

@@ -16,6 +16,13 @@ from tensorflow.python.client import device_lib
 IS_PYTHON3 = sys.version_info > (3,)
 logger = logging.getLogger('onnx-tf')
 
+# create console handler and formatter for logger
+console = logging.StreamHandler()
+formatter = logging.Formatter(
+    '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+console.setFormatter(formatter)
+logger.addHandler(console)
+
 
 class Deprecated:
   """Add deprecated message when function is called.
@@ -164,23 +171,6 @@ def supports_device(device):
   elif device == "CPU":
     return True
   return False
-
-
-@deprecated("onnx_tf.common.get_outputs_names is deprecated.{} {}".format(
-    deprecated.MSG_WILL_REMOVE,
-    "Use TensorflowGraph.get_outputs_names instead."))
-def get_output_node_names(graph_def):
-  """Get output node names from GraphDef.
-  Args:
-    graph_def: GraphDef object.
-  Returns:
-    List of output node names.
-  """
-  nodes, input_names = dict(), set()
-  for node in graph_def.node:
-    nodes[node.name] = node
-    input_names.update(set(node.input))
-  return list(set(nodes) - input_names)
 
 
 CONST_MINUS_ONE_INT32 = "_onnx_tf_internal_minus_one_int32"

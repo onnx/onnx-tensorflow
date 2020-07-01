@@ -1,10 +1,9 @@
 # ONNX-Tensorflow Support Status
 |||
 |-:|:-|
-|ONNX-Tensorflow Version|Master ( commit id: 372ac3b68b8dbb0fdbe1e4fdfc70b1a970146fdc )|
-|ONNX Version|Master ( commit id: f8e140a9c4e7b42fb970e247478667093b5c748b )|
-
-|Tensorflow Version|v2.1.0|
+|ONNX-Tensorflow Version|Master ( commit id: 4748f3ea8135057cccfc5e30c0f4339a913d4ebd )|
+|ONNX Version|Master ( commit id: cc2230603422bae893d5bc900d2d773ab34400a4 )|
+|Tensorflow Version|v2.2.0|
 
 Notes:
 * Values that are new or updated from a previous opset version are in bold.
@@ -14,179 +13,199 @@ Notes:
 * :small_orange_diamond:: partially supported
 * the rest are all supported
 
-||||||||||||||
-|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|
-|**ONNX Operator**|**Opset 1**|**Opset 2**|**Opset 3**|**Opset 4**|**Opset 5**|**Opset 6**|**Opset 7**|**Opset 8**|**Opset 9**|**Opset 10**|**Opset 11**|**Opset 12**|
-|Abs|**1**|1|1|1|1|**6**|6|6|6|6|6|6|
-|Acos|-|-|-|-|-|-|**7**|7|7|7|7|7|
-|Acosh|-|-|-|-|-|-|-|-|**9**|9|9|9|
-|Add|**1**|1|1|1|1|**6**|**7**|7|7|7|7|7|
-|And|**1**|1|1|1|1|1|**7**|7|7|7|7|7|
-|ArgMax|**1**|1|1|1|1|1|1|1|1|1|**11**|**12**:small_red_triangle:|
-|ArgMin|**1**|1|1|1|1|1|1|1|1|1|**11**|**12**:small_red_triangle:|
-|Asin|-|-|-|-|-|-|**7**|7|7|7|7|7|
-|Asinh|-|-|-|-|-|-|-|-|**9**|9|9|9|
-|Atan|-|-|-|-|-|-|**7**|7|7|7|7|7|
-|Atanh|-|-|-|-|-|-|-|-|**9**|9|9|9|
-|AveragePool|**1**|1|1|1|1|1|**7**|7|7|**10**|**11**|11|
-|BatchNormalization|**1**|1|1|1|1|**6**|**7**|7|**9**|9|9|**12**:small_red_triangle:|
-|BitShift|-|-|-|-|-|-|-|-|-|-|**11**|11|
-|Cast|**1**:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|**6**:small_orange_diamond:|6:small_orange_diamond:|6:small_orange_diamond:|**9**:small_orange_diamond:|9:small_orange_diamond:|9:small_orange_diamond:|9:small_orange_diamond:|
-|Ceil|**1**|1|1|1|1|**6**|6|6|6|6|6|6|
-|Clip|**1**|1|1|1|1|**6**|6|6|6|6|**11**|11|
-|Compress|-|-|-|-|-|-|-|-|**9**|9|**11**|11|
-|Concat|**1**|1|1|**4**|4|4|4|4|4|4|**11**|11|
-|ConcatFromSequence|-|-|-|-|-|-|-|-|-|-|**11**:small_red_triangle:|11:small_red_triangle:|
-|Constant|**1**|1|1|1|1|1|1|1|**9**|9|**11**|**12**:small_red_triangle:|
-|ConstantOfShape|-|-|-|-|-|-|-|-|**9**|9|9|9|
-|Conv|**1**|1|1|1|1|1|1|1|1|1|**11**|11|
-|ConvInteger|-|-|-|-|-|-|-|-|-|**10**|10|10|
-|ConvTranspose|**1**:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|**11**:small_orange_diamond:|11:small_orange_diamond:|
-|Cos|-|-|-|-|-|-|**7**|7|7|7|7|7|
-|Cosh|-|-|-|-|-|-|-|-|**9**|9|9|9|
-|CumSum|-|-|-|-|-|-|-|-|-|-|**11**:small_red_triangle:|11:small_red_triangle:|
-|DepthToSpace|**1**|1|1|1|1|1|1|1|1|1|**11**|11|
-|DequantizeLinear|-|-|-|-|-|-|-|-|-|**10**|10|10|
-|Det|-|-|-|-|-|-|-|-|-|-|**11**|11|
-|Div|**1**|1|1|1|1|**6**|**7**|7|7|7|7|7|
-|Dropout|**1**|1|1|1|1|**6**|**7**|7|7|**10**|10|**12**:small_red_triangle:|
-|DynamicQuantizeLinear|-|-|-|-|-|-|-|-|-|-|**11**|11|
-|Einsum|-|-|-|-|-|-|-|-|-|-|-|**12**:small_red_triangle:|
-|Elu|**1**|1|1|1|1|**6**|6|6|6|6|6|6|
-|Equal|**1**:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|**7**:small_orange_diamond:|7:small_orange_diamond:|7:small_orange_diamond:|7:small_orange_diamond:|**11**:small_orange_diamond:|11:small_orange_diamond:|
-|Erf|-|-|-|-|-|-|-|-|**9**|9|9|9|
-|Exp|**1**|1|1|1|1|**6**|6|6|6|6|6|6|
-|Expand|-|-|-|-|-|-|-|**8**|8|8|8|8|
-|EyeLike|-|-|-|-|-|-|-|-|**9**|9|9|9|
-|Flatten|**1**|1|1|1|1|1|1|1|**9**|9|**11**|11|
-|Floor|**1**|1|1|1|1|**6**|6|6|6|6|6|6|
-|GRU|**1**:small_orange_diamond:|1:small_orange_diamond:|**3**:small_orange_diamond:|3:small_orange_diamond:|3:small_orange_diamond:|3:small_orange_diamond:|**7**:small_orange_diamond:|7:small_orange_diamond:|7:small_orange_diamond:|7:small_orange_diamond:|7:small_orange_diamond:|7:small_orange_diamond:|
-|Gather|**1**|1|1|1|1|1|1|1|1|1|**11**|11|
-|GatherElements|-|-|-|-|-|-|-|-|-|-|**11**:small_red_triangle:|11:small_red_triangle:|
-|GatherND|-|-|-|-|-|-|-|-|-|-|**11**|11|
-|Gemm|**1**|1|1|1|1|**6**|**7**|7|**9**|9|**11**|11|
-|GlobalAveragePool|**1**|1|1|1|1|1|1|1|1|1|1|1|
-|GlobalLpPool|**1**|**2**|2|2|2|2|2|2|2|2|2|2|
-|GlobalMaxPool|**1**|1|1|1|1|1|1|1|1|1|1|1|
-|Greater|**1**|1|1|1|1|1|**7**|7|**9**|9|9|9|
-|HardSigmoid|**1**|1|1|1|1|**6**|6|6|6|6|6|6|
-|Hardmax|**1**|1|1|1|1|1|1|1|1|1|**11**|11|
-|Identity|**1**|1|1|1|1|1|1|1|1|1|1|1|
-|If|**1**:small_red_triangle:|1:small_red_triangle:|1:small_red_triangle:|1:small_red_triangle:|1:small_red_triangle:|1:small_red_triangle:|1:small_red_triangle:|1:small_red_triangle:|1:small_red_triangle:|1:small_red_triangle:|**11**:small_red_triangle:|11:small_red_triangle:|
-|InstanceNormalization|**1**|1|1|1|1|**6**|6|6|6|6|6|6|
-|IsInf|-|-|-|-|-|-|-|-|-|**10**|10|10|
-|IsNaN|-|-|-|-|-|-|-|-|**9**|9|9|9|
-|LRN|**1**|1|1|1|1|1|1|1|1|1|1|1|
-|LSTM|**1**:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|**7**:small_orange_diamond:|7:small_orange_diamond:|7:small_orange_diamond:|7:small_orange_diamond:|7:small_orange_diamond:|7:small_orange_diamond:|
-|LeakyRelu|**1**|1|1|1|1|**6**|6|6|6|6|6|6|
-|Less|**1**|1|1|1|1|1|**7**|7|**9**|9|9|9|
-|Log|**1**|1|1|1|1|**6**|6|6|6|6|6|6|
-|LogSoftmax|**1**|1|1|1|1|1|1|1|1|1|**11**|11|
-|Loop|**1**:small_red_triangle:|1:small_red_triangle:|1:small_red_triangle:|1:small_red_triangle:|1:small_red_triangle:|1:small_red_triangle:|1:small_red_triangle:|1:small_red_triangle:|1:small_red_triangle:|1:small_red_triangle:|**11**:small_red_triangle:|11:small_red_triangle:|
-|LpNormalization|**1**|1|1|1|1|1|1|1|1|1|1|1|
-|LpPool|**1**:small_red_triangle:|**2**:small_red_triangle:|2:small_red_triangle:|2:small_red_triangle:|2:small_red_triangle:|2:small_red_triangle:|2:small_red_triangle:|2:small_red_triangle:|2:small_red_triangle:|2:small_red_triangle:|**11**:small_red_triangle:|11:small_red_triangle:|
-|MatMul|**1**|1|1|1|1|1|1|1|**9**|9|9|9|
-|MatMulInteger|-|-|-|-|-|-|-|-|-|**10**|10|10|
-|Max|**1**|1|1|1|1|**6**|6|**8**|8|8|8|8|
-|MaxPool|**1**:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|**8**:small_orange_diamond:|8:small_orange_diamond:|**10**:small_orange_diamond:|**11**:small_orange_diamond:|**12**:small_orange_diamond:|
-|MaxRoiPool|**1**:small_red_triangle:|1:small_red_triangle:|1:small_red_triangle:|1:small_red_triangle:|1:small_red_triangle:|1:small_red_triangle:|1:small_red_triangle:|1:small_red_triangle:|1:small_red_triangle:|1:small_red_triangle:|1:small_red_triangle:|1:small_red_triangle:|
-|MaxUnpool|-|-|-|-|-|-|-|-|**9**|9|**11**|11|
-|Mean|**1**|1|1|1|1|**6**|6|**8**|8|8|8|8|
-|MeanVarianceNormalization|-|-|-|-|-|-|-|-|**9**|9|9|9|
-|Min|**1**|1|1|1|1|**6**|6|**8**|8|8|8|8|
-|Mod|-|-|-|-|-|-|-|-|-|**10**:small_orange_diamond:|10:small_orange_diamond:|10:small_orange_diamond:|
-|Mul|**1**|1|1|1|1|**6**|**7**|7|7|7|7|7|
-|Multinomial|-|-|-|-|-|-|**7**:small_red_triangle:|7:small_red_triangle:|7:small_red_triangle:|7:small_red_triangle:|7:small_red_triangle:|7:small_red_triangle:|
-|Neg|**1**|1|1|1|1|**6**|6|6|6|6|6|6|
-|NegativeLogLikelihoodLoss|-|-|-|-|-|-|-|-|-|-|-|**12**:small_red_triangle:|
-|NonMaxSuppression|-|-|-|-|-|-|-|-|-|**10**|**11**|11|
-|NonZero|-|-|-|-|-|-|-|-|**9**|9|9|9|
-|Not|**1**|1|1|1|1|1|1|1|1|1|1|1|
-|OneHot|-|-|-|-|-|-|-|-|**9**:small_orange_diamond:|9:small_orange_diamond:|**11**:small_orange_diamond:|11:small_orange_diamond:|
-|Or|**1**|1|1|1|1|1|**7**|7|7|7|7|7|
-|PRelu|**1**|1|1|1|1|**6**|**7**|7|**9**|9|9|9|
-|Pad|**1**|**2**|2|2|2|2|2|2|2|2|**11**|11|
-|Pow|**1**|1|1|1|1|1|**7**|7|7|7|7|7|
-|QLinearConv|-|-|-|-|-|-|-|-|-|**10**|10|10|
-|QLinearMatMul|-|-|-|-|-|-|-|-|-|**10**|10|10|
-|QuantizeLinear|-|-|-|-|-|-|-|-|-|**10**|10|10|
-|RNN|**1**:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|**7**:small_orange_diamond:|7:small_orange_diamond:|7:small_orange_diamond:|7:small_orange_diamond:|7:small_orange_diamond:|7:small_orange_diamond:|
-|RandomNormal|**1**|1|1|1|1|1|1|1|1|1|1|1|
-|RandomNormalLike|**1**|1|1|1|1|1|1|1|1|1|1|1|
-|RandomUniform|**1**|1|1|1|1|1|1|1|1|1|1|1|
-|RandomUniformLike|**1**|1|1|1|1|1|1|1|1|1|1|1|
-|Range|-|-|-|-|-|-|-|-|-|-|**11**|11|
-|Reciprocal|**1**|1|1|1|1|**6**|6|6|6|6|6|6|
-|ReduceL1|**1**|1|1|1|1|1|1|1|1|1|**11**|11|
-|ReduceL2|**1**|1|1|1|1|1|1|1|1|1|**11**|11|
-|ReduceLogSum|**1**|1|1|1|1|1|1|1|1|1|**11**|11|
-|ReduceLogSumExp|**1**|1|1|1|1|1|1|1|1|1|**11**|11|
-|ReduceMax|**1**|1|1|1|1|1|1|1|1|1|**11**|**12**:small_red_triangle:|
-|ReduceMean|**1**|1|1|1|1|1|1|1|1|1|**11**|11|
-|ReduceMin|**1**|1|1|1|1|1|1|1|1|1|**11**|**12**:small_red_triangle:|
-|ReduceProd|**1**|1|1|1|1|1|1|1|1|1|**11**|11|
-|ReduceSum|**1**|1|1|1|1|1|1|1|1|1|**11**|11|
-|ReduceSumSquare|**1**|1|1|1|1|1|1|1|1|1|**11**|11|
-|Relu|**1**|1|1|1|1|**6**|6|6|6|6|6|6|
-|Reshape|**1**|1|1|1|**5**|5|5|5|5|5|5|5|
-|Resize|-|-|-|-|-|-|-|-|-|**10**:small_orange_diamond:|**11**:small_red_triangle:|11:small_red_triangle:|
-|ReverseSequence|-|-|-|-|-|-|-|-|-|**10**|10|10|
-|RoiAlign|-|-|-|-|-|-|-|-|-|**10**:small_red_triangle:|10:small_red_triangle:|10:small_red_triangle:|
-|Round|-|-|-|-|-|-|-|-|-|-|**11**|11|
-|Scan|-|-|-|-|-|-|-|**8**|**9**|9|**11**|11|
-|Scatter|-|-|-|-|-|-|-|-|**9**|9|**11**\*|11\*|
-|ScatterElements|-|-|-|-|-|-|-|-|-|-|**11**|11|
-|ScatterND|-|-|-|-|-|-|-|-|-|-|**11**|11|
-|Selu|**1**|1|1|1|1|**6**|6|6|6|6|6|6|
-|SequenceAt|-|-|-|-|-|-|-|-|-|-|**11**|11|
-|SequenceConstruct|-|-|-|-|-|-|-|-|-|-|**11**|11|
-|SequenceEmpty|-|-|-|-|-|-|-|-|-|-|**11**|11|
-|SequenceErase|-|-|-|-|-|-|-|-|-|-|**11**|11|
-|SequenceInsert|-|-|-|-|-|-|-|-|-|-|**11**|11|
-|SequenceLength|-|-|-|-|-|-|-|-|-|-|**11**|11|
-|Shape|**1**|1|1|1|1|1|1|1|1|1|1|1|
-|Shrink|-|-|-|-|-|-|-|-|**9**|9|9|9|
-|Sigmoid|**1**|1|1|1|1|**6**|6|6|6|6|6|6|
-|Sign|-|-|-|-|-|-|-|-|**9**|9|9|9|
-|Sin|-|-|-|-|-|-|**7**|7|7|7|7|7|
-|Sinh|-|-|-|-|-|-|-|-|**9**|9|9|9|
-|Size|**1**|1|1|1|1|1|1|1|1|1|1|1|
-|Slice|**1**|1|1|1|1|1|1|1|1|**10**|**11**|11|
-|Softmax|**1**|1|1|1|1|1|1|1|1|1|**11**|11|
-|Softplus|**1**|1|1|1|1|1|1|1|1|1|1|1|
-|Softsign|**1**|1|1|1|1|1|1|1|1|1|1|1|
-|SpaceToDepth|**1**|1|1|1|1|1|1|1|1|1|1|1|
-|Split|**1**|**2**|2|2|2|2|2|2|2|2|**11**|11|
-|SplitToSequence|-|-|-|-|-|-|-|-|-|-|**11**:small_red_triangle:|11:small_red_triangle:|
-|Sqrt|**1**|1|1|1|1|**6**|6|6|6|6|6|6|
-|Squeeze|**1**|1|1|1|1|1|1|1|1|1|**11**|11|
-|StringNormalizer|-|-|-|-|-|-|-|-|-|**10**:small_red_triangle:|10:small_red_triangle:|10:small_red_triangle:|
-|Sub|**1**|1|1|1|1|**6**|**7**|7|7|7|7|7|
-|Sum|**1**|1|1|1|1|**6**|6|**8**|8|8|8|8|
-|Tan|-|-|-|-|-|-|**7**|7|7|7|7|7|
-|Tanh|**1**|1|1|1|1|**6**|6|6|6|6|6|6|
-|TfIdfVectorizer|-|-|-|-|-|-|-|-|**9**|9|9|9|
-|ThresholdedRelu|-|-|-|-|-|-|-|-|-|**10**|10|10|
-|Tile|**1**|1|1|1|1|**6**|6|6|6|6|6|6|
-|TopK|**1**|1|1|1|1|1|1|1|1|**10**|**11**|11|
-|Transpose|**1**|1|1|1|1|1|1|1|1|1|1|1|
-|Unique|-|-|-|-|-|-|-|-|-|-|**11**:small_red_triangle:|11:small_red_triangle:|
-|Unsqueeze|**1**|1|1|1|1|1|1|1|1|1|**11**|11|
-|Upsample|**1**:small_red_triangle:|1:small_red_triangle:|1:small_red_triangle:|1:small_red_triangle:|1:small_red_triangle:|1:small_red_triangle:|**7**:small_orange_diamond:|7:small_orange_diamond:|**9**:small_orange_diamond:|**10**\*|10\*|10\*|
-|Where|-|-|-|-|-|-|-|-|**9**|9|9|9|
-|Xor|**1**|1|1|1|1|1|**7**|7|7|7|7|7|
+||||||||||||||||
+|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|
+|**ONNX Operator**|**Opset 1**|**Opset 2**|**Opset 3**|**Opset 4**|**Opset 5**|**Opset 6**|**Opset 7**|**Opset 8**|**Opset 9**|**Opset 10**|**Opset 11**|**Opset 12**|**Opset 13**|**ONNX Operator**|
+|Abs|**1**|1|1|1|1|**6**|6|6|6|6|6|6|**13**:small_red_triangle:|Abs|
+|Acos|-|-|-|-|-|-|**7**|7|7|7|7|7|7|Acos|
+|Acosh|-|-|-|-|-|-|-|-|**9**|9|9|9|9|Acosh|
+|Add|**1**|1|1|1|1|**6**|**7**|7|7|7|7|7|**13**:small_red_triangle:|Add|
+|And|**1**|1|1|1|1|1|**7**|7|7|7|7|7|7|And|
+|ArgMax|**1**|1|1|1|1|1|1|1|1|1|**11**|**12**|**13**:small_red_triangle:|ArgMax|
+|ArgMin|**1**|1|1|1|1|1|1|1|1|1|**11**|**12**|**13**:small_red_triangle:|ArgMin|
+|Asin|-|-|-|-|-|-|**7**|7|7|7|7|7|7|Asin|
+|Asinh|-|-|-|-|-|-|-|-|**9**|9|9|9|9|Asinh|
+|Atan|-|-|-|-|-|-|**7**|7|7|7|7|7|7|Atan|
+|Atanh|-|-|-|-|-|-|-|-|**9**|9|9|9|9|Atanh|
+|AveragePool|**1**|1|1|1|1|1|**7**|7|7|**10**|**11**|11|11|AveragePool|
+|BatchNormalization|**1**|1|1|1|1|**6**|**7**|7|**9**|9|9|9|9|BatchNormalization|
+|BitShift|-|-|-|-|-|-|-|-|-|-|**11**|11|11|BitShift|
+|Cast|**1**:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|**6**:small_orange_diamond:|6:small_orange_diamond:|6:small_orange_diamond:|**9**:small_orange_diamond:|9:small_orange_diamond:|9:small_orange_diamond:|9:small_orange_diamond:|**13**:small_red_triangle:|Cast|
+|Ceil|**1**|1|1|1|1|**6**|6|6|6|6|6|6|**13**:small_red_triangle:|Ceil|
+|Celu|-|-|-|-|-|-|-|-|-|-|-|**12**:small_red_triangle:|12:small_red_triangle:|Celu|
+|Clip|**1**:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|**6**:small_orange_diamond:|6:small_orange_diamond:|6:small_orange_diamond:|6:small_orange_diamond:|6:small_orange_diamond:|**11**:small_orange_diamond:|**12**:small_orange_diamond:|**13**:small_orange_diamond:|Clip|
+|Compress|-|-|-|-|-|-|-|-|**9**|9|**11**|11|11|Compress|
+|Concat|**1**|1|1|**4**|4|4|4|4|4|4|**11**|11|**13**:small_red_triangle:|Concat|
+|ConcatFromSequence|-|-|-|-|-|-|-|-|-|-|**11**:small_orange_diamond:|11:small_orange_diamond:|11:small_orange_diamond:|ConcatFromSequence|
+|Constant|**1**|1|1|1|1|1|1|1|**9**|9|**11**|**12**|**13**:small_red_triangle:|Constant|
+|ConstantOfShape|-|-|-|-|-|-|-|-|**9**|9|9|9|9|ConstantOfShape|
+|Conv|**1**|1|1|1|1|1|1|1|1|1|**11**|11|11|Conv|
+|ConvInteger|-|-|-|-|-|-|-|-|-|**10**|10|10|10|ConvInteger|
+|ConvTranspose|**1**:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|**11**:small_orange_diamond:|11:small_orange_diamond:|11:small_orange_diamond:|ConvTranspose|
+|Cos|-|-|-|-|-|-|**7**|7|7|7|7|7|7|Cos|
+|Cosh|-|-|-|-|-|-|-|-|**9**|9|9|9|9|Cosh|
+|CumSum|-|-|-|-|-|-|-|-|-|-|**11**:small_orange_diamond:|11:small_orange_diamond:|11:small_orange_diamond:|CumSum|
+|DepthToSpace|**1**|1|1|1|1|1|1|1|1|1|**11**|11|**13**:small_red_triangle:|DepthToSpace|
+|DequantizeLinear|-|-|-|-|-|-|-|-|-|**10**|10|10|**13**:small_red_triangle:|DequantizeLinear|
+|Det|-|-|-|-|-|-|-|-|-|-|**11**|11|11|Det|
+|Div|**1**|1|1|1|1|**6**|**7**|7|7|7|7|7|**13**:small_red_triangle:|Div|
+|Dropout|**1**|1|1|1|1|**6**|**7**|7|7|**10**|10|**12**:small_red_triangle:|**13**:small_red_triangle:|Dropout|
+|DynamicQuantizeLinear|-|-|-|-|-|-|-|-|-|-|**11**|11|11|DynamicQuantizeLinear|
+|Einsum|-|-|-|-|-|-|-|-|-|-|-|**12**:small_red_triangle:|12:small_red_triangle:|Einsum|
+|Elu|**1**|1|1|1|1|**6**|6|6|6|6|6|6|6|Elu|
+|Equal|**1**:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|**7**:small_orange_diamond:|7:small_orange_diamond:|7:small_orange_diamond:|7:small_orange_diamond:|**11**:small_orange_diamond:|11:small_orange_diamond:|**13**:small_red_triangle:|Equal|
+|Erf|-|-|-|-|-|-|-|-|**9**|9|9|9|**13**:small_red_triangle:|Erf|
+|Exp|**1**|1|1|1|1|**6**|6|6|6|6|6|6|**13**:small_red_triangle:|Exp|
+|Expand|-|-|-|-|-|-|-|**8**|8|8|8|8|**13**:small_red_triangle:|Expand|
+|EyeLike|-|-|-|-|-|-|-|-|**9**|9|9|9|9|EyeLike|
+|Flatten|**1**|1|1|1|1|1|1|1|**9**|9|**11**|11|**13**:small_red_triangle:|Flatten|
+|Floor|**1**|1|1|1|1|**6**|6|6|6|6|6|6|**13**:small_red_triangle:|Floor|
+|GRU|**1**:small_orange_diamond:|1:small_orange_diamond:|**3**:small_orange_diamond:|3:small_orange_diamond:|3:small_orange_diamond:|3:small_orange_diamond:|**7**:small_orange_diamond:|7:small_orange_diamond:|7:small_orange_diamond:|7:small_orange_diamond:|7:small_orange_diamond:|7:small_orange_diamond:|7:small_orange_diamond:|GRU|
+|Gather|**1**|1|1|1|1|1|1|1|1|1|**11**|11|**13**:small_red_triangle:|Gather|
+|GatherElements|-|-|-|-|-|-|-|-|-|-|**11**|11|**13**:small_red_triangle:|GatherElements|
+|GatherND|-|-|-|-|-|-|-|-|-|-|**11**|**12**:small_red_triangle:|**13**:small_red_triangle:|GatherND|
+|Gemm|**1**|1|1|1|1|**6**|**7**|7|**9**|9|**11**|11|**13**:small_red_triangle:|Gemm|
+|GlobalAveragePool|**1**|1|1|1|1|1|1|1|1|1|1|1|1|GlobalAveragePool|
+|GlobalLpPool|**1**|**2**|2|2|2|2|2|2|2|2|2|2|2|GlobalLpPool|
+|GlobalMaxPool|**1**|1|1|1|1|1|1|1|1|1|1|1|1|GlobalMaxPool|
+|Greater|**1**|1|1|1|1|1|**7**|7|**9**|9|9|9|**13**:small_red_triangle:|Greater|
+|GreaterOrEqual|-|-|-|-|-|-|-|-|-|-|-|**12**:small_red_triangle:|12:small_red_triangle:|GreaterOrEqual|
+|HardSigmoid|**1**|1|1|1|1|**6**|6|6|6|6|6|6|6|HardSigmoid|
+|Hardmax|**1**|1|1|1|1|1|1|1|1|1|**11**|11|**13**:small_red_triangle:|Hardmax|
+|Identity|**1**|1|1|1|1|1|1|1|1|1|1|1|**13**:small_red_triangle:|Identity|
+|If|**1**|1|1|1|1|1|1|1|1|1|**11**|11|11|If|
+|InstanceNormalization|**1**|1|1|1|1|**6**|6|6|6|6|6|6|6|InstanceNormalization|
+|IsInf|-|-|-|-|-|-|-|-|-|**10**|10|10|10|IsInf|
+|IsNaN|-|-|-|-|-|-|-|-|**9**|9|9|9|**13**:small_red_triangle:|IsNaN|
+|LRN|**1**|1|1|1|1|1|1|1|1|1|1|1|**13**:small_red_triangle:|LRN|
+|LSTM|**1**:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|**7**:small_orange_diamond:|7:small_orange_diamond:|7:small_orange_diamond:|7:small_orange_diamond:|7:small_orange_diamond:|7:small_orange_diamond:|7:small_orange_diamond:|LSTM|
+|LeakyRelu|**1**|1|1|1|1|**6**|6|6|6|6|6|6|6|LeakyRelu|
+|Less|**1**|1|1|1|1|1|**7**|7|**9**|9|9|9|**13**:small_red_triangle:|Less|
+|LessOrEqual|-|-|-|-|-|-|-|-|-|-|-|**12**:small_red_triangle:|12:small_red_triangle:|LessOrEqual|
+|Log|**1**|1|1|1|1|**6**|6|6|6|6|6|6|**13**:small_red_triangle:|Log|
+|LogSoftmax|**1**|1|1|1|1|1|1|1|1|1|**11**|11|**13**:small_red_triangle:|LogSoftmax|
+|Loop|**1**|1|1|1|1|1|1|1|1|1|**11**|11|11|Loop|
+|LpNormalization|**1**|1|1|1|1|1|1|1|1|1|1|1|1|LpNormalization|
+|LpPool|**1**|**2**|2|2|2|2|2|2|2|2|**11**|11|11|LpPool|
+|MatMul|**1**|1|1|1|1|1|1|1|**9**|9|9|9|**13**:small_red_triangle:|MatMul|
+|MatMulInteger|-|-|-|-|-|-|-|-|-|**10**|10|10|10|MatMulInteger|
+|Max|**1**|1|1|1|1|**6**|6|**8**|8|8|8|**12**|**13**|Max|
+|MaxPool|**1**:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|**8**:small_orange_diamond:|8:small_orange_diamond:|**10**:small_orange_diamond:|**11**:small_orange_diamond:|**12**:small_orange_diamond:|12:small_orange_diamond:|MaxPool|
+|MaxRoiPool|**1**:small_red_triangle:|1:small_red_triangle:|1:small_red_triangle:|1:small_red_triangle:|1:small_red_triangle:|1:small_red_triangle:|1:small_red_triangle:|1:small_red_triangle:|1:small_red_triangle:|1:small_red_triangle:|1:small_red_triangle:|1:small_red_triangle:|1:small_red_triangle:|MaxRoiPool|
+|MaxUnpool|-|-|-|-|-|-|-|-|**9**|9|**11**|11|11|MaxUnpool|
+|Mean|**1**|1|1|1|1|**6**|6|**8**|8|8|8|8|**13**:small_red_triangle:|Mean|
+|MeanVarianceNormalization|-|-|-|-|-|-|-|-|**9**|9|9|9|**13**:small_red_triangle:|MeanVarianceNormalization|
+|Min|**1**|1|1|1|1|**6**|6|**8**|8|8|8|**12**|**13**|Min|
+|Mod|-|-|-|-|-|-|-|-|-|**10**:small_orange_diamond:|10:small_orange_diamond:|10:small_orange_diamond:|**13**:small_red_triangle:|Mod|
+|Mul|**1**|1|1|1|1|**6**|**7**|7|7|7|7|7|**13**:small_red_triangle:|Mul|
+|Multinomial|-|-|-|-|-|-|**7**:small_red_triangle:|7:small_red_triangle:|7:small_red_triangle:|7:small_red_triangle:|7:small_red_triangle:|7:small_red_triangle:|7:small_red_triangle:|Multinomial|
+|Neg|**1**|1|1|1|1|**6**|6|6|6|6|6|6|**13**:small_red_triangle:|Neg|
+|NegativeLogLikelihoodLoss|-|-|-|-|-|-|-|-|-|-|-|**12**:small_red_triangle:|12:small_red_triangle:|NegativeLogLikelihoodLoss|
+|NonMaxSuppression|-|-|-|-|-|-|-|-|-|**10**|**11**|11|11|NonMaxSuppression|
+|NonZero|-|-|-|-|-|-|-|-|**9**|9|9|9|**13**:small_red_triangle:|NonZero|
+|Not|**1**|1|1|1|1|1|1|1|1|1|1|1|1|Not|
+|OneHot|-|-|-|-|-|-|-|-|**9**:small_orange_diamond:|9:small_orange_diamond:|**11**:small_orange_diamond:|11:small_orange_diamond:|11:small_orange_diamond:|OneHot|
+|Or|**1**|1|1|1|1|1|**7**|7|7|7|7|7|7|Or|
+|PRelu|**1**|1|1|1|1|**6**|**7**|7|**9**|9|9|9|9|PRelu|
+|Pad|**1**|**2**|2|2|2|2|2|2|2|2|**11**|11|**13**:small_red_triangle:|Pad|
+|Pow|**1**|1|1|1|1|1|**7**|7|7|7|7|**12**:small_red_triangle:|**13**:small_red_triangle:|Pow|
+|QLinearConv|-|-|-|-|-|-|-|-|-|**10**|10|10|10|QLinearConv|
+|QLinearMatMul|-|-|-|-|-|-|-|-|-|**10**|10|10|10|QLinearMatMul|
+|QuantizeLinear|-|-|-|-|-|-|-|-|-|**10**|10|10|**13**:small_red_triangle:|QuantizeLinear|
+|RNN|**1**:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|**7**:small_orange_diamond:|7:small_orange_diamond:|7:small_orange_diamond:|7:small_orange_diamond:|7:small_orange_diamond:|7:small_orange_diamond:|7:small_orange_diamond:|RNN|
+|RandomNormal|**1**|1|1|1|1|1|1|1|1|1|1|1|1|RandomNormal|
+|RandomNormalLike|**1**|1|1|1|1|1|1|1|1|1|1|1|1|RandomNormalLike|
+|RandomUniform|**1**|1|1|1|1|1|1|1|1|1|1|1|1|RandomUniform|
+|RandomUniformLike|**1**|1|1|1|1|1|1|1|1|1|1|1|1|RandomUniformLike|
+|Range|-|-|-|-|-|-|-|-|-|-|**11**|11|11|Range|
+|Reciprocal|**1**|1|1|1|1|**6**|6|6|6|6|6|6|**13**:small_red_triangle:|Reciprocal|
+|ReduceL1|**1**|1|1|1|1|1|1|1|1|1|**11**|11|**13**:small_red_triangle:|ReduceL1|
+|ReduceL2|**1**|1|1|1|1|1|1|1|1|1|**11**|11|**13**:small_red_triangle:|ReduceL2|
+|ReduceLogSum|**1**|1|1|1|1|1|1|1|1|1|**11**|11|**13**:small_red_triangle:|ReduceLogSum|
+|ReduceLogSumExp|**1**|1|1|1|1|1|1|1|1|1|**11**|11|**13**:small_red_triangle:|ReduceLogSumExp|
+|ReduceMax|**1**|1|1|1|1|1|1|1|1|1|**11**|**12**:small_red_triangle:|**13**:small_red_triangle:|ReduceMax|
+|ReduceMean|**1**|1|1|1|1|1|1|1|1|1|**11**|11|**13**:small_red_triangle:|ReduceMean|
+|ReduceMin|**1**|1|1|1|1|1|1|1|1|1|**11**|**12**:small_red_triangle:|**13**:small_red_triangle:|ReduceMin|
+|ReduceProd|**1**|1|1|1|1|1|1|1|1|1|**11**|11|**13**:small_red_triangle:|ReduceProd|
+|ReduceSum|**1**|1|1|1|1|1|1|1|1|1|**11**|11|**13**:small_red_triangle:|ReduceSum|
+|ReduceSumSquare|**1**|1|1|1|1|1|1|1|1|1|**11**|11|**13**:small_red_triangle:|ReduceSumSquare|
+|Relu|**1**|1|1|1|1|**6**|6|6|6|6|6|6|**13**:small_red_triangle:|Relu|
+|Reshape|**1**|1|1|1|**5**|5|5|5|5|5|5|5|**13**:small_red_triangle:|Reshape|
+|Resize|-|-|-|-|-|-|-|-|-|**10**:small_orange_diamond:|**11**:small_orange_diamond:|11:small_orange_diamond:|**13**:small_red_triangle:|Resize|
+|ReverseSequence|-|-|-|-|-|-|-|-|-|**10**|10|10|10|ReverseSequence|
+|RoiAlign|-|-|-|-|-|-|-|-|-|**10**:small_red_triangle:|10:small_red_triangle:|10:small_red_triangle:|10:small_red_triangle:|RoiAlign|
+|Round|-|-|-|-|-|-|-|-|-|-|**11**|11|11|Round|
+|Scan|-|-|-|-|-|-|-|**8**|**9**|9|**11**|11|11|Scan|
+|Scatter|-|-|-|-|-|-|-|-|**9**|9|**11**\*|11\*|11\*|Scatter|
+|ScatterElements|-|-|-|-|-|-|-|-|-|-|**11**|11|**13**:small_red_triangle:|ScatterElements|
+|ScatterND|-|-|-|-|-|-|-|-|-|-|**11**|11|**13**:small_red_triangle:|ScatterND|
+|Selu|**1**|1|1|1|1|**6**|6|6|6|6|6|6|6|Selu|
+|SequenceAt|-|-|-|-|-|-|-|-|-|-|**11**|11|11|SequenceAt|
+|SequenceConstruct|-|-|-|-|-|-|-|-|-|-|**11**|11|11|SequenceConstruct|
+|SequenceEmpty|-|-|-|-|-|-|-|-|-|-|**11**|11|11|SequenceEmpty|
+|SequenceErase|-|-|-|-|-|-|-|-|-|-|**11**|11|11|SequenceErase|
+|SequenceInsert|-|-|-|-|-|-|-|-|-|-|**11**|11|11|SequenceInsert|
+|SequenceLength|-|-|-|-|-|-|-|-|-|-|**11**|11|11|SequenceLength|
+|Shape|**1**|1|1|1|1|1|1|1|1|1|1|1|**13**:small_red_triangle:|Shape|
+|Shrink|-|-|-|-|-|-|-|-|**9**|9|9|9|9|Shrink|
+|Sigmoid|**1**|1|1|1|1|**6**|6|6|6|6|6|6|**13**:small_red_triangle:|Sigmoid|
+|Sign|-|-|-|-|-|-|-|-|**9**|9|9|9|**13**:small_red_triangle:|Sign|
+|Sin|-|-|-|-|-|-|**7**|7|7|7|7|7|7|Sin|
+|Sinh|-|-|-|-|-|-|-|-|**9**|9|9|9|9|Sinh|
+|Size|**1**|1|1|1|1|1|1|1|1|1|1|1|**13**:small_red_triangle:|Size|
+|Slice|**1**|1|1|1|1|1|1|1|1|**10**|**11**|11|**13**:small_red_triangle:|Slice|
+|Softmax|**1**|1|1|1|1|1|1|1|1|1|**11**|11|**13**:small_red_triangle:|Softmax|
+|SoftmaxCrossEntropyLoss|-|-|-|-|-|-|-|-|-|-|-|**12**:small_red_triangle:|**13**:small_red_triangle:|SoftmaxCrossEntropyLoss|
+|Softplus|**1**|1|1|1|1|1|1|1|1|1|1|1|1|Softplus|
+|Softsign|**1**|1|1|1|1|1|1|1|1|1|1|1|1|Softsign|
+|SpaceToDepth|**1**|1|1|1|1|1|1|1|1|1|1|1|**13**:small_red_triangle:|SpaceToDepth|
+|Split|**1**|**2**|2|2|2|2|2|2|2|2|**11**|11|**13**|Split|
+|SplitToSequence|-|-|-|-|-|-|-|-|-|-|**11**:small_orange_diamond:|11:small_orange_diamond:|11:small_orange_diamond:|SplitToSequence|
+|Sqrt|**1**|1|1|1|1|**6**|6|6|6|6|6|6|**13**:small_red_triangle:|Sqrt|
+|Squeeze|**1**|1|1|1|1|1|1|1|1|1|**11**|11|**13**:small_red_triangle:|Squeeze|
+|StringNormalizer|-|-|-|-|-|-|-|-|-|**10**:small_red_triangle:|10:small_red_triangle:|10:small_red_triangle:|10:small_red_triangle:|StringNormalizer|
+|Sub|**1**|1|1|1|1|**6**|**7**|7|7|7|7|7|**13**:small_red_triangle:|Sub|
+|Sum|**1**|1|1|1|1|**6**|6|**8**|8|8|8|8|**13**:small_red_triangle:|Sum|
+|Tan|-|-|-|-|-|-|**7**|7|7|7|7|7|7|Tan|
+|Tanh|**1**|1|1|1|1|**6**|6|6|6|6|6|6|**13**:small_red_triangle:|Tanh|
+|TfIdfVectorizer|-|-|-|-|-|-|-|-|**9**|9|9|9|9|TfIdfVectorizer|
+|ThresholdedRelu|-|-|-|-|-|-|-|-|-|**10**|10|10|10|ThresholdedRelu|
+|Tile|**1**|1|1|1|1|**6**|6|6|6|6|6|6|**13**:small_red_triangle:|Tile|
+|TopK|**1**|1|1|1|1|1|1|1|1|**10**|**11**|11|11|TopK|
+|Transpose|**1**|1|1|1|1|1|1|1|1|1|1|1|**13**:small_red_triangle:|Transpose|
+|Unique|-|-|-|-|-|-|-|-|-|-|**11**:small_red_triangle:|11:small_red_triangle:|11:small_red_triangle:|Unique|
+|Unsqueeze|**1**|1|1|1|1|1|1|1|1|1|**11**|11|**13**:small_red_triangle:|Unsqueeze|
+|Upsample|**1**:small_red_triangle:|1:small_red_triangle:|1:small_red_triangle:|1:small_red_triangle:|1:small_red_triangle:|1:small_red_triangle:|**7**:small_orange_diamond:|7:small_orange_diamond:|**9**:small_orange_diamond:|**10**\*|10\*|10\*|10\*|Upsample|
+|Where|-|-|-|-|-|-|-|-|**9**|9|9|9|9|Where|
+|Xor|**1**|1|1|1|1|1|**7**|7|7|7|7|7|7|Xor|
 
-ONNX-TF Supported Operators / ONNX Operators: 132 / 158
+ONNX-TF Supported Operators / ONNX Operators: 80 / 162
 
 Notes:
 1. Cast: Cast string to float32/float64/int32/int64 are not supported in Tensorflow.
-2. ConvTranspose: ConvTranspose with dilations != 1, or transposed convolution for 4D or higher are not supported in Tensorflow.
-3. Equal: Equal inputs in uint16/uint32/uint64 are not supported in Tensorflow.
-4. GRU: GRU with clip or GRU with linear_before_reset, or GRU not using sigmoid for z and r, or GRU using Elu as the activation function with alpha != 1, or GRU using HardSigmoid as the activation function with alpha != 0.2 or beta != 0.5 are not supported in TensorFlow.
-5. LSTM: LSTM not using sigmoid for `f`, or LSTM not using the same activation for `g` and `h` are not supported in Tensorflow.
-6. MaxPool: MaxPoolWithArgmax with pad is None or incompatible mode, or MaxPoolWithArgmax with 4D or higher input, orMaxPoolWithArgmax with column major are not supported in Tensorflow.
-7. Mod: Mod Dividend or Divisor in int8/int16/uint8/uint16/uint32/uint64 are not supported in Tensorflow.
-8. OneHot: OneHot indices in uint16/uint32/uint64/int8/int16/float16/float/double, or OneHot depth in uint8/uint16/uint32/uint64/int8/int16/int64/float16/float/double are not supported in Tensorflow.
-9. RNN: RNN with clip is not supported in Tensorflow.
-10. Resize: Resize required 4D input in Tensorflow.
-11. Upsample: Upsample required 4D input in Tensorflow.
+2. Clip: Clip input in uint64 is not supported in Tensorflow.
+3. ConcatFromSequence: new_axis=1 not supported in Tensorflow.
+4. ConvTranspose: ConvTranspose with dilations != 1, or transposed convolution for 4D or higher are not supported in Tensorflow.
+5. CumSum: CumSum inputs in uint32/uint64 are not supported in Tensorflow.
+6. Equal: Equal inputs in uint16/uint32/uint64 are not supported in Tensorflow.
+7. GRU: GRU with clip or GRU with linear_before_reset, or GRU not using sigmoid for z and r, or GRU using Elu as the activation function with alpha != 1, or GRU using HardSigmoid as the activation function with alpha != 0.2 or beta != 0.5 are not supported in TensorFlow.
+8. LSTM: LSTM not using sigmoid for `f`, or LSTM not using the same activation for `g` and `h` are not supported in Tensorflow.
+9. MaxPool: MaxPoolWithArgmax with pad is None or incompatible mode, or MaxPoolWithArgmax with 4D or higher input, or MaxPoolWithArgmax with column major are not supported in Tensorflow.
+10. Mod: Mod Dividend or Divisor in int8/int16/uint8/uint16/uint32/uint64 are not supported in Tensorflow.
+11. OneHot: OneHot indices in uint16/uint32/uint64/int8/int16/float16/float/double, or OneHot depth in uint8/uint16/uint32/uint64/int8/int16/int64/float16/float/double are not supported in Tensorflow.
+12. RNN: RNN with clip is not supported in Tensorflow.
+13. Resize: Resize required 4D input in Tensorflow. For opset 11, only the following attributes and inputs conbination are supported in Tensorflow:
+	1. mode=nearest, coordinate_transformation_mode=align_corners, nearest_mode=round_prefer_ceil, can use scales(*) or sizes.
+	2. mode=nearest, coordinate_transformation_mode=asymmetric, nearest_mode=floor, can use scales(*) or sizes.
+	3. mode=nearest, coordinate_transformation_mode=tf_half_pixel_for_nn, nearest_mode=floor, can use scales(*) or sizes.
+	4. mode=linear, coordinate_transformation_mode=align_corners, can use scales(*) or sizes.
+	5. mode=linear, coordinate_transformation_mode=asymmetric, can use scales(*) or sizes.
+	6. mode=linear, coordinate_transformation_mode=half_pixel, can use scales(*) or sizes.
+	7. mode=cubic, coordinate_transformation_mode=align_corners, cubic_coeff_a=-0.5, exclude_outside=1, can use scales(*) or sizes.
+	8. mode=cubic, coordinate_transformation_mode=asymmetric, cubic_coeff_a=-0.5, exclude_outside=1, can use scales(*) or sizes.
+	9. mode=cubic, coordinate_transformation_mode=half_pixel, cubic_coeff_a=-0.5, exclude_outside=1, can use scales(*) or sizes.
+	10. mode=nearest, coordinate_transformation_mode=tf_crop_and_resize, extrapolation_value=any_float_value, nearest_mode=round_prefer_ceil, can use scales or sizes.
+	11. mode=linear, coordinate_transformation_mode=tf_crop_and_resize, extrapolation_value=any_float_value, can use scales or sizes.
+	- Note (*): The accuracy of your model will go down, if the height and the width of the new sizes(scales * origial sizes) are not in whole numbers.
+14. SplitToSequence: Scalar as the split input not supported.
+15. Upsample: Upsample required 4D input in Tensorflow.

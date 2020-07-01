@@ -1,15 +1,13 @@
-import warnings
-
 import tensorflow as tf
 
 from onnx_tf.common import exception
 from onnx_tf.common import get_data_format
 from onnx_tf.common import get_perm_from_formats
+from onnx_tf.common import logger 
 from .dilated_pooling import DilatedPooling
 from onnx_tf.common.pooling_helper import py_pool
 from onnx_tf.common.pooling_helper import calc_pads_same
 from onnx_tf.common.pooling_helper import calc_output_shape
-
 
 class PoolMixin(object):
 
@@ -29,6 +27,8 @@ class PoolMixin(object):
     dilations = node.attrs.get("dilations", [1] * spatial_size)
     ceil_mode = bool(node.attrs.get("ceil_mode", 0))
     pads = node.attrs.get("auto_pad", "NOTSET")
+    p = node.attrs.get("p", 2)
+
     if pads == "NOTSET":
       pads = node.attrs.get("pads", [0] * spatial_size * 2)
       # In case shape is fully defined, check if pads match
@@ -47,6 +47,8 @@ class PoolMixin(object):
       pooling_name = "MaxPool"
     elif pooling_type == "MAX_WITH_ARGMAX":
       pooling_name = "MaxPoolWithArgmax"
+    elif pooling_type == "LP":
+      pooling_name = "LpPool"
 
     if spatial_size > 3:
       exception.OP_UNSUPPORTED_EXCEPT(
@@ -74,16 +76,16 @@ class PoolMixin(object):
         padding=pads,
         ceil_mode=ceil_mode,
         pooling_type=pooling_type,
-        count_include_pad=count_include_pad)
+        count_include_pad=count_include_pad,
+        p=p)
     if not dp.is_supported():
       if strict:
-        warnings.warn("Using the pooling op in compatibility mode. "
-                      "This means your graph cannot be serialized.",
-                      UserWarning)
+        logger.warning("Using the pooling op in compatibility mode. "
+                      "This means your graph cannot be serialized.")
 
         result = tf.numpy_function(py_pool, [
                 orig_x, kernel_shape, strides, dilations, pads, ceil_mode,
-                "AVG", False
+                pooling_type, False
             ], orig_x.dtype)
 
         if orig_x.shape.is_fully_defined():
@@ -95,7 +97,7 @@ class PoolMixin(object):
         result.set_shape(output_shape)
         return [result]
       else:
-        exception.OP_UNSUPPORTED_EXCEPT("strict == 0 and average pool"
+        exception.OP_UNSUPPORTED_EXCEPT("strict == 0 and " + pooling_name +
                                         " arguments not compatible",
                                         "Tensorflow")
 
@@ -111,7 +113,7 @@ class PoolMixin(object):
               is not None else argmax)
 
     # select correct op depending on the pooling type
-    pooling_op = dilated_pool if pooling_type in ["MAX", "AVG"] else \
+    pooling_op = dilated_pool if pooling_type in ["MAX", "AVG", "LP"] else \
         dp.dilated_maxpool_with_argmax
 
     # select the correct transpose ops depending on the input storage format
