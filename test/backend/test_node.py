@@ -25,7 +25,7 @@ class TestNode(unittest.TestCase):
 
   def _get_rnd_float32(self, low=-1.0, high=1.0, shape=None):
     output = np.random.uniform(low, high, shape)
-    if shape == None:
+    if shape is None:
       return np.float32(output)
     else:
       return output.astype(np.float32)
