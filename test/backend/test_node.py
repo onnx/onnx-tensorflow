@@ -557,6 +557,24 @@ class TestNode(unittest.TestCase):
     output = run_node(node_def, [x, y])
     np.testing.assert_almost_equal(output["Z"], np.dot(x, y))
 
+  def test_dynamic_quantize_linear(self):
+    if legacy_opset_pre_ver(11):
+      raise unittest.SkipTest("ONNX version {} doesn't support DynamicQuantizeLinear.".format(
+          defs.onnx_opset_version()))
+    node_def = helper.make_node("DynamicQuantizeLinear", ["X"],
+                                ["Y", "Y_Scale", "Y_Zero_Point"])
+    x = self._get_rnd_float32(shape=[3, 4])
+    min_x = np.minimum(0, np.min(x))
+    max_x = np.maximum(0, np.max(x))
+    y_scale = np.float32((max_x - min_x) / (255 - 0))  # uint8 -> [0, 255]
+    y_zero_point = np.clip(round((0 - min_x) / y_scale), 0,
+                           255).astype(np.uint8)
+    y = np.clip(np.round(x / y_scale) + y_zero_point, 0, 255).astype(np.uint8)
+    output = run_node(node_def, [x])
+    np.testing.assert_almost_equal(output["Y"], y)
+    np.testing.assert_almost_equal(output["Y_Scale"], y_scale)
+    np.testing.assert_almost_equal(output["Y_Zero_Point"], y_zero_point)
+
   def test_elu(self):
     node_def = helper.make_node("Elu", ["X"], ["Y"])
     x = self._get_rnd_float32(shape=[100])
