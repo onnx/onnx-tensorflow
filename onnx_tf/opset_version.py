@@ -133,7 +133,7 @@ backend_opset_version = {
     'ReduceSumSquare': [1, 11],
     'Relu': [1, 6],
     'Reshape': [1, 5],
-    'Resize': [10],
+    'Resize': [10, 11],
     'ReverseSequence': [10],
     'RoiAlign': [],
     'Round': [11],
@@ -215,6 +215,41 @@ backend_partial_support = {
               'uint8/uint16/uint32/uint64/int8/int16/int64/float16/float/double '
               'are not supported in Tensorflow.',
     'RNN': 'RNN with clip is not supported in Tensorflow.',
-    'Resize': 'Resize required 4D input in Tensorflow.',
+    'Resize': 'Resize required 4D input in Tensorflow. For opset 11, only the '
+              'following attributes and inputs conbination are supported in '
+              'Tensorflow:\n'
+              '\t1. mode=nearest, '
+              'coordinate_transformation_mode=align_corners, '
+              'nearest_mode=round_prefer_ceil, can use scales(*) or sizes.\n'
+              '\t2. mode=nearest, coordinate_transformation_mode=asymmetric, '
+              'nearest_mode=floor, can use scales(*) or sizes.\n'
+              '\t3. mode=nearest, '
+              'coordinate_transformation_mode=tf_half_pixel_for_nn, '
+              'nearest_mode=floor, can use scales(*) or sizes.\n'
+              '\t4. mode=linear, coordinate_transformation_mode=align_corners, '
+              'can use scales(*) or sizes.\n'
+              '\t5. mode=linear, coordinate_transformation_mode=asymmetric, '
+              'can use scales(*) or sizes.\n'
+              '\t6. mode=linear, coordinate_transformation_mode=half_pixel, '
+              'can use scales(*) or sizes.\n'
+              '\t7. mode=cubic, coordinate_transformation_mode=align_corners, '
+              'cubic_coeff_a=-0.5, exclude_outside=1, can use scales(*) or '
+              'sizes.\n'
+              '\t8. mode=cubic, coordinate_transformation_mode=asymmetric, '
+              'cubic_coeff_a=-0.5, exclude_outside=1, can use scales(*) or '
+              'sizes.\n'
+              '\t9. mode=cubic, coordinate_transformation_mode=half_pixel, '
+              'cubic_coeff_a=-0.5, exclude_outside=1, can use scales(*) or '
+              'sizes.\n'
+              '\t10. mode=nearest, '
+              'coordinate_transformation_mode=tf_crop_and_resize, '
+              'extrapolation_value=any_float_value, '
+              'nearest_mode=round_prefer_ceil, can use scales or sizes.\n'
+              '\t11. mode=linear, '
+              'coordinate_transformation_mode=tf_crop_and_resize, '
+              'extrapolation_value=any_float_value, can use scales or sizes.\n'
+              '\t- Note (*): The accuracy of your model will go down, if the '
+              'height and the width of the new sizes(scales * origial sizes) '
+              'are not in whole numbers.',
     'Upsample': 'Upsample required 4D input in Tensorflow.'
 }
