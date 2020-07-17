@@ -987,7 +987,7 @@ class TestNode(unittest.TestCase):
     expected = [x + y, (x + y) * z] if x < y else [x - y, (x - y) * z]
     np.testing.assert_equal(output['result'], expected)
 
-  def test_image_sacler(self):
+  def test_image_scaler(self):
     # Input:  (N x C x H x W), where N is the batch size,
     # C is the number of channels, and H and W are the height
     # and the width of the data
