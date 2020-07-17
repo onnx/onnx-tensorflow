@@ -5,6 +5,7 @@ from onnx import mapping
 from onnx import TensorProto
 import tensorflow as tf
 
+import onnx_tf.common as common
 
 def tf2onnx(dtype):
   if isinstance(dtype, Number):
@@ -24,6 +25,9 @@ def tf2onnx(dtype):
   # numpy string type desired.
   if tf_dype is tf.string:
     return TensorProto.STRING
+
+  if tf_dype is tf.bfloat16:
+    return TensorProto.BFLOAT16
 
   onnx_dtype = None
   try:
@@ -106,3 +110,14 @@ def is_safe_cast(from_dtype, to_dtype):
       tf.complex128: []
   }
   return to_dtype in safe_cast_map[from_dtype]
+
+
+def tf_to_np_str(from_type):
+  return mapping.TENSOR_TYPE_TO_NP_TYPE[int(tf2onnx(
+      from_type))].name if from_type != tf.bfloat16 else 'bfloat16'
+
+
+def tf_to_np_str_list(from_list):
+  return [
+      tf_to_np_str(from_list[i]) for i in range(len(from_list))
+  ]
