@@ -19,8 +19,9 @@ class MatMulInteger(BackendHandler):
     A = tf.cast(A, tf.int32)
     B = tf.cast(B, tf.int32)
 
-    if 'a_zero_point' in tensor_dict:
-      a_zero_point = tensor_dict['a_zero_point']
+    # apply a_zero_point to A
+    if len(node.inputs) > 2:
+      a_zero_point = tensor_dict[node.inputs[2]]
       shape = a_zero_point.get_shape().as_list()
       if len(shape) > 0 and shape[0] > 1:
         # reshape a_zero_point before subtract it from A
@@ -28,8 +29,9 @@ class MatMulInteger(BackendHandler):
       a_zero_point = tf.cast(a_zero_point, tf.int32)
       A = tf.subtract(A, a_zero_point)
 
-    if 'b_zero_point' in tensor_dict:
-      b_zero_point = tensor_dict['b_zero_point']
+    # apply b_zero_point to B
+    if len(node.inputs) == 4:
+      b_zero_point = tensor_dict[node.inputs[3]]
       b_zero_point = tf.cast(b_zero_point, tf.int32)
       B = tf.subtract(B, b_zero_point)
 

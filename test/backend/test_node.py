@@ -100,13 +100,13 @@ class TestNode(unittest.TestCase):
         data = self._get_rnd_float32(shape=[10, 10])
         output = run_node(node_def, [data])
         np.testing.assert_almost_equal(output["reduced"],
-                                      np.argmax(data, axis=axis))
+                                       np.argmax(data, axis=axis))
         # select_last_index = 1
         node_def = helper.make_node("ArgMax", ["data"], ["reduced"],
                                     axis=axis,
                                     keepdims=0,
                                     select_last_index=1)
-        data = np.array([[ 1, 2, 3, 5, 3, 4, 5, 1 ], [ 2, 9, 3, 5, 9, 4, 5, 1 ]])
+        data = np.array([[1, 2, 3, 5, 3, 4, 5, 1], [2, 9, 3, 5, 9, 4, 5, 1]])
         output = run_node(node_def, [data])
         data = np.flip(data, axis)
         result = np.argmax(data, axis=axis)
@@ -132,13 +132,13 @@ class TestNode(unittest.TestCase):
         data = self._get_rnd_float32(shape=[10, 10])
         output = run_node(node_def, [data])
         np.testing.assert_almost_equal(output["reduced"],
-                                      np.argmin(data, axis=axis))
+                                       np.argmin(data, axis=axis))
         # select_last_index = 1
         node_def = helper.make_node("ArgMin", ["data"], ["reduced"],
                                     axis=axis,
                                     keepdims=0,
                                     select_last_index=1)
-        data = np.array([[ 1, 2, 3, 5, 3, 4, 5, 1 ], [ 2, 7, 3, 5, 2, 4, 5, 6 ]])
+        data = np.array([[1, 2, 3, 5, 3, 4, 5, 1], [2, 7, 3, 5, 2, 4, 5, 6]])
         output = run_node(node_def, [data])
         data = np.flip(data, axis)
         result = np.argmin(data, axis=axis)
@@ -288,25 +288,33 @@ class TestNode(unittest.TestCase):
     if not legacy_opset_pre_ver(12):
       float_attr = 1.0
       floats_attr = [1.0, 2.0, 3.0]
-      int_attr =  np.int64(123)
+      int_attr = np.int64(123)
       ints_attr = [np.int64(4), np.int64(5), np.int64(6)]
       string_attr = 'The Cat in the Hat'
-      strings_attr= ['Green Eggs and Ham', 'How the Grinch Stole Christmas!', 'The Cat in the Hat Comes Back']
-      testcases = [
-          (helper.make_node("Constant", [], ["Y"], value_float=float_attr), float_attr),
-          (helper.make_node("Constant", [], ["Y"], value_floats=floats_attr), floats_attr),
-          (helper.make_node("Constant", [], ["Y"], value_int=int_attr), int_attr),
-          (helper.make_node("Constant", [], ["Y"], value_ints=ints_attr), ints_attr),
-          (helper.make_node("Constant", [], ["Y"], value_string=string_attr), string_attr),
-          (helper.make_node("Constant", [], ["Y"], value_strings=strings_attr), strings_attr)
+      strings_attr = [
+          'Green Eggs and Ham', 'How the Grinch Stole Christmas!',
+          'The Cat in the Hat Comes Back'
       ]
+      testcases = [(helper.make_node("Constant", [], ["Y"],
+                                     value_float=float_attr), float_attr),
+                   (helper.make_node("Constant", [], ["Y"],
+                                     value_floats=floats_attr), floats_attr),
+                   (helper.make_node("Constant", [], ["Y"],
+                                     value_int=int_attr), int_attr),
+                   (helper.make_node("Constant", [], ["Y"],
+                                     value_ints=ints_attr), ints_attr),
+                   (helper.make_node("Constant", [], ["Y"],
+                                     value_string=string_attr), string_attr),
+                   (helper.make_node("Constant", [], ["Y"],
+                                     value_strings=strings_attr), strings_attr)]
       for node_def, expected in testcases:
         output = run_node(node_def, [])
         if isinstance(expected, str):
           np.testing.assert_string_equal(output["Y"].decode('UTF-8'), expected)
         elif isinstance(expected, list) and isinstance(expected[0], str):
-            for i in range(len(expected)):
-              np.testing.assert_string_equal(output['Y'][i].decode('UTF-8'), expected[i])
+          for i in range(len(expected)):
+            np.testing.assert_string_equal(output['Y'][i].decode('UTF-8'),
+                                           expected[i])
         else:
           np.testing.assert_equal(output["Y"], expected)
 
@@ -397,11 +405,12 @@ class TestNode(unittest.TestCase):
     w_zero_point = np.int8(1)
     y = np.array([16, 20, 28, 32]).astype(np.int32).reshape((1, 1, 2, 2))
 
-    node = helper.make_node("ConvInteger", ["X", "W", "w_zero_point"], ["Y"],
+    node = helper.make_node("ConvInteger",
+                            ["X", "W", "x_zero_point", "w_zero_point"], ["Y"],
                             kernel_shape=[2, 2],
                             pads=[0, 0, 0, 0],
                             dilations=[1, 1])
-    output = run_node(node, [x, w, w_zero_point])
+    output = run_node(node, [x, w, np.int8(0), w_zero_point])
     np.testing.assert_almost_equal(output["Y"], y)
 
     # Test x_zero_point and w_zero_point
@@ -427,11 +436,12 @@ class TestNode(unittest.TestCase):
     w_zero_point = np.array([1]).astype(np.int8)
     y = np.array([16, 20, 28, 32]).astype(np.int32).reshape((1, 1, 2, 2))
 
-    node = helper.make_node("ConvInteger", ["X", "W", "w_zero_point"], ["Y"],
+    node = helper.make_node("ConvInteger",
+                            ["X", "W", "x_zero_point", "w_zero_point"], ["Y"],
                             kernel_shape=[2, 2],
                             pads=[0, 0, 0, 0],
                             dilations=[1, 1])
-    output = run_node(node, [x, w, w_zero_point])
+    output = run_node(node, [x, w, np.int8(0), w_zero_point])
     np.testing.assert_almost_equal(output["Y"], y)
 
     # Test w_zero_point as 1d tensor shape 2
@@ -442,11 +452,12 @@ class TestNode(unittest.TestCase):
     y = np.array([12, 16, 24, 28, 0, 0, 0, 0]).astype(np.int32).reshape(
         (1, 2, 2, 2))
 
-    node = helper.make_node("ConvInteger", ["X", "W", "w_zero_point"], ["Y"],
+    node = helper.make_node("ConvInteger",
+                            ["X", "W", "x_zero_point", "w_zero_point"], ["Y"],
                             kernel_shape=[2, 2],
                             pads=[0, 0, 0, 0],
                             dilations=[1, 1])
-    output = run_node(node, [x, w, w_zero_point])
+    output = run_node(node, [x, w, np.int8(0), w_zero_point])
     np.testing.assert_almost_equal(output["Y"], y)
 
   def test_conv_transpose(self):
@@ -488,7 +499,7 @@ class TestNode(unittest.TestCase):
     if legacy_opset_pre_ver(11):
       raise unittest.SkipTest("ONNX version {} doesn't support CumSum.".format(
           defs.onnx_opset_version()))
-    x = np.array([[1, 2, 3], [4, 5,6]]).astype(np.int32)
+    x = np.array([[1, 2, 3], [4, 5, 6]]).astype(np.int32)
     axis = 0
     node_def = helper.make_node("CumSum", ["x", "axis"], ["y"])
     # note: if axis is not provided, np.cumsum() will compute over flattened array,
@@ -559,8 +570,9 @@ class TestNode(unittest.TestCase):
 
   def test_dynamic_quantize_linear(self):
     if legacy_opset_pre_ver(11):
-      raise unittest.SkipTest("ONNX version {} doesn't support DynamicQuantizeLinear.".format(
-          defs.onnx_opset_version()))
+      raise unittest.SkipTest(
+          "ONNX version {} doesn't support DynamicQuantizeLinear.".format(
+              defs.onnx_opset_version()))
     node_def = helper.make_node("DynamicQuantizeLinear", ["X"],
                                 ["Y", "Y_Scale", "Y_Zero_Point"])
     x = self._get_rnd_float32(shape=[3, 4])
@@ -760,18 +772,14 @@ class TestNode(unittest.TestCase):
       np.testing.assert_almost_equal(output["Y"], np.reshape(y, shape))
 
   def test_if(self):
-    true_val = helper.make_tensor(
-        name='true_tensor',
-        data_type=TensorProto.INT64,
-        dims=(),
-        vals=[np.int64(1)]
-    )
-    false_val = helper.make_tensor(
-        name='false_tensor',
-        data_type=TensorProto.INT64,
-        dims=(),
-        vals=[np.int64(0)]
-    )
+    true_val = helper.make_tensor(name='true_tensor',
+                                  data_type=TensorProto.INT64,
+                                  dims=(),
+                                  vals=[np.int64(1)])
+    false_val = helper.make_tensor(name='false_tensor',
+                                   data_type=TensorProto.INT64,
+                                   dims=(),
+                                   vals=[np.int64(0)])
     true_node = helper.make_node('Constant',
                                  inputs=[],
                                  outputs=['true'],
@@ -804,24 +812,18 @@ class TestNode(unittest.TestCase):
     x = self._get_rnd_int(low=-50, high=50, dtype=np.int64)
     y = self._get_rnd_int(low=-50, high=50, dtype=np.int64)
     z = self._get_rnd_int(low=-50, high=50, dtype=np.int64)
-    x_val = helper.make_tensor(
-        name='x_tensor',
-        data_type=TensorProto.INT64,
-        dims=(),
-        vals=[x]
-    )
-    y_val = helper.make_tensor(
-        name='y_tensor',
-        data_type=TensorProto.INT64,
-        dims=(),
-        vals=[y]
-    )
-    z_val = helper.make_tensor(
-        name='z_tensor',
-        data_type=TensorProto.INT64,
-        dims=(),
-        vals=[z]
-    )
+    x_val = helper.make_tensor(name='x_tensor',
+                               data_type=TensorProto.INT64,
+                               dims=(),
+                               vals=[x])
+    y_val = helper.make_tensor(name='y_tensor',
+                               data_type=TensorProto.INT64,
+                               dims=(),
+                               vals=[y])
+    z_val = helper.make_tensor(name='z_tensor',
+                               data_type=TensorProto.INT64,
+                               dims=(),
+                               vals=[z])
     x_node = helper.make_node('Constant', inputs=[], outputs=['x'], value=x_val)
     y_node = helper.make_node('Constant', inputs=[], outputs=['y'], value=y_val)
     z_node = helper.make_node('Constant', inputs=[], outputs=['z'], value=z_val)
@@ -1075,13 +1077,12 @@ class TestNode(unittest.TestCase):
 
     # test for loop
     M = np.int64(10)
-    cond = True # value will be ignore because optional "cond" input will be skip
+    cond = True  # value will be ignore because optional "cond" input will be skip
     graph = helper.make_graph(nodes=[add1_node, neg_node, add2_node, add3_node],
                               name="for_loop_graph",
                               inputs=[m_in, cond_in, x_in, y_in],
                               outputs=[cond_out, sum1_out, sum2_out, sum3_out])
-    node_def = helper.make_node('Loop',
-                                ['M', '', 'v1_initial', 'v2_initial'],
+    node_def = helper.make_node('Loop', ['M', '', 'v1_initial', 'v2_initial'],
                                 ['v_final', 'scan_outputs'],
                                 body=graph)
     output = run_node(node_def, [M, cond, v1_initial, v2_initial])
@@ -1098,7 +1099,7 @@ class TestNode(unittest.TestCase):
     np.testing.assert_almost_equal(output['scan_outputs'], scan_outputs)
 
     # test while loop
-    M = 0 # value will be ignore because optional "M" input will be skip
+    M = 0  # value will be ignore because optional "M" input will be skip
     cond = v1_initial < v2_initial
     graph = helper.make_graph(
         nodes=[add1_node, neg_node, add2_node, add3_node, less_node],
@@ -1122,7 +1123,7 @@ class TestNode(unittest.TestCase):
     np.testing.assert_almost_equal(output['scan_outputs'], scan_outputs)
 
     # test do-while loop
-    M = 0 # value will be ignore because optional "M" input will be skip
+    M = 0  # value will be ignore because optional "M" input will be skip
     cond = 1
     graph = helper.make_graph(
         nodes=[add1_node, neg_node, add2_node, add3_node, greater_node],
@@ -1167,13 +1168,12 @@ class TestNode(unittest.TestCase):
 
     # test for loop that doesn't run at all (M = 0)
     M = np.int64(0)
-    cond = True # value will be ignore because optional "cond" input will be skip
+    cond = True  # value will be ignore because optional "cond" input will be skip
     graph = helper.make_graph(nodes=[add1_node, neg_node, add2_node, add3_node],
                               name="for_loop_graph",
                               inputs=[m_in, cond_in, x_in, y_in],
                               outputs=[cond_out, sum1_out, sum2_out, sum3_out])
-    node_def = helper.make_node('Loop',
-                                ['M', '', 'v1_initial', 'v2_initial'],
+    node_def = helper.make_node('Loop', ['M', '', 'v1_initial', 'v2_initial'],
                                 ['v_final', 'scan_outputs'],
                                 body=graph)
     output = run_node(node_def, [M, cond, v1_initial, v2_initial])
@@ -1186,7 +1186,7 @@ class TestNode(unittest.TestCase):
     np.testing.assert_almost_equal(output['scan_outputs'], scan_outputs)
 
     # test while loop that doesn't run at all (cond = False)
-    M = 0 # value will be ignore because optional "M" input will be skip
+    M = 0  # value will be ignore because optional "M" input will be skip
     cond = False
     graph = helper.make_graph(
         nodes=[add1_node, neg_node, add2_node, add3_node, less_node],
@@ -1226,8 +1226,8 @@ class TestNode(unittest.TestCase):
 
     # test for loop that doesn't run at all (M = 0)
     # and the scan_outputs shape is not the same as the inputs
-    v1_initial = np.array([[1,1,1], [2,2,2]], dtype=np.int32)
-    v3_initial = np.array([[1,1],[2,2],[3,3]], dtype=np.int32)
+    v1_initial = np.array([[1, 1, 1], [2, 2, 2]], dtype=np.int32)
+    v3_initial = np.array([[1, 1], [2, 2], [3, 3]], dtype=np.int32)
     matmul_node = helper.make_node('MatMul',
                                    inputs=['x', 'z'],
                                    outputs=['product'])
@@ -1240,13 +1240,12 @@ class TestNode(unittest.TestCase):
                                                 [None, None])
 
     M = np.int64(0)
-    cond = True # value will be ignore because optional "cond" input will be skip
+    cond = True  # value will be ignore because optional "cond" input will be skip
     graph = helper.make_graph(nodes=[add1_node, matmul_node],
                               name="for_loop_graph",
                               inputs=[m_in, cond_in, x_in, z_in],
                               outputs=[cond_out, sum1_out, z_out, product_out])
-    node_def = helper.make_node('Loop',
-                                ['M', '', 'v1_initial', 'v3_initial'],
+    node_def = helper.make_node('Loop', ['M', '', 'v1_initial', 'v3_initial'],
                                 ['v_final', 'scan_outputs'],
                                 body=graph)
     output = run_node(node_def, [M, cond, v1_initial, v3_initial])
@@ -1257,22 +1256,20 @@ class TestNode(unittest.TestCase):
     np.testing.assert_almost_equal(output['scan_outputs'], scan_outputs)
 
     # verify infinite loop will get exception
-    M = 0 # value will be ignore because optional "M" input will be skip
-    cond = True # value will be ignore because optional "cond" input will be skip
+    M = 0  # value will be ignore because optional "M" input will be skip
+    cond = True  # value will be ignore because optional "cond" input will be skip
     graph = helper.make_graph(
         nodes=[add1_node, neg_node, add2_node, add3_node, less_node],
         name="while_loop_graph",
         inputs=[m_in, cond_in, x_in, y_in],
         outputs=[cond_out, sum1_out, sum2_out, sum3_out])
-    node_def = helper.make_node('Loop',
-                                ['', '', 'v1_initial', 'v2_initial'],
+    node_def = helper.make_node('Loop', ['', '', 'v1_initial', 'v2_initial'],
                                 ['v_final', 'scan_outputs'],
                                 body=graph)
     try:
       output = run_node(node_def, [M, cond, v1_initial, v2_initial])
-      raise AssertionError(
-          "Expected RuntimeError not raise when Loop inputs " +
-          "M and cond are both not set at the same time")
+      raise AssertionError("Expected RuntimeError not raise when Loop inputs " +
+                           "M and cond are both not set at the same time")
     except RuntimeError as e:
       assert "M and cond in Loop are not set" in str(e)
 
