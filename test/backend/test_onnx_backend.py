@@ -43,11 +43,11 @@ def skip_not_implemented_ops_test(test):
     if not onnx_ops_list[op]['deprecated']:
       if op in onnxtf_ops_list:
         if onnx_ops_list[op]['version'] not in onnxtf_ops_list[op]:
-          test.exclude(r'[a-z,_]*_' + op.lower() + '_[a-z,_]*')
-          test.exclude(r'[a-z,_]*_' + op_name.lower() + '_[a-z,_]*')
+          test.exclude(r'test_' + op.lower() + '_[a-z,_]*')
+          test.exclude(r'test_' + op_name.lower() + '_[a-z,_]*')
       else:
-        test.exclude(r'[a-z,_]*_' + op.lower() + '_[a-z,_]*')
-        test.exclude(r'[a-z,_]*_' + op_name.lower() + '_[a-z,_]*')
+        test.exclude(r'test_' + op.lower() + '_[a-z,_]*')
+        test.exclude(r'test_' + op_name.lower() + '_[a-z,_]*')
   return test
 
 # This is a pytest magic variable to load extra plugins
@@ -87,8 +87,9 @@ backend_test.exclude(r'test_mod_[a-z,_]*int(8|(16))+')
 # tf.one_hot
 backend_test.exclude(r'test_onehot_[a-z,_]*')
 
-# skip resize downsample with mode=linear
-backend_test.exclude(r'test_resize_downsample_linear[a-z,_]*')
+# TF doesn't support most of the attributes in resize op
+# test_node.py will cover the test
+backend_test.exclude(r'test_resize_[a-z,_]*')
 
 # range is using loop in the model test but all the outputs datatype are
 # missing in the body attribute of the loop
