@@ -212,11 +212,6 @@ backend_partial_support = {
                'Tensorflow.',
     'Mod': 'Mod Dividend or Divisor in int8/int16/uint8/uint16/uint32/uint64 '
            'are not supported in Tensorflow.',
-    'OneHot': 'OneHot indices in '
-              'uint16/uint32/uint64/int8/int16/float16/float/double, or OneHot '
-              'depth in '
-              'uint8/uint16/uint32/uint64/int8/int16/int64/float16/float/double '
-              'are not supported in Tensorflow.',
     'RNN': 'RNN with clip is not supported in Tensorflow.',
     'Resize': 'Resize required 4D input in Tensorflow. For opset 11, only the '
               'following attributes and inputs conbination are supported in '
