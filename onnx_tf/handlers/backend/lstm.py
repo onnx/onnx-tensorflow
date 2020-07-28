@@ -74,7 +74,7 @@ class LSTM(RNNMixin, BackendHandler):
       new_w = tf.transpose(tf.concat([w_i, w_c, w_f, w_o], 0))
       new_r = tf.transpose(tf.concat([r_i, r_c, r_f, r_o], 0))
       kernel = tf.concat([new_w, new_r], 0)
-      return kernel
+      return tf.Variable(kernel)
     if names[-1] == "bias":
       if len(node.inputs) >= 4:
         # onnx Wb[iofc], Rb[iofc]
@@ -87,7 +87,7 @@ class LSTM(RNNMixin, BackendHandler):
         r_b_i, r_b_o, r_b_f, r_b_c = tf.split(r_b, 4)
         w_b = tf.transpose(tf.concat([w_b_i, w_b_c, w_b_f, w_b_o], 0))
         r_b = tf.transpose(tf.concat([r_b_i, r_b_c, r_b_f, r_b_o], 0))
-        return tf.add(w_b, r_b)
+        return tf.Variable(tf.add(w_b, r_b))
       return getter(name, *args, **kwargs)
     # Only use_peepholes is True,
     # will try to get w_f_diag, w_i_diag, w_o_diag
@@ -98,11 +98,11 @@ class LSTM(RNNMixin, BackendHandler):
       else:
         p = tensor_dict[node.inputs[7]]
       if names[-1] == "w_f_diag":
-        return tf.split(p, 3, axis=1)[2]
+        return tf.Variable(tf.split(p, 3, axis=1)[2])
       if names[-1] == "w_i_diag":
-        return tf.split(p, 3, axis=1)[0]
+        return tf.Variable(tf.split(p, 3, axis=1)[0])
       if names[-1] == "w_o_diag":
-        return tf.split(p, 3, axis=1)[1]
+        return tf.Variable(tf.split(p, 3, axis=1)[1])
     return getter(name, *args, **kwargs)
 
   @classmethod

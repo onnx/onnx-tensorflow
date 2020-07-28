@@ -50,7 +50,7 @@ class RNN(RNNMixin, BackendHandler):
       new_w = tf.transpose(tf.squeeze(w))
       new_r = tf.transpose(tf.squeeze(r))
       kernel = tf.concat([new_w, new_r], 0)
-      return kernel
+      return tf.Variable(kernel)
     if names[-1] == "bias":
       if len(node.inputs) >= 4:
         if is_bidirectional:
@@ -60,7 +60,7 @@ class RNN(RNNMixin, BackendHandler):
         w_b, r_b = tf.split(tf.squeeze(b), 2)
         w_b = tf.transpose(w_b)
         r_b = tf.transpose(r_b)
-        return tf.add(w_b, r_b)
+        return tf.Variable(tf.add(w_b, r_b))
       return getter(name, *args, **kwargs)
     return getter(name, *args, **kwargs)
 

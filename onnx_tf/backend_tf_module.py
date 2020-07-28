@@ -9,7 +9,7 @@ class BackendTFModule(tf.Module):
     self.opset = opset
     self.strict = strict
     self.graph_def = graph_def
-    self.backend = backend;
+    self.backend = backend
 
   @tf.function
   def __call__(self, **kwargs):
@@ -32,4 +32,6 @@ class BackendTFModule(tf.Module):
           onnx_node, tensor_dict, self.handlers, opset=self.opset, strict=self.strict)
       curr_node_output_map = dict(zip(onnx_node.outputs, output_ops))
       tensor_dict.update(curr_node_output_map)
-    return output_ops
+
+    outputs = [tensor_dict[output] for output in self.outputs]
+    return outputs
