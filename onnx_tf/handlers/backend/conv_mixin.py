@@ -125,6 +125,16 @@ class ConvMixin(BroadcastMixin):
             ]
           conv_output_shape.insert(compute_c_idx, weights_shape[-2])
 
+          def handle_dynamic_batch_size(output_shape, batch_idx):
+            output_shape[batch_idx] = tf.shape(x)[batch_idx]
+            return tf.stack(output_shape)
+
+          # process dynamic batch size
+          if conv_output_shape[storage_format.find("N")] is None:
+            batch_idx = storage_format.find("N")
+            conv_output_shape = handle_dynamic_batch_size(conv_output_shape,
+                    batch_idx)
+
           # make strides to match input rank
           strides_full = [1] + strides
           strides_full.insert(compute_c_idx, 1)
@@ -167,6 +177,12 @@ class ConvMixin(BroadcastMixin):
               pads[spatial_format.find(d) + spatial_size]
               for d, s in zip(compute_format, conv_rs_shape)
           ]
+
+          # process dynamic batch size
+          if size[compute_format.find("N")] is None:
+            batch_idx = compute_format.find("N")
+            size = handle_dynamic_batch_size(size, batch_idx)
+
           conv_rs = tf.slice(conv_rs, begin=begin, size=size)
 
           convolved.append(conv_rs)
@@ -187,6 +203,12 @@ class ConvMixin(BroadcastMixin):
                 for i in list(range(spatial_size))
             ]
           conv_output_shape.insert(compute_c_idx, weights_shape[-2])
+
+          # process dynamic batch size
+          if conv_output_shape[storage_format.find("N")] is None:
+            batch_idx = storage_format.find("N")
+            conv_output_shape = handle_dynamic_batch_size(conv_output_shape,
+                    batch_idx)
 
           # make strides to match input rank
           strides_full = [1] + strides

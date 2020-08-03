@@ -24,7 +24,7 @@ class TestNode(unittest.TestCase):
 
   def _get_rnd_float32(self, low=-1.0, high=1.0, shape=None):
     output = np.random.uniform(low, high, shape)
-    if shape == None:
+    if shape is None:
       return np.float32(output)
     else:
       return output.astype(np.float32)
@@ -461,29 +461,68 @@ class TestNode(unittest.TestCase):
     np.testing.assert_almost_equal(output["Y"], y)
 
   def test_conv_transpose(self):
-    # Fix test in the future.
-    return
-    device = "CUDA"
-    if not supports_device(device):
-      raise unittest.SkipTest(
-          "Backend doesn't support device {}".format(device))
+    device = "CUDA" if supports_device("CUDA") else "CPU"
+
+    pads = [1, 1]
     node_def = helper.make_node("ConvTranspose", ["X", "weights"], ["Y"],
-                                pads=[1, 1])
-    x_shape = [1, 5, 4]
+                                pads=pads)
+    x_shape = [1, 3, 4]
     x = self._get_rnd_float32(shape=x_shape)
-    weight_shape = [5, 3, 2]
+    weight_shape = [3, 5, 2]
     weights = self._get_rnd_float32(shape=weight_shape)
     output = run_node(node_def, [x, weights], device=device)
-    out_shape = [x_shape[0], weight_shape[1], x_shape[2]]
+
+    padh_left =  weight_shape[2]-1-pads[0]
+    padh_right = weight_shape[2]-1-pads[1]
+    kh = weight_shape[2]
+    outh = x_shape[2] + padh_right + padh_right - (kh - 1)
+
+    out_shape = [x_shape[0], weight_shape[1], outh]
+
     test_output = np.zeros(out_shape)
     for b in range(0, x_shape[0]):
       for m in range(0, weight_shape[1]):
-        for h in range(0, x_shape[2]):
-          v = 0
-          for c in range(0, x_shape[1]):
-            for k in range(h, min(h + weight_shape[2], x_shape[2])):
-              v += x[b][c][k] * weights[c][m][k - h]
-          test_output[b][m][h] = v
+        for c in range(0, x_shape[1]):
+          for h in range(0, outh):
+            for k in range(h , h + kh):
+              if (k - padh_left >= 0):
+                test_output[b][m][h] += x[b][c][k-padh_left] * weights[c][m][kh+h-1-k]
+
+    np.testing.assert_almost_equal(output["Y"], test_output, decimal=5)
+
+    # test for spatial dimension of colnolution is 2
+    pads = [1, 1, 1, 1]
+    node_def = helper.make_node("ConvTranspose", ["X", "weights"], ["Y"],
+                                pads=pads)
+    x_shape = [1, 3, 4, 6]
+    x = self._get_rnd_float32(shape=x_shape)
+    weight_shape = [3, 5, 2, 2]
+    weights = self._get_rnd_float32(shape=weight_shape)
+    output = run_node(node_def, [x, weights],device=device)
+
+    padh_left =  weight_shape[2]-1-pads[0]
+    padh_right = weight_shape[2]-1-pads[1]
+    padw_left =  weight_shape[3]-1-pads[2]
+    padw_right = weight_shape[3]-1-pads[3]
+
+    kh = weight_shape[2]
+    kw = weight_shape[3]
+    outh = x_shape[2] + padh_right + padh_right - (kh - 1)
+    outw = x_shape[3] + padw_right + padw_right - (kw - 1)
+
+    out_shape = [x_shape[0], weight_shape[1], outh, outw]
+
+    test_output = np.zeros(out_shape)
+    for b in range(0, x_shape[0]):
+      for m in range(0, weight_shape[1]):
+        for c in range(0, x_shape[1]):
+          for h in range(0, outh):
+            for w in range(0, outw):
+              for k1 in range(h , h + kh):
+                for k2 in range(w , w + kw):
+                  if (k1 - padh_left >= 0 and k2 - padw_left >= 0):
+                    test_output[b][m][h][w] += x[b][c][k1-padh_left][k2-padw_left] * weights[c][m][kh+h-1-k1][kw+w-1-k2]
+
     np.testing.assert_almost_equal(output["Y"], test_output, decimal=5)
 
   def test_cosh(self):
@@ -1117,7 +1156,7 @@ class TestNode(unittest.TestCase):
     x_in = helper.make_tensor_value_info('x', TensorProto.INT32, [None])
     y_in = helper.make_tensor_value_info('y', TensorProto.INT32, [None])
 
-    cond_out = helper.make_tensor_value_info('cond', TensorProto.STRING, [])
+    cond_out = helper.make_tensor_value_info('cond', TensorProto.BOOL, [])
     new_cond_out = helper.make_tensor_value_info('new_cond', TensorProto.BOOL,
                                                  [])
     sum1_out = helper.make_tensor_value_info('sum1', TensorProto.INT32, [None])
