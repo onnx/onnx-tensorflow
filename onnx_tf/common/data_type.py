@@ -39,6 +39,11 @@ def tf2onnx(dtype):
 
 
 def onnx2tf(dtype):
+  # The onnx2tf is done by going to a np type first. However,
+  # given that there is no bfloat16 in np at this time, we need
+  # to go directly to tf bfloat16 for now.
+  if dtype == int(TensorProto.BFLOAT16):
+    return tf.as_dtype("bfloat16")
   return tf.as_dtype(mapping.TENSOR_TYPE_TO_NP_TYPE[_onnx_dtype(dtype)])
 
 
