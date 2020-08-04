@@ -43,3 +43,7 @@ class ArgMin(BackendHandler):
   @classmethod
   def version_12(cls, node, **kwargs):
     return cls._common(node, **kwargs)
+
+  @classmethod
+  def version_13(cls, node, **kwargs):
+    return cls._common(node, **kwargs)
