@@ -54,7 +54,7 @@ backend_opset_version = {
     'Floor': [1, 6],
     'GRU': [1, 3, 7],
     'Gather': [1, 11],
-    'GatherElements': [],
+    'GatherElements': [11],
     'GatherND': [11],
     'Gemm': [1, 6, 7, 9, 11],
     'GlobalAveragePool': [1],
