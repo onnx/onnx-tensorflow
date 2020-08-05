@@ -1,8 +1,8 @@
 # ONNX-Tensorflow Support Status
 |||
 |-:|:-|
-|ONNX-Tensorflow Version|Master ( commit id: ee0e90567b9772fab4974607bcc64fe7d410865b )|
-|ONNX Version|Master ( commit id: cc2230603422bae893d5bc900d2d773ab34400a4 )|
+|ONNX-Tensorflow Version|Master ( commit id: 8ec5d4d06005c7d075d477327827589b2e762f4f )|
+|ONNX Version|1.7.0|
 |Tensorflow Version|v2.2.0|
 
 Notes:
@@ -108,7 +108,7 @@ Notes:
 |Or|**1**|1|1|1|1|1|**7**|7|7|7|7|7|7|Or|
 |PRelu|**1**|1|1|1|1|**6**|**7**|7|**9**|9|9|9|9|PRelu|
 |Pad|**1**|**2**|2|2|2|2|2|2|2|2|**11**|11|**13**:small_red_triangle:|Pad|
-|Pow|**1**|1|1|1|1|1|**7**|7|7|7|7|**12**:small_red_triangle:|**13**:small_red_triangle:|Pow|
+|Pow|**1**|1|1|1|1|1|**7**|7|7|7|7|**12**|**13**|Pow|
 |QLinearConv|-|-|-|-|-|-|-|-|-|**10**|10|10|10|QLinearConv|
 |QLinearMatMul|-|-|-|-|-|-|-|-|-|**10**|10|10|10|QLinearMatMul|
 |QuantizeLinear|-|-|-|-|-|-|-|-|-|**10**|10|10|**13**:small_red_triangle:|QuantizeLinear|
@@ -179,7 +179,7 @@ Notes:
 |Where|-|-|-|-|-|-|-|-|**9**|9|9|9|9|Where|
 |Xor|**1**|1|1|1|1|1|**7**|7|7|7|7|7|7|Xor|
 
-ONNX-TF Supported Operators / ONNX Operators: 83 / 162
+ONNX-TF Supported Operators / ONNX Operators: 84 / 162
 
 Notes:
 1. Cast: Cast string to data types other than float32/float64/int32/int64 is not supported in Tensorflow

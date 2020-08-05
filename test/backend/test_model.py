@@ -257,5 +257,25 @@ class TestModel(unittest.TestCase):
     output = tf_rep.run({"X": X, "Y": Y})
     np.testing.assert_almost_equal(output["W2"], W_ref)
 
+  def test_pow_bfloat16(self):
+    X1 = np.array([1, 2, 3]).astype(np.float32)
+    X2 = np.array([2, 3, 4]).astype(np.float32)
+    Y_ref = np.power(X1, X2).astype(X1.dtype)
+
+    graph_def = helper.make_graph(
+        [
+            helper.make_node("Cast", ["X1"], ["C1"], to=TensorProto.BFLOAT16),
+            helper.make_node("Pow", ["C1", "X2"], ["Y"])
+        ],
+        name="test",
+        inputs=[helper.make_tensor_value_info("X1", TensorProto.FLOAT, [3]),
+            helper.make_tensor_value_info("X2", TensorProto.FLOAT, [3])],
+        outputs=[
+            helper.make_tensor_value_info("Y", TensorProto.BFLOAT16, [3])
+        ])
+    tf_rep = prepare(helper.make_model(graph_def))
+    output = tf_rep.run({"X1": X1, "X2": X2})
+    np.testing.assert_almost_equal(output.Y, Y_ref)
+
 if __name__ == '__main__':
   unittest.main()
