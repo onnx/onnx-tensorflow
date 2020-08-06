@@ -86,7 +86,7 @@ Notes:
 |LogSoftmax|**1**|1|1|1|1|1|1|1|1|1|**11**|11|
 |Loop|**1**|1|1|1|1|1|1|1|1|1|**11**|11|
 |LpNormalization|**1**|1|1|1|1|1|1|1|1|1|1|1|
-|LpPool|**1**:small_red_triangle:|**2**:small_red_triangle:|2:small_red_triangle:|2:small_red_triangle:|2:small_red_triangle:|2:small_red_triangle:|2:small_red_triangle:|2:small_red_triangle:|2:small_red_triangle:|2:small_red_triangle:|**11**:small_red_triangle:|11:small_red_triangle:|
+|LpPool|**1**|**2**|2|2|2|2|2|2|2|2|**11**|11|11|
 |MatMul|**1**|1|1|1|1|1|1|1|**9**|9|9|9|
 |MatMulInteger|-|-|-|-|-|-|-|-|-|**10**|10|10|
 |Max|**1**|1|1|1|1|**6**|6|**8**|8|8|8|**12**:small_red_triangle:|

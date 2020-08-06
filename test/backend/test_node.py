@@ -1426,9 +1426,12 @@ class TestNode(unittest.TestCase):
                     auto_pad=None,
                     ceil_mode=None,
                     count_include_pad=None,
-                    pooling_type="MAX"):
+                    pooling_type="MAX",
+                    input_dtype=np.float32,
+                    p=None):
 
-    op = "MaxPool" if pooling_type.upper().startswith("MAX") else "AveragePool"
+    op = "MaxPool" if pooling_type.upper().startswith("MAX") else \
+         "AveragePool" if pooling_type.upper() == "AVG" else "LpPool"
     node_def_kwargs = {
         "op_type": op,
         "inputs": ["X"],
@@ -1451,8 +1454,17 @@ class TestNode(unittest.TestCase):
       ceil_mode = 0
     if count_include_pad is not None:
       node_def_kwargs["count_include_pad"] = count_include_pad
+    if p is not None:
+      node_def_kwargs["p"] = p
 
     node_def = helper.make_node(**node_def_kwargs)
+
+    if input_dtype == np.float32:
+        x = self._get_rnd_float32(shape=input_shape)
+    else:
+        x = self._get_rnd_int(low = np.iinfo(input_dtype).min,
+                              high = np.iinfo(input_dtype).max,
+                              shape=input_shape, dtype=input_dtype)
 
     x = self._get_rnd_float32(shape=input_shape)
     output = run_node(node_def, [x])
@@ -1464,9 +1476,11 @@ class TestNode(unittest.TestCase):
                           padding=pads,
                           ceil_mode=ceil_mode,
                           pooling_type=pooling_type,
-                          include_indices=False)
+                          include_indices=False,
+                          p=p)
 
-    np.testing.assert_almost_equal(output["Y"], test_output)
+    np.testing.assert_almost_equal(output["Y"], test_output,
+                                   decimal=5 if pooling_type=="LP" else 7)
 
   def test_max_pool_2d(self):
     kernel_shape = [1, 2]
@@ -1644,6 +1658,23 @@ class TestNode(unittest.TestCase):
                        strides=strides,
                        dilations=dilations,
                        auto_pad=auto_pad)
+
+  def test_max_pool_2d_dilations_ceil_pads_int8(self):
+    if legacy_opset_pre_ver(12):
+      raise unittest.SkipTest(
+          "ONNX version {} does not support int8 input type.".format(
+              defs.onnx_opset_version()))
+
+    kernel_shape = [3, 3]
+    strides = [2, 2]
+    dilations = [3, 3]
+    pads = [1, 1, 2, 2]
+    ceil_mode = 1
+
+    input_shape = [10, 3, 23, 23]
+    self._test_pooling(input_shape=input_shape, kernel_shape=kernel_shape,
+                       strides=strides, dilations=dilations, pads=pads,
+                       ceil_mode=ceil_mode, input_dtype=np.int8)
 
   def test_max_pool_3d(self):
     kernel_shape = [3, 3, 3]
@@ -1829,10 +1860,10 @@ class TestNode(unittest.TestCase):
                        strides=strides,
                        pooling_type="AVG")
 
-  def test_average_pool_2d_same_upper_(self):
-    kernel_shape = [1, 2]
-    strides = [1, 2]
-    auto_pad = "SAME_UPPER"
+  def test_average_pool_2d_same_upper(self):
+    kernel_shape=[1, 2]
+    strides=[1, 2]
+    auto_pad="SAME_UPPER"
 
     input_shape = [10, 10, 7, 7]
     self._test_pooling(input_shape=input_shape,
@@ -1850,6 +1881,110 @@ class TestNode(unittest.TestCase):
                        kernel_shape=kernel_shape,
                        strides=strides,
                        pooling_type="AVG")
+
+  def test_lp2_pool_2d(self):
+    kernel_shape = [1, 2]
+    strides = [1, 2]
+    p = 2
+
+    input_shape = [10, 10, 4, 4]
+    self._test_pooling(input_shape=input_shape,
+                       kernel_shape=kernel_shape,
+                       strides=strides,
+                       pooling_type="LP",
+                       p=p)
+
+  def test_lp2_pool_2d_same_lower(self):
+    kernel_shape = [1, 2]
+    strides = [1, 2]
+    p = 2
+    auto_pad = "SAME_LOWER"
+
+    input_shape = [10, 10, 7, 7]
+    self._test_pooling(input_shape=input_shape,
+                       kernel_shape=kernel_shape,
+                       strides=strides,
+                       auto_pad=auto_pad,
+                       pooling_type="LP",
+                       p=p)
+
+  def test_lp2_pool_2d_same_upper(self):
+    kernel_shape = [1, 2]
+    strides = [1, 2]
+    p = 2
+    auto_pad = "SAME_UPPER"
+
+    input_shape = [10, 10, 7, 7]
+    self._test_pooling(input_shape=input_shape,
+                       kernel_shape=kernel_shape,
+                       strides=strides,
+                       auto_pad=auto_pad,
+                       pooling_type="LP",
+                       p=p)
+
+  def test_lp2_pool_2d_pads(self):
+    kernel_shape = [3, 3]
+    strides = [2, 2]
+    p = 2
+    pads = [1, 1, 2, 2]
+
+    input_shape = [10, 3, 24, 24]
+    self._test_pooling(input_shape=input_shape,
+                       kernel_shape=kernel_shape,
+                       strides=strides,
+                       pads=pads,
+                       pooling_type="LP",
+                       p=p)
+
+  def test_lp2_pool_3d(self):
+    kernel_shape = [3, 3, 3]
+    strides = [2, 2, 2]
+    p = 2
+
+    input_shape = [10, 3, 23, 23, 23]
+    self._test_pooling(input_shape=input_shape,
+                       kernel_shape=kernel_shape,
+                       strides=strides,
+                       pooling_type="LP",
+                       p=p)
+
+  def test_lp2_pool_1d(self):
+    kernel_shape = [3]
+    strides = [2]
+    p = 2
+
+    input_shape = [10, 3, 23]
+    self._test_pooling(input_shape=input_shape,
+                       kernel_shape=kernel_shape,
+                       strides=strides,
+                       pooling_type="LP",
+                       p=p)
+
+  def test_lp3_pool_2d_pads(self):
+    kernel_shape = [3, 3]
+    strides = [2, 2]
+    p = 3
+    pads = [1, 1, 2, 2]
+
+    input_shape = [10, 3, 24, 24]
+    self._test_pooling(input_shape=input_shape,
+                       kernel_shape=kernel_shape,
+                       strides=strides,
+                       pads=pads,
+                       pooling_type="LP",
+                       p=p)
+
+  def test_lp3_pool_3d(self):
+    kernel_shape = [3, 3, 3]
+    strides = [2, 2, 2]
+    p = 3
+
+    input_shape = [10, 3, 23, 23, 23]
+    self._test_pooling(input_shape=input_shape,
+                       kernel_shape=kernel_shape,
+                       strides=strides,
+                       pooling_type="LP",
+                       p=p)
 
   def test_mean_variance_normalization(self):
     if legacy_opset_pre_ver(9):
