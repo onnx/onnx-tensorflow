@@ -1,27 +1,30 @@
-os:
-  - linux
-dist: xenial
-sudo: required
+os: linux
+arch: amd64
+dist: bionic
 language: python
-services:
-  - docker
-
+python: 3.6
 cache: pip
 
-jobs:
-  include:
-    - name: master-test-py3.6
-      python: 3.6
-      before_install:
-        - source ./.travis/setup_onnx_master.sh
-      script:
-        - cd .. && docker cp onnx-tensorflow test:/root/programs/
-        - docker exec -e TRAVIS=1 -t test /bin/bash -c "cd onnx-tensorflow && pip3 install -e . && python3 -m unittest discover test"
+# Required
+# - ONNX 1.6 (Opset 11), TensorFlow 1.15.0, Sep 2019
+# - ONNX 1.6 (Opset 11), TensorFlow 1.15.3, May 2020
+# Optional
+# - ONNX 1.7 (Opset 12), TensorFlow 1.15.3, May 2020
 
-    - name: target-test-py3.6
-      python: 3.6
-      before_install:
-        - source ./.travis/setup_onnx_target.sh
-      script:
-        - cd .. && docker cp onnx-tensorflow test:/root/programs/
-        - docker exec -e TRAVIS=1 -t test /bin/bash -c "cd onnx-tensorflow && pip3 install -e . && python3 -m unittest discover test"
+env:
+  - ONNX_PIP=onnx==1.6.0 TF_PIP=tensorflow==1.15.0
+  - ONNX_PIP=onnx==1.6.0 TF_PIP=tensorflow==1.15.3
+  - ONNX_PIP=onnx==1.7.0 TF_PIP=tensorflow==1.15.3
+
+jobs:
+  fast_finish: true
+  # Be aware when updating the dependency versions.
+  # Envs below must match *exactly* an env from above,
+  # otherwise an env failure will fail the overall build.
+  allow_failures:
+    - env: ONNX_PIP=onnx==1.7.0 TF_PIP=tensorflow==1.15.3
+
+before_install: pip install -U setuptools
+install: pip install $ONNX_PIP $TF_PIP
+before_script: pip install -e .
+script: python -m unittest discover test -v

@@ -7,9 +7,9 @@ import inspect
 import warnings
 
 from onnx import defs
+from onnx.backend.test.runner import BackendIsNotSupposedToImplementIt
 
-from onnx_tf.common import exception
-from onnx_tf.common import IS_PYTHON3
+import onnx_tf.common as common
 
 
 class Handler(object):
@@ -59,8 +59,8 @@ class Handler(object):
     if ver_handle:
       cls.args_check(node, **kwargs)
       return ver_handle(node, **kwargs)
-    exception.OP_UNIMPLEMENTED_EXCEPT(node.op_type, cls.SINCE_VERSION)
-    return None
+
+    raise BackendIsNotSupposedToImplementIt("{} version {} is not implemented.".format(node.op_type, cls.SINCE_VERSION))
 
   @classmethod
   def get_versions(cls):
@@ -98,7 +98,7 @@ class Handler(object):
   def property_register(name, value):
 
     def deco(cls):
-      if inspect.isfunction(value) and not IS_PYTHON3:
+      if inspect.isfunction(value) and not common.IS_PYTHON3:
         setattr(cls, name, staticmethod(value))
       else:
         setattr(cls, name, value)
