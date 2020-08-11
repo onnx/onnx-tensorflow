@@ -1,7 +1,7 @@
 # ONNX-Tensorflow Support Status
 |||
 |-:|:-|
-|ONNX-Tensorflow Version|Master ( commit id: 5928415eb0a045c86acef8a04bdab5d32ca91dfe )|
+|ONNX-Tensorflow Version|Master ( commit id: 9703da35fde1090b465a882651b7d23e868e8445 )|
 |ONNX Version|Master ( commit id: b2ed660d0a065b8346816f2c3a95d79ca79b88c9 )|
 |Tensorflow Version|v2.3.0|
 
@@ -131,7 +131,7 @@ Notes:
 |ReduceSumSquare|**1**|1|1|1|1|1|1|1|1|1|**11**|11|**13**:small_red_triangle:|ReduceSumSquare|
 |Relu|**1**|1|1|1|1|**6**|6|6|6|6|6|6|**13**:small_red_triangle:|Relu|
 |Reshape|**1**|1|1|1|**5**|5|5|5|5|5|5|5|**13**:small_red_triangle:|Reshape|
-|Resize|-|-|-|-|-|-|-|-|-|**10**:small_orange_diamond:|**11**:small_orange_diamond:|11:small_orange_diamond:|**13**:small_red_triangle:|Resize|
+|Resize|-|-|-|-|-|-|-|-|-|**10**:small_orange_diamond:|**11**:small_orange_diamond:|11:small_orange_diamond:|**13**:small_orange_diamond:|Resize|
 |ReverseSequence|-|-|-|-|-|-|-|-|-|**10**|10|10|10|ReverseSequence|
 |RoiAlign|-|-|-|-|-|-|-|-|-|**10**:small_red_triangle:|10:small_red_triangle:|10:small_red_triangle:|10:small_red_triangle:|RoiAlign|
 |Round|-|-|-|-|-|-|-|-|-|-|**11**|11|11|Round|
@@ -179,7 +179,7 @@ Notes:
 |Where|-|-|-|-|-|-|-|-|**9**|9|9|9|9|Where|
 |Xor|**1**|1|1|1|1|1|**7**|7|7|7|7|7|7|Xor|
 
-ONNX-TF Supported Operators / ONNX Operators: 94 / 162
+ONNX-TF Supported Operators / ONNX Operators: 95 / 162
 
 Notes:
 1. Cast: Cast string to data types other than float32/float64/int32/int64 is not supported in Tensorflow

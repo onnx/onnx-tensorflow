@@ -23,11 +23,15 @@ formatter = logging.Formatter(
 console.setFormatter(formatter)
 logger.addHandler(console)
 
+
 class SysConfig:
+
   def __init__(self):
     self.auto_cast = False
 
+
 sys_config = SysConfig()
+
 
 class Deprecated:
   """Add deprecated message when function is called.
