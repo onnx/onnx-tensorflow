@@ -74,3 +74,35 @@ def any_dtype_to_onnx_dtype(np_dtype=None, tf_dtype=None, onnx_dtype=None):
     onnx_dtype = tf2onnx(tf_dtype)
 
   return onnx_dtype
+
+
+def is_safe_cast(from_dtype, to_dtype):
+  safe_cast_map = {
+      tf.bfloat16: [tf.float32, tf.float64, tf.complex64, tf.complex128],
+      tf.float16: [tf.float32, tf.float64, tf.complex64, tf.complex128],
+      tf.float32: [tf.float64, tf.complex128],
+      tf.float64: [tf.complex128],
+      tf.int8: [
+          tf.bfloat16, tf.float16, tf.float32, tf.float64, tf.int16, tf.int32,
+          tf.int64, tf.complex64, tf.complex128
+      ],
+      tf.int16: [
+          tf.float32, tf.float64, tf.int32, tf.int64, tf.complex64,
+          tf.complex128
+      ],
+      tf.int32: [tf.float64, tf.int64, tf.complex128],
+      tf.int64: [],
+      tf.uint8: [
+          tf.float16, tf.float32, tf.float64, tf.int16, tf.int32, tf.int64,
+          tf.complex64, tf.complex128
+      ],
+      tf.uint16: [
+          tf.float32, tf.float64, tf.int32, tf.int64, tf.complex64,
+          tf.complex128
+      ],
+      tf.uint32: [tf.float64, tf.int64, tf.complex128],
+      tf.unit64: [],
+      tf.complex64: [tf.complex128],
+      tf.complex128: []
+  }
+  return to_dtype in safe_cast_map[from_dtype]

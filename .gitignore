@@ -105,3 +105,6 @@ venv.bak/
 
 *.cf
 *.tf
+
+# generated files
+onnx_tf/version.py
