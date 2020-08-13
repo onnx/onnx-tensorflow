@@ -190,7 +190,7 @@ class TestModel(unittest.TestCase):
     graph_def = helper.make_graph(
         [
             helper.make_node("Cast", ["X0"], ["X1"], to=TensorProto.BFLOAT16),
-            helper.make_node("ArgMax", ["X1"], ["X2"], axis=0, keepdims=0, select_last_index=0)
+            helper.make_node("ArgMax", ["X1"], ["X2"], axis=0, keepdims=0)
         ],
         name="test",
         inputs=[helper.make_tensor_value_info("X0", TensorProto.FLOAT, [2, 8])],
@@ -208,7 +208,7 @@ class TestModel(unittest.TestCase):
     graph_def = helper.make_graph(
         [
             helper.make_node("Cast", ["X0"], ["X1"], to=TensorProto.BFLOAT16),
-            helper.make_node("ArgMin", ["X1"], ["X2"], axis=0, keepdims=0, select_last_index=0)
+            helper.make_node("ArgMin", ["X1"], ["X2"], axis=0, keepdims=0)
         ],
         name="test",
         inputs=[helper.make_tensor_value_info("X0", TensorProto.FLOAT, [2, 8])],

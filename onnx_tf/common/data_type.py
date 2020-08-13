@@ -101,7 +101,7 @@ def is_safe_cast(from_dtype, to_dtype):
           tf.complex128
       ],
       tf.uint32: [tf.float64, tf.int64, tf.complex128],
-      tf.unit64: [],
+      tf.uint64: [],
       tf.complex64: [tf.complex128],
       tf.complex128: []
   }

@@ -8,7 +8,6 @@ import math
 import unittest
 import numpy as np
 import tensorflow as tf
-from tensorflow.python.framework.errors_impl import InvalidArgumentError
 from onnx_tf.backend import onnx_graph_to_tensorflow_rep
 from onnx_tf.backend import run_node
 from onnx_tf.common import supports_device
@@ -58,7 +57,7 @@ class TestNode(unittest.TestCase):
       raise unittest.SkipTest("ONNX version {} doesn't support Acosh.".format(
           defs.onnx_opset_version()))
     node_def = helper.make_node("Acosh", ["X"], ["Y"])
-    x = self._get_rnd_float32(shape=[3, 4, 5])
+    x = self._get_rnd_float32(low=1.0, high=np.finfo(np.float32).max, shape=[3, 4, 5])
     output = run_node(node_def, [x])
     np.testing.assert_almost_equal(output["Y"], np.arccosh(x))
 
@@ -749,7 +748,7 @@ class TestNode(unittest.TestCase):
           np.testing.assert_almost_equal(output["Z"], test_output)
           raise AssertionError("Expected ValueError not raised for indices %d" %
                                str(y))
-        except InvalidArgumentError as e:
+        except tf.errors.InvalidArgumentError as e:
           assert 'Gather indices are out of bound' in str(e), str(y)
       # test non-0 and negative axis
       axis = -3
@@ -3560,7 +3559,7 @@ class TestNode(unittest.TestCase):
     node_def = helper.make_node("Softplus", ["X"], ["Y"])
     x = self._get_rnd_float32(shape=[3, 4, 5])
     output = run_node(node_def, [x])
-    np.testing.assert_almost_equal(output["Y"], np.log(np.exp(x) + 1))
+    np.testing.assert_almost_equal(output["Y"], np.log(np.exp(x) + 1), decimal=5)
 
   def test_softsign(self):
     node_def = helper.make_node("Softsign", ["X"], ["Y"])
