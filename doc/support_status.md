@@ -1,9 +1,9 @@
 # ONNX-Tensorflow Support Status
 |||
 |-:|:-|
-|ONNX-Tensorflow Version|Master ( commit id: 9bfcd58fe957702b390d8bb0a6c4d01faf22c0b9 )|
-|ONNX Version|Master ( commit id: 057b5136637d64b5a7c7d833ca6d5d927ec68013 )|
-|Tensorflow Version|v2.3.0|
+|ONNX-Tensorflow Version|Master ( commit id: 8ec5d4d06005c7d075d477327827589b2e762f4f )|
+|ONNX Version|1.7.0|
+|Tensorflow Version|v2.2.0|
 
 Notes:
 * Values that are new or updated from a previous opset version are in bold.
@@ -108,7 +108,7 @@ Notes:
 |Or|**1**|1|1|1|1|1|**7**|7|7|7|7|7|7|Or|
 |PRelu|**1**|1|1|1|1|**6**|**7**|7|**9**|9|9|9|9|PRelu|
 |Pad|**1**|**2**|2|2|2|2|2|2|2|2|**11**|11|**13**:small_red_triangle:|Pad|
-|Pow|**1**|1|1|1|1|1|**7**|7|7|7|7|**12**:small_red_triangle:|**13**:small_red_triangle:|Pow|
+|Pow|**1**|1|1|1|1|1|**7**|7|7|7|7|**12**|**13**|Pow|
 |QLinearConv|-|-|-|-|-|-|-|-|-|**10**|10|10|10|QLinearConv|
 |QLinearMatMul|-|-|-|-|-|-|-|-|-|**10**|10|10|10|QLinearMatMul|
 |QuantizeLinear|-|-|-|-|-|-|-|-|-|**10**|10|10|**13**:small_red_triangle:|QuantizeLinear|

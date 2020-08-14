@@ -28,40 +28,15 @@ def get_onnx_supported_ops():
     }
   return onnx_ops_dict
 
-def skip_not_implemented_ops_test(test):
-  onnxtf_ops_list = get_onnxtf_supported_ops()
-  onnx_ops_list = get_onnx_supported_ops()
-  for op in onnx_ops_list:
-    op_name = op
-    i = 1
-    while i < len(op_name):
-      if op_name[i].isupper():
-        op_name = op_name[:i] + '_' + op_name[i:]
-        i += 2
-      else:
-        i += 1
-    if not onnx_ops_list[op]['deprecated']:
-      if op in onnxtf_ops_list:
-        if onnx_ops_list[op]['version'] not in onnxtf_ops_list[op]:
-          test.exclude(r'test_' + op.lower() + '_[a-z,_]*')
-          test.exclude(r'test_' + op_name.lower() + '_[a-z,_]*')
-      else:
-        test.exclude(r'test_' + op.lower() + '_[a-z,_]*')
-        test.exclude(r'test_' + op_name.lower() + '_[a-z,_]*')
-  return test
-
 # This is a pytest magic variable to load extra plugins
 pytest_plugins = 'onnx.backend.test.report',
 
-backend_test = onnx.backend.test.BackendTest(TensorflowBackend, __name__)
+backend_test = onnx.backend.test.runner.Runner(TensorflowBackend, __name__)
 
-# exclude tests of not-implemented-ops
-backend_test = skip_not_implemented_ops_test(backend_test)
-
-# manually exclude tests of not-implemented-ops that are using "short name" in their testcase name
-# need to remove these lines once those ops support are added into onnx-tf
-# temporary exclude StringNormalizer test
-backend_test.exclude(r'[a-z,_]*strnorm[a-z,_]*')
+# The test cases excluded below should be considered permanent restrictions
+# based on the TensorFlow implementation. Unimplemented operators will raise
+# a BackendIsNotSupposedToImplementIt exception so that their test cases
+# will pass and show a verbose message stating it was effectively skipped.
 
 # https://github.com/onnx/onnx/issues/349
 backend_test.exclude(r'[a-z,_]*GLU[a-z,_]*')
@@ -131,6 +106,19 @@ if not legacy_opset_pre_ver(9):
 if not legacy_opset_pre_ver(10):
   # Do not support dilations != 1 for ConvTranspose, test is added in opset 10
   backend_test.exclude(r'[a-z,_]*convtranspose_dilations[a-z,_]*')
+
+# Concat from sequence with new_axis=1 not supported
+backend_test.exclude(r'test_sequence_model5_[a-z,_]*')
+
+# Fails rounding tolerance
+backend_test.exclude(r'test_gru_seq_length_[a-z,_]*')
+
+# TF pow does not support mixing float/int types
+backend_test.exclude(r'test_pow_types_float[0-9]+_[u]?int[0-9]+_[a-z,_]*')
+backend_test.exclude(r'test_pow_types_[u]?int[0-9]+_float[0-9]+_[a-z,_]*')
+# not sure where these are defined...
+backend_test.exclude(r'test_pow_types_int_[a-z,_]*')
+backend_test.exclude(r'test_pow_types_float_[a-z,_]*')
 
 # import all test cases at global scope to make them visible to python.unittest
 globals().update(backend_test.enable_report().test_cases)
