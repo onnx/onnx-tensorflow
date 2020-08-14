@@ -31,6 +31,9 @@ MANIFEST
 *.manifest
 *.spec
 
+# Generated files
+onnx_tf/version.py
+
 # Installer logs
 pip-log.txt
 pip-delete-this-directory.txt
@@ -105,3 +108,6 @@ venv.bak/
 
 *.cf
 *.tf
+
+# generated files
+onnx_tf/version.py

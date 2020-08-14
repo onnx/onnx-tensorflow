@@ -6,8 +6,8 @@ backend_opset_version = {
     'Adam': [],
     'Add': [1, 6, 7],
     'And': [1, 7],
-    'ArgMax': [1, 11, 12],
-    'ArgMin': [1, 11, 12],
+    'ArgMax': [1, 11, 12, 13],
+    'ArgMin': [1, 11, 12, 13],
     'ArrayFeatureExtractor': [],
     'Asin': [7],
     'Asinh': [9],
@@ -17,7 +17,7 @@ backend_opset_version = {
     'BatchNormalization': [1, 6, 7, 9],
     'Binarizer': [],
     'BitShift': [11],
-    'Cast': [1, 6, 9],
+    'Cast': [1, 6, 9, 13],
     'CastMap': [],
     'CategoryMapper': [],
     'Ceil': [1, 6],
@@ -110,7 +110,7 @@ backend_opset_version = {
     'Or': [1, 7],
     'PRelu': [1, 6, 7, 9],
     'Pad': [1, 2, 11],
-    'Pow': [1, 7],
+    'Pow': [1, 7, 12, 13],
     'QLinearConv': [10],
     'QLinearMatMul': [10],
     'QuantizeLinear': [10],
@@ -189,8 +189,8 @@ backend_opset_version = {
 }
 
 backend_partial_support = {
-    'Cast': 'Cast string to float32/float64/int32/int64 are not supported in '
-            'Tensorflow.',
+    'Cast': 'Cast string to data types other than float32/float64/int32/int64 '
+            'is not supported in Tensorflow',
     'Clip': 'Clip input in uint64 is not supported in Tensorflow.',
     'ConcatFromSequence': 'new_axis=1 not supported in Tensorflow.',
     'ConvTranspose': 'ConvTranspose with dilations != 1, or transposed '

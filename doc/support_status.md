@@ -1,9 +1,8 @@
 # ONNX-Tensorflow Support Status
 |||
 |-:|:-|
-
-|ONNX-Tensorflow Version|Master ( commit id: 4748f3ea8135057cccfc5e30c0f4339a913d4ebd )|
-|ONNX Version|Master ( commit id: cc2230603422bae893d5bc900d2d773ab34400a4 )|
+|ONNX-Tensorflow Version|Master ( commit id: 8ec5d4d06005c7d075d477327827589b2e762f4f )|
+|ONNX Version|1.7.0|
 |Tensorflow Version|v2.2.0|
 
 Notes:
@@ -22,8 +21,8 @@ Notes:
 |Acosh|-|-|-|-|-|-|-|-|**9**|9|9|9|9|Acosh|
 |Add|**1**|1|1|1|1|**6**|**7**|7|7|7|7|7|**13**:small_red_triangle:|Add|
 |And|**1**|1|1|1|1|1|**7**|7|7|7|7|7|7|And|
-|ArgMax|**1**|1|1|1|1|1|1|1|1|1|**11**|**12**|**13**:small_red_triangle:|ArgMax|
-|ArgMin|**1**|1|1|1|1|1|1|1|1|1|**11**|**12**|**13**:small_red_triangle:|ArgMin|
+|ArgMax|**1**|1|1|1|1|1|1|1|1|1|**11**|**12**|**13**|ArgMax|
+|ArgMin|**1**|1|1|1|1|1|1|1|1|1|**11**|**12**|**13**|ArgMin|
 |Asin|-|-|-|-|-|-|**7**|7|7|7|7|7|7|Asin|
 |Asinh|-|-|-|-|-|-|-|-|**9**|9|9|9|9|Asinh|
 |Atan|-|-|-|-|-|-|**7**|7|7|7|7|7|7|Atan|
@@ -31,7 +30,7 @@ Notes:
 |AveragePool|**1**|1|1|1|1|1|**7**|7|7|**10**|**11**|11|11|AveragePool|
 |BatchNormalization|**1**|1|1|1|1|**6**|**7**|7|**9**|9|9|9|9|BatchNormalization|
 |BitShift|-|-|-|-|-|-|-|-|-|-|**11**|11|11|BitShift|
-|Cast|**1**:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|**6**:small_orange_diamond:|6:small_orange_diamond:|6:small_orange_diamond:|**9**:small_orange_diamond:|9:small_orange_diamond:|9:small_orange_diamond:|9:small_orange_diamond:|**13**:small_red_triangle:|Cast|
+|Cast|**1**:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|**6**:small_orange_diamond:|6:small_orange_diamond:|6:small_orange_diamond:|**9**:small_orange_diamond:|9:small_orange_diamond:|9:small_orange_diamond:|9:small_orange_diamond:|**13**:small_orange_diamond:|Cast|
 |Ceil|**1**|1|1|1|1|**6**|6|6|6|6|6|6|**13**:small_red_triangle:|Ceil|
 |Celu|-|-|-|-|-|-|-|-|-|-|-|**12**:small_red_triangle:|12:small_red_triangle:|Celu|
 |Clip|**1**:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|**6**:small_orange_diamond:|6:small_orange_diamond:|6:small_orange_diamond:|6:small_orange_diamond:|6:small_orange_diamond:|**11**:small_orange_diamond:|**12**:small_orange_diamond:|**13**:small_orange_diamond:|Clip|
@@ -109,7 +108,7 @@ Notes:
 |Or|**1**|1|1|1|1|1|**7**|7|7|7|7|7|7|Or|
 |PRelu|**1**|1|1|1|1|**6**|**7**|7|**9**|9|9|9|9|PRelu|
 |Pad|**1**|**2**|2|2|2|2|2|2|2|2|**11**|11|**13**:small_red_triangle:|Pad|
-|Pow|**1**|1|1|1|1|1|**7**|7|7|7|7|**12**:small_red_triangle:|**13**:small_red_triangle:|Pow|
+|Pow|**1**|1|1|1|1|1|**7**|7|7|7|7|**12**|**13**|Pow|
 |QLinearConv|-|-|-|-|-|-|-|-|-|**10**|10|10|10|QLinearConv|
 |QLinearMatMul|-|-|-|-|-|-|-|-|-|**10**|10|10|10|QLinearMatMul|
 |QuantizeLinear|-|-|-|-|-|-|-|-|-|**10**|10|10|**13**:small_red_triangle:|QuantizeLinear|
@@ -124,9 +123,9 @@ Notes:
 |ReduceL2|**1**|1|1|1|1|1|1|1|1|1|**11**|11|**13**:small_red_triangle:|ReduceL2|
 |ReduceLogSum|**1**|1|1|1|1|1|1|1|1|1|**11**|11|**13**:small_red_triangle:|ReduceLogSum|
 |ReduceLogSumExp|**1**|1|1|1|1|1|1|1|1|1|**11**|11|**13**:small_red_triangle:|ReduceLogSumExp|
-|ReduceMax|**1**|1|1|1|1|1|1|1|1|1|**11**|**12**:small_red_triangle:|**13**:small_red_triangle:|ReduceMax|
+|ReduceMax|**1**|1|1|1|1|1|1|1|1|1|**11**|**12**|**13**:small_red_triangle:|ReduceMax|
 |ReduceMean|**1**|1|1|1|1|1|1|1|1|1|**11**|11|**13**:small_red_triangle:|ReduceMean|
-|ReduceMin|**1**|1|1|1|1|1|1|1|1|1|**11**|**12**:small_red_triangle:|**13**:small_red_triangle:|ReduceMin|
+|ReduceMin|**1**|1|1|1|1|1|1|1|1|1|**11**|**12**|**13**:small_red_triangle:|ReduceMin|
 |ReduceProd|**1**|1|1|1|1|1|1|1|1|1|**11**|11|**13**:small_red_triangle:|ReduceProd|
 |ReduceSum|**1**|1|1|1|1|1|1|1|1|1|**11**|11|**13**:small_red_triangle:|ReduceSum|
 |ReduceSumSquare|**1**|1|1|1|1|1|1|1|1|1|**11**|11|**13**:small_red_triangle:|ReduceSumSquare|
@@ -180,10 +179,10 @@ Notes:
 |Where|-|-|-|-|-|-|-|-|**9**|9|9|9|9|Where|
 |Xor|**1**|1|1|1|1|1|**7**|7|7|7|7|7|7|Xor|
 
-ONNX-TF Supported Operators / ONNX Operators: 80 / 162
+ONNX-TF Supported Operators / ONNX Operators: 84 / 162
 
 Notes:
-1. Cast: Cast string to float32/float64/int32/int64 are not supported in Tensorflow.
+1. Cast: Cast string to data types other than float32/float64/int32/int64 is not supported in Tensorflow
 2. Clip: Clip input in uint64 is not supported in Tensorflow.
 3. ConcatFromSequence: new_axis=1 not supported in Tensorflow.
 4. ConvTranspose: ConvTranspose with dilations != 1, or transposed convolution for 4D or higher are not supported in Tensorflow.
