@@ -16,7 +16,7 @@ def get_all_backend_handlers(opset_dict):
     handler.check_cls()
 
     domain = handler.DOMAIN
-    version = opset_dict[domain]
+    version = opset_dict[domain] if domain in opset_dict else 1
     handler.VERSION = version
 
     since_version = 1
