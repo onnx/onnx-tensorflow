@@ -153,7 +153,7 @@ Notes:
 |Sin|-|-|-|-|-|-|**7**|7|7|7|7|7|7|Sin|
 |Sinh|-|-|-|-|-|-|-|-|**9**|9|9|9|9|Sinh|
 |Size|**1**|1|1|1|1|1|1|1|1|1|1|1|**13**:small_red_triangle:|Size|
-|Slice|**1**|1|1|1|1|1|1|1|1|**10**|**11**|11|**13**:small_red_triangle:|Slice|
+|Slice|**1**|1|1|1|1|1|1|1|1|**10**|**11**|11|**13**|Slice|
 |Softmax|**1**|1|1|1|1|1|1|1|1|1|**11**|11|**13**:small_red_triangle:|Softmax|
 |SoftmaxCrossEntropyLoss|-|-|-|-|-|-|-|-|-|-|-|**12**:small_red_triangle:|**13**:small_red_triangle:|SoftmaxCrossEntropyLoss|
 |Softplus|**1**|1|1|1|1|1|1|1|1|1|1|1|1|Softplus|
