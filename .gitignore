@@ -31,6 +31,9 @@ MANIFEST
 *.manifest
 *.spec
 
+# Generated files
+onnx_tf/version.py
+
 # Installer logs
 pip-log.txt
 pip-delete-this-directory.txt
