@@ -5,16 +5,18 @@ from __future__ import unicode_literals
 
 import math
 import unittest
+
+from onnx import defs
+from onnx import helper
+from onnx import TensorProto
 import numpy as np
 import tensorflow as tf
+
 from onnx_tf.backend import onnx_graph_to_tensorflow_rep
 from onnx_tf.backend import run_node
 from onnx_tf.common import supports_device
 from onnx_tf.common.legacy import legacy_onnx_pre_ver, legacy_opset_pre_ver
 from onnx_tf.common.pooling_helper import py_pool
-from onnx import helper
-from onnx import TensorProto
-from onnx import defs
 
 
 class TestNode(unittest.TestCase):
@@ -1506,11 +1508,12 @@ class TestNode(unittest.TestCase):
     node_def = helper.make_node(**node_def_kwargs)
 
     if input_dtype == np.float32:
-        x = self._get_rnd_float32(shape=input_shape)
+      x = self._get_rnd_float32(shape=input_shape)
     else:
-        x = self._get_rnd_int(low = np.iinfo(input_dtype).min,
-                              high = np.iinfo(input_dtype).max,
-                              shape=input_shape, dtype=input_dtype)
+      x = self._get_rnd_int(low=np.iinfo(input_dtype).min,
+                            high=np.iinfo(input_dtype).max,
+                            shape=input_shape,
+                            dtype=input_dtype)
 
     x = self._get_rnd_float32(shape=input_shape)
     output = run_node(node_def, [x])
@@ -1525,8 +1528,9 @@ class TestNode(unittest.TestCase):
                           include_indices=False,
                           p=p)
 
-    np.testing.assert_almost_equal(output["Y"], test_output,
-                                   decimal=5 if pooling_type=="LP" else 7)
+    np.testing.assert_almost_equal(output["Y"],
+                                   test_output,
+                                   decimal=5 if pooling_type == "LP" else 7)
 
   def test_max_pool_2d(self):
     kernel_shape = [1, 2]
@@ -1718,9 +1722,13 @@ class TestNode(unittest.TestCase):
     ceil_mode = 1
 
     input_shape = [10, 3, 23, 23]
-    self._test_pooling(input_shape=input_shape, kernel_shape=kernel_shape,
-                       strides=strides, dilations=dilations, pads=pads,
-                       ceil_mode=ceil_mode, input_dtype=np.int8)
+    self._test_pooling(input_shape=input_shape,
+                       kernel_shape=kernel_shape,
+                       strides=strides,
+                       dilations=dilations,
+                       pads=pads,
+                       ceil_mode=ceil_mode,
+                       input_dtype=np.int8)
 
   def test_max_pool_3d(self):
     kernel_shape = [3, 3, 3]
@@ -1907,9 +1915,9 @@ class TestNode(unittest.TestCase):
                        pooling_type="AVG")
 
   def test_average_pool_2d_same_upper(self):
-    kernel_shape=[1, 2]
-    strides=[1, 2]
-    auto_pad="SAME_UPPER"
+    kernel_shape = [1, 2]
+    strides = [1, 2]
+    auto_pad = "SAME_UPPER"
 
     input_shape = [10, 10, 7, 7]
     self._test_pooling(input_shape=input_shape,
@@ -2170,15 +2178,23 @@ class TestNode(unittest.TestCase):
                                 coordinate_transformation_mode='align_corners',
                                 mode='nearest',
                                 nearest_mode='round_prefer_ceil')
+    x = np.reshape(np.arange(1, 151, dtype=np.float32), [2, 3, 5, 5])
     scales = np.array([], dtype=np.float32)
-    sizes = np.array([1, 1, 7, 7], dtype=np.int64)
+    sizes = np.array([2, 3, 4, 4], dtype=np.int64)
     expected = np.array(
-        [[[[1, 3, 4, 6, 7, 9, 10], [21, 23, 24, 26, 27, 29, 30],
-           [31, 33, 34, 36, 37, 39, 40], [51, 53, 54, 56, 57, 59, 60],
-           [61, 63, 64, 66, 67, 69, 70], [81, 83, 84, 86, 87, 89, 90],
-           [91, 93, 94, 96, 97, 99, 100]]]],
+        [[[[1, 2, 4, 5], [6, 7, 9, 10], [16, 17, 19, 20], [21, 22, 24, 25]],
+          [[26, 27, 29, 30], [31, 32, 34, 35], [41, 42, 44, 45],
+           [46, 47, 49, 50.]],
+          [[51, 52, 54, 55], [56, 57, 59, 60], [66, 67, 69, 70],
+           [71, 72, 74, 75]]],
+         [[[76, 77, 79, 80], [81, 82, 84, 85], [91, 92, 94, 95],
+           [96, 97, 99, 100]],
+          [[101, 102, 104, 105], [106, 107, 109, 110], [116, 117, 119, 120],
+           [121, 122, 124, 125]],
+          [[126, 127, 129, 130], [131, 132, 134, 135], [141, 142, 144, 145],
+           [146, 147, 149, 150]]]],
         dtype=np.float32)  # expected value is calculated by onnx-runtime
-    output = run_node(node_def, [data, roi, scales, sizes])
+    output = run_node(node_def, [x, roi, scales, sizes])
     np.testing.assert_almost_equal(output["Y"], expected)
 
     # resize_nearest_floor_asymmetric_scales
@@ -2637,7 +2653,7 @@ class TestNode(unittest.TestCase):
         mode='nearest',
         nearest_mode='round_prefer_ceil',
     )
-    roi = np.array([0, 0, 0.4, 0.6, 1, 1, 1.2, 1.7], dtype=np.float32)
+    roi = np.array([0, 0, 0.4, 0.6, 1, 1, 1.2, 1.7], dtype=np.float16)
     scales = np.array([], dtype=np.float32)
     sizes = np.array([1, 1, 7, 7], dtype=np.int64)
     expected = np.array(
@@ -2671,6 +2687,10 @@ class TestNode(unittest.TestCase):
         dtype=np.float32)  # expected value is calculated by onnx-runtime
     output = run_node(node_def, [data, roi, scales])
     np.testing.assert_allclose(output["Y"], expected, rtol=1e-6, atol=1e-6)
+
+    # sys_config.auto_cast=False and roi_dtype=float64 should throw exception
+    self.assertRaises(RuntimeError, run_node, node_def,
+                      [data, roi.astype(np.float64), scales])
 
     # crop_and_resize_linear with sizes
     node_def = helper.make_node(
