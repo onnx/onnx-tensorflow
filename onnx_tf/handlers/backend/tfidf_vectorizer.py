@@ -42,7 +42,18 @@ class TfIdfVectorizer(BackendHandler):
     # Loop through the ngram targets in the pool
     tensor_list = []
     for i in range(len(pool)):
-      ngram_count = tf.map_fn(lambda in_x: tf.where(tf.reduce_all(tf.equal(in_x, tf.constant(pool[i], dtype=new_x.dtype))), tf.constant([1]), tf.constant([0])), new_x, dtype=tf.int32)
+      # There is a pending issue in running tf.map_fn with strings
+      # on GPU, https://github.com/tensorflow/tensorflow/issues/28007
+      # So this is a temporary solution to ensure tf.map_fn
+      # runs on CPU. Later can be removed once Tensorflow has the
+      # issue resolved.
+      with tf.device("/cpu:0"):
+        ngram_count = tf.map_fn(lambda in_x: tf.where(
+            tf.reduce_all(
+                tf.equal(in_x, tf.constant(pool[i], dtype=new_x.dtype))),
+            tf.constant([1]), tf.constant([0])),
+                                new_x,
+                                dtype=tf.int32)
       ngram_count = tf.math.count_nonzero(ngram_count, dtype=tf.int32)
       ngram_count = tf.reshape(ngram_count, [1])
       tensor_list.append(ngram_count)
@@ -57,7 +68,7 @@ class TfIdfVectorizer(BackendHandler):
     # For 1gram, skip is not in use. Not clearly described in ONNX
     # spec, this code logic is based on observation of ONNX examples,
     # tf_batch_uniandbigrams_skip5 and tf_uniandbigrams_skip5,
-    # where the 1-gram results [0, 3, 0, 0] and [0, 3, 1, 0] 
+    # where the 1-gram results [0, 3, 0, 0] and [0, 3, 1, 0]
     # are not the accumulated counts from multiple skips.
     if n == 1:
       return cls._calc_ngram_skip(x, pool, n)
@@ -65,7 +76,7 @@ class TfIdfVectorizer(BackendHandler):
     # Loop through maximum allowable skip count and sum up the results
     result = tf.zeros([int(len(pool) / n)], dtype=tf.int32)
     max_allowable_skip = np.minimum(max_skip,
-            int((int(x.shape[0]) - 1) / (n - 1) - 1))
+                                    int((int(x.shape[0]) - 1) / (n - 1) - 1))
 
     for skip in range(max_allowable_skip + 1):
       # For each skip calculate the ngram counts

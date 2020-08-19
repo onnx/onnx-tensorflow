@@ -619,6 +619,14 @@ class TestNode(unittest.TestCase):
     output = run_node(node_def, [x])
     np.testing.assert_almost_equal(output["Y"], np.exp(x))
 
+  def test_expand(self):
+    node_def = helper.make_node("Expand", ["X", "shape"], ["Y"])
+    x = [[True], [False], [True]]
+    shape = [2, 1, 6]
+    y = x * np.ones(shape, dtype=np.bool)
+    output = run_node(node_def, [x, shape])
+    np.testing.assert_almost_equal(output["Y"], y)
+
   def test_eye_like(self):
     if legacy_opset_pre_ver(9):
       raise unittest.SkipTest("ONNX version {} doesn't support EyeLike.".format(
