@@ -1,5 +1,5 @@
 # Tensorflow Backend for ONNX
-[![Build Status](https://travis-ci.org/onnx/onnx-tensorflow.svg?branch=master)](https://travis-ci.org/onnx/onnx-tensorflow)
+[![Build Status](https://travis-ci.org/onnx/onnx-tensorflow.svg?branch=tf-1.x)](https://travis-ci.org/onnx/onnx-tensorflow)
 
 ## To convert models from ONNX to Tensorflow:
 
