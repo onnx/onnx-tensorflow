@@ -3,12 +3,12 @@ from onnx_tf.handlers.handler import onnx_op
 from .pool_mixin import PoolMixin
 
 
-@onnx_op("AveragePool")
-class AveragePool(PoolMixin, BackendHandler):
+@onnx_op("LpPool")
+class LpPool(PoolMixin, BackendHandler):
 
   @classmethod
   def _common(cls, node, **kwargs):
-    return cls.pool(node, kwargs["tensor_dict"], "AVG",
+    return cls.pool(node, kwargs["tensor_dict"], "LP",
                     kwargs.get("strict", True))
 
   @classmethod
@@ -16,11 +16,7 @@ class AveragePool(PoolMixin, BackendHandler):
     return cls._common(node, **kwargs)
 
   @classmethod
-  def version_7(cls, node, **kwargs):
-    return cls._common(node, **kwargs)
-
-  @classmethod
-  def version_10(cls, node, **kwargs):
+  def version_2(cls, node, **kwargs):
     return cls._common(node, **kwargs)
 
   @classmethod
