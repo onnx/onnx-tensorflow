@@ -52,6 +52,8 @@ class ConvMixin(BroadcastMixin):
           "passed to this operation, attr {}, actual {}").format(
               kernel_shape,
               in_weights.get_shape().as_list())
+    else:
+      kernel_shape = in_weights.get_shape().as_list()[2:]
 
     weights = tf.transpose(in_weights, perm)
     dilations = node.attrs.get("dilations", [1] * spatial_size)
@@ -114,8 +116,8 @@ class ConvMixin(BroadcastMixin):
         if pad_mode == "NOTSET":
           if output_shape is None:
             conv_output_shape += [
-                strides[i] * x_spatial_shape[i] +
-                max(weights_shape[i] - strides[i], 0)
+                strides[i] * x_spatial_shape[i] - strides[i] +
+                (kernel_shape[i] - 1) * dilations[i] + 1
                 for i in list(range(spatial_size))
             ]
           else:

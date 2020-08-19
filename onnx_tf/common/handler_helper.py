@@ -4,6 +4,7 @@ import onnx_tf.common as common
 from onnx_tf.handlers.backend import *  # noqa
 from onnx_tf.handlers.backend_handler import BackendHandler
 
+import onnx_tf.common as common
 
 def get_all_backend_handlers(opset_dict):
   """ Get a dict of all backend handler classes.

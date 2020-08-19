@@ -47,9 +47,7 @@ Because users often have their own preferences for which variant of Tensorflow t
 [ONNX-Tensorflow API](https://github.com/onnx/onnx-tensorflow/blob/tf-1.x/doc/API.md)
 
 ### Installation:
-- Run `git clone https://github.com/onnx/onnx.git && cd onnx`.
-- Run `git submodule update --init --recursive`.
-- Run `pip install -e .`.
+- Install ONNX master branch from source.
 - Install Tensorflow 1.15.0. (For Tensorflow 2.0 support please refer [here](https://github.com/onnx/onnx-tensorflow/blob/master/README.md/).)
 - Run `git clone git@github.com:onnx/onnx-tensorflow.git && cd onnx-tensorflow`.
 - Run `pip install -e .`.

@@ -61,6 +61,7 @@ class TensorflowBackend(Backend):
     """
     super(TensorflowBackend, cls).prepare(model, device, **kwargs)
     common.logger.setLevel(logging_level)
+    common.logger.handlers[0].setLevel(logging_level)
 
     return cls.onnx_model_to_tensorflow_rep(model, strict)
 
@@ -209,11 +210,21 @@ class TensorflowBackend(Backend):
       # Use the onnx.numpy_helper because the data may be raw
       return numpy_helper.to_array(onnx_tensor).flatten().tolist()
 
+    def validate_initializer_name(name):
+      # Prepend a unique suffix if leading charater is "_"
+      name = get_unique_suffix() + name if name[0] is "_" else name
+
+      # Replace ":" with "_tf_" and append a unique suffix for
+      # traceability
+      return name.replace(
+          ":", "_tf_") + "_" + get_unique_suffix() if ":" in name else name
+
     return [(init.name,
              tf.constant(tensor2list(init),
                          shape=init.dims,
                          dtype=data_type.onnx2tf(init.data_type),
-                         name=init.name)) for init in initializer]
+                         name=validate_initializer_name(init.name)))
+            for init in initializer]
 
   @classmethod
   def _onnx_node_to_tensorflow_op(cls,
@@ -299,7 +310,8 @@ class TensorflowBackend(Backend):
         nodes_outputs.append(o_name)
     for node in subgraph.node:
       for i_name in node.input:
-        if i_name not in nodes_outputs and i_name not in subgraph_tensor_dict.keys():
+        if i_name not in nodes_outputs and i_name not in subgraph_tensor_dict.keys(
+        ):
           subgraph_tensor_dict[i_name] = tensor_dict[i_name]
       onnx_node = OnnxNode(node)
       output_ops = cls._onnx_node_to_tensorflow_op(onnx_node,

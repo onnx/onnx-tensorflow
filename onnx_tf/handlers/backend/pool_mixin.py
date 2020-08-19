@@ -3,7 +3,8 @@ import tensorflow as tf
 from onnx_tf.common import exception
 from onnx_tf.common import get_data_format
 from onnx_tf.common import get_perm_from_formats
-from onnx_tf.common import logger 
+
+from onnx_tf.common import logger
 from .dilated_pooling import DilatedPooling
 from onnx_tf.common.pooling_helper import py_pool
 from onnx_tf.common.pooling_helper import calc_pads_same
@@ -79,8 +80,9 @@ class PoolMixin(object):
         p=p)
     if not dp.is_supported():
       if strict:
-        logger.warning("Using the pooling op in compatibility mode."
-                       "This means your graph cannot be serialized.")
+        logger.warning(
+            "Using the pooling op in compatibility mode. "
+            "This means your graph cannot be serialized.", UserWarning)
 
         result = tf.py_func(py_pool, [
                 orig_x, kernel_shape, strides, dilations, pads, ceil_mode,
