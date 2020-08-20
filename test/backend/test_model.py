@@ -183,6 +183,42 @@ class TestModel(unittest.TestCase):
     output = tf_rep.run({"X": X})
     np.testing.assert_almost_equal(output.X1, Y_ref)
 
+  def test_argmax_node_bfloat(self):
+    X = np.random.randn(2, 8).astype(np.float32)
+    Y_ref = np.argmax(X, axis=0)
+
+    graph_def = helper.make_graph(
+        [
+            helper.make_node("Cast", ["X0"], ["X1"], to=TensorProto.BFLOAT16),
+            helper.make_node("ArgMax", ["X1"], ["X2"], axis=0, keepdims=0)
+        ],
+        name="test",
+        inputs=[helper.make_tensor_value_info("X0", TensorProto.FLOAT, [2, 8])],
+        outputs=[
+            helper.make_tensor_value_info("X2", TensorProto.BFLOAT16, [2, 8])
+        ])
+    tf_rep = prepare(helper.make_model(graph_def))
+    output = tf_rep.run({"X0": X})
+    np.testing.assert_almost_equal(output.X2, Y_ref)
+
+  def test_argmin_node_bfloat(self):
+    X = np.random.randn(2, 8).astype(np.float32)
+    Y_ref = np.argmin(X, axis=0)
+
+    graph_def = helper.make_graph(
+        [
+            helper.make_node("Cast", ["X0"], ["X1"], to=TensorProto.BFLOAT16),
+            helper.make_node("ArgMin", ["X1"], ["X2"], axis=0, keepdims=0)
+        ],
+        name="test",
+        inputs=[helper.make_tensor_value_info("X0", TensorProto.FLOAT, [2, 8])],
+        outputs=[
+            helper.make_tensor_value_info("X2", TensorProto.BFLOAT16, [2, 8])
+        ])
+    tf_rep = prepare(helper.make_model(graph_def))
+    output = tf_rep.run({"X0": X})
+    np.testing.assert_almost_equal(output.X2, Y_ref)
+
   def test_initializer(self):
     if legacy_onnx_pre_ver(1, 2):
       raise unittest.SkipTest(
@@ -220,6 +256,26 @@ class TestModel(unittest.TestCase):
     tf_rep = prepare(helper.make_model(graph_def))
     output = tf_rep.run({"X": X, "Y": Y})
     np.testing.assert_almost_equal(output["W2"], W_ref)
+
+  def test_pow_bfloat16(self):
+    X1 = np.array([1, 2, 3]).astype(np.float32)
+    X2 = np.array([2, 3, 4]).astype(np.float32)
+    Y_ref = np.power(X1, X2).astype(X1.dtype)
+
+    graph_def = helper.make_graph(
+        [
+            helper.make_node("Cast", ["X1"], ["C1"], to=TensorProto.BFLOAT16),
+            helper.make_node("Pow", ["C1", "X2"], ["Y"])
+        ],
+        name="test",
+        inputs=[helper.make_tensor_value_info("X1", TensorProto.FLOAT, [3]),
+            helper.make_tensor_value_info("X2", TensorProto.FLOAT, [3])],
+        outputs=[
+            helper.make_tensor_value_info("Y", TensorProto.BFLOAT16, [3])
+        ])
+    tf_rep = prepare(helper.make_model(graph_def))
+    output = tf_rep.run({"X1": X1, "X2": X2})
+    np.testing.assert_almost_equal(output.Y, Y_ref)
 
 if __name__ == '__main__':
   unittest.main()

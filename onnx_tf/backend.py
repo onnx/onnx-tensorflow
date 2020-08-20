@@ -17,12 +17,12 @@ from onnx import numpy_helper
 from onnx.backend.base import Backend
 from onnx.backend.base import Device
 from onnx.backend.base import namedtupledict
+from onnx.backend.test.runner import BackendIsNotSupposedToImplementIt
 from onnx.helper import make_opsetid
 import tensorflow as tf
 
 from onnx_tf.backend_rep import TensorflowRep
 from onnx_tf.common import data_type
-from onnx_tf.common import exception
 from onnx_tf.common import get_device_option
 from onnx_tf.common import get_unique_suffix
 from onnx_tf.common import supports_device as common_supports_device
@@ -232,11 +232,12 @@ class TensorflowBackend(Backend):
       Tensorflow op
     """
     handlers = handlers or cls._get_handlers(opset)
-    handler = handlers[node.domain].get(node.op_type, None)
-    if handler:
-      return handler.handle(node, tensor_dict=tensor_dict, strict=strict)
-    else:
-      exception.OP_UNIMPLEMENTED_EXCEPT(node.op_type)
+    if handlers:
+      handler = handlers[node.domain].get(node.op_type, None) if node.domain in handlers else None
+      if handler:
+        return handler.handle(node, tensor_dict=tensor_dict, strict=strict)
+
+    raise BackendIsNotSupposedToImplementIt("{} is not implemented.".format(node.op_type))
 
   @classmethod
   def _get_handlers(cls, opset):
