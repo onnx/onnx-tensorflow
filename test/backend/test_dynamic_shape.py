@@ -3,15 +3,17 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-import numpy as np
 import unittest
+
+from onnx import defs
+from onnx import helper
+from onnx import TensorProto
+import numpy as np
+import tensorflow as tf
 
 from onnx_tf.backend import onnx_graph_to_tensorflow_rep
 from onnx_tf.common.legacy import legacy_opset_pre_ver
 from onnx_tf.common.pooling_helper import py_pool
-from onnx import defs
-from onnx import helper
-from onnx import TensorProto
 
 
 class TestDynamicShape(unittest.TestCase):

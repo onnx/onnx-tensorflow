@@ -6,16 +6,18 @@ from __future__ import unicode_literals
 import sys
 import math
 import unittest
+
+from onnx import helper
+from onnx import TensorProto
+from onnx import defs
 import numpy as np
 import tensorflow as tf
+
 from onnx_tf.backend import onnx_graph_to_tensorflow_rep
 from onnx_tf.backend import run_node
 from onnx_tf.common import supports_device
 from onnx_tf.common.legacy import legacy_onnx_pre_ver, legacy_opset_pre_ver
 from onnx_tf.common.pooling_helper import py_pool
-from onnx import helper
-from onnx import TensorProto
-from onnx import defs
 
 
 class TestNode(unittest.TestCase):
