@@ -1002,6 +1002,10 @@ class TestNode(unittest.TestCase):
     np.testing.assert_equal(output['result'], expected)
 
   def test_image_scaler(self):
+    if not legacy_opset_pre_ver(9):
+      raise unittest.SkipTest(
+          "ONNX version {} doesn't support ImageScaler.".format(
+              defs.onnx_opset_version()))
     # Input:  (N x C x H x W), where N is the batch size,
     # C is the number of channels, and H and W are the height
     # and the width of the data
