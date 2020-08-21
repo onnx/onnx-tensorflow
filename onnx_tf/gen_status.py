@@ -98,7 +98,7 @@ def gen_support_status(docs_dir, onnx_version, onnx_tf_release_build):
       status_file.write(
           '|ONNX Version|Master ( commit id: {} )|\n'.format(onnx_commit_id))
     else:
-      status_file.write('|ONNX Version|{}|\n'.format(onnx_version))
+      status_file.write('|ONNX Version|v{}|\n'.format(onnx_version))
 
     # get tf_version
     status_file.write('|Tensorflow Version|v{}|\n\n'.format(tf.__version__))
@@ -125,8 +125,12 @@ def gen_support_status(docs_dir, onnx_version, onnx_tf_release_build):
     for schema in onnx.defs.get_all_schemas_with_history():
       if schema.domain == '':  # only get onnx ops
         op = onnx_ops[schema.name]
-        versions = op['versions']
-        versions.append(schema.since_version)
+        if schema.deprecated:
+          if schema.since_version <= op['deprecated']:
+            op['versions'].append(schema.since_version)
+            op['deprecated'] = schema.since_version
+        else:
+          op['versions'].append(schema.since_version)
 
     # get all onnx-tf supported ops
     onnx_tf_ops = opset_version.backend_opset_version
@@ -136,15 +140,16 @@ def gen_support_status(docs_dir, onnx_version, onnx_tf_release_build):
     current_opset = onnx.defs.onnx_opset_version()
 
     # setup table header
-    status_file.write('||')
+    status_file.write('|||')
     for i in range(current_opset):
       status_file.write('|')
-    status_file.write('\n|:-:|')
+    status_file.write('\n|:-:|:-:|')
     for i in range(current_opset):
       status_file.write(':-:|')
     status_file.write('\n|**ONNX Operator**|')
     for opset in range(1, current_opset + 1):
       status_file.write('**Opset {}**|'.format(opset))
+    status_file.write('**ONNX Operator**|')
 
     ops_count = len(onnx_ops)
     # fill in data for the table
@@ -163,7 +168,7 @@ def gen_support_status(docs_dir, onnx_version, onnx_tf_release_build):
                 status_file.write('-')
             elif opset == lb:
               status_file.write('**{}**'.format(lb))
-              if lb == deprecated:
+              if lb >= deprecated and deprecated > 0:
                 status_file.write('\*')
               elif lb not in onnx_tf_ops[key]:
                 status_file.write(':small_red_triangle:')
@@ -174,7 +179,7 @@ def gen_support_status(docs_dir, onnx_version, onnx_tf_release_build):
             else:  # opset > lb
               if opset < ub:
                 status_file.write('{}'.format(lb))
-                if lb == deprecated:
+                if lb >= deprecated and deprecated > 0:
                   status_file.write('\*')
                 elif lb not in onnx_tf_ops[key]:
                   status_file.write(':small_red_triangle:')
@@ -184,7 +189,7 @@ def gen_support_status(docs_dir, onnx_version, onnx_tf_release_build):
                   status_file.write(':small_orange_diamond:')
               elif opset == ub:
                 status_file.write('**{}**'.format(ub))
-                if ub == deprecated:
+                if ub >= deprecated and deprecated > 0:
                   status_file.write('\*')
                 elif ub not in onnx_tf_ops[key]:
                   status_file.write(':small_red_triangle:')
@@ -195,7 +200,7 @@ def gen_support_status(docs_dir, onnx_version, onnx_tf_release_build):
                 i += 1
               else:  #opset > ub
                 status_file.write('{}'.format(ub))
-                if ub == deprecated:
+                if ub >= deprecated and deprecated > 0:
                   status_file.write('\*')
                 elif ub not in onnx_tf_ops[key]:
                   status_file.write(':small_red_triangle:')
@@ -204,6 +209,7 @@ def gen_support_status(docs_dir, onnx_version, onnx_tf_release_build):
                 elif key in onnx_tf_ops_ps:
                   status_file.write(':small_orange_diamond:')
             status_file.write('|')
+        status_file.write('{}|'.format(key))
       except:
         # ops defined in onnx but not in opset_version.backend_opset_versionn
         status_file.write(':small_red_triangle:|')
