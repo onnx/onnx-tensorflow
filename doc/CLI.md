@@ -28,6 +28,7 @@ More information: `onnx-tf convert -h`
 ```
 usage: onnx-tf [-h] --infile INFILE --outfile OUTFILE [--device DEVICE]
                [--strict STRICT] [--logging_level LOGGING_LEVEL]
+               [--auto_cast AUTO_CAST]
 
 This is the converter for converting protocol buffer between tf and onnx.
 
@@ -51,4 +52,9 @@ backend arguments (onnx -> tf):
                         The logging level, default is INFO. Change it to DEBUG
                         to see more conversion details or to WARNING to see
                         less (from onnx_tf.backend.prepare)
+  --auto_cast AUTO_CAST
+                        Whether to auto cast data types that might lose
+                        precision for the tensors with types not natively
+                        supported by Tensorflow, default is False (from
+                        onnx_tf.backend.prepare)
 ```
