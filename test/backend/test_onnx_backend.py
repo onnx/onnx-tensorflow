@@ -58,10 +58,6 @@ backend_test.exclude(r'[a-z,_]*PReLU_[0-9]d_multiparam[a-z,_]*')
 backend_test.exclude(r'test_mod_[a-z,_]*uint[0-9]+')
 backend_test.exclude(r'test_mod_[a-z,_]*int(8|(16))+')
 
-# TF only support uint8, int32, int64 for indices and int32 for depth in
-# tf.one_hot
-backend_test.exclude(r'test_onehot_[a-z,_]*')
-
 # TF doesn't support most of the attributes in resize op
 # test_node.py will cover the test
 backend_test.exclude(r'test_resize_[a-z,_]*')
@@ -115,6 +111,9 @@ backend_test.exclude(r'test_gru_seq_length_[a-z,_]*')
 
 # TF pow does not support uint64 when auto-cast is False (default)
 backend_test.exclude(r'test_pow_types_float[0-9]+_uint64+_[a-z,_]*')
+
+# TF session run does not support sequence/RaggedTensor as model inputs
+backend_test.exclude(r'test_sequence_insert+_[a-z,_]*')
 
 # import all test cases at global scope to make them visible to python.unittest
 globals().update(backend_test.enable_report().test_cases)
