@@ -107,7 +107,8 @@ def parse_args(args):
                      [(backend.prepare, {
                          "device": {},
                          "strict": {},
-                         "logging_level": {}
+                         "logging_level": {},
+                         "auto_cast": {}
                      })])
 
   return parser.parse_args(args)
