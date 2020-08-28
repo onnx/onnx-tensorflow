@@ -109,12 +109,11 @@ backend_test.exclude(r'test_sequence_model5_[a-z,_]*')
 # Fails rounding tolerance
 backend_test.exclude(r'test_gru_seq_length_[a-z,_]*')
 
-# TF pow does not support mixing float/int types
-backend_test.exclude(r'test_pow_types_float[0-9]+_[u]?int[0-9]+_[a-z,_]*')
-backend_test.exclude(r'test_pow_types_[u]?int[0-9]+_float[0-9]+_[a-z,_]*')
-# not sure where these are defined...
-backend_test.exclude(r'test_pow_types_int_[a-z,_]*')
-backend_test.exclude(r'test_pow_types_float_[a-z,_]*')
+# TF pow does not support uint64 when auto-cast is False (default)
+backend_test.exclude(r'test_pow_types_float[0-9]+_uint64+_[a-z,_]*')
+
+# TF session run does not support sequence/RaggedTensor as model inputs
+backend_test.exclude(r'test_sequence_insert+_[a-z,_]*')
 
 # import all test cases at global scope to make them visible to python.unittest
 globals().update(backend_test.enable_report().test_cases)
