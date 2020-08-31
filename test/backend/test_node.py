@@ -937,11 +937,35 @@ class TestNode(unittest.TestCase):
 
     # indices out of bounds
     indices = np.array([[5, 0], [-1, -3]], dtype=np.int64)
-    with np.testing.assert_raises(tf.errors.InvalidArgumentError):
-      output = run_node(node_def, [data, indices])
+    self.assertRaises(tf.errors.InvalidArgumentError, run_node, node_def,
+                      [data, indices])
     indices = np.array([[1, 1, 6], [-2, -1, -9]], dtype=np.int32)
-    with np.testing.assert_raises(tf.errors.InvalidArgumentError):
+    self.assertRaises(tf.errors.InvalidArgumentError, run_node, node_def,
+                      [data, indices])
+
+    if not legacy_opset_pre_ver(12):
+      # set batch_dims
+      data = np.reshape(np.arange(0, 120, dtype=np.float64), [2, 3, 4, 5])
+      indices = np.array(
+          [[[1, 2], [0, 1], [-1, 4]], [[-3, -4], [0, -2], [2, 3]]],
+          dtype=np.int64)
+      ref_output = np.array([[7, 21, 59], [66, 83, 113]], dtype=np.float64)
+      node_def = helper.make_node("GatherND", ["data", "indices"], ["outputs"],
+                                  batch_dims=2)
       output = run_node(node_def, [data, indices])
+      np.testing.assert_almost_equal(output["outputs"], ref_output)
+
+      # indices out of bounds
+      indices = np.array(
+          [[[4, 1], [0, 1], [-1, 4]], [[-3, -4], [0, -2], [2, 3]]],
+          dtype=np.int64)
+      self.assertRaises(tf.errors.InvalidArgumentError, run_node, node_def,
+                        [data, indices])
+      indices = np.array(
+          [[[3, 5], [0, 1], [-1, 4]], [[-3, -4], [0, -2], [2, 3]]],
+          dtype=np.int64)
+      self.assertRaises(tf.errors.InvalidArgumentError, run_node, node_def,
+                        [data, indices])
 
   def test_gemm(self):
     # Compute Y = alpha * A * B + beta * C
