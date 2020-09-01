@@ -31,10 +31,7 @@ def parse_args(args):
           ")", "]") else values[1:-1]
       res = []
       for value in values.split(","):
-        if value.isdigit():
-          res.append(int(value))
-        else:
-          res.append(value)
+        res.append(int(value) if value.isdigit() else value)
       setattr(namespace, self.dest, res)
 
   class OpsetAction(argparse.Action):
