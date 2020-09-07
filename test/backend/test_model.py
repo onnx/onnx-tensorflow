@@ -4,7 +4,9 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import unittest
+import shutil
 
+import tensorflow as tf
 import numpy as np
 import onnx
 from onnx_tf.backend import prepare
@@ -182,6 +184,48 @@ class TestModel(unittest.TestCase):
     tf_rep = prepare(helper.make_model(graph_def))
     output = tf_rep.run({"X": X})
     np.testing.assert_almost_equal(output.X1, Y_ref)
+
+  def test_add_module(self):
+    node_def = helper.make_node("Add", ["a", "b"], ["Y"])
+    graph_def = helper.make_graph(
+        [node_def],
+        name="test",
+        inputs=[helper.make_tensor_value_info("a", TensorProto.FLOAT, [None, None]),
+            helper.make_tensor_value_info("b", TensorProto.FLOAT, [None, None])],
+        outputs=[
+            helper.make_tensor_value_info("Y", TensorProto.FLOAT, [None, None])
+        ])
+    tf_rep = prepare(helper.make_model(graph_def))
+
+    model_path = "add_savedmodel"
+    tf_rep.export_graph(model_path)
+
+    # loead the model from disk
+    m = tf.saved_model.load(model_path)
+
+    # first input with shape [3, 2]
+    a = np.random.randn(3, 2).astype(np.float32)
+    b = np.random.randn(3, 2).astype(np.float32)
+    Y_ref = np.add(a, b)
+
+    # check the output from converter API
+    output = tf_rep.run({"a": a, "b": b})
+    np.testing.assert_almost_equal(output.Y, Y_ref)
+
+    # check the output from using saved model
+    tf_output=m(a=a, b=b)
+    np.testing.assert_almost_equal(tf_output[0], Y_ref)
+
+    # change input shape to [2, 2]
+    a = np.random.randn(2, 2).astype(np.float32)
+    b = np.random.randn(2, 2).astype(np.float32)
+    Y_ref = np.add(a, b)
+
+    tf_output=m(a=a, b=b)
+    np.testing.assert_almost_equal(tf_output[0], Y_ref)
+
+    # clean up saved model folder
+    shutil.rmtree(model_path)
 
   def test_argmax_node_bfloat(self):
     X = np.random.randn(2, 8).astype(np.float32)

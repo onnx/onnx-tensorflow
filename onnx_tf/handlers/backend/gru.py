@@ -141,17 +141,13 @@ class GRU(RNNMixin, BackendHandler):
                                    activation_beta[3]))
 
     # TODO(fumihwh): check if reverse and bidirectional works
-    if cls.scope is None:
-      with tf.compat.v1.variable_scope(
-          "GRU_" + get_unique_suffix(),
-          custom_getter=partial(
-              cls._custom_getter,
-              node=node,
-              tensor_dict=tensor_dict,
-              is_bidirectional=num_directions == 2)) as cls.scope:
-        pass
-
-    with tf.compat.v1.variable_scope(cls.scope):
+    with tf.compat.v1.variable_scope(
+        "GRU_" + get_unique_suffix(),
+        custom_getter=partial(
+            cls._custom_getter,
+            node=node,
+            tensor_dict=tensor_dict,
+            is_bidirectional=num_directions == 2), reuse=False):
       cell_kwargs["num_units"] = hidden_size
       if input_size < 4 or node.inputs[3] not in tensor_dict:
         cell_kwargs["bias_initializer"] = tf.zeros_initializer

@@ -10,6 +10,7 @@ class BackendTFModule(tf.Module):
     self.strict = strict
     self.graph_def = graph_def
     self.backend = backend
+    self.outputs = []
 
   @tf.function
   def __call__(self, **kwargs):
