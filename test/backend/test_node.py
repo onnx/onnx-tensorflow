@@ -1250,6 +1250,14 @@ class TestNode(unittest.TestCase):
         test_output[i1][i2][0][0] = max
     np.testing.assert_almost_equal(output["Y"], test_output)
 
+  def test_greater(self):
+      node_def = helper.make_node("Greater", ["X", "Y"], ["Z"])
+      x = self._get_rnd_float32(shape=[5, 3, 3, 2])
+      y = self._get_rnd_float32(shape=[3, 3, 1])
+      output = run_node(node_def, [x, y])
+      np.testing.assert_equal(output["Z"], np.greater(x, np.reshape(y,
+                                                                 [1, 3, 3, 1])))
+
   def test_less(self):
     node_def = helper.make_node("Less", ["X", "Y"], ["Z"])
     x = self._get_rnd_float32(shape=[5, 3, 3, 2])

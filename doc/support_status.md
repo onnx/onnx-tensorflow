@@ -1,7 +1,7 @@
 # ONNX-Tensorflow Support Status
 |||
 |-:|:-|
-|ONNX-Tensorflow Version|Master ( commit id: 6bfd631e0daedbc773b76636a5ea19e77a4b63ed )|
+|ONNX-Tensorflow Version|Master ( commit id: 6f5c155247e28ae0ceb2ce2615ce1483ffa27c43 )|
 |ONNX Version|Master ( commit id: b2ed660d0a065b8346816f2c3a95d79ca79b88c9 )|
 |Tensorflow Version|v2.3.0|
 
@@ -72,11 +72,11 @@ Notes:
 |GreaterOrEqual|-|-|-|-|-|-|-|-|-|-|-|**12**|12|GreaterOrEqual|
 |HardSigmoid|**1**|1|1|1|1|**6**|6|6|6|6|6|6|6|HardSigmoid|
 |Hardmax|**1**|1|1|1|1|1|1|1|1|1|**11**|11|**13**:small_red_triangle:|Hardmax|
-|Identity|**1**|1|1|1|1|1|1|1|1|1|1|1|**13**:small_red_triangle:|Identity|
+|Identity|**1**|1|1|1|1|1|1|1|1|1|1|1|**13**|Identity|
 |If|**1**|1|1|1|1|1|1|1|1|1|**11**|11|**13**|If|
 |InstanceNormalization|**1**|1|1|1|1|**6**|6|6|6|6|6|6|6|InstanceNormalization|
 |IsInf|-|-|-|-|-|-|-|-|-|**10**|10|10|10|IsInf|
-|IsNaN|-|-|-|-|-|-|-|-|**9**|9|9|9|**13**:small_red_triangle:|IsNaN|
+|IsNaN|-|-|-|-|-|-|-|-|**9**|9|9|9|**13**|IsNaN|
 |LRN|**1**|1|1|1|1|1|1|1|1|1|1|1|**13**|LRN|
 |LSTM|**1**:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|**7**:small_orange_diamond:|7:small_orange_diamond:|7:small_orange_diamond:|7:small_orange_diamond:|7:small_orange_diamond:|7:small_orange_diamond:|7:small_orange_diamond:|LSTM|
 |LeakyRelu|**1**|1|1|1|1|**6**|6|6|6|6|6|6|6|LeakyRelu|
@@ -179,7 +179,7 @@ Notes:
 |Where|-|-|-|-|-|-|-|-|**9**|9|9|9|9|Where|
 |Xor|**1**|1|1|1|1|1|**7**|7|7|7|7|7|7|Xor|
 
-ONNX-TF Supported Operators / ONNX Operators: 105 / 162
+ONNX-TF Supported Operators / ONNX Operators: 113 / 162
 
 Notes:
 1. Cast: Cast string to data types other than float32/float64/int32/int64 is not supported in Tensorflow
