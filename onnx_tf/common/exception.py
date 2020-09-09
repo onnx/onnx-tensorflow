@@ -66,7 +66,22 @@ class ConstNotFoundException(CustomException):
     return self._message.format(name, op)
 
 
+class DtypeNotCastException(object):
+
+  def __init__(self):
+    super(DtypeNotCastException, self).__init__()
+    self._func = RuntimeError
+    self._message = "{} is not supported in Tensorflow. Please set auto_cast to True or change data type to one of the supported types in {}."
+
+  def __call__(self, op, supported_dtypes):
+    raise self._func(self.get_message(op, supported_dtypes))
+
+  def get_message(self, op, supported_dtypes):
+    return self._message.format(op, supported_dtypes)
+
+
 IGNORE_UNIMPLEMENTED = False
 OP_UNIMPLEMENTED_EXCEPT = OpUnimplementedException()
 OP_UNSUPPORTED_EXCEPT = OpUnsupportedException()
 CONST_NOT_FOUND_EXCEPT = ConstNotFoundException()
+DTYPE_NOT_CAST_EXCEPT = DtypeNotCastException()

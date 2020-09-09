@@ -42,6 +42,7 @@ class TensorflowBackend(Backend):
               device='CPU',
               strict=True,
               logging_level='INFO',
+              auto_cast=False,
               **kwargs):
     """Prepare an ONNX model for Tensorflow Backend.
 
@@ -57,12 +58,15 @@ class TensorflowBackend(Backend):
       Currently, the strict flag only affects the behavior of MaxPool and AveragePool ops.
     :param logging_level: The logging level, default is INFO. Change it to DEBUG
       to see more conversion details or to WARNING to see less
+    :param auto_cast: Whether to auto cast data types that might lose precision for the tensors
+      with types not natively supported by Tensorflow, default is False
 
     :returns: A TensorflowRep class object representing the ONNX model
     """
     super(TensorflowBackend, cls).prepare(model, device, **kwargs)
     common.logger.setLevel(logging_level)
     common.logger.handlers[0].setLevel(logging_level)
+    common.sys_config.auto_cast=auto_cast
 
     return cls.onnx_model_to_tensorflow_rep(model, strict)
 
