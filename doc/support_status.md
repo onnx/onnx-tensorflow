@@ -49,7 +49,7 @@ Notes:
 |DequantizeLinear|-|-|-|-|-|-|-|-|-|**10**|10|10|**13**:small_red_triangle:|DequantizeLinear|
 |Det|-|-|-|-|-|-|-|-|-|-|**11**|11|11|Det|
 |Div|**1**|1|1|1|1|**6**|**7**|7|7|7|7|7|**13**:small_red_triangle:|Div|
-|Dropout|**1**|1|1|1|1|**6**|**7**|7|7|**10**|10|**12**:small_red_triangle:|**13**:small_red_triangle:|Dropout|
+|Dropout|**1**|1|1|1|1|**6**|**7**|7|7|**10**|10|**12**|**13**|Dropout|
 |DynamicQuantizeLinear|-|-|-|-|-|-|-|-|-|-|**11**|11|11|DynamicQuantizeLinear|
 |Einsum|-|-|-|-|-|-|-|-|-|-|-|**12**:small_red_triangle:|12:small_red_triangle:|Einsum|
 |Elu|**1**|1|1|1|1|**6**|6|6|6|6|6|6|6|Elu|
