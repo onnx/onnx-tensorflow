@@ -21,7 +21,7 @@ class Pad(BackendHandler):
       r = tf.reduce_all(p)
       return r
 
-    def process_neg_pads(x, paddings):
+    def process_neg_pads(x, paddings, constant_values):
       # Process negative paddings differently since tf.pad
       # doesn't support negative paddings
       # The ONNX logic is similar to tf.slice. So we just
@@ -35,7 +35,7 @@ class Pad(BackendHandler):
       result=tf.slice(x, begins, sizes)
       return [result]
 
-    def process_pos_pads(x, paddings):
+    def process_pos_pads(x, paddings, constant_values):
 
       def _symmetric_pad(i, x):
         paddings_i = tf.map_fn(lambda e: tf.where(i < e, 1, 0), paddings)
@@ -74,8 +74,8 @@ class Pad(BackendHandler):
           node.inputs) == 3 else 0
 
     cond = tf.cond(check_positive(paddings),
-                   lambda: process_pos_pads(x, paddings),
-                   lambda: process_neg_pads(x, paddings))
+                   lambda: process_pos_pads(x, paddings, constant_values),
+                   lambda: process_neg_pads(x, paddings, constant_values))
     return cond
 
   @classmethod

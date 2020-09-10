@@ -1021,7 +1021,7 @@ class TestNode(unittest.TestCase):
 
     for cond, exp in [[True, true_val], [False, false_val]]:
       output = run_node(node_def, [cond])
-      np.testing.assert_equal(output['outputs'], exp.int64_data)
+      np.testing.assert_almost_equal(output['outputs'], exp.int64_data)
 
     x = self._get_rnd_int(low=-50, high=50, dtype=np.int64)
     y = self._get_rnd_int(low=-50, high=50, dtype=np.int64)
@@ -1081,7 +1081,7 @@ class TestNode(unittest.TestCase):
     tf_rep = onnx_graph_to_tensorflow_rep(graph)
     output = tf_rep.run({})
     expected = [x + y, (x + y) * z] if x < y else [x - y, (x - y) * z]
-    np.testing.assert_equal(output['result'], expected)
+    np.testing.assert_almost_equal(output['result'], expected)
 
   def test_image_scaler(self):
     if not legacy_opset_pre_ver(9):

@@ -51,7 +51,7 @@ class TestDynamicShape(unittest.TestCase):
         outputs=[
             helper.make_tensor_value_info("Y", TensorProto.FLOAT, [None, None])
         ])
-    x = np.array([[ 1, 2, 3, 5, 3, 4, 5, 1 ], [ 2, 9, 3, 5, 9, 4, 5, 1 ]])
+    x = np.array([[ 1, 2, 3, 5, 3, 4, 5, 1 ], [ 2, 9, 3, 5, 9, 4, 5, 1 ]]).astype(np.float32)
     tf_rep = onnx_graph_to_tensorflow_rep(graph_def)
     output = tf_rep.run({"X": x})
     expected_output = np.argmax(np.flip(x, axis), axis=axis)
@@ -79,7 +79,7 @@ class TestDynamicShape(unittest.TestCase):
         outputs=[
             helper.make_tensor_value_info("Y", TensorProto.FLOAT, [None, None])
         ])
-    x = np.array([[ 1, 2, 3, 5, 3, 4, 5, 1 ], [ 2, 7, 3, 5, 2, 4, 5, 6 ]])
+    x = np.array([[ 1, 2, 3, 5, 3, 4, 5, 1 ], [ 2, 7, 3, 5, 2, 4, 5, 6 ]]).astype(np.float32)
     tf_rep = onnx_graph_to_tensorflow_rep(graph_def)
     output = tf_rep.run({"X": x})
     expected_output = np.argmin(np.flip(x, axis), axis=axis)
@@ -152,7 +152,7 @@ class TestDynamicShape(unittest.TestCase):
                                           [None, None, None])
         ])
     x = self._get_rnd_float32(shape=[5, 5, 5])
-    cond = np.array([1, 0, 1])
+    cond = np.array([1, 0, 1]).astype(np.bool)
     tf_rep = onnx_graph_to_tensorflow_rep(graph_def)
     output = tf_rep.run({"X": x, "condition": cond})
     np.testing.assert_almost_equal(output['Y'], np.compress(cond, x, axis=axis))

@@ -75,7 +75,11 @@ class GRU(RNNMixin, BackendHandler):
       elif names[-2] == "candidate":
         new_w = tf.transpose(w_h)
         new_r = tf.transpose(r_h)
-      kernel = tf.concat([new_w, new_r], 0)
+      else:
+        new_w = None
+        new_r = None
+      kernel = tf.Variable(tf.concat([new_w, new_r], 0))
+
       return kernel
     if names[-1] == "bias":
       if len(node.inputs) >= 4:
@@ -93,10 +97,10 @@ class GRU(RNNMixin, BackendHandler):
         elif names[-2] == "candidate":
           w_b = tf.transpose(w_b_h)
           r_b = tf.transpose(r_b_h)
-        return tf.add(w_b, r_b)
-      return getter(name, *args, **kwargs)
+        return tf.Variable(tf.add(w_b, r_b))
     return getter(name, *args, **kwargs)
 
+  scope = None
   @classmethod
   def _common(cls, node, **kwargs):
     tensor_dict = kwargs["tensor_dict"]
@@ -143,8 +147,7 @@ class GRU(RNNMixin, BackendHandler):
             cls._custom_getter,
             node=node,
             tensor_dict=tensor_dict,
-            is_bidirectional=num_directions == 2)):
-
+            is_bidirectional=num_directions == 2), reuse=False):
       cell_kwargs["num_units"] = hidden_size
       if input_size < 4 or node.inputs[3] not in tensor_dict:
         cell_kwargs["bias_initializer"] = tf.zeros_initializer
