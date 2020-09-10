@@ -115,6 +115,13 @@ backend_test.exclude(r'test_pow_types_float[0-9]+_uint64+_[a-z,_]*')
 # TF session run does not support sequence/RaggedTensor as model inputs
 backend_test.exclude(r'test_sequence_insert+_[a-z,_]*')
 
+# Exclude tests for Dropout training that have randomness dependent on
+# the different implementations
+backend_test.exclude('test_training_dropout_default_cpu')
+backend_test.exclude('test_training_dropout_cpu')
+backend_test.exclude('test_training_dropout_default_mask_cpu')
+backend_test.exclude('test_training_dropout_mask_cpu')
+
 # import all test cases at global scope to make them visible to python.unittest
 globals().update(backend_test.enable_report().test_cases)
 
