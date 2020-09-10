@@ -15,7 +15,6 @@ except ImportError:  # will be 3.x series
 from onnx import defs
 from onnx import numpy_helper
 from onnx.backend.base import Backend
-from onnx.backend.base import Device
 from onnx.backend.base import namedtupledict
 from onnx.backend.test.runner import BackendIsNotSupposedToImplementIt
 from onnx.helper import make_opsetid
