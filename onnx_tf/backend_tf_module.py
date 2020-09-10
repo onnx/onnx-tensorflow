@@ -19,14 +19,11 @@ class BackendTFModule(tf.Module):
     if self.graph_def.initializer:
       input_dict_items = self.backend._onnx_initializer_to_input_dict_items(
           self.graph_def.initializer)
-      initialized = {init.name for init in self.graph_def.initializer}
     else:
       input_dict_items = []
-      initialized = set()
 
     tensor_dict.update(input_dict_items)
 
-    output = []
     for node in self.graph_def.node:
       onnx_node = OnnxNode(node)
       output_ops = self.backend._onnx_node_to_tensorflow_op(
