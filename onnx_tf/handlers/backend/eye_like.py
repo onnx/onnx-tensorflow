@@ -74,7 +74,6 @@ class EyeLike(BackendHandler):
         paddings = [tb_paddings, lr_paddings]
         return tensor, paddings
 
-      paddings = tf.constant([[0, 0], [0, 0]], dtype=tf.int32)
       tensor, paddings = create_nodes(inp, offset)
       return [
           cls.make_tensor_from_onnx_node(node,
