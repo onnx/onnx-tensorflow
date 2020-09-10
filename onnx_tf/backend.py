@@ -23,7 +23,6 @@ import tensorflow as tf
 
 from onnx_tf.backend_rep import TensorflowRep
 from onnx_tf.common import data_type
-from onnx_tf.common import get_device_option
 from onnx_tf.common import get_unique_suffix
 from onnx_tf.common import supports_device as common_supports_device
 from onnx_tf.common.handler_helper import get_all_backend_handlers
@@ -162,7 +161,6 @@ class TensorflowBackend(Backend):
     super(TensorflowBackend, cls).run_node(node, inputs, device)
 
     node = OnnxNode(node)
-    device_option = get_device_option(Device(device))
     input_tensors = []
     for i in inputs:
       input_tensors.append(tf.constant(i))
