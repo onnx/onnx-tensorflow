@@ -122,6 +122,11 @@ backend_test.exclude('test_training_dropout_cpu')
 backend_test.exclude('test_training_dropout_default_mask_cpu')
 backend_test.exclude('test_training_dropout_mask_cpu')
 
+# TF module can't run gru, lstm, rnn in one session using custom variables
+backend_test.exclude(r'test_gru_with_initial_bias_[a-z,_]*')
+backend_test.exclude(r'test_lstm_with_[a-z,_]*')
+backend_test.exclude(r'test_simple_rnn_[a-z,_]*')
+
 # import all test cases at global scope to make them visible to python.unittest
 globals().update(backend_test.enable_report().test_cases)
 
