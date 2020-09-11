@@ -105,6 +105,9 @@ class ConvMixin(BroadcastMixin):
       if dilations != [1] * spatial_size:
         raise RuntimeError("Cannot set non-1 dilation for conv transpose.")
       convolved = []
+      # this is a workaround for tensorflow AutoGraph not detecting
+      # corretly x. This is fixed in tf>=2.2.0
+      x = None
       for (x, weight) in zip(xs, weight_groups):
         x_spatial_shape = [
             x_shape[storage_format.find(d)] for d in spatial_format

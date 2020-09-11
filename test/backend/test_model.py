@@ -4,7 +4,9 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import unittest
+import shutil
 
+import tensorflow as tf
 import numpy as np
 import onnx
 from onnx_tf.backend import prepare
@@ -101,9 +103,9 @@ class TestModel(unittest.TestCase):
     # test SequenceConstruct and ConcatFromSequence
     seq_construct_node = helper.make_node('SequenceConstruct', ['a', 'b', 'c'], ['S'])
     concat_from_seq_node = helper.make_node('ConcatFromSequence', ['S'], ['Y'], axis=1)
-    a = [[1, 2],[3, 4]]
-    b = [[5, 6],[7, 8]]
-    c = [[9, 10],[11, 12]]
+    a = np.array([[1, 2],[3, 4]]).astype(np.float32)
+    b = np.array([[5, 6],[7, 8]]).astype(np.float32)
+    c = np.array([[9, 10],[11, 12]]).astype(np.float32)
     a_value_info =  helper.make_tensor_value_info('a',onnx.TensorProto.FLOAT,[2, 2])
     b_value_info =  helper.make_tensor_value_info('b',onnx.TensorProto.FLOAT,[2, 2])
     c_value_info =  helper.make_tensor_value_info('c',onnx.TensorProto.FLOAT,[2, 2])
@@ -182,6 +184,48 @@ class TestModel(unittest.TestCase):
     tf_rep = prepare(helper.make_model(graph_def))
     output = tf_rep.run({"X": X})
     np.testing.assert_almost_equal(output.X1, Y_ref)
+
+  def test_add_module(self):
+    node_def = helper.make_node("Add", ["a", "b"], ["Y"])
+    graph_def = helper.make_graph(
+        [node_def],
+        name="test",
+        inputs=[helper.make_tensor_value_info("a", TensorProto.FLOAT, [None, None]),
+            helper.make_tensor_value_info("b", TensorProto.FLOAT, [None, None])],
+        outputs=[
+            helper.make_tensor_value_info("Y", TensorProto.FLOAT, [None, None])
+        ])
+    tf_rep = prepare(helper.make_model(graph_def))
+
+    model_path = "add_savedmodel"
+    tf_rep.export_graph(model_path)
+
+    # loead the model from disk
+    m = tf.saved_model.load(model_path)
+
+    # first input with shape [3, 2]
+    a = np.random.randn(3, 2).astype(np.float32)
+    b = np.random.randn(3, 2).astype(np.float32)
+    Y_ref = np.add(a, b)
+
+    # check the output from converter API
+    output = tf_rep.run({"a": a, "b": b})
+    np.testing.assert_almost_equal(output.Y, Y_ref)
+
+    # check the output from using saved model
+    tf_output=m(a=a, b=b)
+    np.testing.assert_almost_equal(tf_output[0], Y_ref)
+
+    # change input shape to [2, 2]
+    a = np.random.randn(2, 2).astype(np.float32)
+    b = np.random.randn(2, 2).astype(np.float32)
+    Y_ref = np.add(a, b)
+
+    tf_output=m(a=a, b=b)
+    np.testing.assert_almost_equal(tf_output[0], Y_ref)
+
+    # clean up saved model folder
+    shutil.rmtree(model_path)
 
   def test_argmax_node_bfloat(self):
     X = np.random.randn(2, 8).astype(np.float32)

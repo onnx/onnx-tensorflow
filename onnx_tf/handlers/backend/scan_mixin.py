@@ -7,6 +7,7 @@ from onnx_tf.common import data_type
 class ScanMixin(object):
 
   @classmethod
+  @tf.autograph.experimental.do_not_convert()
   def scan(cls, node, input_dict, strict):
     current_opset = [make_opsetid(cls.DOMAIN, cls.VERSION)]
 
