@@ -1,9 +1,9 @@
 # ONNX-Tensorflow Support Status
 |||
 |-:|:-|
-|ONNX-Tensorflow Version|Master ( commit id: 1f3f6b8cac846ddf6d8d510ce461ced8fbb7b676 )|
+|ONNX-Tensorflow Version|Master ( commit id: 626b4718728f245b325c56046d9b3a01e9d0b0bf )|
 |ONNX Version|Master ( commit id: b2ed660d0a065b8346816f2c3a95d79ca79b88c9 )|
-|Tensorflow Version|v2.3.0|
+|Tensorflow Version|v2.3.1|
 
 Notes:
 * Values that are new or updated from a previous opset version are in bold.
@@ -179,7 +179,7 @@ Notes:
 |Where|-|-|-|-|-|-|-|-|**9**|9|9|9|9|Where|
 |Xor|**1**|1|1|1|1|1|**7**|7|7|7|7|7|7|Xor|
 
-ONNX-TF Supported Operators / ONNX Operators: 96 / 162
+ONNX-TF Supported Operators / ONNX Operators: 100 / 162
 
 Notes:
 1. Cast: Cast string to data types other than float32/float64/int32/int64 is not supported in Tensorflow

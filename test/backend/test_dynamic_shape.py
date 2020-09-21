@@ -33,8 +33,8 @@ class TestDynamicShape(unittest.TestCase):
   def test_arg_max(self):
     if legacy_opset_pre_ver(12):
       raise unittest.SkipTest(
-          "ONNX version {} doesn't support select_last_index attribute for ArgMax that depends on shape.".format(
-              defs.onnx_opset_version()))
+          "ONNX version {} doesn't support select_last_index attribute for ArgMax that depends on shape."
+          .format(defs.onnx_opset_version()))
     axis = 1
     node_def = helper.make_node("ArgMax",
                                 inputs=['X'],
@@ -51,7 +51,8 @@ class TestDynamicShape(unittest.TestCase):
         outputs=[
             helper.make_tensor_value_info("Y", TensorProto.FLOAT, [None, None])
         ])
-    x = np.array([[ 1, 2, 3, 5, 3, 4, 5, 1 ], [ 2, 9, 3, 5, 9, 4, 5, 1 ]]).astype(np.float32)
+    x = np.array([[1, 2, 3, 5, 3, 4, 5, 1], [2, 9, 3, 5, 9, 4, 5,
+                                             1]]).astype(np.float32)
     tf_rep = onnx_graph_to_tensorflow_rep(graph_def)
     output = tf_rep.run({"X": x})
     expected_output = np.argmax(np.flip(x, axis), axis=axis)
@@ -61,8 +62,8 @@ class TestDynamicShape(unittest.TestCase):
   def test_arg_min(self):
     if legacy_opset_pre_ver(12):
       raise unittest.SkipTest(
-          "ONNX version {} doesn't support select_last_index attribute for ArgMin that depends on shape.".format(
-              defs.onnx_opset_version()))
+          "ONNX version {} doesn't support select_last_index attribute for ArgMin that depends on shape."
+          .format(defs.onnx_opset_version()))
     axis = 1
     node_def = helper.make_node("ArgMin",
                                 inputs=['X'],
@@ -79,7 +80,8 @@ class TestDynamicShape(unittest.TestCase):
         outputs=[
             helper.make_tensor_value_info("Y", TensorProto.FLOAT, [None, None])
         ])
-    x = np.array([[ 1, 2, 3, 5, 3, 4, 5, 1 ], [ 2, 7, 3, 5, 2, 4, 5, 6 ]]).astype(np.float32)
+    x = np.array([[1, 2, 3, 5, 3, 4, 5, 1], [2, 7, 3, 5, 2, 4, 5,
+                                             6]]).astype(np.float32)
     tf_rep = onnx_graph_to_tensorflow_rep(graph_def)
     output = tf_rep.run({"X": x})
     expected_output = np.argmin(np.flip(x, axis), axis=axis)
@@ -103,14 +105,16 @@ class TestDynamicShape(unittest.TestCase):
         [node_def],
         name="test_unknown_shape",
         inputs=[
-            helper.make_tensor_value_info("X", TensorProto.FLOAT, [None, None, None, None]),
+            helper.make_tensor_value_info("X", TensorProto.FLOAT,
+                                          [None, None, None, None]),
             helper.make_tensor_value_info("scale", TensorProto.FLOAT, [None]),
             helper.make_tensor_value_info("bias", TensorProto.FLOAT, [None]),
             helper.make_tensor_value_info("mean", TensorProto.FLOAT, [None]),
             helper.make_tensor_value_info("var", TensorProto.FLOAT, [None])
         ],
         outputs=[
-            helper.make_tensor_value_info("Y", TensorProto.FLOAT, [None, None, None, None])
+            helper.make_tensor_value_info("Y", TensorProto.FLOAT,
+                                          [None, None, None, None])
         ])
     x_shape = [3, 5, 4, 2]
     param_shape = [5]
@@ -126,7 +130,13 @@ class TestDynamicShape(unittest.TestCase):
     _bias = bias.reshape(_param_shape)
     golden = self._batch_normalization(x, _m, _v, _bias, _scale, 0.001)
     tf_rep = onnx_graph_to_tensorflow_rep(graph_def)
-    output = tf_rep.run({"X": x, "scale": scale, "bias": bias, "mean": m, "var": v})
+    output = tf_rep.run({
+        "X": x,
+        "scale": scale,
+        "bias": bias,
+        "mean": m,
+        "var": v
+    })
     np.testing.assert_almost_equal(output["Y"], golden, decimal=5)
 
   def test_compress(self):
@@ -171,11 +181,14 @@ class TestDynamicShape(unittest.TestCase):
         [node_def],
         name="test_unknown_shape",
         inputs=[
-            helper.make_tensor_value_info("X", TensorProto.FLOAT, [None, 3, 4, 6]),
-            helper.make_tensor_value_info("weights", TensorProto.FLOAT, weight_shape)
+            helper.make_tensor_value_info("X", TensorProto.FLOAT,
+                                          [None, None, None, None]),
+            helper.make_tensor_value_info("weights", TensorProto.FLOAT,
+                                          [None, None, None, None])
         ],
         outputs=[
-            helper.make_tensor_value_info("Y", TensorProto.FLOAT, [None, None, None, None])
+            helper.make_tensor_value_info("Y", TensorProto.FLOAT,
+                                          [None, None, None, None])
         ])
 
     tf_rep = onnx_graph_to_tensorflow_rep(graph_def)
@@ -559,20 +572,19 @@ class TestDynamicShape(unittest.TestCase):
     kernel_shape = [2, 2]
     strides = [2, 2]
 
-    maxpool_node_def = helper.make_node(
-            op_type="MaxPool",
-            inputs=["X"],
-            outputs=["Pool", "Indices"],
-            kernel_shape=kernel_shape,
-            strides=strides)
+    maxpool_node_def = helper.make_node(op_type="MaxPool",
+                                        inputs=["X"],
+                                        outputs=["Pool", "Indices"],
+                                        kernel_shape=kernel_shape,
+                                        strides=strides)
 
-    maxunpool_node_def = helper.make_node(
-        "MaxUnpool", ["Pool", "Indices"], ["Y"],
-        kernel_shape=kernel_shape,
-        strides=strides)
+    maxunpool_node_def = helper.make_node("MaxUnpool", ["Pool", "Indices"],
+                                          ["Y"],
+                                          kernel_shape=kernel_shape,
+                                          strides=strides)
 
     graph_def = helper.make_graph(
-        [maxpool_node_def,maxunpool_node_def],
+        [maxpool_node_def, maxunpool_node_def],
         name="test_unknown_shape",
         inputs=[
             helper.make_tensor_value_info("X", TensorProto.FLOAT,
@@ -591,8 +603,8 @@ class TestDynamicShape(unittest.TestCase):
         for i3 in range(0, input_shape[2], 2):
           for i4 in range(0, input_shape[3], 2):
             max_val = float('-inf')
-            for j1 in range(i3,i3+2):
-              for j2 in range(i4,i4+2):
+            for j1 in range(i3, i3 + 2):
+              for j2 in range(i4, i4 + 2):
                 if x[i1][i2][j1][j2] > max_val:
                   max_val = x[i1][i2][j1][j2]
                   max_ind = (j1, j2)
