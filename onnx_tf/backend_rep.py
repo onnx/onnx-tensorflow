@@ -16,6 +16,7 @@ class TensorflowRep(BackendRep):
     self._inputs = inputs or []
     self._outputs = outputs or []
     self._tensor_dict = tensor_dict or {}
+    self._tf_module = None
 
   @property
   def graph(self):
@@ -48,6 +49,14 @@ class TensorflowRep(BackendRep):
   @tensor_dict.setter
   def tensor_dict(self, tensor_dict):
     self._tensor_dict = tensor_dict
+
+  @property
+  def tf_module(self):
+    return self._tf_module
+
+  @tf_module.setter
+  def tf_module(self, tf_module):
+    self._tf_module = tf_module
 
   def run(self, inputs, **kwargs):
     """ Run TensorflowRep.
