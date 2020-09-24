@@ -250,6 +250,8 @@ class TensorflowBackend(Backend):
     if handlers:
       handler = handlers[node.domain].get(node.op_type, None) if node.domain in handlers else None
       if handler:
+        if hasattr(handler, "WARNINGS"):
+          common.logger.warning(handler.WARNINGS)
         return handler.handle(node, tensor_dict=tensor_dict, strict=strict)
 
     raise BackendIsNotSupposedToImplementIt("{} is not implemented.".format(node.op_type))
