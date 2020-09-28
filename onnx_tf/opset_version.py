@@ -42,7 +42,7 @@ backend_opset_version = {
     'Div': [1, 6, 7],
     'Dropout': [1, 6, 7, 10, 12, 13],
     'DynamicQuantizeLinear': [11],
-    'Einsum': [],
+    'Einsum': [12],
     'Elu': [1, 6],
     'Equal': [1, 7, 11, 13],
     'Erf': [9, 13],

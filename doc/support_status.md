@@ -1,9 +1,9 @@
 # ONNX-Tensorflow Support Status
 |||
 |-:|:-|
-|ONNX-Tensorflow Version|Master ( commit id: 6f5c155247e28ae0ceb2ce2615ce1483ffa27c43 )|
-|ONNX Version|Master ( commit id: b2ed660d0a065b8346816f2c3a95d79ca79b88c9 )|
-|Tensorflow Version|v2.3.0|
+|ONNX-Tensorflow Version|Master ( commit id: f64afb48034af7121341f4ba5d6f56e275c5aedb )|
+|ONNX Version|Master ( commit id: a7a0fec7f25cae567429af62b7eaaee1c3f0e247 )|
+|Tensorflow Version|v2.3.1|
 
 Notes:
 * Values that are new or updated from a previous opset version are in bold.
@@ -51,7 +51,7 @@ Notes:
 |Div|**1**|1|1|1|1|**6**|**7**|7|7|7|7|7|**13**:small_red_triangle:|Div|
 |Dropout|**1**|1|1|1|1|**6**|**7**|7|7|**10**|10|**12**|**13**|Dropout|
 |DynamicQuantizeLinear|-|-|-|-|-|-|-|-|-|-|**11**|11|11|DynamicQuantizeLinear|
-|Einsum|-|-|-|-|-|-|-|-|-|-|-|**12**:small_red_triangle:|12:small_red_triangle:|Einsum|
+|Einsum|-|-|-|-|-|-|-|-|-|-|-|**12**|12|Einsum|
 |Elu|**1**|1|1|1|1|**6**|6|6|6|6|6|6|6|Elu|
 |Equal|**1**|1|1|1|1|1|**7**|7|7|7|**11**|11|**13**|Equal|
 |Erf|-|-|-|-|-|-|-|-|**9**|9|9|9|**13**|Erf|
@@ -100,7 +100,7 @@ Notes:
 |Mul|**1**|1|1|1|1|**6**|**7**|7|7|7|7|7|**13**|Mul|
 |Multinomial|-|-|-|-|-|-|**7**:small_red_triangle:|7:small_red_triangle:|7:small_red_triangle:|7:small_red_triangle:|7:small_red_triangle:|7:small_red_triangle:|7:small_red_triangle:|Multinomial|
 |Neg|**1**|1|1|1|1|**6**|6|6|6|6|6|6|**13**|Neg|
-|NegativeLogLikelihoodLoss|-|-|-|-|-|-|-|-|-|-|-|**12**:small_red_triangle:|12:small_red_triangle:|NegativeLogLikelihoodLoss|
+|NegativeLogLikelihoodLoss|-|-|-|-|-|-|-|-|-|-|-|**12**:small_red_triangle:|**13**:small_red_triangle:|NegativeLogLikelihoodLoss|
 |NonMaxSuppression|-|-|-|-|-|-|-|-|-|**10**|**11**|11|11|NonMaxSuppression|
 |NonZero|-|-|-|-|-|-|-|-|**9**|9|9|9|**13**:small_red_triangle:|NonZero|
 |Not|**1**|1|1|1|1|1|1|1|1|1|1|1|1|Not|
@@ -179,7 +179,7 @@ Notes:
 |Where|-|-|-|-|-|-|-|-|**9**|9|9|9|9|Where|
 |Xor|**1**|1|1|1|1|1|**7**|7|7|7|7|7|7|Xor|
 
-ONNX-TF Supported Operators / ONNX Operators: 113 / 162
+ONNX-TF Supported Operators / ONNX Operators: 118 / 162
 
 Notes:
 1. Cast: Cast string to data types other than float32/float64/int32/int64 is not supported in Tensorflow

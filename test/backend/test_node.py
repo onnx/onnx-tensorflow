@@ -741,6 +741,19 @@ class TestNode(unittest.TestCase):
     np.testing.assert_almost_equal(output["Y_Scale"], y_scale)
     np.testing.assert_almost_equal(output["Y_Zero_Point"], y_zero_point)
 
+  def test_einsum(self):
+    if legacy_opset_pre_ver(12):
+      raise unittest.SkipTest(
+          "ONNX version {} doesn't support Einsum.".format(
+              defs.onnx_opset_version()))
+    equation = 'ij,jk->ik'  #matmul
+    node_def = helper.make_node("Einsum", ["X", "Y"], ["Z"], equation=equation)
+    x = self._get_rnd_float32(shape=[3, 4])
+    y = self._get_rnd_float32(shape=[4, 5])
+    z = np.einsum(equation, x, y)
+    output = run_node(node_def, [x, y])
+    np.testing.assert_almost_equal(output["Z"], z)
+
   def test_elu(self):
     node_def = helper.make_node("Elu", ["X"], ["Y"])
     x = self._get_rnd_float32(shape=[100])
