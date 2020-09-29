@@ -17,11 +17,13 @@ class Dropout(BackendHandler):
     x = tensor_dict[node.inputs[0]]
     attrs = copy.deepcopy(node.attrs)
 
-    if cls.SINCE_VERSION < 7:
+    if (cls.SINCE_VERSION >=7 and cls.SINCE_VERSION < 12) or attrs.pop("is_test", 0) == 1: # for Opset 7, 10
+      # at inference mode, is_test attribute is always set to 1
+      # dropout at inference mode is a no-op
+      return [x]
+    elif cls.SINCE_VERSION < 7:
       attrs["keep_prob"] = 1 - attrs.pop("ratio", 0.5)
       return [cls.make_tensor_from_onnx_node(node, attrs=attrs, **kwargs)]
-    elif cls.SINCE_VERSION < 12 or attrs.pop("is_test", 0) == 1: # for Opset 7, 10
-      return [x]
     else: # for Opset 12, 13
       # ratio and training_mode are optional and passed as inputs
       ratio = 0.5 # default ratio
