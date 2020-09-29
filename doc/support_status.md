@@ -1,8 +1,8 @@
 # ONNX-Tensorflow Support Status
 |||
 |-:|:-|
-|ONNX-Tensorflow Version|Master ( commit id: bb7151f4161a3084e4022adc428108ac70453655 )|
-|ONNX Version|Master ( commit id: 3e59c7104822ba2aa2d414eb5dd2bdcad7ccb309 )|
+|ONNX-Tensorflow Version|Master ( commit id: 5928415eb0a045c86acef8a04bdab5d32ca91dfe )|
+|ONNX Version|Master ( commit id: b2ed660d0a065b8346816f2c3a95d79ca79b88c9 )|
 |Tensorflow Version|v2.3.0|
 
 Notes:
@@ -32,7 +32,7 @@ Notes:
 |BitShift|-|-|-|-|-|-|-|-|-|-|**11**|11|11|BitShift|
 |Cast|**1**:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|**6**:small_orange_diamond:|6:small_orange_diamond:|6:small_orange_diamond:|**9**:small_orange_diamond:|9:small_orange_diamond:|9:small_orange_diamond:|9:small_orange_diamond:|**13**:small_orange_diamond:|Cast|
 |Ceil|**1**|1|1|1|1|**6**|6|6|6|6|6|6|**13**|Ceil|
-|Celu|-|-|-|-|-|-|-|-|-|-|-|**12**:small_red_triangle:|12:small_red_triangle:|Celu|
+|Celu|-|-|-|-|-|-|-|-|-|-|-|**12**|12|Celu|
 |Clip|**1**:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|**6**:small_orange_diamond:|6:small_orange_diamond:|6:small_orange_diamond:|6:small_orange_diamond:|6:small_orange_diamond:|**11**:small_orange_diamond:|**12**:small_orange_diamond:|**13**:small_orange_diamond:|Clip|
 |Compress|-|-|-|-|-|-|-|-|**9**|9|**11**|11|11|Compress|
 |Concat|**1**|1|1|**4**|4|4|4|4|4|4|**11**|11|**13**:small_red_triangle:|Concat|
@@ -63,7 +63,7 @@ Notes:
 |GRU|**1**:small_orange_diamond:|1:small_orange_diamond:|**3**:small_orange_diamond:|3:small_orange_diamond:|3:small_orange_diamond:|3:small_orange_diamond:|**7**:small_orange_diamond:|7:small_orange_diamond:|7:small_orange_diamond:|7:small_orange_diamond:|7:small_orange_diamond:|7:small_orange_diamond:|7:small_orange_diamond:|GRU|
 |Gather|**1**|1|1|1|1|1|1|1|1|1|**11**|11|**13**:small_red_triangle:|Gather|
 |GatherElements|-|-|-|-|-|-|-|-|-|-|**11**|11|**13**:small_red_triangle:|GatherElements|
-|GatherND|-|-|-|-|-|-|-|-|-|-|**11**|**12**:small_red_triangle:|**13**:small_red_triangle:|GatherND|
+|GatherND|-|-|-|-|-|-|-|-|-|-|**11**|**12**|**13**|GatherND|
 |Gemm|**1**|1|1|1|1|**6**|**7**|7|**9**|9|**11**|11|**13**:small_red_triangle:|Gemm|
 |GlobalAveragePool|**1**|1|1|1|1|1|1|1|1|1|1|1|1|GlobalAveragePool|
 |GlobalLpPool|**1**|**2**|2|2|2|2|2|2|2|2|2|2|2|GlobalLpPool|
@@ -179,7 +179,7 @@ Notes:
 |Where|-|-|-|-|-|-|-|-|**9**|9|9|9|9|Where|
 |Xor|**1**|1|1|1|1|1|**7**|7|7|7|7|7|7|Xor|
 
-ONNX-TF Supported Operators / ONNX Operators: 92 / 162
+ONNX-TF Supported Operators / ONNX Operators: 94 / 162
 
 Notes:
 1. Cast: Cast string to data types other than float32/float64/int32/int64 is not supported in Tensorflow
