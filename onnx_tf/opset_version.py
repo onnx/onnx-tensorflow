@@ -21,7 +21,7 @@ backend_opset_version = {
     'CastMap': [],
     'CategoryMapper': [],
     'Ceil': [1, 6, 13],
-    'Celu': [],
+    'Celu': [12],
     'Clip': [1, 6, 11, 12, 13],
     'Compress': [9, 11],
     'Concat': [1, 4, 11],
