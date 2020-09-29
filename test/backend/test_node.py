@@ -257,6 +257,21 @@ class TestNode(unittest.TestCase):
     output = run_node(node_def, [x])
     np.testing.assert_almost_equal(output["Y"], np.ceil(x))
 
+  def test_celu(self):
+    if legacy_opset_pre_ver(12):
+      raise unittest.SkipTest(
+          "ONNX version {} doesn't support Celu.".format(
+              defs.onnx_opset_version()))
+    alpha = 2.0
+    node_def = helper.make_node("Celu", ["X"], ["Y"], alpha=alpha)
+    x =  np.array([[[-1.0763247,   0.98948643,  0.22292195],
+                   [ 0.1751388,   -1.39814249,  1.44396422]]], dtype=np.float32)
+    output = run_node(node_def, [x])
+    positive_input = np.maximum(0, x)
+    negative_input = np.minimum(0, alpha * (np.exp(x / alpha) - 1))
+    expected_output = positive_input + negative_input
+    np.testing.assert_almost_equal(output["Y"], expected_output)
+
   def test_compress(self):
     if legacy_opset_pre_ver(9):
       raise unittest.SkipTest(
@@ -922,11 +937,35 @@ class TestNode(unittest.TestCase):
 
     # indices out of bounds
     indices = np.array([[5, 0], [-1, -3]], dtype=np.int64)
-    with np.testing.assert_raises(tf.errors.InvalidArgumentError):
-      output = run_node(node_def, [data, indices])
+    self.assertRaises(tf.errors.InvalidArgumentError, run_node, node_def,
+                      [data, indices])
     indices = np.array([[1, 1, 6], [-2, -1, -9]], dtype=np.int32)
-    with np.testing.assert_raises(tf.errors.InvalidArgumentError):
+    self.assertRaises(tf.errors.InvalidArgumentError, run_node, node_def,
+                      [data, indices])
+
+    if not legacy_opset_pre_ver(12):
+      # set batch_dims
+      data = np.reshape(np.arange(0, 120, dtype=np.float64), [2, 3, 4, 5])
+      indices = np.array(
+          [[[1, 2], [0, 1], [-1, 4]], [[-3, -4], [0, -2], [2, 3]]],
+          dtype=np.int64)
+      ref_output = np.array([[7, 21, 59], [66, 83, 113]], dtype=np.float64)
+      node_def = helper.make_node("GatherND", ["data", "indices"], ["outputs"],
+                                  batch_dims=2)
       output = run_node(node_def, [data, indices])
+      np.testing.assert_almost_equal(output["outputs"], ref_output)
+
+      # indices out of bounds
+      indices = np.array(
+          [[[4, 1], [0, 1], [-1, 4]], [[-3, -4], [0, -2], [2, 3]]],
+          dtype=np.int64)
+      self.assertRaises(tf.errors.InvalidArgumentError, run_node, node_def,
+                        [data, indices])
+      indices = np.array(
+          [[[3, 5], [0, 1], [-1, 4]], [[-3, -4], [0, -2], [2, 3]]],
+          dtype=np.int64)
+      self.assertRaises(tf.errors.InvalidArgumentError, run_node, node_def,
+                        [data, indices])
 
   def test_gemm(self):
     # Compute Y = alpha * A * B + beta * C
