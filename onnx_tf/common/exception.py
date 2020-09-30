@@ -1,6 +1,7 @@
 import inspect
 import onnx_tf.common as common
 
+
 class CustomException(object):
 
   def __init__(self):
@@ -71,7 +72,7 @@ class DtypeNotCastException(object):
   def __init__(self):
     super(DtypeNotCastException, self).__init__()
     self._func = RuntimeError
-    self._message = "{} is not supported in Tensorflow. Please set auto_cast to True or change data type to one of the supported types in {}."
+    self._message = "{} is not supported in Tensorflow. Please set auto_cast to True or change data type to one of the supported types in the following list {}."
 
   def __call__(self, op, supported_dtypes):
     raise self._func(self.get_message(op, supported_dtypes))
