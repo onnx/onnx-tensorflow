@@ -94,7 +94,7 @@ backend_opset_version = {
     'Mean': [1, 6, 8],
     'MeanVarianceNormalization': [1, 9],
     'Min': [1, 6, 8, 12, 13],
-    'Mod': [10],
+    'Mod': [10, 13],
     'Momentum': [],
     'Mul': [1, 6, 7, 13],
     'Multinomial': [],
@@ -132,7 +132,7 @@ backend_opset_version = {
     'ReduceSumSquare': [1, 11],
     'Relu': [1, 6],
     'Reshape': [1, 5],
-    'Resize': [10, 11],
+    'Resize': [10, 11, 13],
     'ReverseSequence': [10],
     'RoiAlign': [],
     'Round': [11],
@@ -190,7 +190,6 @@ backend_opset_version = {
 backend_partial_support = {
     'Cast': 'Cast string to data types other than float32/float64/int32/int64 '
             'is not supported in Tensorflow',
-    'Clip': 'Clip input in uint64 is not supported in Tensorflow.',
     'ConcatFromSequence': 'new_axis=1 not supported in Tensorflow.',
     'ConvTranspose': 'ConvTranspose with dilations != 1, or transposed '
                      'convolution for 4D or higher are not supported in '
@@ -206,8 +205,6 @@ backend_partial_support = {
                'MaxPoolWithArgmax with 4D or higher input, or '
                'MaxPoolWithArgmax with column major are not supported in '
                'Tensorflow.',
-    'Mod': 'Mod Dividend or Divisor in int8/int16/uint8/uint16/uint32/uint64 '
-           'are not supported in Tensorflow.',
     'RNN': 'RNN with clip is not supported in Tensorflow.',
     'Resize': 'Resize required 4D input in Tensorflow. For opset 11, only the '
               'following attributes and inputs conbination are supported in '

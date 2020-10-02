@@ -7,7 +7,9 @@ import tensorflow as tf
 
 import onnx_tf.common as common
 
+
 def tf2onnx(dtype):
+
   if isinstance(dtype, Number):
     tf_dype = tf.as_dtype(dtype)
   elif isinstance(dtype, tf.DType):
@@ -113,11 +115,9 @@ def is_safe_cast(from_dtype, to_dtype):
 
 
 def tf_to_np_str(from_type):
-  return mapping.TENSOR_TYPE_TO_NP_TYPE[int(tf2onnx(
-      from_type))].name if from_type != tf.bfloat16 else 'bfloat16'
+  return mapping.TENSOR_TYPE_TO_NP_TYPE[int(
+      tf2onnx(from_type))].name if from_type != tf.bfloat16 else 'bfloat16'
 
 
 def tf_to_np_str_list(from_list):
-  return [
-      tf_to_np_str(from_list[i]) for i in range(len(from_list))
-  ]
+  return [tf_to_np_str(from_list[i]) for i in range(len(from_list))]

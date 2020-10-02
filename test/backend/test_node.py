@@ -2286,6 +2286,12 @@ class TestNode(unittest.TestCase):
     node_def = helper.make_node("Mod", ["X", "Y"], ["Z"], fmod=1)
     output = run_node(node_def, [x, y])
     np.testing.assert_almost_equal(output["Z"], np.fmod(x, y))
+    # test data cast for int16
+    x = self._get_rnd_int(shape=[5, 5], low=1, high=100, dtype=np.int16)
+    y = self._get_rnd_int(shape=[5, 5], low=1, high=100, dtype=np.int16)
+    node_def = helper.make_node("Mod", ["X", "Y"], ["Z"], fmod=0)
+    output = run_node(node_def, [x, y])
+    np.testing.assert_almost_equal(output["Z"], np.mod(x, y))
 
   def test_neg(self):
     node_def = helper.make_node("Neg", ["X"], ["Y"])
@@ -2852,7 +2858,7 @@ class TestNode(unittest.TestCase):
         mode='nearest',
         nearest_mode='round_prefer_ceil',
     )
-    roi = np.array([0, 0, 0.4, 0.6, 1, 1, 1.2, 1.7], dtype=np.float32)
+    roi = np.array([0, 0, 0.4, 0.6, 1, 1, 1.2, 1.7], dtype=np.float16)
     scales = np.array([], dtype=np.float32)
     sizes = np.array([1, 1, 7, 7], dtype=np.int64)
     expected = np.array(
@@ -2872,7 +2878,7 @@ class TestNode(unittest.TestCase):
         mode='linear',
         coordinate_transformation_mode='tf_crop_and_resize',
         extrapolation_value=20.0)
-    roi = np.array([0, 0, 0.4, 0.6, 1, 1, 1.2, 1.7], dtype=np.float32)
+    roi = np.array([0, 0, 0.4, 0.6, 1, 1, 1.2, 1.7], dtype=np.float64)
     scales = np.array([1.0, 1.0, 0.8, 0.8], dtype=np.float32)
     expected = np.array(
         [[[[42.4, 43.814285, 45.228573, 20., 20., 20., 20., 20.],
@@ -2884,8 +2890,9 @@ class TestNode(unittest.TestCase):
            [20., 20., 20., 20., 20., 20., 20., 20.],
            [20., 20., 20., 20., 20., 20., 20., 20.]]]],
         dtype=np.float32)  # expected value is calculated by onnx-runtime
-    output = run_node(node_def, [data, roi, scales])
-    np.testing.assert_allclose(output["Y"], expected, rtol=1e-6, atol=1e-6)
+    # sys_config.auto_cast=False and roi_dtype=float64 should throw exception
+    self.assertRaises(RuntimeError, run_node, node_def,
+                      [data, roi.astype(np.float64), scales])
 
     # crop_and_resize_linear with sizes
     node_def = helper.make_node(
