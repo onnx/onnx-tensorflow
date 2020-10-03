@@ -1,7 +1,7 @@
 # ONNX-Tensorflow Support Status
 |||
 |-:|:-|
-|ONNX-Tensorflow Version|Master ( commit id: 5928415eb0a045c86acef8a04bdab5d32ca91dfe )|
+|ONNX-Tensorflow Version|Master ( commit id: 1f3f6b8cac846ddf6d8d510ce461ced8fbb7b676 )|
 |ONNX Version|Master ( commit id: b2ed660d0a065b8346816f2c3a95d79ca79b88c9 )|
 |Tensorflow Version|v2.3.0|
 
@@ -33,7 +33,7 @@ Notes:
 |Cast|**1**:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|**6**:small_orange_diamond:|6:small_orange_diamond:|6:small_orange_diamond:|**9**:small_orange_diamond:|9:small_orange_diamond:|9:small_orange_diamond:|9:small_orange_diamond:|**13**:small_orange_diamond:|Cast|
 |Ceil|**1**|1|1|1|1|**6**|6|6|6|6|6|6|**13**|Ceil|
 |Celu|-|-|-|-|-|-|-|-|-|-|-|**12**|12|Celu|
-|Clip|**1**:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|**6**:small_orange_diamond:|6:small_orange_diamond:|6:small_orange_diamond:|6:small_orange_diamond:|6:small_orange_diamond:|**11**:small_orange_diamond:|**12**:small_orange_diamond:|**13**:small_orange_diamond:|Clip|
+|Clip|**1**|1|1|1|1|**6**|6|6|6|6|**11**|**12**|**13**|Clip|
 |Compress|-|-|-|-|-|-|-|-|**9**|9|**11**|11|11|Compress|
 |Concat|**1**|1|1|**4**|4|4|4|4|4|4|**11**|11|**13**:small_red_triangle:|Concat|
 |ConcatFromSequence|-|-|-|-|-|-|-|-|-|-|**11**:small_orange_diamond:|11:small_orange_diamond:|11:small_orange_diamond:|ConcatFromSequence|
@@ -77,12 +77,12 @@ Notes:
 |InstanceNormalization|**1**|1|1|1|1|**6**|6|6|6|6|6|6|6|InstanceNormalization|
 |IsInf|-|-|-|-|-|-|-|-|-|**10**|10|10|10|IsInf|
 |IsNaN|-|-|-|-|-|-|-|-|**9**|9|9|9|**13**:small_red_triangle:|IsNaN|
-|LRN|**1**|1|1|1|1|1|1|1|1|1|1|1|**13**:small_red_triangle:|LRN|
+|LRN|**1**|1|1|1|1|1|1|1|1|1|1|1|**13**|LRN|
 |LSTM|**1**:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|**7**:small_orange_diamond:|7:small_orange_diamond:|7:small_orange_diamond:|7:small_orange_diamond:|7:small_orange_diamond:|7:small_orange_diamond:|7:small_orange_diamond:|LSTM|
 |LeakyRelu|**1**|1|1|1|1|**6**|6|6|6|6|6|6|6|LeakyRelu|
 |Less|**1**|1|1|1|1|1|**7**|7|**9**|9|9|9|**13**:small_red_triangle:|Less|
 |LessOrEqual|-|-|-|-|-|-|-|-|-|-|-|**12**|12|LessOrEqual|
-|Log|**1**|1|1|1|1|**6**|6|6|6|6|6|6|**13**:small_red_triangle:|Log|
+|Log|**1**|1|1|1|1|**6**|6|6|6|6|6|6|**13**|Log|
 |LogSoftmax|**1**|1|1|1|1|1|1|1|1|1|**11**|11|**13**:small_red_triangle:|LogSoftmax|
 |Loop|**1**|1|1|1|1|1|1|1|1|1|**11**|11|**13**:small_red_triangle:|Loop|
 |LpNormalization|**1**|1|1|1|1|1|1|1|1|1|1|1|1|LpNormalization|
@@ -96,10 +96,10 @@ Notes:
 |Mean|**1**|1|1|1|1|**6**|6|**8**|8|8|8|8|**13**:small_red_triangle:|Mean|
 |MeanVarianceNormalization|-|-|-|-|-|-|-|-|**9**|9|9|9|**13**:small_red_triangle:|MeanVarianceNormalization|
 |Min|**1**|1|1|1|1|**6**|6|**8**|8|8|8|**12**|**13**|Min|
-|Mod|-|-|-|-|-|-|-|-|-|**10**:small_orange_diamond:|10:small_orange_diamond:|10:small_orange_diamond:|**13**:small_red_triangle:|Mod|
-|Mul|**1**|1|1|1|1|**6**|**7**|7|7|7|7|7|**13**:small_red_triangle:|Mul|
+|Mod|-|-|-|-|-|-|-|-|-|**10**|10|10|**13**|Mod|
+|Mul|**1**|1|1|1|1|**6**|**7**|7|7|7|7|7|**13**|Mul|
 |Multinomial|-|-|-|-|-|-|**7**:small_red_triangle:|7:small_red_triangle:|7:small_red_triangle:|7:small_red_triangle:|7:small_red_triangle:|7:small_red_triangle:|7:small_red_triangle:|Multinomial|
-|Neg|**1**|1|1|1|1|**6**|6|6|6|6|6|6|**13**:small_red_triangle:|Neg|
+|Neg|**1**|1|1|1|1|**6**|6|6|6|6|6|6|**13**|Neg|
 |NegativeLogLikelihoodLoss|-|-|-|-|-|-|-|-|-|-|-|**12**:small_red_triangle:|12:small_red_triangle:|NegativeLogLikelihoodLoss|
 |NonMaxSuppression|-|-|-|-|-|-|-|-|-|**10**|**11**|11|11|NonMaxSuppression|
 |NonZero|-|-|-|-|-|-|-|-|**9**|9|9|9|**13**:small_red_triangle:|NonZero|
@@ -131,7 +131,7 @@ Notes:
 |ReduceSumSquare|**1**|1|1|1|1|1|1|1|1|1|**11**|11|**13**:small_red_triangle:|ReduceSumSquare|
 |Relu|**1**|1|1|1|1|**6**|6|6|6|6|6|6|**13**:small_red_triangle:|Relu|
 |Reshape|**1**|1|1|1|**5**|5|5|5|5|5|5|5|**13**:small_red_triangle:|Reshape|
-|Resize|-|-|-|-|-|-|-|-|-|**10**:small_orange_diamond:|**11**:small_orange_diamond:|11:small_orange_diamond:|**13**:small_red_triangle:|Resize|
+|Resize|-|-|-|-|-|-|-|-|-|**10**:small_orange_diamond:|**11**:small_orange_diamond:|11:small_orange_diamond:|**13**:small_orange_diamond:|Resize|
 |ReverseSequence|-|-|-|-|-|-|-|-|-|**10**|10|10|10|ReverseSequence|
 |RoiAlign|-|-|-|-|-|-|-|-|-|**10**:small_red_triangle:|10:small_red_triangle:|10:small_red_triangle:|10:small_red_triangle:|RoiAlign|
 |Round|-|-|-|-|-|-|-|-|-|-|**11**|11|11|Round|
@@ -179,19 +179,17 @@ Notes:
 |Where|-|-|-|-|-|-|-|-|**9**|9|9|9|9|Where|
 |Xor|**1**|1|1|1|1|1|**7**|7|7|7|7|7|7|Xor|
 
-ONNX-TF Supported Operators / ONNX Operators: 94 / 162
+ONNX-TF Supported Operators / ONNX Operators: 96 / 162
 
 Notes:
 1. Cast: Cast string to data types other than float32/float64/int32/int64 is not supported in Tensorflow
-2. Clip: Clip input in uint64 is not supported in Tensorflow.
-3. ConcatFromSequence: new_axis=1 not supported in Tensorflow.
-4. ConvTranspose: ConvTranspose with dilations != 1, or transposed convolution for 4D or higher are not supported in Tensorflow.
-5. GRU: GRU with clip or GRU with linear_before_reset, or GRU not using sigmoid for z and r, or GRU using Elu as the activation function with alpha != 1, or GRU using HardSigmoid as the activation function with alpha != 0.2 or beta != 0.5 are not supported in TensorFlow.
-6. LSTM: LSTM not using sigmoid for `f`, or LSTM not using the same activation for `g` and `h` are not supported in Tensorflow.
-7. MaxPool: MaxPoolWithArgmax with pad is None or incompatible mode, or MaxPoolWithArgmax with 4D or higher input, or MaxPoolWithArgmax with column major are not supported in Tensorflow.
-8. Mod: Mod Dividend or Divisor in int8/int16/uint8/uint16/uint32/uint64 are not supported in Tensorflow.
-9. RNN: RNN with clip is not supported in Tensorflow.
-10. Resize: Resize required 4D input in Tensorflow. For opset 11, only the following attributes and inputs conbination are supported in Tensorflow:
+2. ConcatFromSequence: new_axis=1 not supported in Tensorflow.
+3. ConvTranspose: ConvTranspose with dilations != 1, or transposed convolution for 4D or higher are not supported in Tensorflow.
+4. GRU: GRU with clip or GRU with linear_before_reset, or GRU not using sigmoid for z and r, or GRU using Elu as the activation function with alpha != 1, or GRU using HardSigmoid as the activation function with alpha != 0.2 or beta != 0.5 are not supported in TensorFlow.
+5. LSTM: LSTM not using sigmoid for `f`, or LSTM not using the same activation for `g` and `h` are not supported in Tensorflow.
+6. MaxPool: MaxPoolWithArgmax with pad is None or incompatible mode, or MaxPoolWithArgmax with 4D or higher input, or MaxPoolWithArgmax with column major are not supported in Tensorflow.
+7. RNN: RNN with clip is not supported in Tensorflow.
+8. Resize: Resize required 4D input in Tensorflow. For opset 11, only the following attributes and inputs conbination are supported in Tensorflow:
 	1. mode=nearest, coordinate_transformation_mode=align_corners, nearest_mode=round_prefer_ceil, can use scales(*) or sizes.
 	2. mode=nearest, coordinate_transformation_mode=asymmetric, nearest_mode=floor, can use scales(*) or sizes.
 	3. mode=nearest, coordinate_transformation_mode=tf_half_pixel_for_nn, nearest_mode=floor, can use scales(*) or sizes.
@@ -204,5 +202,5 @@ Notes:
 	10. mode=nearest, coordinate_transformation_mode=tf_crop_and_resize, extrapolation_value=any_float_value, nearest_mode=round_prefer_ceil, can use scales or sizes.
 	11. mode=linear, coordinate_transformation_mode=tf_crop_and_resize, extrapolation_value=any_float_value, can use scales or sizes.
 	- Note (*): The accuracy of your model will go down, if the height and the width of the new sizes(scales * origial sizes) are not in whole numbers.
-11. SplitToSequence: Scalar as the split input not supported.
-12. Upsample: Upsample required 4D input in Tensorflow.
+9. SplitToSequence: Scalar as the split input not supported.
+10. Upsample: Upsample required 4D input in Tensorflow.

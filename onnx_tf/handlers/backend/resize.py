@@ -1,11 +1,13 @@
 import tensorflow as tf
 
 from onnx_tf.common import exception
+from onnx_tf.common import data_type
+from onnx_tf.common import sys_config
+from onnx_tf.common.tf_helper import tf_shape
 from onnx_tf.handlers.backend_handler import BackendHandler
 from onnx_tf.handlers.handler import onnx_op
 from onnx_tf.handlers.handler import partial_support
 from onnx_tf.handlers.handler import ps_description
-from onnx_tf.common.tf_helper import tf_shape
 
 
 @onnx_op("Resize")
@@ -37,17 +39,38 @@ from onnx_tf.common.tf_helper import tf_shape
     "round_prefer_ceil, can use scales or sizes.\n\t11. mode=linear, " +
     "coordinate_transformation_mode=tf_crop_and_resize, " +
     "extrapolation_value=any_float_value, can use scales or sizes." +
-    "\n\t- Note (*): The accuracy of your model will go down, if the height and " +
-    "the width of the new sizes(scales * origial sizes) are not in whole numbers."
-)
+    "\n\t- Note (*): The accuracy of your model will go down, " +
+    "if the height and the width of the new sizes(scales * origial sizes) " +
+    "are not in whole numbers.")
 class Resize(BackendHandler):
+  x_supported_types = [
+      tf.uint8, tf.uint16, tf.int8, tf.int16, tf.int32, tf.int64, tf.float16,
+      tf.float32, tf.float64, tf.bfloat16
+  ]
+  x_cast_map = {tf.uint32: tf.int64, tf.bool: None, tf.string: None}
+  x_cast_map[tf.uint64] = tf.int64 if sys_config.auto_cast else None
+  x_cast_map[tf.complex64] = tf.float64 if sys_config.auto_cast else None
+  x_cast_map[tf.complex128] = tf.float64 if sys_config.auto_cast else None
+  cr_x_supported_types = x_supported_types
+  cr_x_supported_types.remove(tf.bfloat16)
+  cr_x_cast_map = x_cast_map
+  cr_x_cast_map[tf.bfloat16] = tf.float32
+  roi_supported_types = [tf.float32]
+  roi_cast_map = {tf.float16: tf.float32}
+  roi_cast_map[tf.float64] = tf.float32 if sys_config.auto_cast else None
 
   @classmethod
   def args_check(cls, node, **kwargs):
     x = kwargs["tensor_dict"][node.inputs[0]]
     x_shape = x.get_shape().as_list()
+    x_dtype = x.dtype
     if len(x_shape) != 4:
       exception.OP_UNSUPPORTED_EXCEPT("Resize required 4D input", "Tensorflow")
+    if x_dtype in cls.x_cast_map and cls.x_cast_map[x_dtype] is None:
+      exception.DTYPE_NOT_CAST_EXCEPT(
+          "Resize input " + node.inputs[0] + " with data type '" +
+          data_type.tf_to_np_str(x_dtype) + "'",
+          data_type.tf_to_np_str_list(cls.x_supported_types))
     if cls.SINCE_VERSION >= 11:
       # supported attributes combination
       # ____________________________________________________________________________________________________________________________________________________
@@ -83,6 +106,19 @@ class Resize(BackendHandler):
       exclude_outside = node.attrs.get("exclude_outside", 0)
       mode = node.attrs.get("mode", "nearest")
       nearest_mode = node.attrs.get("nearest_mode", "round_prefer_floor")
+      if coordinate_transformation_mode == "tf_crop_and_resize":
+        if x_dtype in cls.cr_x_cast_map and cls.cr_x_cast_map[x_dtype] is None:
+          exception.DTYPE_NOT_CAST_EXCEPT(
+              "Resize input " + node.inputs[0] + " with data type '" +
+              data_type.tf_to_np_str(x_dtype) + "'",
+              data_type.tf_to_np_str_list(cls.cr_x_supported_types))
+        roi = kwargs["tensor_dict"][node.inputs[1]]
+        roi_dtype = roi.dtype
+        if roi_dtype in cls.roi_cast_map and cls.roi_cast_map[roi_dtype] is None:
+          exception.DTYPE_NOT_CAST_EXCEPT(
+              "Resize input " + node.inputs[1] + " with data type '" +
+              data_type.tf_to_np_str(roi_dtype) + "'",
+              data_type.tf_to_np_str_list(cls.roi_supported_types))
       if coordinate_transformation_mode == "pytorch_half_pixel":
         exception.OP_UNSUPPORTED_EXCEPT(
             "Resize coordinate_transformation_mode=pytorch_half_pixel",
@@ -123,8 +159,10 @@ class Resize(BackendHandler):
     # x, roi and scales are all in NCHW format
     x = kwargs["tensor_dict"][node.inputs[0]]
     x_shape = tf_shape(x)
+    x_dtype = x.dtype
     scales = kwargs["tensor_dict"][node.inputs[1]]
 
+    # get the new size from scales
     h_w_scale = scales[2:]
     h_w_shape = x_shape[2:]
     new_h_w_shape = tf.cast(h_w_scale * tf.cast(h_w_shape, scales.dtype),
@@ -136,6 +174,9 @@ class Resize(BackendHandler):
     else:
       mode = tf.image.ResizeMethod.NEAREST_NEIGHBOR
 
+    # process tf.image.resize unsupported datatype for x
+    x = tf.cast(x, cls.x_cast_map[x_dtype]) if x_dtype in cls.x_cast_map else x
+
     # The input image is in NCHW format. But tf.image.resize only
     # support channel last data format. Therefore need to transpose
     # to NHWC format first then process resize and then transpose
@@ -143,6 +184,8 @@ class Resize(BackendHandler):
     x_t = tf.transpose(x, perm=[0, 2, 3, 1])
     y = tf.image.resize(x_t, size=new_h_w_shape, method=mode)
     output = tf.transpose(y, perm=[0, 3, 1, 2])
+    # cast output back to the original x.dtype
+    output = tf.cast(output, x_dtype) if x_dtype is not tf.float32 else output
 
     return [output]
 
@@ -152,7 +195,9 @@ class Resize(BackendHandler):
     tensor_dict = kwargs["tensor_dict"]
     x = tensor_dict[node.inputs[0]]
     x_shape = tf_shape(x)
+    x_dtype = x.dtype
     roi = tensor_dict[node.inputs[1]]
+    roi_dtype = roi.dtype
     scales = tensor_dict[node.inputs[2]]
     sizes = tensor_dict[node.inputs[3]] if len(
         node.inputs) == 4 else tf.constant([], dtype=tf.int64)
@@ -174,8 +219,7 @@ class Resize(BackendHandler):
     if len(node.inputs) == 3:  # only scales is defined
       h_w_scale = scales[2:]
       h_w_shape = x_shape[2:]
-      new_size = tf.cast(h_w_scale * tf.cast(h_w_shape, scales.dtype),
-                         tf.int32)
+      new_size = tf.cast(h_w_scale * tf.cast(h_w_shape, scales.dtype), tf.int32)
     else:  # sizes is defined
       # The number of elements of 'sizes' should be the same as the rank of input 'X'
       sizes.set_shape(x_shape.shape)
@@ -186,16 +230,8 @@ class Resize(BackendHandler):
     # "new_size" should always contain [h, w], therefore the shape must be 2.
     new_size.set_shape([2])
 
-    # get boxes for crop
-    indices = []
-    x_rank = len(x.get_shape())
-    for i in range(2, x_rank):
-      indices.insert(i - 2, i)
-      indices.insert(i, i + x_rank)
-    boxes = tf.expand_dims(tf.gather(roi, indices, axis=0), 0)
-
-    # get box_indices for crop
-    box_indices = tf.cast(tf.range(0, x_shape[0]), dtype=tf.int32)
+    # process tf.image.resize and tf.image.crop_and_resize unsupported datatype for x
+    x = tf.cast(x, cls.x_cast_map[x_dtype]) if x_dtype in cls.x_cast_map else x
 
     # The input image is in NCHW format. But tf.image.crop_and_resize,
     # tf.image.resize and tf.compat.v1.image.resize_xx only support
@@ -204,6 +240,20 @@ class Resize(BackendHandler):
     # NCHW format.
     x_t = tf.transpose(x, perm=[0, 2, 3, 1])
     if coordinate_transformation_mode == "tf_crop_and_resize":
+      # process tf.image.crop_and_resize unsupported datatype for boxes(roi in onnx resize)
+      roi = tf.cast(
+          roi,
+          cls.roi_cast_map[roi_dtype]) if roi_dtype in cls.roi_cast_map else roi
+      # get boxes for crop
+      indices = []
+      x_rank = len(x.get_shape())
+      for i in range(2, x_rank):
+        indices.insert(i - 2, i)
+        indices.insert(i, i + x_rank)
+      boxes = tf.expand_dims(tf.gather(roi, indices, axis=0), 0)
+      # get box_indices for crop
+      box_indices = tf.cast(tf.range(0, x_shape[0]), dtype=tf.int32)
+      # run crop and resize
       y = tf.image.crop_and_resize(x_t, boxes, box_indices, new_size, mode,
                                    extrapolation_value)
     elif coordinate_transformation_mode == "align_corners":
@@ -219,5 +269,11 @@ class Resize(BackendHandler):
     else:  # half_pixel or tf_half_pixel_for_nn
       y = tf.image.resize(x_t, size=new_size, method=mode)
     output = tf.transpose(y, perm=[0, 3, 1, 2])
+    # cast output back to the original x.dtype
+    output = tf.cast(output, x_dtype) if x_dtype is not tf.float32 else output
 
     return [output]
+
+  @classmethod
+  def version_13(cls, node, **kwargs):
+    return cls.version_11(node, **kwargs)
