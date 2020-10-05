@@ -1,7 +1,7 @@
 # ONNX-Tensorflow Support Status
 |||
 |-:|:-|
-|ONNX-Tensorflow Version|Master ( commit id: 1f3f6b8cac846ddf6d8d510ce461ced8fbb7b676 )|
+|ONNX-Tensorflow Version|Master ( commit id: 92934b2caf03a48045f1170dc6f854f31042bb4b )|
 |ONNX Version|Master ( commit id: b2ed660d0a065b8346816f2c3a95d79ca79b88c9 )|
 |Tensorflow Version|v2.3.0|
 
@@ -123,10 +123,10 @@ Notes:
 |ReduceL2|**1**|1|1|1|1|1|1|1|1|1|**11**|11|**13**:small_red_triangle:|ReduceL2|
 |ReduceLogSum|**1**|1|1|1|1|1|1|1|1|1|**11**|11|**13**:small_red_triangle:|ReduceLogSum|
 |ReduceLogSumExp|**1**|1|1|1|1|1|1|1|1|1|**11**|11|**13**:small_red_triangle:|ReduceLogSumExp|
-|ReduceMax|**1**|1|1|1|1|1|1|1|1|1|**11**|**12**|**13**:small_red_triangle:|ReduceMax|
-|ReduceMean|**1**|1|1|1|1|1|1|1|1|1|**11**|11|**13**:small_red_triangle:|ReduceMean|
-|ReduceMin|**1**|1|1|1|1|1|1|1|1|1|**11**|**12**|**13**:small_red_triangle:|ReduceMin|
-|ReduceProd|**1**|1|1|1|1|1|1|1|1|1|**11**|11|**13**:small_red_triangle:|ReduceProd|
+|ReduceMax|**1**|1|1|1|1|1|1|1|1|1|**11**|**12**|**13**|ReduceMax|
+|ReduceMean|**1**|1|1|1|1|1|1|1|1|1|**11**|11|**13**|ReduceMean|
+|ReduceMin|**1**|1|1|1|1|1|1|1|1|1|**11**|**12**|**13**|ReduceMin|
+|ReduceProd|**1**|1|1|1|1|1|1|1|1|1|**11**|11|**13**|ReduceProd|
 |ReduceSum|**1**|1|1|1|1|1|1|1|1|1|**11**|11|**13**:small_red_triangle:|ReduceSum|
 |ReduceSumSquare|**1**|1|1|1|1|1|1|1|1|1|**11**|11|**13**:small_red_triangle:|ReduceSumSquare|
 |Relu|**1**|1|1|1|1|**6**|6|6|6|6|6|6|**13**:small_red_triangle:|Relu|
@@ -179,7 +179,7 @@ Notes:
 |Where|-|-|-|-|-|-|-|-|**9**|9|9|9|9|Where|
 |Xor|**1**|1|1|1|1|1|**7**|7|7|7|7|7|7|Xor|
 
-ONNX-TF Supported Operators / ONNX Operators: 96 / 162
+ONNX-TF Supported Operators / ONNX Operators: 104 / 162
 
 Notes:
 1. Cast: Cast string to data types other than float32/float64/int32/int64 is not supported in Tensorflow
