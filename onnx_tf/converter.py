@@ -93,7 +93,7 @@ def parse_args(args):
   # required two args, source and destination path
   parser.add_argument("--infile", "-i", help="Input file path.", required=True)
   parser.add_argument(
-      "--outfile", "-o", help="Output file path.", required=True)
+      "--outdir", "-o", help="Output directory.", required=True)
 
   def add_argument_group(parser, group_name, funcs):
     group = parser.add_argument_group(group_name)
@@ -114,12 +114,12 @@ def parse_args(args):
   return parser.parse_args(args)
 
 
-def convert(infile, outfile, **kwargs):
+def convert(infile, outdir, **kwargs):
   """Convert pb.
 
   Args:
     infile: Input path.
-    outfile: Output path.
+    outdir: Output path.
     **kwargs: Other args for converting.
 
   Returns:
@@ -132,5 +132,5 @@ def convert(infile, outfile, **kwargs):
   common.logger.info("Start converting onnx pb to tf pb:")
   onnx_model = onnx.load(infile)
   tf_rep = backend.prepare(onnx_model, **kwargs)
-  tf_rep.export_graph(outfile)
+  tf_rep.export_graph(outdir)
   common.logger.info("Converting completes successfully.")
