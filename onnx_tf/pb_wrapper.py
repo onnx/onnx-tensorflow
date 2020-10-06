@@ -1,6 +1,5 @@
 import inspect
 from itertools import chain
-import warnings
 
 import numpy as np
 from onnx import NodeProto
@@ -22,8 +21,8 @@ from onnx_tf.common import CONST_ONE_FP32
 from onnx_tf.common import CONST_ONE_INT32
 from onnx_tf.common import CONST_ZERO_INT32
 from onnx_tf.common import IS_PYTHON3
+from onnx_tf.common import logger
 from onnx_tf.common.data_type import any_dtype_to_onnx_dtype
-
 
 class TensorflowNode(object):
 
@@ -87,7 +86,7 @@ class TensorflowNode(object):
         num = len(self.attr["_output_shapes"])
       else:
         num = 1
-        warnings.warn("_output_shapes is not in node.attr. "
+        logger.warning("_output_shapes is not in node.attr. "
                       "The num of output is set to 1 for commonly. "
                       "It will cause problem with case of multiple outputs.")
     return [

@@ -16,6 +16,7 @@ class TensorflowRep(BackendRep):
     self._inputs = inputs or []
     self._outputs = outputs or []
     self._tensor_dict = tensor_dict or {}
+    self._tf_module = None
 
   @property
   def graph(self):
@@ -49,6 +50,14 @@ class TensorflowRep(BackendRep):
   def tensor_dict(self, tensor_dict):
     self._tensor_dict = tensor_dict
 
+  @property
+  def tf_module(self):
+    return self._tf_module
+
+  @tf_module.setter
+  def tf_module(self, tf_module):
+    self._tf_module = tf_module
+
   def run(self, inputs, **kwargs):
     """ Run TensorflowRep.
 
@@ -58,31 +67,26 @@ class TensorflowRep(BackendRep):
     """
     super(TensorflowRep, self).run(inputs, **kwargs)
 
-    # TODO: handle name scope if necessary
-    with self.graph.as_default():
-      with tf.Session() as sess:
-        if isinstance(inputs, dict):
-          feed_dict = inputs
-        elif isinstance(inputs, list) or isinstance(inputs, tuple):
-          if len(self.inputs) != len(inputs):
-            raise RuntimeError('Expected {} values for uninitialized '
-                               'graph inputs ({}), but got {}.'.format(
-                                   len(self.inputs), ', '.join(self.inputs),
-                                   len(inputs)))
-          feed_dict = dict(zip(self.inputs, inputs))
-        else:
-          # single input
-          feed_dict = dict([(self.inputs[0], inputs)])
+    if isinstance(inputs, dict):
+      feed_dict = inputs
+    elif isinstance(inputs, list) or isinstance(inputs, tuple):
+      if len(self.inputs) != len(inputs):
+        raise RuntimeError('Expected {} values for uninitialized '
+                           'graph inputs ({}), but got {}.'.format(
+                               len(self.inputs), ', '.join(self.inputs),
+                               len(inputs)))
+      feed_dict = dict(zip(self.inputs, inputs))
+    else:
+      # single input
+      feed_dict = dict([(self.inputs[0], inputs)])
 
-        feed_dict = {
-            self.tensor_dict[key]: feed_dict[key] for key in self.inputs
-        }
+    input_dict = dict(
+        [(x[0], tf.constant(x[1])) for x in feed_dict.items()])
 
-        sess.run(tf.global_variables_initializer())
-        outputs = [self.tensor_dict[output] for output in self.outputs]
+    output_values = self.tf_module(**input_dict)
+    output_values = [val.numpy() if isinstance(val, tf.Tensor) else val for val in output_values]
 
-        output_values = sess.run(outputs, feed_dict=feed_dict)
-        return namedtupledict('Outputs', self.outputs)(*output_values)
+    return namedtupledict('Outputs', self.outputs)(*output_values)
 
   def export_graph(self, path):
     """Export backend representation to a Tensorflow proto file.
@@ -95,7 +99,4 @@ class TensorflowRep(BackendRep):
 
     :returns: none.
     """
-    graph_proto = self.graph.as_graph_def()
-    file = open(path, "wb")
-    file.write(graph_proto.SerializeToString())
-    file.close()
+    tf.saved_model.save(self.tf_module, path, signatures=self.tf_module.__call__.get_concrete_function(**self.signatures))

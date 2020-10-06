@@ -1,5 +1,5 @@
 import inspect
-import warnings
+import onnx_tf.common as common
 
 
 class CustomException(object):
@@ -27,7 +27,7 @@ class OpUnimplementedException(CustomException):
 
   def __call__(self, op, version=None, domain=None):
     if IGNORE_UNIMPLEMENTED:
-      self._func = warnings.warn
+      self._func = common.logger.warning
     super(OpUnimplementedException, self).__call__(op, version, domain)
 
   def get_message(self, op, version=None, domain=None):
@@ -67,7 +67,22 @@ class ConstNotFoundException(CustomException):
     return self._message.format(name, op)
 
 
+class DtypeNotCastException(object):
+
+  def __init__(self):
+    super(DtypeNotCastException, self).__init__()
+    self._func = RuntimeError
+    self._message = "{} is not supported in Tensorflow. Please set auto_cast to True or change data type to one of the supported types in the following list {}."
+
+  def __call__(self, op, supported_dtypes):
+    raise self._func(self.get_message(op, supported_dtypes))
+
+  def get_message(self, op, supported_dtypes):
+    return self._message.format(op, supported_dtypes)
+
+
 IGNORE_UNIMPLEMENTED = False
 OP_UNIMPLEMENTED_EXCEPT = OpUnimplementedException()
 OP_UNSUPPORTED_EXCEPT = OpUnsupportedException()
 CONST_NOT_FOUND_EXCEPT = ConstNotFoundException()
+DTYPE_NOT_CAST_EXCEPT = DtypeNotCastException()

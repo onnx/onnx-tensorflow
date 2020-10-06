@@ -69,6 +69,8 @@ def __convert_onnx_attribute_proto(attr_proto):
     return str(attr_proto.s, 'utf-8') if IS_PYTHON3 else attr_proto.s
   elif attr_proto.HasField('t'):
     return attr_proto.t  # this is a proto!
+  elif attr_proto.HasField('g'):
+    return attr_proto.g
   elif attr_proto.floats:
     return list(attr_proto.floats)
   elif attr_proto.ints:
@@ -78,5 +80,7 @@ def __convert_onnx_attribute_proto(attr_proto):
     if IS_PYTHON3:
       str_list = list(map(lambda x: str(x, 'utf-8'), str_list))
     return str_list
+  elif attr_proto.HasField('sparse_tensor'):
+    return attr_proto.sparse_tensor
   else:
     raise ValueError("Unsupported ONNX attribute: {}".format(attr_proto))

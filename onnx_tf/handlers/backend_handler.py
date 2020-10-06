@@ -171,12 +171,22 @@ class BackendHandler(Handler):
     else:
       # use closure to get args for function using decorator
       if tf_func.__closure__ is not None:
-        params = tf_func.__closure__[1].cell_contents.args
+        while "__wrapped__" in tf_func.func_dict:
+          tf_func = tf_func.func_dict["__wrapped__"]
+        params = inspect.getargspec(tf_func).args
       else:
         params = inspect.getargspec(tf_func).args
 
     attrs = cls._process_attrs(attrs)
+
     if "name" in attrs.keys():
       attrs["name"] = "onnx_tf_prefix_" + attrs["name"]
-    return tf_func(*inputs,
-                   **dict([(p, attrs[p]) for p in params if p in attrs]))
+
+    attrs = {p: v for p, v in attrs.items() if p in params}
+    kwargs = dict(zip(params, inputs))
+    ambiguous_arguments = any(kwargs.get(p) is not None and v is not None
+                              for p, v in attrs.items())
+    if ambiguous_arguments:
+      raise TypeError('Ambiguous arguments for {}()'.format(tf_func.__name__))
+    kwargs.update((p, v) for p, v in attrs.items() if v is not None)
+    return tf_func(**kwargs)

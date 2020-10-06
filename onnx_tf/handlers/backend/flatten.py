@@ -6,18 +6,14 @@ from onnx_tf.handlers.handler import tf_func
 
 
 @onnx_op("Flatten")
-@tf_func(tf.layers.flatten)
+@tf_func(tf.keras.backend.flatten)
 class Flatten(BackendHandler):
 
   @classmethod
   def _common(cls, node, **kwargs):
     x = kwargs["tensor_dict"][node.inputs[0]]
     shape = tf.shape(x)
-    x_rank = len(x.shape)
     axis = node.attrs.get("axis", 1)
-
-    if axis == 1 and x_rank > 1:
-      return [cls.make_tensor_from_onnx_node(node, **kwargs)]
 
     if axis == 0:
       cal_shape = (1, -1)
@@ -32,4 +28,8 @@ class Flatten(BackendHandler):
 
   @classmethod
   def version_9(cls, node, **kwargs):
+    return cls._common(node, **kwargs)
+
+  @classmethod
+  def version_11(cls, node, **kwargs):
     return cls._common(node, **kwargs)

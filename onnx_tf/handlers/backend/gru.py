@@ -6,10 +6,19 @@ from onnx_tf.common import get_unique_suffix
 from onnx_tf.common import exception
 from onnx_tf.handlers.backend_handler import BackendHandler
 from onnx_tf.handlers.handler import onnx_op
+from onnx_tf.handlers.handler import partial_support
+from onnx_tf.handlers.handler import ps_description
 from .rnn_mixin import RNNMixin
 
 
 @onnx_op("GRU")
+@partial_support(True)
+@ps_description(
+    "GRU with clip or GRU with linear_before_reset, or " +
+    "GRU not using sigmoid for z and r, or " +
+    "GRU using Elu as the activation function " + "with alpha != 1, or " +
+    "GRU using HardSigmoid as the activation function " +
+    "with alpha != 0.2 or beta != 0.5 " + "are not supported in TensorFlow.")
 class GRU(RNNMixin, BackendHandler):
 
   @classmethod
@@ -66,7 +75,11 @@ class GRU(RNNMixin, BackendHandler):
       elif names[-2] == "candidate":
         new_w = tf.transpose(w_h)
         new_r = tf.transpose(r_h)
-      kernel = tf.concat([new_w, new_r], 0)
+      else:
+        new_w = None
+        new_r = None
+      kernel = tf.Variable(tf.concat([new_w, new_r], 0))
+
       return kernel
     if names[-1] == "bias":
       if len(node.inputs) >= 4:
@@ -84,10 +97,10 @@ class GRU(RNNMixin, BackendHandler):
         elif names[-2] == "candidate":
           w_b = tf.transpose(w_b_h)
           r_b = tf.transpose(r_b_h)
-        return tf.add(w_b, r_b)
-      return getter(name, *args, **kwargs)
+        return tf.Variable(tf.add(w_b, r_b))
     return getter(name, *args, **kwargs)
 
+  scope = None
   @classmethod
   def _common(cls, node, **kwargs):
     tensor_dict = kwargs["tensor_dict"]
@@ -128,14 +141,13 @@ class GRU(RNNMixin, BackendHandler):
                                    activation_beta[3]))
 
     # TODO(fumihwh): check if reverse and bidirectional works
-    with tf.variable_scope(
+    with tf.compat.v1.variable_scope(
         "GRU_" + get_unique_suffix(),
         custom_getter=partial(
             cls._custom_getter,
             node=node,
             tensor_dict=tensor_dict,
-            is_bidirectional=num_directions == 2)):
-
+            is_bidirectional=num_directions == 2), reuse=False):
       cell_kwargs["num_units"] = hidden_size
       if input_size < 4 or node.inputs[3] not in tensor_dict:
         cell_kwargs["bias_initializer"] = tf.zeros_initializer
@@ -158,8 +170,9 @@ class GRU(RNNMixin, BackendHandler):
       rnn_kwargs["time_major"] = True
       rnn_kwargs["dtype"] = tf.float32
 
-      outputs, states = cls.rnn(x, tf.nn.rnn_cell.GRUCell, cell_kwargs,
-                                rnn_kwargs, tf_activations, direction)
+      outputs, states = cls.rnn(x, tf.compat.v1.nn.rnn_cell.GRUCell,
+                                cell_kwargs, rnn_kwargs, tf_activations,
+                                direction)
 
     if num_directions == 1:
       state = states[0]

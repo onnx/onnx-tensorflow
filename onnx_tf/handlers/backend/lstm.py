@@ -6,10 +6,16 @@ from onnx_tf.common import get_unique_suffix
 from onnx_tf.common import exception
 from onnx_tf.handlers.backend_handler import BackendHandler
 from onnx_tf.handlers.handler import onnx_op
+from onnx_tf.handlers.handler import partial_support
+from onnx_tf.handlers.handler import ps_description
 from .rnn_mixin import RNNMixin
 
 
 @onnx_op("LSTM")
+@partial_support(True)
+@ps_description("LSTM not using sigmoid for `f`, or " +
+                "LSTM not using the same activation for `g` and `h` " +
+                "are not supported in Tensorflow.")
 class LSTM(RNNMixin, BackendHandler):
 
   @classmethod
@@ -68,7 +74,7 @@ class LSTM(RNNMixin, BackendHandler):
       new_w = tf.transpose(tf.concat([w_i, w_c, w_f, w_o], 0))
       new_r = tf.transpose(tf.concat([r_i, r_c, r_f, r_o], 0))
       kernel = tf.concat([new_w, new_r], 0)
-      return kernel
+      return tf.Variable(kernel)
     if names[-1] == "bias":
       if len(node.inputs) >= 4:
         # onnx Wb[iofc], Rb[iofc]
@@ -81,7 +87,7 @@ class LSTM(RNNMixin, BackendHandler):
         r_b_i, r_b_o, r_b_f, r_b_c = tf.split(r_b, 4)
         w_b = tf.transpose(tf.concat([w_b_i, w_b_c, w_b_f, w_b_o], 0))
         r_b = tf.transpose(tf.concat([r_b_i, r_b_c, r_b_f, r_b_o], 0))
-        return tf.add(w_b, r_b)
+        return tf.Variable(tf.add(w_b, r_b))
       return getter(name, *args, **kwargs)
     # Only use_peepholes is True,
     # will try to get w_f_diag, w_i_diag, w_o_diag
@@ -92,11 +98,11 @@ class LSTM(RNNMixin, BackendHandler):
       else:
         p = tensor_dict[node.inputs[7]]
       if names[-1] == "w_f_diag":
-        return tf.split(p, 3, axis=1)[2]
+        return tf.Variable(tf.split(p, 3, axis=1)[2])
       if names[-1] == "w_i_diag":
-        return tf.split(p, 3, axis=1)[0]
+        return tf.Variable(tf.split(p, 3, axis=1)[0])
       if names[-1] == "w_o_diag":
-        return tf.split(p, 3, axis=1)[1]
+        return tf.Variable(tf.split(p, 3, axis=1)[1])
     return getter(name, *args, **kwargs)
 
   @classmethod
@@ -127,43 +133,45 @@ class LSTM(RNNMixin, BackendHandler):
     if "clip" in node.attrs:
       cell_kwargs["cell_clip"] = node.attrs["clip"]
 
-    tf_activations = [tf.nn.tanh]
+    tf_activations = [tf.nn.tanh] * num_directions
     if "activations" in node.attrs:
       activations = list(map(lambda x: x.lower(), node.attrs["activations"]))
       activation_alpha = node.attrs.get("activation_alpha", [None] * 6)
       activation_beta = node.attrs.get("activation_beta", [None] * 6)
+
+      # tf only supports cutomizing hidden states activation function,
+      # which correspond to activation functions specified at position 1
+      # and 4 in onnx's activations attribute.
+      activation_idxs = [1, 4] if num_directions == 2 else [1]
       tf_activations = [
-          cls.rnn_get_activation(activations[1], activation_alpha[1],
-                                 activation_beta[1])
+          cls.rnn_get_activation(activations[i], activation_alpha[i],
+                                 activation_beta[i]) for i in activation_idxs
       ]
-      if num_directions == 2:
-        tf_activations.append(
-            cls.rnn_get_activation(activations[4], activation_alpha[4],
-                                   activation_beta[4]))
 
     # TODO(fumihwh): check if reverse and bidirectional works
-    with tf.variable_scope(
+    with tf.compat.v1.variable_scope(
         "LSTM_" + get_unique_suffix(),
         custom_getter=partial(
             cls._custom_getter,
             node=node,
             tensor_dict=tensor_dict,
             is_bidirectional=num_directions == 2)):
-
       cell_kwargs[
           "use_peepholes"] = input_size == 8 and node.inputs[7] in tensor_dict
       cell_kwargs["forget_bias"] = 0.
       cell_kwargs["num_units"] = hidden_size
       initial_state = None
       initial_state_bw = None
-      if input_size >= 7:
+      if input_size >= 6:
         initial_h = tensor_dict.get(node.inputs[5], None)
-        initial_c = tensor_dict.get(node.inputs[6], None)
+        initial_c = tensor_dict.get(
+            node.inputs[6],
+            None) if input_size >= 7 else tf.zeros_like(initial_h)
         if initial_h is not None and initial_c is not None:
-          initial_state = (tf.nn.rnn_cell.LSTMStateTuple(
+          initial_state = (tf.compat.v1.nn.rnn_cell.LSTMStateTuple(
               initial_c[0], initial_h[0]),)
           if num_directions == 2:
-            initial_state_bw = initial_state = (tf.nn.rnn_cell.LSTMStateTuple(
+            initial_state_bw = (tf.compat.v1.nn.rnn_cell.LSTMStateTuple(
                 initial_c[1], initial_h[1]),)
 
       rnn_kwargs = {}
@@ -176,8 +184,9 @@ class LSTM(RNNMixin, BackendHandler):
       rnn_kwargs["time_major"] = True
       rnn_kwargs["dtype"] = tf.float32
 
-      outputs, states = cls.rnn(x, tf.nn.rnn_cell.LSTMCell, cell_kwargs,
-                                rnn_kwargs, tf_activations, direction)
+      outputs, states = cls.rnn(x, tf.compat.v1.nn.rnn_cell.LSTMCell,
+                                cell_kwargs, rnn_kwargs, tf_activations,
+                                direction)
 
     if num_directions == 1:
       state = states[0]

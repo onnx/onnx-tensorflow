@@ -20,23 +20,25 @@ class Reshape(BackendHandler):
       shape = tf.cast(kwargs["tensor_dict"][node.inputs[1]], tf.int64)
     input_shape = tf.shape(tensor, out_type=tf.int64)
 
-    # Extract indicies of the shape paramter where
+    # Extract indicies of the shape parameter where
     # a copy from the original dimension size is needed.
-    copy_indices = tf.squeeze(
-        tf.where(tf.equal(shape, tf.constant(0, dtype=tf.int64))), -1)
+    sparse_indices = tf.where(tf.equal(shape, tf.constant(0, dtype=tf.int64)))
+    copy_indices = tf.squeeze(sparse_indices, -1)
 
     indices_gathered = tf.gather(input_shape, copy_indices)
-    indices_scattered = tf.sparse_to_dense(copy_indices,
-                                           tf.cast(tf.shape(shape), tf.int64),
-                                           indices_gathered)
+    indices_scattered = tf.sparse.to_dense(
+        tf.sparse.SparseTensor(sparse_indices, indices_gathered,
+                               tf.cast(tf.shape(shape), tf.int64)))
 
     # Perform the copy wherever requested (wherever dim_size == 0)
     copied_shape = shape + indices_scattered
     attrs = copy.deepcopy(node.attrs)
     attrs.pop("shape", None)
     return [
-        cls.make_tensor_from_onnx_node(
-            node, inputs=[tensor, copied_shape], attrs=attrs, **kwargs)
+        cls.make_tensor_from_onnx_node(node,
+                                       inputs=[tensor, copied_shape],
+                                       attrs=attrs,
+                                       **kwargs)
     ]
 
   @classmethod

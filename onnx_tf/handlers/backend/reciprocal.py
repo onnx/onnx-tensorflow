@@ -7,7 +7,7 @@ from .math_mixin import BasicMathMixin
 
 
 @onnx_op("Reciprocal")
-@tf_func(tf.reciprocal)
+@tf_func(tf.math.reciprocal)
 class Reciprocal(BasicMathMixin, BackendHandler):
 
   @classmethod

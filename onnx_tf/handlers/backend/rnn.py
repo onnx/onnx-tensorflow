@@ -6,10 +6,14 @@ from onnx_tf.common import get_unique_suffix
 from onnx_tf.common import exception
 from onnx_tf.handlers.backend_handler import BackendHandler
 from onnx_tf.handlers.handler import onnx_op
+from onnx_tf.handlers.handler import partial_support
+from onnx_tf.handlers.handler import ps_description
 from .rnn_mixin import RNNMixin
 
 
 @onnx_op("RNN")
+@partial_support(True)
+@ps_description("RNN with clip is not supported in Tensorflow.")
 class RNN(RNNMixin, BackendHandler):
 
   @classmethod
@@ -46,7 +50,7 @@ class RNN(RNNMixin, BackendHandler):
       new_w = tf.transpose(tf.squeeze(w))
       new_r = tf.transpose(tf.squeeze(r))
       kernel = tf.concat([new_w, new_r], 0)
-      return kernel
+      return tf.Variable(kernel)
     if names[-1] == "bias":
       if len(node.inputs) >= 4:
         if is_bidirectional:
@@ -56,7 +60,7 @@ class RNN(RNNMixin, BackendHandler):
         w_b, r_b = tf.split(tf.squeeze(b), 2)
         w_b = tf.transpose(w_b)
         r_b = tf.transpose(r_b)
-        return tf.add(w_b, r_b)
+        return tf.Variable(tf.add(w_b, r_b))
       return getter(name, *args, **kwargs)
     return getter(name, *args, **kwargs)
 
@@ -99,7 +103,7 @@ class RNN(RNNMixin, BackendHandler):
                                    activation_beta[1]))
 
     # TODO(fumihwh): check if reverse and bidirectional works
-    with tf.variable_scope(
+    with tf.compat.v1.variable_scope(
         "RNN_" + get_unique_suffix(),
         custom_getter=partial(
             cls._custom_getter,
@@ -127,8 +131,9 @@ class RNN(RNNMixin, BackendHandler):
       rnn_kwargs["time_major"] = True
       rnn_kwargs["dtype"] = tf.float32
 
-      outputs, states = cls.rnn(x, tf.nn.rnn_cell.BasicRNNCell, cell_kwargs,
-                                rnn_kwargs, tf_activations, direction)
+      outputs, states = cls.rnn(x, tf.compat.v1.nn.rnn_cell.BasicRNNCell,
+                                cell_kwargs, rnn_kwargs, tf_activations,
+                                direction)
 
     if num_directions == 1:
       state = states[0]

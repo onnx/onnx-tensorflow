@@ -7,7 +7,7 @@ from .math_mixin import BasicMathMixin
 
 
 @onnx_op("Ceil")
-@tf_func(tf.ceil)
+@tf_func(tf.math.ceil)
 class Ceil(BasicMathMixin, BackendHandler):
 
   @classmethod
@@ -16,4 +16,8 @@ class Ceil(BasicMathMixin, BackendHandler):
 
   @classmethod
   def version_6(cls, node, **kwargs):
+    return [cls.make_tensor_from_onnx_node(node, **kwargs)]
+
+  @classmethod
+  def version_13(cls, node, **kwargs):
     return [cls.make_tensor_from_onnx_node(node, **kwargs)]

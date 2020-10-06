@@ -15,8 +15,8 @@ class Elu(BackendHandler):
     alpha = node.attrs.get("alpha", 1.0)
     if alpha != 1.0:
       return [
-          tf.cast(x < 0.0, tf.float32) * alpha * (tf.exp(x) - 1.0) +
-          tf.cast(x >= 0.0, tf.float32) * x
+          tf.cast(x < 0.0, tf.float32) * alpha *
+          (tf.exp(x) - 1.0) + tf.cast(x >= 0.0, tf.float32) * x
       ]
     else:
       return [cls.make_tensor_from_onnx_node(node, **kwargs)]

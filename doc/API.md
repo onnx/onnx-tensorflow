@@ -29,6 +29,14 @@ Changing to False is strongly discouraged.
 Currently, the strict flag only affects the behavior of MaxPool and AveragePool ops.
 
 
+`logging_level` : The logging level, default is INFO. Change it to DEBUG
+to see more conversion details or to WARNING to see less
+
+
+`auto_cast` : Whether to auto cast data types that might lose precision for the tensors
+with types not natively supported by Tensorflow, default is False
+
+
 _returns_:
 
 A TensorflowRep class object representing the ONNX model
@@ -55,52 +63,4 @@ _params_:
 _returns_:
 
 none.
-
-#### `onnx_tf.frontend.tensorflow_graph_to_onnx_model`
-
-<details>
-  <summary>Converts a Tensorflow Graph Proto to an ONNX model
-
-  </summary>
-This function converts a Tensorflow Graph proto to an equivalent
-representation of ONNX model.
-
-</details>
-
-
-
-_params_:
-
-`graph_def` : Tensorflow Graph Proto object.
-
-
-`output` : List of string or a string specifying the name
-of the output graph node.
-
-
-`opset` : Opset version number, list or tuple.
-Default is 0 means using latest version with domain ''.
-List or tuple items should be (str domain, int version number).
-
-
-`producer_name` : The name of the producer.
-
-
-`graph_name` : The name of the output ONNX Graph.
-
-
-`ignore_unimplemented` : Convert to ONNX model and ignore all the operators
-that are not currently supported by onnx-tensorflow.
-This is an experimental feature. By enabling this feature,
-the model would not be guaranteed to match the ONNX specifications.
-
-
-`optimizer_passes` : List of optimization names c.f.
-https://github.com/onnx/onnx/blob/master/onnx/optimizer.py for available
-optimization passes.
-
-
-_returns_:
-
-The equivalent ONNX Model Proto object.
 

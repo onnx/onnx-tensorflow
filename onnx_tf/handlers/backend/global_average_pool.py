@@ -12,4 +12,4 @@ class GlobalAveragePool(BackendHandler):
     x = kwargs["tensor_dict"][node.inputs[0]]
     dims = tf.range(tf.rank(x))
     _, dim_window = tf.split(dims, [2, tf.size(dims) - 2])
-    return [tf.reduce_mean(x, axis=dim_window, keep_dims=True)]
+    return [tf.reduce_mean(x, axis=dim_window, keepdims=True)]

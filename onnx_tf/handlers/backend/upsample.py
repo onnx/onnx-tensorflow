@@ -6,11 +6,16 @@ import tensorflow as tf
 from onnx_tf.common import exception
 from onnx_tf.handlers.backend_handler import BackendHandler
 from onnx_tf.handlers.handler import onnx_op
+from onnx_tf.handlers.handler import partial_support
+from onnx_tf.handlers.handler import ps_description
 from onnx_tf.handlers.handler import tf_func
+from onnx_tf.common.tf_helper import tf_shape
 
 
 @onnx_op("Upsample")
-@tf_func(tf.image.resize_images)
+@tf_func(tf.image.resize)
+@partial_support(True)
+@ps_description("Upsample required 4D input in Tensorflow.")
 class Upsample(BackendHandler):
 
   @classmethod
@@ -20,7 +25,8 @@ class Upsample(BackendHandler):
     if len(x_shape) != 4:
       exception.OP_UNSUPPORTED_EXCEPT("Upsample without 4D input", "Tensorflow")
 
-    if node.attrs.get("mode", "nearest").lower() not in ["nearest", "bilinear"]:
+    if node.attrs.get(
+        "mode", "nearest").lower() not in ["nearest", "bilinear", "linear"]:
       exception.OP_UNSUPPORTED_EXCEPT("Upsample without nearest or bilinear",
                                       "Tensorflow")
 
@@ -34,7 +40,7 @@ class Upsample(BackendHandler):
     new_weight = np.floor(x_shape[3] * scales[3])
 
     mode = attrs.get("mode", "nearest")
-    if mode.lower() == "bilinear":
+    if mode.lower() == "bilinear" or mode.lower() == "linear":
       mode = tf.image.ResizeMethod.BILINEAR
     else:
       mode = tf.image.ResizeMethod.NEAREST_NEIGHBOR
@@ -50,7 +56,7 @@ class Upsample(BackendHandler):
   @classmethod
   def version_9(cls, node, **kwargs):
     x = kwargs["tensor_dict"][node.inputs[0]]
-    x_shape = x.get_shape().as_list()
+    x_shape = tf_shape(x)
     attrs = copy.deepcopy(node.attrs)
     scales = kwargs["tensor_dict"][node.inputs[1]]
 
@@ -61,10 +67,11 @@ class Upsample(BackendHandler):
     with tf.control_dependencies([assert_n_c_scale_is_one]):
       h_w_scale = scales[2:]
       h_w_shape = x_shape[2:]
-      new_h_w_shape = tf.cast(h_w_scale * h_w_shape, tf.int32)
+      new_h_w_shape = tf.cast(h_w_scale * tf.cast(h_w_shape, scales.dtype),
+                              tf.int32)
 
       mode = attrs.get("mode", "nearest")
-      if mode.lower() == "bilinear":
+      if mode.lower() == "bilinear" or mode.lower() == "linear":
         mode = tf.image.ResizeMethod.BILINEAR
       else:
         mode = tf.image.ResizeMethod.NEAREST_NEIGHBOR

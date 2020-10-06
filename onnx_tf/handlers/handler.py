@@ -4,32 +4,31 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import inspect
-import warnings
 
 from onnx import defs
+from onnx.backend.test.runner import BackendIsNotSupposedToImplementIt
 
-from onnx_tf.common import exception
-from onnx_tf.common import IS_PYTHON3
-
+import onnx_tf.common as common
 
 class Handler(object):
   """ This class is base handler class.
   Base backend and frontend base handler class inherit this class.
 
-  All operator handler MUST put decorator @onnx_op and @tf_op to register corresponding op.
+  All operator handler MUST put decorator @onnx_op to register corresponding op.
   """
 
   ONNX_OP = None
-  TF_OP = []
 
   DOMAIN = defs.ONNX_DOMAIN
   VERSION = 0
   SINCE_VERSION = 0
+  PARTIAL_SUPPORT = False
+  PS_DESCRIPTION = ''
 
   @classmethod
   def check_cls(cls):
     if not cls.ONNX_OP:
-      warnings.warn(
+      common.logger.warning(
           "{} doesn't have ONNX_OP. "
           "Please use Handler.onnx_op decorator to register ONNX_OP.".format(
               cls.__name__))
@@ -39,7 +38,7 @@ class Handler(object):
     """ Check args. e.g. if shape info is in graph.
     Raise exception if failed.
 
-    :param node: NodeProto for backend or TensorflowNode for frontend.
+    :param node: NodeProto for backend.
     :param kwargs: Other args.
     """
     pass
@@ -50,16 +49,16 @@ class Handler(object):
     whose name format is `version_%d`. So prefix `version_` is reserved in onnx-tensorflow.
     DON'T use it for other purpose.
 
-    :param node: NodeProto for backend or TensorflowNode for frontend.
+    :param node: NodeProto for backend.
     :param kwargs: Other args.
-    :return: NodeProto for frontend or TensorflowNode for backend.
+    :return: TensorflowNode for backend.
     """
     ver_handle = getattr(cls, "version_{}".format(cls.SINCE_VERSION), None)
     if ver_handle:
       cls.args_check(node, **kwargs)
       return ver_handle(node, **kwargs)
-    exception.OP_UNIMPLEMENTED_EXCEPT(node.op_type, cls.SINCE_VERSION)
-    return None
+
+    raise BackendIsNotSupposedToImplementIt("{} version {} is not implemented.".format(node.op_type, cls.SINCE_VERSION))
 
   @classmethod
   def get_versions(cls):
@@ -78,29 +77,26 @@ class Handler(object):
     return Handler.property_register("ONNX_OP", op)
 
   @staticmethod
-  def tf_op(op):
-    ops = op
-    if not isinstance(ops, list):
-      ops = [ops]
-    return Handler.property_register("TF_OP", ops)
-
-  @staticmethod
   def tf_func(func):
     return Handler.property_register("TF_FUNC", func)
-
-  @staticmethod
-  def experimental(func):
-    return Handler.property_register("EXPERIMENTAL", True)(func)
 
   @staticmethod
   def domain(d):
     return Handler.property_register("DOMAIN", d)
 
   @staticmethod
+  def partial_support(ps):
+    return Handler.property_register("PARTIAL_SUPPORT", ps)
+
+  @staticmethod
+  def ps_description(psd):
+    return Handler.property_register("PS_DESCRIPTION", psd)
+
+  @staticmethod
   def property_register(name, value):
 
     def deco(cls):
-      if inspect.isfunction(value) and not IS_PYTHON3:
+      if inspect.isfunction(value) and not common.IS_PYTHON3:
         setattr(cls, name, staticmethod(value))
       else:
         setattr(cls, name, value)
@@ -110,8 +106,8 @@ class Handler(object):
 
 
 domain = Handler.domain
-experimental = Handler.experimental
 onnx_op = Handler.onnx_op
-tf_op = Handler.tf_op
 tf_func = Handler.tf_func
+partial_support = Handler.partial_support
+ps_description = Handler.ps_description
 property_register = Handler.property_register
