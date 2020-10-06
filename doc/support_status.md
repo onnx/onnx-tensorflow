@@ -1,9 +1,9 @@
 # ONNX-Tensorflow Support Status
 |||
 |-:|:-|
-|ONNX-Tensorflow Version|Master ( commit id: 626b4718728f245b325c56046d9b3a01e9d0b0bf )|
+|ONNX-Tensorflow Version|Master ( commit id: 6bfd631e0daedbc773b76636a5ea19e77a4b63ed )|
 |ONNX Version|Master ( commit id: b2ed660d0a065b8346816f2c3a95d79ca79b88c9 )|
-|Tensorflow Version|v2.3.1|
+|Tensorflow Version|v2.3.0|
 
 Notes:
 * Values that are new or updated from a previous opset version are in bold.
@@ -149,7 +149,7 @@ Notes:
 |Shape|**1**|1|1|1|1|1|1|1|1|1|1|1|**13**:small_red_triangle:|Shape|
 |Shrink|-|-|-|-|-|-|-|-|**9**|9|9|9|9|Shrink|
 |Sigmoid|**1**|1|1|1|1|**6**|6|6|6|6|6|6|**13**:small_red_triangle:|Sigmoid|
-|Sign|-|-|-|-|-|-|-|-|**9**|9|9|9|**13**:small_red_triangle:|Sign|
+|Sign|-|-|-|-|-|-|-|-|**9**|9|9|9|**13**|Sign|
 |Sin|-|-|-|-|-|-|**7**|7|7|7|7|7|7|Sin|
 |Sinh|-|-|-|-|-|-|-|-|**9**|9|9|9|9|Sinh|
 |Size|**1**|1|1|1|1|1|1|1|1|1|1|1|**13**:small_red_triangle:|Size|
@@ -161,13 +161,13 @@ Notes:
 |SpaceToDepth|**1**|1|1|1|1|1|1|1|1|1|1|1|**13**:small_red_triangle:|SpaceToDepth|
 |Split|**1**|**2**|2|2|2|2|2|2|2|2|**11**|11|**13**|Split|
 |SplitToSequence|-|-|-|-|-|-|-|-|-|-|**11**:small_orange_diamond:|11:small_orange_diamond:|11:small_orange_diamond:|SplitToSequence|
-|Sqrt|**1**|1|1|1|1|**6**|6|6|6|6|6|6|**13**:small_red_triangle:|Sqrt|
+|Sqrt|**1**|1|1|1|1|**6**|6|6|6|6|6|6|**13**|Sqrt|
 |Squeeze|**1**|1|1|1|1|1|1|1|1|1|**11**|11|**13**:small_red_triangle:|Squeeze|
 |StringNormalizer|-|-|-|-|-|-|-|-|-|**10**:small_red_triangle:|10:small_red_triangle:|10:small_red_triangle:|10:small_red_triangle:|StringNormalizer|
 |Sub|**1**|1|1|1|1|**6**|**7**|7|7|7|7|7|**13**:small_red_triangle:|Sub|
 |Sum|**1**|1|1|1|1|**6**|6|**8**|8|8|8|8|**13**:small_red_triangle:|Sum|
 |Tan|-|-|-|-|-|-|**7**|7|7|7|7|7|7|Tan|
-|Tanh|**1**|1|1|1|1|**6**|6|6|6|6|6|6|**13**:small_red_triangle:|Tanh|
+|Tanh|**1**|1|1|1|1|**6**|6|6|6|6|6|6|**13**|Tanh|
 |TfIdfVectorizer|-|-|-|-|-|-|-|-|**9**|9|9|9|9|TfIdfVectorizer|
 |ThresholdedRelu|-|-|-|-|-|-|-|-|-|**10**|10|10|10|ThresholdedRelu|
 |Tile|**1**|1|1|1|1|**6**|6|6|6|6|6|6|**13**:small_red_triangle:|Tile|
@@ -179,7 +179,7 @@ Notes:
 |Where|-|-|-|-|-|-|-|-|**9**|9|9|9|9|Where|
 |Xor|**1**|1|1|1|1|1|**7**|7|7|7|7|7|7|Xor|
 
-ONNX-TF Supported Operators / ONNX Operators: 100 / 162
+ONNX-TF Supported Operators / ONNX Operators: 103 / 162
 
 Notes:
 1. Cast: Cast string to data types other than float32/float64/int32/int64 is not supported in Tensorflow
