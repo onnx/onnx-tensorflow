@@ -72,7 +72,7 @@ backend_opset_version = {
     'InstanceNormalization': [1, 6],
     'IsInf': [10],
     'IsNaN': [9],
-    'LRN': [1],
+    'LRN': [1, 13],
     'LSTM': [1, 7],
     'LabelEncoder': [],
     'LeakyRelu': [1, 6],
@@ -80,7 +80,7 @@ backend_opset_version = {
     'LessOrEqual': [12],
     'LinearClassifier': [],
     'LinearRegressor': [],
-    'Log': [1, 6],
+    'Log': [1, 6, 13],
     'LogSoftmax': [1, 11],
     'Loop': [1, 11, 13],
     'LpNormalization': [1],
@@ -94,7 +94,7 @@ backend_opset_version = {
     'Mean': [1, 6, 8],
     'MeanVarianceNormalization': [1, 9],
     'Min': [1, 6, 8, 12, 13],
-    'Mod': [10],
+    'Mod': [10, 13],
     'Momentum': [],
     'Mul': [1, 6, 7, 13],
     'Multinomial': [],
@@ -153,7 +153,7 @@ backend_opset_version = {
     'Shape': [1],
     'Shrink': [9],
     'Sigmoid': [1, 6],
-    'Sign': [9],
+    'Sign': [9, 13],
     'Sin': [7],
     'Sinh': [9],
     'Size': [1],
@@ -165,13 +165,13 @@ backend_opset_version = {
     'SpaceToDepth': [1],
     'Split': [1, 2, 11, 13],
     'SplitToSequence': [11],
-    'Sqrt': [1, 6],
+    'Sqrt': [1, 6, 13],
     'Squeeze': [1, 11],
     'StringNormalizer': [],
     'Sub': [1, 6, 7, 13],
     'Sum': [1, 6, 8],
     'Tan': [7],
-    'Tanh': [1, 6],
+    'Tanh': [1, 6, 13],
     'TfIdfVectorizer': [9],
     'ThresholdedRelu': [1, 10],
     'Tile': [1, 6],
@@ -190,7 +190,6 @@ backend_opset_version = {
 backend_partial_support = {
     'Cast': 'Cast string to data types other than float32/float64/int32/int64 '
             'is not supported in Tensorflow',
-    'Clip': 'Clip input in uint64 is not supported in Tensorflow.',
     'ConcatFromSequence': 'new_axis=1 not supported in Tensorflow.',
     'ConvTranspose': 'ConvTranspose with dilations != 1, or transposed '
                      'convolution for 4D or higher are not supported in '
@@ -206,8 +205,6 @@ backend_partial_support = {
                'MaxPoolWithArgmax with 4D or higher input, or '
                'MaxPoolWithArgmax with column major are not supported in '
                'Tensorflow.',
-    'Mod': 'Mod Dividend or Divisor in int8/int16/uint8/uint16/uint32/uint64 '
-           'are not supported in Tensorflow.',
     'RNN': 'RNN with clip is not supported in Tensorflow.',
     'Resize': 'Resize required 4D input in Tensorflow. For opset 11, only the '
               'following attributes and inputs conbination are supported in '

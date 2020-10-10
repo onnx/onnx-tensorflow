@@ -2314,6 +2314,12 @@ class TestNode(unittest.TestCase):
     node_def = helper.make_node("Mod", ["X", "Y"], ["Z"], fmod=1)
     output = run_node(node_def, [x, y])
     np.testing.assert_almost_equal(output["Z"], np.fmod(x, y))
+    # test data cast for int16
+    x = self._get_rnd_int(shape=[5, 5], low=1, high=100, dtype=np.int16)
+    y = self._get_rnd_int(shape=[5, 5], low=1, high=100, dtype=np.int16)
+    node_def = helper.make_node("Mod", ["X", "Y"], ["Z"], fmod=0)
+    output = run_node(node_def, [x, y])
+    np.testing.assert_almost_equal(output["Z"], np.mod(x, y))
 
   def test_neg(self):
     node_def = helper.make_node("Neg", ["X"], ["Y"])
@@ -3681,6 +3687,12 @@ class TestNode(unittest.TestCase):
           defs.onnx_opset_version()))
     node_def = helper.make_node("Sign", ["X"], ["Y"])
     x = self._get_rnd_float32(-10, 10, [3, 5])
+    output = run_node(node_def, [x])
+    np.testing.assert_almost_equal(output["Y"], np.sign(x))
+
+    # test to drive data cast code path
+    node_def = helper.make_node("Sign", ["X"], ["Y"])
+    x = np.array([[-10, 5, 3], [8, -6, 7], [8, 6, -7]]).astype(np.int16)
     output = run_node(node_def, [x])
     np.testing.assert_almost_equal(output["Y"], np.sign(x))
 
