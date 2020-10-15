@@ -3,6 +3,7 @@ import tensorflow as tf
 from onnx_tf.handlers.backend_handler import BackendHandler
 from onnx_tf.handlers.handler import onnx_op
 
+
 @onnx_op("SequenceInsert")
 class SequenceInsert(BackendHandler):
 
@@ -32,7 +33,8 @@ class SequenceInsert(BackendHandler):
     input_sequence = tensor_dict[node.inputs[0]]
     input_tensor = tensor_dict[node.inputs[1]]
 
-    position = tensor_dict[node.inputs[2]] if len(node.inputs) > 2 else tf.shape(input_sequence.to_sparse())[0]
+    position = tensor_dict[node.inputs[2]] if len(
+        node.inputs) > 2 else tf.shape(input_sequence.to_sparse())[0]
 
     # check whether position is in-bounds and assert if not
     result = cls.chk_pos_in_bounds(input_sequence, position)
@@ -40,11 +42,20 @@ class SequenceInsert(BackendHandler):
 
     with tf.control_dependencies([assert_pos]):
       input_tensor = tf.expand_dims(input_tensor, 0)
-      if input_sequence.shape[0] == 0:
-        output_seq = tf.RaggedTensor.from_tensor(input_tensor) 
+      if input_sequence.shape[0] is not None:
+        if input_sequence.shape[0] == 0:
+          output_seq = tf.RaggedTensor.from_tensor(input_tensor)
+        else:
+          s1 = input_sequence[:position]
+          s2 = input_sequence[position:]
+          output_seq = tf.concat([s1, input_tensor, s2], axis=0)
       else:
-        s1 = input_sequence[:position]
-        s2 = input_sequence[position:]
-        output_seq = tf.concat([s1, input_tensor, s2], axis = 0)
-
+        output_seq = tf.cond(
+            tf.equal(input_sequence.bounding_shape(axis=0),
+                     0), lambda: tf.RaggedTensor.from_tensor(input_tensor),
+            lambda: tf.concat([
+                input_sequence[:position], input_tensor, input_sequence[
+                    position:]
+            ],
+                              axis=0))
       return [output_seq]
