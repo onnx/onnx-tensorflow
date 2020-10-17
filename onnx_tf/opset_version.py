@@ -88,13 +88,13 @@ backend_opset_version = {
     'LpPool': [1, 2, 11],
     'MatMul': [1, 9],
     'MatMulInteger': [10],
-    'Max': [1, 6, 8],
+    'Max': [1, 6, 8, 12],
     'MaxPool': [1, 8, 10, 11, 12],
     'MaxRoiPool': [],
     'MaxUnpool': [9, 11],
     'Mean': [1, 6, 8],
     'MeanVarianceNormalization': [1, 9],
-    'Min': [1, 6, 8],
+    'Min': [1, 6, 8, 12],
     'Mod': [10],
     'Momentum': [],
     'Mul': [1, 6, 7],
@@ -135,7 +135,7 @@ backend_opset_version = {
     'Reshape': [1, 5],
     'Resize': [10, 11],
     'ReverseSequence': [10],
-    'RoiAlign': [],
+    'RoiAlign': [10],
     'Round': [11],
     'SVMClassifier': [],
     'SVMRegressor': [],
@@ -252,5 +252,6 @@ backend_partial_support = {
               '\t- Note (*): The accuracy of your model will go down, if the '
               'height and the width of the new sizes(scales * origial sizes) '
               'are not in whole numbers.',
+    'RoiAlign': 'sampling_ratio <= 0 is not fully supported.',
     'Upsample': 'Upsample required 4D input in Tensorflow.'
 }

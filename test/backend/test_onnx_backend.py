@@ -78,6 +78,10 @@ backend_test.exclude(
 # that axis should be a 0-D tensor(scalar)
 backend_test.exclude(r'test_cumsum_[a-z,_]*')
 
+# TF minimum/maximum do not support uint64 when auto-cast is False (default)
+backend_test.exclude(r'test_min_uint64_[a-z,_]*')
+backend_test.exclude(r'test_max_uint64_[a-z,_]*')
+
 if legacy_opset_pre_ver(7):
   backend_test.exclude(r'[a-z,_]*Upsample[a-z,_]*')
 

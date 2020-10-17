@@ -1,9 +1,9 @@
 # ONNX-Tensorflow Support Status
 |||
 |-:|:-|
-|ONNX-Tensorflow Version|Master ( commit id: 8fea59a976e2d65eab2ab021864e2cab038bb7d5 )|
+|ONNX-Tensorflow Version|Master ( commit id: a1d07e0ded182a4d78c19806f53e1fa9d1c9ca04 )|
 |ONNX Version|v1.7.0|
-|Tensorflow Version|v1.15.0|
+|Tensorflow Version|v1.15.4|
 
 Notes:
 * Values that are new or updated from a previous opset version are in bold.
@@ -89,13 +89,13 @@ Notes:
 |LpPool|**1**|**2**|2|2|2|2|2|2|2|2|**11**|11|LpPool|
 |MatMul|**1**|1|1|1|1|1|1|1|**9**|9|9|9|MatMul|
 |MatMulInteger|-|-|-|-|-|-|-|-|-|**10**|10|10|MatMulInteger|
-|Max|**1**|1|1|1|1|**6**|6|**8**|8|8|8|**12**:small_red_triangle:|Max|
+|Max|**1**|1|1|1|1|**6**|6|**8**|8|8|8|**12**|Max|
 |MaxPool|**1**:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|**8**:small_orange_diamond:|8:small_orange_diamond:|**10**:small_orange_diamond:|**11**:small_orange_diamond:|**12**:small_orange_diamond:|MaxPool|
 |MaxRoiPool|**1**:small_red_triangle:|1:small_red_triangle:|1:small_red_triangle:|1:small_red_triangle:|1:small_red_triangle:|1:small_red_triangle:|1:small_red_triangle:|1:small_red_triangle:|1:small_red_triangle:|1:small_red_triangle:|1:small_red_triangle:|1:small_red_triangle:|MaxRoiPool|
 |MaxUnpool|-|-|-|-|-|-|-|-|**9**|9|**11**|11|MaxUnpool|
 |Mean|**1**|1|1|1|1|**6**|6|**8**|8|8|8|8|Mean|
 |MeanVarianceNormalization|-|-|-|-|-|-|-|-|**9**|9|9|9|MeanVarianceNormalization|
-|Min|**1**|1|1|1|1|**6**|6|**8**|8|8|8|**12**:small_red_triangle:|Min|
+|Min|**1**|1|1|1|1|**6**|6|**8**|8|8|8|**12**|Min|
 |Mod|-|-|-|-|-|-|-|-|-|**10**:small_orange_diamond:|10:small_orange_diamond:|10:small_orange_diamond:|Mod|
 |Mul|**1**|1|1|1|1|**6**|**7**|7|7|7|7|7|Mul|
 |Multinomial|-|-|-|-|-|-|**7**:small_red_triangle:|7:small_red_triangle:|7:small_red_triangle:|7:small_red_triangle:|7:small_red_triangle:|7:small_red_triangle:|Multinomial|
@@ -179,7 +179,7 @@ Notes:
 |Where|-|-|-|-|-|-|-|-|**9**|9|9|9|Where|
 |Xor|**1**|1|1|1|1|1|**7**|7|7|7|7|7|Xor|
 
-ONNX-TF Supported Operators / ONNX Operators: 145 / 162
+ONNX-TF Supported Operators / ONNX Operators: 147 / 162
 
 Notes:
 1. Cast: Cast string to float32/float64/int32/int64 are not supported in Tensorflow.
@@ -206,5 +206,5 @@ Notes:
 	10. mode=nearest, coordinate_transformation_mode=tf_crop_and_resize, extrapolation_value=any_float_value, nearest_mode=round_prefer_ceil, can use scales or sizes.
 	11. mode=linear, coordinate_transformation_mode=tf_crop_and_resize, extrapolation_value=any_float_value, can use scales or sizes.
 	- Note (*): The accuracy of your model will go down, if the height and the width of the new sizes(scales * origial sizes) are not in whole numbers.
-13. Upsample: Upsample required 4D input in Tensorflow.
-14. RoiAlign: sampling_ratio > 0 if not fully supported.
+13. RoiAlign: sampling_ratio <= 0 is not fully supported.
+14. Upsample: Upsample required 4D input in Tensorflow.
