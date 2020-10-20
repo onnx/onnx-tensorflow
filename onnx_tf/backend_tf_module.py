@@ -12,6 +12,8 @@ class BackendTFModule(tf.Module):
     self.graph_def = graph_def
     self.backend = backend
     self.outputs = []
+    self.initializer_dict = self._get_initializer_from_graph_and_subgraphs(
+        self.graph_def, dict())
 
   # get initializer from the main graph and all subgraphs in loop or if or scan
   # into tensor_dict
@@ -37,8 +39,8 @@ class BackendTFModule(tf.Module):
 
   @tf.function
   def gen_tensor_dict(self, input_dict):
-    tensor_dict = self._get_initializer_from_graph_and_subgraphs(
-        self.graph_def, dict(input_dict))
+    tensor_dict = dict(input_dict)
+    tensor_dict.update(self.initializer_dict)
 
     for node in self.graph_def.node:
       onnx_node = OnnxNode(node)
@@ -54,8 +56,8 @@ class BackendTFModule(tf.Module):
 
   @tf.function
   def __call__(self, **kwargs):
-    tensor_dict = self._get_initializer_from_graph_and_subgraphs(
-        self.graph_def, kwargs)
+    tensor_dict = kwargs
+    tensor_dict.update(self.initializer_dict)
 
     for node in self.graph_def.node:
       onnx_node = OnnxNode(node)
