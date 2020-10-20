@@ -207,4 +207,4 @@ Notes:
 	11. mode=linear, coordinate_transformation_mode=tf_crop_and_resize, extrapolation_value=any_float_value, can use scales or sizes.
 	- Note (*): The accuracy of your model will go down, if the height and the width of the new sizes(scales * origial sizes) are not in whole numbers.
 13. Upsample: Upsample required 4D input in Tensorflow.
-14. RoiAlign: Only support sampling_ratio > 0
+14. RoiAlign: sampling_ratio > 0 if not fully supported.
