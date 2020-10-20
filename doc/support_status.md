@@ -133,7 +133,7 @@ Notes:
 |Reshape|**1**|1|1|1|**5**|5|5|5|5|5|5|5|Reshape|
 |Resize|-|-|-|-|-|-|-|-|-|**10**:small_orange_diamond:|**11**:small_orange_diamond:|11:small_orange_diamond:|Resize|
 |ReverseSequence|-|-|-|-|-|-|-|-|-|**10**|10|10|ReverseSequence|
-|RoiAlign|-|-|-|-|-|-|-|-|-|**10**:small_red_triangle:|10:small_red_triangle:|10:small_red_triangle:|RoiAlign|
+|RoiAlign|-|-|-|-|-|-|-|-|-|**10**:small_orange_diamond:|10:small_orange_diamond:|10:small_orange_diamond:|RoiAlign|
 |Round|-|-|-|-|-|-|-|-|-|-|**11**|11|Round|
 |Scan|-|-|-|-|-|-|-|**8**|**9**|9|**11**|11|Scan|
 |Scatter|-|-|-|-|-|-|-|-|**9**|9|**11**\*|11\*|Scatter|
@@ -179,7 +179,7 @@ Notes:
 |Where|-|-|-|-|-|-|-|-|**9**|9|9|9|Where|
 |Xor|**1**|1|1|1|1|1|**7**|7|7|7|7|7|Xor|
 
-ONNX-TF Supported Operators / ONNX Operators: 144 / 162
+ONNX-TF Supported Operators / ONNX Operators: 145 / 162
 
 Notes:
 1. Cast: Cast string to float32/float64/int32/int64 are not supported in Tensorflow.
@@ -207,3 +207,4 @@ Notes:
 	11. mode=linear, coordinate_transformation_mode=tf_crop_and_resize, extrapolation_value=any_float_value, can use scales or sizes.
 	- Note (*): The accuracy of your model will go down, if the height and the width of the new sizes(scales * origial sizes) are not in whole numbers.
 13. Upsample: Upsample required 4D input in Tensorflow.
+14. RoiAlign: Only support sampling_ratio > 0
