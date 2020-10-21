@@ -1,9 +1,9 @@
 import tensorflow as tf
 
+from onnx_tf.common import exception
 from onnx_tf.common import get_data_format
 from onnx_tf.common import get_perm_from_formats
-from onnx_tf.common import supports_device
-from onnx_tf.common import exception
+from onnx_tf.common import sys_config
 from onnx_tf.common.tf_helper import tf_shape
 from .broadcast_mixin import BroadcastMixin
 from .pad_mixin import PadMixin
@@ -31,7 +31,6 @@ class ConvMixin(BroadcastMixin):
     x_shape = tf_shape(x, tf.int32)
     spatial_size = x_rank - 2
 
-    support_cuda = supports_device("CUDA")
     storage_format, compute_format = get_data_format(x_rank)
     compute_c_idx = compute_format.find("C")
     spatial_format = "".join([d for d in compute_format if d not in ["N", "C"]])
@@ -95,7 +94,7 @@ class ConvMixin(BroadcastMixin):
 
     weight_groups = tf.split(weights, num_or_size_splits=group, axis=-1)
 
-    if support_cuda:
+    if sys_config.device == 'CUDA':
       xs = tf.split(x, num_or_size_splits=group, axis=1)
     else:
       x = tf.transpose(x,
@@ -234,7 +233,7 @@ class ConvMixin(BroadcastMixin):
       ]
 
     if len(node.inputs) == 2:
-      if support_cuda:
+      if sys_config.device == 'CUDA':
         output = tf.concat(convolved, axis=1)
       else:
         output = tf.concat(convolved, axis=-1)
@@ -245,7 +244,7 @@ class ConvMixin(BroadcastMixin):
       bias = input_dict[node.inputs[2]]
       bias = cls.explicit_broadcast([x, bias], compute_c_idx)
 
-      if support_cuda:
+      if sys_config.device == 'CUDA':
         output = tf.concat(convolved, axis=1)
         output = tf.add(output, bias)
       else:
