@@ -72,7 +72,18 @@ backend_test.exclude(
 # skip all the cumsum testcases because all the axis in the testcases
 # are created as a 1-D 1 element tensor, but the spec clearly state
 # that axis should be a 0-D tensor(scalar)
-backend_test.exclude(r'test_cumsum_[a-z,_]*')
+if legacy_opset_pre_ver(13):
+  backend_test.exclude(r'test_cumsum_[a-z,_]*')
+
+# Currently ONNX's backend test runner does not support sequence as input/output
+backend_test.exclude(r'test_if_seq[a-z,_]*')
+
+# TF session run does not support sequence/RaggedTensor as model inputs
+backend_test.exclude(r'test_loop13_seq[a-z,_]*')
+
+# TF minimum/maximum do not support uint64 when auto-cast is False (default)
+backend_test.exclude(r'test_min_uint64_[a-z,_]*')
+backend_test.exclude(r'test_max_uint64_[a-z,_]*')
 
 if legacy_opset_pre_ver(7):
   backend_test.exclude(r'[a-z,_]*Upsample[a-z,_]*')
@@ -117,10 +128,10 @@ backend_test.exclude(r'test_sequence_insert+_[a-z,_]*')
 
 # Exclude tests for Dropout training that have randomness dependent on
 # the different implementations
-backend_test.exclude('test_training_dropout_default_cpu')
-backend_test.exclude('test_training_dropout_cpu')
-backend_test.exclude('test_training_dropout_default_mask_cpu')
-backend_test.exclude('test_training_dropout_mask_cpu')
+backend_test.exclude('test_training_dropout_default_[a-z,_]*')
+backend_test.exclude('test_training_dropout_[a-z,_]*')
+backend_test.exclude('test_training_dropout_default_mask_[a-z,_]*')
+backend_test.exclude('test_training_dropout_mask_[a-z,_]*')
 
 # TF module can't run gru, lstm, rnn in one session using custom variables
 backend_test.exclude(r'test_gru_with_initial_bias_[a-z,_]*')
