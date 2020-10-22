@@ -35,9 +35,9 @@ Notes:
 |Celu|-|-|-|-|-|-|-|-|-|-|-|**12**|12|Celu|
 |Clip|**1**|1|1|1|1|**6**|6|6|6|6|**11**|**12**|**13**|Clip|
 |Compress|-|-|-|-|-|-|-|-|**9**|9|**11**|11|11|Compress|
-|Concat|**1**|1|1|**4**|4|4|4|4|4|4|**11**|11|**13**:small_red_triangle:|Concat|
+|Concat|**1**|1|1|**4**|4|4|4|4|4|4|**11**|11|**13**|Concat|
 |ConcatFromSequence|-|-|-|-|-|-|-|-|-|-|**11**:small_orange_diamond:|11:small_orange_diamond:|11:small_orange_diamond:|ConcatFromSequence|
-|Constant|**1**|1|1|1|1|1|1|1|**9**|9|**11**|**12**|**13**:small_red_triangle:|Constant|
+|Constant|**1**|1|1|1|1|1|1|1|**9**|9|**11**|**12**|**13**|Constant|
 |ConstantOfShape|-|-|-|-|-|-|-|-|**9**|9|9|9|9|ConstantOfShape|
 |Conv|**1**|1|1|1|1|1|1|1|1|1|**11**|11|11|Conv|
 |ConvInteger|-|-|-|-|-|-|-|-|-|**10**|10|10|10|ConvInteger|
@@ -68,26 +68,26 @@ Notes:
 |GlobalAveragePool|**1**|1|1|1|1|1|1|1|1|1|1|1|1|GlobalAveragePool|
 |GlobalLpPool|**1**|**2**|2|2|2|2|2|2|2|2|2|2|2|GlobalLpPool|
 |GlobalMaxPool|**1**|1|1|1|1|1|1|1|1|1|1|1|1|GlobalMaxPool|
-|Greater|**1**|1|1|1|1|1|**7**|7|**9**|9|9|9|**13**:small_red_triangle:|Greater|
+|Greater|**1**|1|1|1|1|1|**7**|7|**9**|9|9|9|**13**|Greater|
 |GreaterOrEqual|-|-|-|-|-|-|-|-|-|-|-|**12**|12|GreaterOrEqual|
 |HardSigmoid|**1**|1|1|1|1|**6**|6|6|6|6|6|6|6|HardSigmoid|
 |Hardmax|**1**|1|1|1|1|1|1|1|1|1|**11**|11|**13**:small_red_triangle:|Hardmax|
 |Identity|**1**|1|1|1|1|1|1|1|1|1|1|1|**13**:small_red_triangle:|Identity|
-|If|**1**|1|1|1|1|1|1|1|1|1|**11**|11|**13**:small_red_triangle:|If|
+|If|**1**|1|1|1|1|1|1|1|1|1|**11**|11|**13**|If|
 |InstanceNormalization|**1**|1|1|1|1|**6**|6|6|6|6|6|6|6|InstanceNormalization|
 |IsInf|-|-|-|-|-|-|-|-|-|**10**|10|10|10|IsInf|
 |IsNaN|-|-|-|-|-|-|-|-|**9**|9|9|9|**13**:small_red_triangle:|IsNaN|
 |LRN|**1**|1|1|1|1|1|1|1|1|1|1|1|**13**|LRN|
 |LSTM|**1**:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|**7**:small_orange_diamond:|7:small_orange_diamond:|7:small_orange_diamond:|7:small_orange_diamond:|7:small_orange_diamond:|7:small_orange_diamond:|7:small_orange_diamond:|LSTM|
 |LeakyRelu|**1**|1|1|1|1|**6**|6|6|6|6|6|6|6|LeakyRelu|
-|Less|**1**|1|1|1|1|1|**7**|7|**9**|9|9|9|**13**:small_red_triangle:|Less|
+|Less|**1**|1|1|1|1|1|**7**|7|**9**|9|9|9|**13**|Less|
 |LessOrEqual|-|-|-|-|-|-|-|-|-|-|-|**12**|12|LessOrEqual|
 |Log|**1**|1|1|1|1|**6**|6|6|6|6|6|6|**13**|Log|
 |LogSoftmax|**1**|1|1|1|1|1|1|1|1|1|**11**|11|**13**:small_red_triangle:|LogSoftmax|
-|Loop|**1**|1|1|1|1|1|1|1|1|1|**11**|11|**13**:small_red_triangle:|Loop|
+|Loop|**1**|1|1|1|1|1|1|1|1|1|**11**|11|**13**|Loop|
 |LpNormalization|**1**|1|1|1|1|1|1|1|1|1|1|1|1|LpNormalization|
 |LpPool|**1**|**2**|2|2|2|2|2|2|2|2|**11**|11|11|LpPool|
-|MatMul|**1**|1|1|1|1|1|1|1|**9**|9|9|9|**13**:small_red_triangle:|MatMul|
+|MatMul|**1**|1|1|1|1|1|1|1|**9**|9|9|9|**13**|MatMul|
 |MatMulInteger|-|-|-|-|-|-|-|-|-|**10**|10|10|10|MatMulInteger|
 |Max|**1**|1|1|1|1|**6**|6|**8**|8|8|8|**12**|**13**|Max|
 |MaxPool|**1**:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|**8**:small_orange_diamond:|8:small_orange_diamond:|**10**:small_orange_diamond:|**11**:small_orange_diamond:|**12**:small_orange_diamond:|12:small_orange_diamond:|MaxPool|
@@ -149,7 +149,7 @@ Notes:
 |Shape|**1**|1|1|1|1|1|1|1|1|1|1|1|**13**:small_red_triangle:|Shape|
 |Shrink|-|-|-|-|-|-|-|-|**9**|9|9|9|9|Shrink|
 |Sigmoid|**1**|1|1|1|1|**6**|6|6|6|6|6|6|**13**:small_red_triangle:|Sigmoid|
-|Sign|-|-|-|-|-|-|-|-|**9**|9|9|9|**13**:small_red_triangle:|Sign|
+|Sign|-|-|-|-|-|-|-|-|**9**|9|9|9|**13**|Sign|
 |Sin|-|-|-|-|-|-|**7**|7|7|7|7|7|7|Sin|
 |Sinh|-|-|-|-|-|-|-|-|**9**|9|9|9|9|Sinh|
 |Size|**1**|1|1|1|1|1|1|1|1|1|1|1|**13**:small_red_triangle:|Size|
@@ -161,13 +161,13 @@ Notes:
 |SpaceToDepth|**1**|1|1|1|1|1|1|1|1|1|1|1|**13**:small_red_triangle:|SpaceToDepth|
 |Split|**1**|**2**|2|2|2|2|2|2|2|2|**11**|11|**13**|Split|
 |SplitToSequence|-|-|-|-|-|-|-|-|-|-|**11**:small_orange_diamond:|11:small_orange_diamond:|11:small_orange_diamond:|SplitToSequence|
-|Sqrt|**1**|1|1|1|1|**6**|6|6|6|6|6|6|**13**:small_red_triangle:|Sqrt|
+|Sqrt|**1**|1|1|1|1|**6**|6|6|6|6|6|6|**13**|Sqrt|
 |Squeeze|**1**|1|1|1|1|1|1|1|1|1|**11**|11|**13**:small_red_triangle:|Squeeze|
 |StringNormalizer|-|-|-|-|-|-|-|-|-|**10**:small_red_triangle:|10:small_red_triangle:|10:small_red_triangle:|10:small_red_triangle:|StringNormalizer|
-|Sub|**1**|1|1|1|1|**6**|**7**|7|7|7|7|7|**13**:small_red_triangle:|Sub|
+|Sub|**1**|1|1|1|1|**6**|**7**|7|7|7|7|7|**13**|Sub|
 |Sum|**1**|1|1|1|1|**6**|6|**8**|8|8|8|8|**13**:small_red_triangle:|Sum|
 |Tan|-|-|-|-|-|-|**7**|7|7|7|7|7|7|Tan|
-|Tanh|**1**|1|1|1|1|**6**|6|6|6|6|6|6|**13**:small_red_triangle:|Tanh|
+|Tanh|**1**|1|1|1|1|**6**|6|6|6|6|6|6|**13**|Tanh|
 |TfIdfVectorizer|-|-|-|-|-|-|-|-|**9**|9|9|9|9|TfIdfVectorizer|
 |ThresholdedRelu|-|-|-|-|-|-|-|-|-|**10**|10|10|10|ThresholdedRelu|
 |Tile|**1**|1|1|1|1|**6**|6|6|6|6|6|6|**13**:small_red_triangle:|Tile|
@@ -179,7 +179,7 @@ Notes:
 |Where|-|-|-|-|-|-|-|-|**9**|9|9|9|9|Where|
 |Xor|**1**|1|1|1|1|1|**7**|7|7|7|7|7|7|Xor|
 
-ONNX-TF Supported Operators / ONNX Operators: 104 / 162
+ONNX-TF Supported Operators / ONNX Operators: 105 / 162
 
 Notes:
 1. Cast: Cast string to data types other than float32/float64/int32/int64 is not supported in Tensorflow
