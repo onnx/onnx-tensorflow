@@ -1,9 +1,9 @@
 # ONNX-Tensorflow Support Status
 |||
 |-:|:-|
-|ONNX-Tensorflow Version|Master ( commit id: 6bfd631e0daedbc773b76636a5ea19e77a4b63ed )|
-|ONNX Version|Master ( commit id: b2ed660d0a065b8346816f2c3a95d79ca79b88c9 )|
-|Tensorflow Version|v2.3.0|
+|ONNX-Tensorflow Version|Master ( commit id: f64afb48034af7121341f4ba5d6f56e275c5aedb )|
+|ONNX Version|Master ( commit id: a7a0fec7f25cae567429af62b7eaaee1c3f0e247 )|
+|Tensorflow Version|v2.3.1|
 
 Notes:
 * Values that are new or updated from a previous opset version are in bold.
@@ -51,7 +51,7 @@ Notes:
 |Div|**1**|1|1|1|1|**6**|**7**|7|7|7|7|7|**13**:small_red_triangle:|Div|
 |Dropout|**1**|1|1|1|1|**6**|**7**|7|7|**10**|10|**12**|**13**|Dropout|
 |DynamicQuantizeLinear|-|-|-|-|-|-|-|-|-|-|**11**|11|11|DynamicQuantizeLinear|
-|Einsum|-|-|-|-|-|-|-|-|-|-|-|**12**:small_red_triangle:|12:small_red_triangle:|Einsum|
+|Einsum|-|-|-|-|-|-|-|-|-|-|-|**12**|12|Einsum|
 |Elu|**1**|1|1|1|1|**6**|6|6|6|6|6|6|6|Elu|
 |Equal|**1**|1|1|1|1|1|**7**|7|7|7|**11**|11|**13**|Equal|
 |Erf|-|-|-|-|-|-|-|-|**9**|9|9|9|**13**|Erf|
@@ -72,11 +72,11 @@ Notes:
 |GreaterOrEqual|-|-|-|-|-|-|-|-|-|-|-|**12**|12|GreaterOrEqual|
 |HardSigmoid|**1**|1|1|1|1|**6**|6|6|6|6|6|6|6|HardSigmoid|
 |Hardmax|**1**|1|1|1|1|1|1|1|1|1|**11**|11|**13**:small_red_triangle:|Hardmax|
-|Identity|**1**|1|1|1|1|1|1|1|1|1|1|1|**13**:small_red_triangle:|Identity|
+|Identity|**1**|1|1|1|1|1|1|1|1|1|1|1|**13**|Identity|
 |If|**1**|1|1|1|1|1|1|1|1|1|**11**|11|**13**|If|
 |InstanceNormalization|**1**|1|1|1|1|**6**|6|6|6|6|6|6|6|InstanceNormalization|
 |IsInf|-|-|-|-|-|-|-|-|-|**10**|10|10|10|IsInf|
-|IsNaN|-|-|-|-|-|-|-|-|**9**|9|9|9|**13**:small_red_triangle:|IsNaN|
+|IsNaN|-|-|-|-|-|-|-|-|**9**|9|9|9|**13**|IsNaN|
 |LRN|**1**|1|1|1|1|1|1|1|1|1|1|1|**13**|LRN|
 |LSTM|**1**:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|**7**:small_orange_diamond:|7:small_orange_diamond:|7:small_orange_diamond:|7:small_orange_diamond:|7:small_orange_diamond:|7:small_orange_diamond:|7:small_orange_diamond:|LSTM|
 |LeakyRelu|**1**|1|1|1|1|**6**|6|6|6|6|6|6|6|LeakyRelu|
@@ -100,7 +100,7 @@ Notes:
 |Mul|**1**|1|1|1|1|**6**|**7**|7|7|7|7|7|**13**|Mul|
 |Multinomial|-|-|-|-|-|-|**7**:small_red_triangle:|7:small_red_triangle:|7:small_red_triangle:|7:small_red_triangle:|7:small_red_triangle:|7:small_red_triangle:|7:small_red_triangle:|Multinomial|
 |Neg|**1**|1|1|1|1|**6**|6|6|6|6|6|6|**13**|Neg|
-|NegativeLogLikelihoodLoss|-|-|-|-|-|-|-|-|-|-|-|**12**:small_red_triangle:|12:small_red_triangle:|NegativeLogLikelihoodLoss|
+|NegativeLogLikelihoodLoss|-|-|-|-|-|-|-|-|-|-|-|**12**:small_red_triangle:|**13**:small_red_triangle:|NegativeLogLikelihoodLoss|
 |NonMaxSuppression|-|-|-|-|-|-|-|-|-|**10**|**11**|11|11|NonMaxSuppression|
 |NonZero|-|-|-|-|-|-|-|-|**9**|9|9|9|**13**:small_red_triangle:|NonZero|
 |Not|**1**|1|1|1|1|1|1|1|1|1|1|1|1|Not|
@@ -123,10 +123,10 @@ Notes:
 |ReduceL2|**1**|1|1|1|1|1|1|1|1|1|**11**|11|**13**:small_red_triangle:|ReduceL2|
 |ReduceLogSum|**1**|1|1|1|1|1|1|1|1|1|**11**|11|**13**:small_red_triangle:|ReduceLogSum|
 |ReduceLogSumExp|**1**|1|1|1|1|1|1|1|1|1|**11**|11|**13**:small_red_triangle:|ReduceLogSumExp|
-|ReduceMax|**1**|1|1|1|1|1|1|1|1|1|**11**|**12**|**13**:small_red_triangle:|ReduceMax|
-|ReduceMean|**1**|1|1|1|1|1|1|1|1|1|**11**|11|**13**:small_red_triangle:|ReduceMean|
-|ReduceMin|**1**|1|1|1|1|1|1|1|1|1|**11**|**12**|**13**:small_red_triangle:|ReduceMin|
-|ReduceProd|**1**|1|1|1|1|1|1|1|1|1|**11**|11|**13**:small_red_triangle:|ReduceProd|
+|ReduceMax|**1**|1|1|1|1|1|1|1|1|1|**11**|**12**|**13**|ReduceMax|
+|ReduceMean|**1**|1|1|1|1|1|1|1|1|1|**11**|11|**13**|ReduceMean|
+|ReduceMin|**1**|1|1|1|1|1|1|1|1|1|**11**|**12**|**13**|ReduceMin|
+|ReduceProd|**1**|1|1|1|1|1|1|1|1|1|**11**|11|**13**|ReduceProd|
 |ReduceSum|**1**|1|1|1|1|1|1|1|1|1|**11**|11|**13**:small_red_triangle:|ReduceSum|
 |ReduceSumSquare|**1**|1|1|1|1|1|1|1|1|1|**11**|11|**13**:small_red_triangle:|ReduceSumSquare|
 |Relu|**1**|1|1|1|1|**6**|6|6|6|6|6|6|**13**:small_red_triangle:|Relu|
@@ -179,7 +179,7 @@ Notes:
 |Where|-|-|-|-|-|-|-|-|**9**|9|9|9|9|Where|
 |Xor|**1**|1|1|1|1|1|**7**|7|7|7|7|7|7|Xor|
 
-ONNX-TF Supported Operators / ONNX Operators: 105 / 162
+ONNX-TF Supported Operators / ONNX Operators: 118 / 162
 
 Notes:
 1. Cast: Cast string to data types other than float32/float64/int32/int64 is not supported in Tensorflow

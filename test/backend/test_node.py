@@ -746,6 +746,19 @@ class TestNode(unittest.TestCase):
     np.testing.assert_almost_equal(output["Y_Scale"], y_scale)
     np.testing.assert_almost_equal(output["Y_Zero_Point"], y_zero_point)
 
+  def test_einsum(self):
+    if legacy_opset_pre_ver(12):
+      raise unittest.SkipTest(
+          "ONNX version {} doesn't support Einsum.".format(
+              defs.onnx_opset_version()))
+    equation = 'ij,jk->ik'  #matmul
+    node_def = helper.make_node("Einsum", ["X", "Y"], ["Z"], equation=equation)
+    x = self._get_rnd_float32(shape=[3, 4])
+    y = self._get_rnd_float32(shape=[4, 5])
+    z = np.einsum(equation, x, y)
+    output = run_node(node_def, [x, y])
+    np.testing.assert_almost_equal(output["Z"], z)
+
   def test_elu(self):
     node_def = helper.make_node("Elu", ["X"], ["Y"])
     x = self._get_rnd_float32(shape=[100])
@@ -1253,6 +1266,14 @@ class TestNode(unittest.TestCase):
               max = x[i1][i2][j1][j2]
         test_output[i1][i2][0][0] = max
     np.testing.assert_almost_equal(output["Y"], test_output)
+
+  def test_greater(self):
+      node_def = helper.make_node("Greater", ["X", "Y"], ["Z"])
+      x = self._get_rnd_float32(shape=[5, 3, 3, 2])
+      y = self._get_rnd_float32(shape=[3, 3, 1])
+      output = run_node(node_def, [x, y])
+      np.testing.assert_equal(output["Z"], np.greater(x, np.reshape(y,
+                                                                 [1, 3, 3, 1])))
 
   def test_less(self):
     node_def = helper.make_node("Less", ["X", "Y"], ["Z"])
