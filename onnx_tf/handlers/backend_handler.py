@@ -24,6 +24,15 @@ class BackendHandler(Handler):
   """
 
   TF_FUNC = None
+  VAR_COUNT = 0
+
+  @classmethod
+  def get_req_vars_template(cls):
+    """ Get required variables template.
+
+    :return: Dict.
+    """
+    return {}
 
   @classmethod
   def get_attrs_processor_param(cls):
@@ -183,8 +192,8 @@ class BackendHandler(Handler):
 
     attrs = {p: v for p, v in attrs.items() if p in params}
     kwargs = dict(zip(params, inputs))
-    ambiguous_arguments = any(kwargs.get(p) is not None and v is not None
-                              for p, v in attrs.items())
+    ambiguous_arguments = any(
+        kwargs.get(p) is not None and v is not None for p, v in attrs.items())
     if ambiguous_arguments:
       raise TypeError('Ambiguous arguments for {}()'.format(tf_func.__name__))
     kwargs.update((p, v) for p, v in attrs.items() if v is not None)

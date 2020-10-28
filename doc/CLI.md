@@ -22,7 +22,7 @@ optional arguments:
 ### Convert:
 
 #### From ONNX to Tensorflow:
-`onnx-tf convert -i /path/to/input.onnx -o /path/to/output.pb`
+`onnx-tf convert -i /path/to/input.onnx -o /path/to/output`
 
 More information: `onnx-tf convert -h`
 ```

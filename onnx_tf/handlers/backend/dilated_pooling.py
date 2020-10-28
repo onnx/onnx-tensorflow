@@ -601,9 +601,12 @@ class DilatedPooling(object):
 
       # if there was padding, recalculate the returned index
       # to exclude the padding
-      count_nonzero_op = np.count_nonzero if self.is_known_shape else tf.math.count_nonzero
-      if count_nonzero_op(self.pads) != 0:
-        new_ind = self._calc_argmax_without_padding(new_ind)
+      if self.is_known_shape:
+        if np.count_nonzero(self.pads) != 0:
+          new_ind = self._calc_argmax_without_padding(new_ind)
+      else:
+        new_ind = tf.where(tf.not_equal(tf.math.count_nonzero(self.pads), 0),
+                           self._calc_argmax_without_padding(new_ind), new_ind)
 
     return (pooled, new_ind)
 
