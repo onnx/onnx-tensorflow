@@ -28,6 +28,8 @@ class SysConfig:
 
   def __init__(self):
     self.auto_cast = False
+    self.device = 'CPU'
+
 
 
 sys_config = SysConfig()
@@ -160,7 +162,7 @@ def get_data_format(x_rank):
   sp_dim_string = "".join(reversed(sp_dim_lst))
   storage_format = "NC" + sp_dim_string
 
-  if supports_device("CUDA"):
+  if sys_config.device == "CUDA":
     compute_format = "NC" + sp_dim_string
   else:
     compute_format = "N" + sp_dim_string + "C"
@@ -169,7 +171,6 @@ def get_data_format(x_rank):
 
 def supports_device(device):
   """ Check if support target device.
-
   :param device: CUDA or CPU.
   :return: If supports.
   """

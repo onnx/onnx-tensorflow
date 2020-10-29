@@ -530,6 +530,56 @@ class TestDynamicShape(unittest.TestCase):
 
     np.testing.assert_almost_equal(output["Y"], test_output)
 
+  def test_max_pool_with_argmax_2d_dilations_ceil_pads(self):
+    if legacy_opset_pre_ver(10):
+      raise unittest.SkipTest(
+          "ONNX version {} doesn't support dilations nor ceil mode.".format(
+              defs.onnx_opset_version()))
+ 
+    kernel_shape = [3, 3]
+    strides = [2, 2]
+    dilations = [3, 3]
+    pads = [1, 1, 2, 2]
+    ceil_mode = True
+
+    input_shape = [10, 3, 23, 23]
+    x = self._get_rnd_float32(shape=input_shape) - 2
+
+    node_def = helper.make_node("MaxPool", ["X"], ["Y", "Ind"],
+                                kernel_shape=kernel_shape,
+                                strides=strides,
+                                dilations=dilations,
+                                pads=pads,
+                                ceil_mode=ceil_mode)
+
+    graph_def = helper.make_graph(
+        [node_def],
+        name="test_unknown_shape",
+        inputs=[
+            helper.make_tensor_value_info("X", TensorProto.FLOAT,
+                                          [None, None, None, None]),
+        ],
+        outputs=[
+            helper.make_tensor_value_info("Y", TensorProto.FLOAT,
+                                          [None, None, None, None]),
+            helper.make_tensor_value_info("Ind", TensorProto.INT64,
+                                          [None, None, None, None])
+        ])
+
+    tf_rep = onnx_graph_to_tensorflow_rep(graph_def)
+    output = tf_rep.run({"X": x})
+
+    test_output, test_ind = py_pool(x,
+                                    kernel_shape=kernel_shape,
+                                    strides=strides,
+                                    dilations=dilations,
+                                    padding=pads,
+                                    ceil_mode=ceil_mode,
+                                    pooling_type="MAX")
+
+    np.testing.assert_almost_equal(output["Y"], test_output)
+    np.testing.assert_almost_equal(output["Ind"], test_ind)
+
   def test_average_pool_2d(self):
     kernel_shape = [1, 2]
     strides = [1, 2]
