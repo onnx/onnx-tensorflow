@@ -49,7 +49,7 @@ class TensorflowBackend(Backend):
     the converted representation.
 
     :param model: The ONNX model to be converted.
-    :param device: The device to execute this model on.
+    :param device: The device to execute this model on. It can be either CPU (default) or CUDA.
     :param strict: Whether to enforce semantic equivalence between the original model
       and the converted tensorflow model, defaults to True (yes, enforce semantic equivalence).
       Changing to False is strongly discouraged.
@@ -65,6 +65,7 @@ class TensorflowBackend(Backend):
     common.logger.setLevel(logging_level)
     common.logger.handlers[0].setLevel(logging_level)
     common.sys_config.auto_cast = auto_cast
+    common.sys_config.device = device
 
     return cls.onnx_model_to_tensorflow_rep(model, strict, **kwargs)
 
@@ -184,6 +185,7 @@ class TensorflowBackend(Backend):
         return cls._onnx_node_to_tensorflow_op(self.node, input_dict)
 
     super(TensorflowBackend, cls).run_node(node, inputs, device)
+    common.sys_config.device = device
 
     node = OnnxNode(node)
     input_tensors = []

@@ -3,13 +3,12 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-import sys
 import math
 import unittest
 
+from onnx import defs
 from onnx import helper
 from onnx import TensorProto
-from onnx import defs
 import numpy as np
 import tensorflow as tf
 
@@ -23,6 +22,10 @@ from onnx_tf.common.pooling_helper import py_pool
 class TestNode(unittest.TestCase):
   """ Tests for nodes
   """
+
+  def _get_device_list(self):
+    # Check does the environment support CUDA.
+    return ['CPU', 'CUDA'] if supports_device("CUDA") else ['CPU']
 
   def _get_rnd_float32(self, low=-1.0, high=1.0, shape=None):
     output = np.random.uniform(low, high, shape)
@@ -259,13 +262,13 @@ class TestNode(unittest.TestCase):
 
   def test_celu(self):
     if legacy_opset_pre_ver(12):
-      raise unittest.SkipTest(
-          "ONNX version {} doesn't support Celu.".format(
-              defs.onnx_opset_version()))
+      raise unittest.SkipTest("ONNX version {} doesn't support Celu.".format(
+          defs.onnx_opset_version()))
     alpha = 2.0
     node_def = helper.make_node("Celu", ["X"], ["Y"], alpha=alpha)
-    x =  np.array([[[-1.0763247,   0.98948643,  0.22292195],
-                   [ 0.1751388,   -1.39814249,  1.44396422]]], dtype=np.float32)
+    x = np.array([[[-1.0763247, 0.98948643, 0.22292195],
+                   [0.1751388, -1.39814249, 1.44396422]]],
+                 dtype=np.float32)
     output = run_node(node_def, [x])
     positive_input = np.maximum(0, x)
     negative_input = np.minimum(0, alpha * (np.exp(x / alpha) - 1))
@@ -395,39 +398,38 @@ class TestNode(unittest.TestCase):
     np.testing.assert_almost_equal(output["Y"], np.zeros(x, dtype=np.int32))
 
   def test_conv(self):
-    device = "CUDA" if supports_device("CUDA") else "CPU"
+    for device in self._get_device_list():
+      N, C, H, W = 4, 3, 5, 5
+      x_shape = [N, C, H, W]
+      K, kH, kW = 6, 3, 3
+      weight_shape = [K, C, kH, kW]
+      node_def = helper.make_node("Conv", ["X", "weights"], ["Y"],
+                                  pads=[1, 1, 1, 1],
+                                  kernel_shape=[kH, kW])
 
-    N, C, H, W = 4, 3, 5, 5
-    x_shape = [N, C, H, W]
-    K, kH, kW = 6, 3, 3
-    weight_shape = [K, C, kH, kW]
-    node_def = helper.make_node("Conv", ["X", "weights"], ["Y"],
-                                pads=[1, 1, 1, 1],
-                                kernel_shape=[kH, kW])
+      x = self._get_rnd_float32(shape=x_shape)
+      weights = self._get_rnd_float32(shape=weight_shape)
+      output = run_node(node_def, [x, weights], device=device)
 
-    x = self._get_rnd_float32(shape=x_shape)
-    weights = self._get_rnd_float32(shape=weight_shape)
-    output = run_node(node_def, [x, weights], device=device)
+      out_shape = [N, K, H, W]
+      test_output = np.zeros(out_shape)
+      for n in range(N):
+        for c in range(C):
+          for h in range(H):
+            for w in range(W):
+              for k in range(K):
+                for kh in range(kH):
+                  for kw in range(kW):
+                    h_in_range = (h - kH // 2 + kh) < H and (h - kH // 2 +
+                                                             kh) >= 0
+                    w_in_range = (w - kW // 2 + kw) < W and (w - kW // 2 +
+                                                             kw) >= 0
+                    if h_in_range and w_in_range:
+                      test_output[n][k][h][w] += (
+                          x[n][c][h - kH // 2 + kh][w - kW // 2 + kw] *
+                          weights[k][c][kh][kw])
 
-    out_shape = [N, K, H, W]
-    test_output = np.zeros(out_shape)
-    for n in range(N):
-      for c in range(C):
-        for h in range(H):
-          for w in range(W):
-            for k in range(K):
-              for kh in range(kH):
-                for kw in range(kW):
-                  h_in_range = (h - kH // 2 + kh) < H and (h - kH // 2 +
-                                                           kh) >= 0
-                  w_in_range = (w - kW // 2 + kw) < W and (w - kW // 2 +
-                                                           kw) >= 0
-                  if h_in_range and w_in_range:
-                    test_output[n][k][h][w] += (
-                        x[n][c][h - kH // 2 + kh][w - kW // 2 + kw] *
-                        weights[k][c][kh][kw])
-
-    np.testing.assert_almost_equal(output["Y"], test_output, decimal=4)
+      np.testing.assert_almost_equal(output["Y"], test_output, decimal=4)
 
   def test_conv_integer(self):
     if legacy_opset_pre_ver(10):
@@ -435,135 +437,136 @@ class TestNode(unittest.TestCase):
           "ONNX version {} doesn't support ConvInteger.".format(
               defs.onnx_opset_version()))
 
-    # Test w_zero_point
-    x = np.array([2, 3, 4, 5, 6, 7, 8, 9, 10]).astype(np.int8).reshape(
-        (1, 1, 3, 3))
-    w = np.array([2, 2, 2, 2]).astype(np.int8).reshape((1, 1, 2, 2))
-    w_zero_point = np.int8(1)
-    y = np.array([16, 20, 28, 32]).astype(np.int32).reshape((1, 1, 2, 2))
+    for device in self._get_device_list():
+      # Test w_zero_point
+      x = np.array([2, 3, 4, 5, 6, 7, 8, 9, 10]).astype(np.int8).reshape(
+          (1, 1, 3, 3))
+      w = np.array([2, 2, 2, 2]).astype(np.int8).reshape((1, 1, 2, 2))
+      w_zero_point = np.int8(1)
+      y = np.array([16, 20, 28, 32]).astype(np.int32).reshape((1, 1, 2, 2))
 
-    node = helper.make_node("ConvInteger",
-                            ["X", "W", "x_zero_point", "w_zero_point"], ["Y"],
-                            kernel_shape=[2, 2],
-                            pads=[0, 0, 0, 0],
-                            dilations=[1, 1])
-    output = run_node(node, [x, w, np.int8(0), w_zero_point])
-    np.testing.assert_almost_equal(output["Y"], y)
+      node = helper.make_node("ConvInteger",
+                              ["X", "W", "x_zero_point", "w_zero_point"], ["Y"],
+                              kernel_shape=[2, 2],
+                              pads=[0, 0, 0, 0],
+                              dilations=[1, 1])
+      output = run_node(node, [x, w, np.int8(0), w_zero_point], device=device)
+      np.testing.assert_almost_equal(output["Y"], y)
 
-    # Test x_zero_point and w_zero_point
-    x = np.array([2, 3, 4, 5, 6, 7, 8, 9, 10]).astype(np.int8).reshape(
-        (1, 1, 3, 3))
-    x_zero_point = np.int8(1)
-    w = np.array([2, 2, 2, 2]).astype(np.int8).reshape((1, 1, 2, 2))
-    w_zero_point = np.int8(1)
-    y = np.array([12, 16, 24, 28]).astype(np.int32).reshape((1, 1, 2, 2))
+      # Test x_zero_point and w_zero_point
+      x = np.array([2, 3, 4, 5, 6, 7, 8, 9, 10]).astype(np.int8).reshape(
+          (1, 1, 3, 3))
+      x_zero_point = np.int8(1)
+      w = np.array([2, 2, 2, 2]).astype(np.int8).reshape((1, 1, 2, 2))
+      w_zero_point = np.int8(1)
+      y = np.array([12, 16, 24, 28]).astype(np.int32).reshape((1, 1, 2, 2))
 
-    node = helper.make_node("ConvInteger",
-                            ["X", "W", "x_zero_point", "w_zero_point"], ["Y"],
-                            kernel_shape=[2, 2],
-                            pads=[0, 0, 0, 0],
-                            dilations=[1, 1])
-    output = run_node(node, [x, w, x_zero_point, w_zero_point])
-    np.testing.assert_almost_equal(output["Y"], y)
+      node = helper.make_node("ConvInteger",
+                              ["X", "W", "x_zero_point", "w_zero_point"], ["Y"],
+                              kernel_shape=[2, 2],
+                              pads=[0, 0, 0, 0],
+                              dilations=[1, 1])
+      output = run_node(node, [x, w, x_zero_point, w_zero_point], device=device)
+      np.testing.assert_almost_equal(output["Y"], y)
 
-    # Test w_zero_point as 1d tensor
-    x = np.array([2, 3, 4, 5, 6, 7, 8, 9, 10]).astype(np.int8).reshape(
-        (1, 1, 3, 3))
-    w = np.array([2, 2, 2, 2]).astype(np.int8).reshape((1, 1, 2, 2))
-    w_zero_point = np.array([1]).astype(np.int8)
-    y = np.array([16, 20, 28, 32]).astype(np.int32).reshape((1, 1, 2, 2))
+      # Test w_zero_point as 1d tensor
+      x = np.array([2, 3, 4, 5, 6, 7, 8, 9, 10]).astype(np.int8).reshape(
+          (1, 1, 3, 3))
+      w = np.array([2, 2, 2, 2]).astype(np.int8).reshape((1, 1, 2, 2))
+      w_zero_point = np.array([1]).astype(np.int8)
+      y = np.array([16, 20, 28, 32]).astype(np.int32).reshape((1, 1, 2, 2))
 
-    node = helper.make_node("ConvInteger",
-                            ["X", "W", "x_zero_point", "w_zero_point"], ["Y"],
-                            kernel_shape=[2, 2],
-                            pads=[0, 0, 0, 0],
-                            dilations=[1, 1])
-    output = run_node(node, [x, w, np.int8(0), w_zero_point])
-    np.testing.assert_almost_equal(output["Y"], y)
+      node = helper.make_node("ConvInteger",
+                              ["X", "W", "x_zero_point", "w_zero_point"], ["Y"],
+                              kernel_shape=[2, 2],
+                              pads=[0, 0, 0, 0],
+                              dilations=[1, 1])
+      output = run_node(node, [x, w, np.int8(0), w_zero_point], device=device)
+      np.testing.assert_almost_equal(output["Y"], y)
 
-    # Test w_zero_point as 1d tensor shape 2
-    x = np.array([1, 2, 3, 4, 5, 6, 7, 8, 9]).astype(np.int8).reshape(
-        (1, 1, 3, 3))
-    w = np.array([2, 2, 2, 2, 2, 2, 2, 2]).astype(np.int8).reshape((2, 1, 2, 2))
-    w_zero_point = np.array([1, 2]).astype(np.int8)
-    y = np.array([12, 16, 24, 28, 0, 0, 0, 0]).astype(np.int32).reshape(
-        (1, 2, 2, 2))
+      # Test w_zero_point as 1d tensor shape 2
+      x = np.array([1, 2, 3, 4, 5, 6, 7, 8, 9]).astype(np.int8).reshape(
+          (1, 1, 3, 3))
+      w = np.array([2, 2, 2, 2, 2, 2, 2, 2]).astype(np.int8).reshape(
+          (2, 1, 2, 2))
+      w_zero_point = np.array([1, 2]).astype(np.int8)
+      y = np.array([12, 16, 24, 28, 0, 0, 0, 0]).astype(np.int32).reshape(
+          (1, 2, 2, 2))
 
-    node = helper.make_node("ConvInteger",
-                            ["X", "W", "x_zero_point", "w_zero_point"], ["Y"],
-                            kernel_shape=[2, 2],
-                            pads=[0, 0, 0, 0],
-                            dilations=[1, 1])
-    output = run_node(node, [x, w, np.int8(0), w_zero_point])
-    np.testing.assert_almost_equal(output["Y"], y)
+      node = helper.make_node("ConvInteger",
+                              ["X", "W", "x_zero_point", "w_zero_point"], ["Y"],
+                              kernel_shape=[2, 2],
+                              pads=[0, 0, 0, 0],
+                              dilations=[1, 1])
+      output = run_node(node, [x, w, np.int8(0), w_zero_point], device=device)
+      np.testing.assert_almost_equal(output["Y"], y)
 
   def test_conv_transpose(self):
-    device = "CUDA" if supports_device("CUDA") else "CPU"
+    for device in self._get_device_list():
+      pads = [1, 1]
+      node_def = helper.make_node("ConvTranspose", ["X", "weights"], ["Y"],
+                                  pads=pads)
+      x_shape = [1, 3, 4]
+      x = self._get_rnd_float32(shape=x_shape)
+      weight_shape = [3, 5, 2]
+      weights = self._get_rnd_float32(shape=weight_shape)
+      output = run_node(node_def, [x, weights], device=device)
 
-    pads = [1, 1]
-    node_def = helper.make_node("ConvTranspose", ["X", "weights"], ["Y"],
-                                pads=pads)
-    x_shape = [1, 3, 4]
-    x = self._get_rnd_float32(shape=x_shape)
-    weight_shape = [3, 5, 2]
-    weights = self._get_rnd_float32(shape=weight_shape)
-    output = run_node(node_def, [x, weights], device=device)
+      padh_left = weight_shape[2] - 1 - pads[0]
+      padh_right = weight_shape[2] - 1 - pads[1]
+      kh = weight_shape[2]
+      outh = x_shape[2] + padh_right + padh_right - (kh - 1)
 
-    padh_left = weight_shape[2] - 1 - pads[0]
-    padh_right = weight_shape[2] - 1 - pads[1]
-    kh = weight_shape[2]
-    outh = x_shape[2] + padh_right + padh_right - (kh - 1)
+      out_shape = [x_shape[0], weight_shape[1], outh]
 
-    out_shape = [x_shape[0], weight_shape[1], outh]
+      test_output = np.zeros(out_shape)
+      for b in range(0, x_shape[0]):
+        for m in range(0, weight_shape[1]):
+          for c in range(0, x_shape[1]):
+            for h in range(0, outh):
+              for k in range(h, h + kh):
+                if (k - padh_left >= 0):
+                  test_output[b][m][h] += x[b][c][
+                      k - padh_left] * weights[c][m][kh + h - 1 - k]
 
-    test_output = np.zeros(out_shape)
-    for b in range(0, x_shape[0]):
-      for m in range(0, weight_shape[1]):
-        for c in range(0, x_shape[1]):
-          for h in range(0, outh):
-            for k in range(h, h + kh):
-              if (k - padh_left >= 0):
-                test_output[b][m][h] += x[b][c][k - padh_left] * weights[c][m][
-                    kh + h - 1 - k]
+      np.testing.assert_almost_equal(output["Y"], test_output, decimal=5)
 
-    np.testing.assert_almost_equal(output["Y"], test_output, decimal=5)
+      # test for spatial dimension of colnolution is 2
+      pads = [1, 1, 1, 1]
+      node_def = helper.make_node("ConvTranspose", ["X", "weights"], ["Y"],
+                                  pads=pads)
+      x_shape = [1, 3, 4, 6]
+      x = self._get_rnd_float32(shape=x_shape)
+      weight_shape = [3, 5, 2, 2]
+      weights = self._get_rnd_float32(shape=weight_shape)
+      output = run_node(node_def, [x, weights], device=device)
 
-    # test for spatial dimension of colnolution is 2
-    pads = [1, 1, 1, 1]
-    node_def = helper.make_node("ConvTranspose", ["X", "weights"], ["Y"],
-                                pads=pads)
-    x_shape = [1, 3, 4, 6]
-    x = self._get_rnd_float32(shape=x_shape)
-    weight_shape = [3, 5, 2, 2]
-    weights = self._get_rnd_float32(shape=weight_shape)
-    output = run_node(node_def, [x, weights], device=device)
+      padh_left = weight_shape[2] - 1 - pads[0]
+      padh_right = weight_shape[2] - 1 - pads[1]
+      padw_left = weight_shape[3] - 1 - pads[2]
+      padw_right = weight_shape[3] - 1 - pads[3]
 
-    padh_left = weight_shape[2] - 1 - pads[0]
-    padh_right = weight_shape[2] - 1 - pads[1]
-    padw_left = weight_shape[3] - 1 - pads[2]
-    padw_right = weight_shape[3] - 1 - pads[3]
+      kh = weight_shape[2]
+      kw = weight_shape[3]
+      outh = x_shape[2] + padh_right + padh_right - (kh - 1)
+      outw = x_shape[3] + padw_right + padw_right - (kw - 1)
 
-    kh = weight_shape[2]
-    kw = weight_shape[3]
-    outh = x_shape[2] + padh_right + padh_right - (kh - 1)
-    outw = x_shape[3] + padw_right + padw_right - (kw - 1)
+      out_shape = [x_shape[0], weight_shape[1], outh, outw]
 
-    out_shape = [x_shape[0], weight_shape[1], outh, outw]
+      test_output = np.zeros(out_shape)
+      for b in range(0, x_shape[0]):
+        for m in range(0, weight_shape[1]):
+          for c in range(0, x_shape[1]):
+            for h in range(0, outh):
+              for w in range(0, outw):
+                for k1 in range(h, h + kh):
+                  for k2 in range(w, w + kw):
+                    if (k1 - padh_left >= 0 and k2 - padw_left >= 0):
+                      test_output[b][m][h][w] += x[b][c][k1 - padh_left][
+                          k2 - padw_left] * weights[c][m][kh + h - 1 -
+                                                          k1][kw + w - 1 - k2]
 
-    test_output = np.zeros(out_shape)
-    for b in range(0, x_shape[0]):
-      for m in range(0, weight_shape[1]):
-        for c in range(0, x_shape[1]):
-          for h in range(0, outh):
-            for w in range(0, outw):
-              for k1 in range(h, h + kh):
-                for k2 in range(w, w + kw):
-                  if (k1 - padh_left >= 0 and k2 - padw_left >= 0):
-                    test_output[b][m][h][w] += x[b][c][k1 - padh_left][
-                        k2 - padw_left] * weights[c][m][kh + h - 1 -
-                                                        k1][kw + w - 1 - k2]
-
-    np.testing.assert_almost_equal(output["Y"], test_output, decimal=5)
+      np.testing.assert_almost_equal(output["Y"], test_output, decimal=5)
 
   def test_cosh(self):
     if legacy_opset_pre_ver(9):
@@ -593,14 +596,16 @@ class TestNode(unittest.TestCase):
     np.testing.assert_almost_equal(output["y"], y)
 
   def test_depth_to_space(self):
-    node_def = helper.make_node("DepthToSpace", ["X"], ["Y"], blocksize=2)
-    x_shape = [1, 12, 1, 1]
-    x = self._get_rnd_float32(shape=x_shape)
-    output = run_node(node_def, [x])
-    x = np.transpose(x, (0, 2, 3, 1))
-    y = np.reshape(np.swapaxes(x.reshape(1, 1, 1, 2, 2, 3), 2, 3), (1, 2, 2, 3))
-    y = np.transpose(y, (0, 3, 1, 2))
-    np.testing.assert_almost_equal(output["Y"], y, decimal=5)
+    for device in self._get_device_list():
+      node_def = helper.make_node("DepthToSpace", ["X"], ["Y"], blocksize=2)
+      x_shape = [1, 12, 1, 1]
+      x = self._get_rnd_float32(shape=x_shape)
+      output = run_node(node_def, [x], device=device)
+      x = np.transpose(x, (0, 2, 3, 1))
+      y = np.reshape(np.swapaxes(x.reshape(1, 1, 1, 2, 2, 3), 2, 3),
+                     (1, 2, 2, 3))
+      y = np.transpose(y, (0, 3, 1, 2))
+      np.testing.assert_almost_equal(output["Y"], y, decimal=5)
 
   def test_dequantize_linear(self):
     node_def = helper.make_node("DequantizeLinear",
@@ -741,6 +746,19 @@ class TestNode(unittest.TestCase):
     np.testing.assert_almost_equal(output["Y_Scale"], y_scale)
     np.testing.assert_almost_equal(output["Y_Zero_Point"], y_zero_point)
 
+  def test_einsum(self):
+    if legacy_opset_pre_ver(12):
+      raise unittest.SkipTest(
+          "ONNX version {} doesn't support Einsum.".format(
+              defs.onnx_opset_version()))
+    equation = 'ij,jk->ik'  #matmul
+    node_def = helper.make_node("Einsum", ["X", "Y"], ["Z"], equation=equation)
+    x = self._get_rnd_float32(shape=[3, 4])
+    y = self._get_rnd_float32(shape=[4, 5])
+    z = np.einsum(equation, x, y)
+    output = run_node(node_def, [x, y])
+    np.testing.assert_almost_equal(output["Z"], z)
+
   def test_elu(self):
     node_def = helper.make_node("Elu", ["X"], ["Y"])
     x = self._get_rnd_float32(shape=[100])
@@ -763,8 +781,7 @@ class TestNode(unittest.TestCase):
 
     x = np.arange(8).reshape((2, 2, 2)).astype(np.uint64)
     y = np.arange(8).reshape((2, 2, 2)).astype(np.uint64)
-    with np.testing.assert_raises(RuntimeError):
-      output = run_node(node_def, [x, y])
+    self.assertRaises(RuntimeError, run_node, node_def, [x, y])
 
   def test_erf(self):
     if legacy_opset_pre_ver(9):
@@ -1250,6 +1267,14 @@ class TestNode(unittest.TestCase):
         test_output[i1][i2][0][0] = max
     np.testing.assert_almost_equal(output["Y"], test_output)
 
+  def test_greater(self):
+      node_def = helper.make_node("Greater", ["X", "Y"], ["Z"])
+      x = self._get_rnd_float32(shape=[5, 3, 3, 2])
+      y = self._get_rnd_float32(shape=[3, 3, 1])
+      output = run_node(node_def, [x, y])
+      np.testing.assert_equal(output["Z"], np.greater(x, np.reshape(y,
+                                                                 [1, 3, 3, 1])))
+
   def test_less(self):
     node_def = helper.make_node("Less", ["X", "Y"], ["Z"])
     x = self._get_rnd_float32(shape=[5, 3, 3, 2])
@@ -1295,41 +1320,42 @@ class TestNode(unittest.TestCase):
           rtol=1e-3)
 
   def test_l_r_n(self):
-    # Each input value is divided by:
-    #
-    # (bias+(alpha/size)*sum(xi^2 for every xi in the local region))^beta
-    alpha = 2.0
-    beta = 1.0
-    bias = 5.0
-    size = 3
-    node_def = helper.make_node("LRN", ["X"], ["Y"],
-                                alpha=alpha,
-                                beta=beta,
-                                bias=bias,
-                                size=size)
-    x = self._get_rnd_float32(shape=[10, 2, 10, 10])
-    output = run_node(node_def, [x])
-    test_output = np.zeros([10, 10, 10, 2])
-    x = np.transpose(x, axes=[0, 2, 3, 1])
-    for i1 in range(0, 10):
-      for i2 in range(0, 10):
-        for j1 in range(0, 10):
-          for j2 in range(0, 2):
-            sqr_sum = 0.
-            # size of 3 means radius 1 in TF speak
-            # i.e. the immediate neighbouring values
-            # if "previous" neighbour exists
-            if j2 > 0:
-              sqr_sum += x[i1][i2][j1][j2 - 1] * x[i1][i2][j1][j2 - 1]
-            # current value
-            sqr_sum += x[i1][i2][j1][j2] * x[i1][i2][j1][j2]
-            # if "next" neighbour exists
-            if j2 < 2 - 1:
-              sqr_sum += x[i1][i2][j1][j2 + 1] * x[i1][i2][j1][j2 + 1]
-            test_output[i1][i2][j1][j2] = \
-              x[i1][i2][j1][j2] / ((bias + (alpha * 1. / size) * sqr_sum) ** beta)
-    test_output = np.transpose(test_output, axes=[0, 3, 1, 2])
-    np.testing.assert_almost_equal(output["Y"], test_output)
+    for device in self._get_device_list():
+      # Each input value is divided by:
+      #
+      # (bias+(alpha/size)*sum(xi^2 for every xi in the local region))^beta
+      alpha = 2.0
+      beta = 1.0
+      bias = 5.0
+      size = 3
+      node_def = helper.make_node("LRN", ["X"], ["Y"],
+                                  alpha=alpha,
+                                  beta=beta,
+                                  bias=bias,
+                                  size=size)
+      x = self._get_rnd_float32(shape=[10, 2, 10, 10])
+      output = run_node(node_def, [x], device=device)
+      test_output = np.zeros([10, 10, 10, 2])
+      x = np.transpose(x, axes=[0, 2, 3, 1])
+      for i1 in range(0, 10):
+        for i2 in range(0, 10):
+          for j1 in range(0, 10):
+            for j2 in range(0, 2):
+              sqr_sum = 0.
+              # size of 3 means radius 1 in TF speak
+              # i.e. the immediate neighbouring values
+              # if "previous" neighbour exists
+              if j2 > 0:
+                sqr_sum += x[i1][i2][j1][j2 - 1] * x[i1][i2][j1][j2 - 1]
+              # current value
+              sqr_sum += x[i1][i2][j1][j2] * x[i1][i2][j1][j2]
+              # if "next" neighbour exists
+              if j2 < 2 - 1:
+                sqr_sum += x[i1][i2][j1][j2 + 1] * x[i1][i2][j1][j2 + 1]
+              test_output[i1][i2][j1][j2] = \
+                x[i1][i2][j1][j2] / ((bias + (alpha * 1. / size) * sqr_sum) ** beta)
+      test_output = np.transpose(test_output, axes=[0, 3, 1, 2])
+      np.testing.assert_almost_equal(output["Y"], test_output)
 
   def test_floor(self):
     node_def = helper.make_node("Floor", ["X"], ["Y"])
@@ -1579,7 +1605,7 @@ class TestNode(unittest.TestCase):
                                 ['v1_final', 'v2_final', 'scan_output'],
                                 body=graph)
     try:
-      output = run_node(node_def, [M, cond, v1_initial, v2_initial])
+      run_node(node_def, [M, cond, v1_initial, v2_initial])
       raise AssertionError("Expected RuntimeError not raise when Loop inputs " +
                            "M and cond are both not set at the same time")
     except RuntimeError as e:
@@ -1706,58 +1732,65 @@ class TestNode(unittest.TestCase):
                     input_dtype=np.float32,
                     p=None):
 
-    op = "MaxPool" if pooling_type.upper().startswith("MAX") else \
-         "AveragePool" if pooling_type.upper() == "AVG" else "LpPool"
-    node_def_kwargs = {
-        "op_type": op,
-        "inputs": ["X"],
-        "outputs": ["Y"],
-        "kernel_shape": kernel_shape
-    }
+    for device in self._get_device_list():
+      op = "MaxPool" if pooling_type.upper().startswith("MAX") else \
+           "AveragePool" if pooling_type.upper() == "AVG" else "LpPool"
+      node_def_kwargs = {
+          "op_type": op,
+          "inputs": ["X"],
+          "outputs": ["Y"],
+          "kernel_shape": kernel_shape
+      }
 
-    if strides is not None:
-      node_def_kwargs["strides"] = strides
-    if dilations is not None:
-      node_def_kwargs["dilations"] = dilations
-    if pads is not None:
-      node_def_kwargs["pads"] = pads
-    if auto_pad is not None:
-      node_def_kwargs["auto_pad"] = auto_pad
-      pads = auto_pad
-    if ceil_mode is not None:
-      node_def_kwargs["ceil_mode"] = ceil_mode
-    else:
-      ceil_mode = 0
-    if count_include_pad is not None:
-      node_def_kwargs["count_include_pad"] = count_include_pad
-    if p is not None:
-      node_def_kwargs["p"] = p
+      if strides is not None:
+        node_def_kwargs["strides"] = strides
+      if dilations is not None:
+        node_def_kwargs["dilations"] = dilations
+      if pads is not None:
+        node_def_kwargs["pads"] = pads
+      orig_pads = pads  # save it for the 2nd loop
+      if auto_pad is not None:
+        node_def_kwargs["auto_pad"] = auto_pad
+        pads = auto_pad
+      orig_ceil_mode = ceil_mode  # save it for the 2nd loop
+      if ceil_mode is not None:
+        node_def_kwargs["ceil_mode"] = ceil_mode
+      else:
+        ceil_mode = 0
+      if count_include_pad is not None:
+        node_def_kwargs["count_include_pad"] = count_include_pad
+      if p is not None:
+        node_def_kwargs["p"] = p
 
-    node_def = helper.make_node(**node_def_kwargs)
+      node_def = helper.make_node(**node_def_kwargs)
 
-    if input_dtype == np.float32:
-      x = self._get_rnd_float32(shape=input_shape)
-    else:
-      x = self._get_rnd_int(low=np.iinfo(input_dtype).min,
-                            high=np.iinfo(input_dtype).max,
-                            shape=input_shape,
-                            dtype=input_dtype)
+      if input_dtype == np.float32:
+        x = self._get_rnd_float32(shape=input_shape)
+      else:
+        x = self._get_rnd_int(low=np.iinfo(input_dtype).min,
+                              high=np.iinfo(input_dtype).max,
+                              shape=input_shape,
+                              dtype=input_dtype)
 
-    output = run_node(node_def, [x])
+      output = run_node(node_def, [x], device=device)
 
-    test_output = py_pool(x,
-                          kernel_shape=kernel_shape,
-                          strides=strides,
-                          dilations=dilations,
-                          padding=pads,
-                          ceil_mode=ceil_mode,
-                          pooling_type=pooling_type,
-                          include_indices=False,
-                          p=p)
+      test_output = py_pool(x,
+                            kernel_shape=kernel_shape,
+                            strides=strides,
+                            dilations=dilations,
+                            padding=pads,
+                            ceil_mode=ceil_mode,
+                            pooling_type=pooling_type,
+                            include_indices=False,
+                            p=p)
 
-    np.testing.assert_almost_equal(output["Y"],
-                                   test_output,
-                                   decimal=5 if pooling_type == "LP" else 7)
+      np.testing.assert_almost_equal(output["Y"],
+                                     test_output,
+                                     decimal=5 if pooling_type == "LP" else 7)
+
+      # set pads and ceil_mode values back to the original values for the 2nd loop
+      pads = orig_pads
+      ceil_mode = orig_ceil_mode
 
   def test_max_pool_2d(self):
     kernel_shape = [1, 2]
@@ -1833,10 +1866,6 @@ class TestNode(unittest.TestCase):
     kernel_shape = [3, 3]
     strides = [2, 2]
     dilations = [3, 3]
-    node_def = helper.make_node("MaxPool", ["X"], ["Y"],
-                                kernel_shape=kernel_shape,
-                                strides=strides,
-                                dilations=dilations)
 
     input_shape = [10, 3, 24, 24]
     self._test_pooling(input_shape=input_shape,
@@ -2038,33 +2067,34 @@ class TestNode(unittest.TestCase):
       raise unittest.SkipTest(
           "ONNX version {} doesn't support dilations nor ceil mode.".format(
               defs.onnx_opset_version()))
+    for device in self._get_device_list():
+      kernel_shape = [3, 3]
+      strides = [2, 2]
+      dilations = [3, 3]
+      pads = [1, 1, 2, 2]
+      ceil_mode = True
+      node_def = helper.make_node("MaxPool", ["X"], ["Y", "Ind"],
+                                  kernel_shape=kernel_shape,
+                                  strides=strides,
+                                  dilations=dilations,
+                                  pads=pads,
+                                  ceil_mode=ceil_mode)
 
-    kernel_shape = [3, 3]
-    strides = [2, 2]
-    dilations = [3, 3]
-    pads = [1, 1, 2, 2]
-    ceil_mode = True
-    node_def = helper.make_node("MaxPool", ["X"], ["Y", "Ind"],
-                                kernel_shape=kernel_shape,
-                                strides=strides,
-                                dilations=dilations,
-                                pads=pads,
-                                ceil_mode=ceil_mode)
+      input_shape = [10, 3, 23, 23]
+      x = self._get_rnd_float32(shape=input_shape) - 2
 
-    input_shape = [10, 1, 23, 23]
-    x = self._get_rnd_float32(shape=input_shape) - 2
-    output = run_node(node_def, [x])
+      output = run_node(node_def, [x], device=device)
 
-    test_output, test_ind = py_pool(x,
-                                    kernel_shape=kernel_shape,
-                                    strides=strides,
-                                    dilations=dilations,
-                                    padding=pads,
-                                    ceil_mode=ceil_mode,
-                                    pooling_type="MAX")
+      test_output, test_ind = py_pool(x,
+                                      kernel_shape=kernel_shape,
+                                      strides=strides,
+                                      dilations=dilations,
+                                      padding=pads,
+                                      ceil_mode=ceil_mode,
+                                      pooling_type="MAX")
 
-    np.testing.assert_almost_equal(output["Y"], test_output)
-    np.testing.assert_almost_equal(output["Ind"], test_ind)
+      np.testing.assert_almost_equal(output["Y"], test_output)
+      np.testing.assert_almost_equal(output["Ind"], test_ind)
 
   def test_max_pool_with_argmax_3d(self):
     kernel_shape = [3, 3, 3]
@@ -2089,37 +2119,36 @@ class TestNode(unittest.TestCase):
     self.assertRaises(RuntimeError, run_node, node_def, [x])
 
   def test_max_unpool(self):
-    input_shape = [10, 10, 4, 4]
-    x = self._get_rnd_float32(shape=input_shape)
+    for device in self._get_device_list():
+      input_shape = [10, 10, 4, 4]
+      x = self._get_rnd_float32(shape=input_shape)
 
-    X = helper.make_tensor_value_info('X', TensorProto.FLOAT, input_shape)
-    Y = helper.make_tensor_value_info('Y', TensorProto.FLOAT, input_shape)
+      node_def = helper.make_node("MaxPool", ["X"], ["Pool", "Indices"],
+                                  kernel_shape=[2, 2],
+                                  strides=[2, 2])
+      output_pool = run_node(node_def, [x], device=device)
 
-    node_def = helper.make_node("MaxPool", ["X"], ["Pool", "Indices"],
-                                kernel_shape=[2, 2],
-                                strides=[2, 2])
-    output_pool = run_node(node_def, [x])
+      node_def = helper.make_node("MaxUnpool", ["Pool", "Indices"], ["Y"],
+                                  kernel_shape=[2, 2],
+                                  strides=[2, 2])
+      output_unpool = run_node(node_def,
+                               [output_pool["Pool"], output_pool["Indices"]],
+                               device=device)
 
-    node_def = helper.make_node("MaxUnpool", ["Pool", "Indices"], ["Y"],
-                                kernel_shape=[2, 2],
-                                strides=[2, 2])
-    output_unpool = run_node(node_def,
-                             [output_pool["Pool"], output_pool["Indices"]])
-
-    test_output = np.zeros(input_shape)
-    for i1 in range(0, input_shape[0]):
-      for i2 in range(0, input_shape[1]):
-        for i3 in range(0, input_shape[2], 2):
-          for i4 in range(0, input_shape[3], 2):
-            max_val = float('-inf')
-            for j1 in range(i3, i3 + 2):
-              for j2 in range(i4, i4 + 2):
-                if x[i1][i2][j1][j2] > max_val:
-                  max_val = x[i1][i2][j1][j2]
-                  max_ind = (j1, j2)
-            j1, j2 = max_ind
-            test_output[i1][i2][j1][j2] = max_val
-    np.testing.assert_almost_equal(output_unpool["Y"], test_output)
+      test_output = np.zeros(input_shape)
+      for i1 in range(0, input_shape[0]):
+        for i2 in range(0, input_shape[1]):
+          for i3 in range(0, input_shape[2], 2):
+            for i4 in range(0, input_shape[3], 2):
+              max_val = float('-inf')
+              for j1 in range(i3, i3 + 2):
+                for j2 in range(i4, i4 + 2):
+                  if x[i1][i2][j1][j2] > max_val:
+                    max_val = x[i1][i2][j1][j2]
+                    max_ind = (j1, j2)
+              j1, j2 = max_ind
+              test_output[i1][i2][j1][j2] = max_val
+      np.testing.assert_almost_equal(output_unpool["Y"], test_output)
 
   def test_average_pool_1d(self):
     kernel_shape = [3]
@@ -3081,50 +3110,51 @@ class TestNode(unittest.TestCase):
       raise unittest.SkipTest(
           "ONNX version {} doesn't support QLinearConv.".format(
               defs.onnx_opset_version()))
+    for device in self._get_device_list():
+      # Test w_scale and w_zero_point as scalar
+      node_def = helper.make_node("QLinearConv",
+                                  inputs=[
+                                      "x", "x_scale", "x_zero_point", "w",
+                                      "w_scale", "w_zero_point", "y_scale",
+                                      "y_zero_point"
+                                  ],
+                                  outputs=["Y"])
+      x = np.array([
+          [255, 174, 162, 25, 203, 168, 58],
+          [15, 59, 237, 95, 129, 0, 64],
+          [56, 242, 153, 221, 168, 12, 166],
+          [232, 178, 186, 195, 237, 162, 237],
+          [188, 39, 124, 77, 80, 102, 43],
+          [127, 230, 21, 83, 41, 40, 134],
+          [255, 154, 92, 141, 42, 148, 247],
+      ],
+                   dtype=np.uint8).reshape((1, 1, 7, 7))
+      x_scale = np.float32(0.00369204697)
+      x_zero_point = np.uint8(132)
 
-    # Test w_scale and w_zero_point as scalar
-    node_def = helper.make_node("QLinearConv",
-                                inputs=[
-                                    "x", "x_scale", "x_zero_point", "w",
-                                    "w_scale", "w_zero_point", "y_scale",
-                                    "y_zero_point"
-                                ],
-                                outputs=["Y"])
-    x = np.array([
-        [255, 174, 162, 25, 203, 168, 58],
-        [15, 59, 237, 95, 129, 0, 64],
-        [56, 242, 153, 221, 168, 12, 166],
-        [232, 178, 186, 195, 237, 162, 237],
-        [188, 39, 124, 77, 80, 102, 43],
-        [127, 230, 21, 83, 41, 40, 134],
-        [255, 154, 92, 141, 42, 148, 247],
-    ],
-                 dtype=np.uint8).reshape((1, 1, 7, 7))
-    x_scale = np.float32(0.00369204697)
-    x_zero_point = np.uint8(132)
+      w = np.array([0], dtype=np.uint8).reshape((1, 1, 1, 1))
+      w_scale = np.float32(0.00172794575)
+      w_zero_point = np.uint8(255)
 
-    w = np.array([0], dtype=np.uint8).reshape((1, 1, 1, 1))
-    w_scale = np.float32(0.00172794575)
-    w_zero_point = np.uint8(255)
+      y = np.array([
+          [0, 81, 93, 230, 52, 87, 197],
+          [240, 196, 18, 160, 126, 255, 191],
+          [199, 13, 102, 34, 87, 243, 89],
+          [23, 77, 69, 60, 18, 93, 18],
+          [67, 216, 131, 178, 175, 153, 212],
+          [128, 25, 234, 172, 214, 215, 121],
+          [0, 101, 163, 114, 213, 107, 8],
+      ],
+                   dtype=np.uint8).reshape((1, 1, 7, 7))
+      y_scale = np.float32(0.00162681262)
+      y_zero_point = np.uint8(123)
 
-    y = np.array([
-        [0, 81, 93, 230, 52, 87, 197],
-        [240, 196, 18, 160, 126, 255, 191],
-        [199, 13, 102, 34, 87, 243, 89],
-        [23, 77, 69, 60, 18, 93, 18],
-        [67, 216, 131, 178, 175, 153, 212],
-        [128, 25, 234, 172, 214, 215, 121],
-        [0, 101, 163, 114, 213, 107, 8],
-    ],
-                 dtype=np.uint8).reshape((1, 1, 7, 7))
-    y_scale = np.float32(0.00162681262)
-    y_zero_point = np.uint8(123)
-
-    output = run_node(node_def, [
-        x, x_scale, x_zero_point, w, w_scale, w_zero_point, y_scale,
-        y_zero_point
-    ])
-    np.testing.assert_almost_equal(output["Y"], y)
+      output = run_node(node_def, [
+          x, x_scale, x_zero_point, w, w_scale, w_zero_point, y_scale,
+          y_zero_point
+      ],
+                        device=device)
+      np.testing.assert_almost_equal(output["Y"], y)
 
   def test_quantize_linear(self):
     node_def = helper.make_node("QuantizeLinear",
@@ -3607,7 +3637,7 @@ class TestNode(unittest.TestCase):
       node_def = helper.make_node("ScatterElements",
                                   ["data", "indices", "updates"], ["outputs"])
     with np.testing.assert_raises(tf.errors.InvalidArgumentError):
-      output = run_node(node_def, [data, indices, updates])
+      run_node(node_def, [data, indices, updates])
 
   def test_scatter_nd(self):
     if legacy_opset_pre_ver(11):
@@ -3650,12 +3680,12 @@ class TestNode(unittest.TestCase):
                        dtype=np.int64)
     updates = np.array([37, 52, 30, 39], dtype=np.float32)
     with np.testing.assert_raises(tf.errors.InvalidArgumentError):
-      output = run_node(node_def, [data, indices, updates])
+      run_node(node_def, [data, indices, updates])
     indices = np.array([[0, 1], [-1, -1], [-2, -4]], dtype=np.int64)
     updates = np.array([[35, 36, 37, 38], [51, 52, 53, 54], [31, 32, 33, 34]],
                        dtype=np.float32)
     with np.testing.assert_raises(tf.errors.InvalidArgumentError):
-      output = run_node(node_def, [data, indices, updates])
+      run_node(node_def, [data, indices, updates])
 
   def test_shape(self):
     node_def = helper.make_node("Shape", ["X"], ["Y"])
@@ -3783,15 +3813,16 @@ class TestNode(unittest.TestCase):
     np.testing.assert_almost_equal(output["Y"], x / (1 + np.abs(x)))
 
   def test_space_to_depth(self):
-    node_def = helper.make_node("SpaceToDepth", ["X"], ["Y"], blocksize=2)
-    x_shape = [1, 3, 2, 2]
-    x = self._get_rnd_float32(shape=x_shape)
-    output = run_node(node_def, [x])
-    x = np.transpose(x, (0, 2, 3, 1))
-    y = np.reshape(np.swapaxes(x.reshape(1, 1, 1, 1, 1, 12), 2, 3),
-                   (1, 1, 1, 12))
-    y = np.transpose(y, (0, 3, 1, 2))
-    np.testing.assert_allclose(output["Y"], y, rtol=1e-3)
+    for device in self._get_device_list():
+      node_def = helper.make_node("SpaceToDepth", ["X"], ["Y"], blocksize=2)
+      x_shape = [1, 3, 2, 2]
+      x = self._get_rnd_float32(shape=x_shape)
+      output = run_node(node_def, [x], device=device)
+      x = np.transpose(x, (0, 2, 3, 1))
+      y = np.reshape(np.swapaxes(x.reshape(1, 1, 1, 1, 1, 12), 2, 3),
+                     (1, 1, 1, 12))
+      y = np.transpose(y, (0, 3, 1, 2))
+      np.testing.assert_allclose(output["Y"], y, rtol=1e-3)
 
   def test_split(self):
     split = np.array([3, 3, 4]).astype(np.int64)

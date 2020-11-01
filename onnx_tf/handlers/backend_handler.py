@@ -11,7 +11,7 @@ import tensorflow as tf
 from onnx_tf.common import IS_PYTHON3
 from onnx_tf.common import get_data_format
 from onnx_tf.common import get_perm_from_formats
-from onnx_tf.common import supports_device
+from onnx_tf.common import sys_config
 from .handler import Handler
 
 
@@ -120,8 +120,7 @@ class BackendHandler(Handler):
     :param attrs: Attributes.
     :return: Tensor.
     """
-    support_cuda = supports_device("CUDA")
-    if not support_cuda:
+    if sys_config.device == 'CPU':
       return cls._tuck_transpose(tf_func, inputs, attrs)
     return cls._run_tf_func(tf_func, inputs, attrs)
 
