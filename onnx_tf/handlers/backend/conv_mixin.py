@@ -46,14 +46,15 @@ class ConvMixin(BroadcastMixin):
 
     if "kernel_shape" in node.attrs.keys():
       kernel_shape = node.attrs["kernel_shape"]
-      assert in_weights.get_shape().as_list()[2:] == kernel_shape, (
-          "kernel_shape "
-          "attr of convolution does not match the actual weight "
-          "passed to this operation, attr {}, actual {}").format(
-              kernel_shape,
-              in_weights.get_shape().as_list())
+      if in_weights.get_shape().is_fully_defined():
+        assert in_weights.get_shape().as_list()[2:] == kernel_shape, (
+            "kernel_shape "
+            "attr of convolution does not match the actual weight "
+            "passed to this operation, attr {}, actual {}").format(
+                kernel_shape,
+                in_weights.get_shape().as_list())
     else:
-      kernel_shape = in_weights.get_shape().as_list()[2:]
+      kernel_shape = tf_shape(in_weights, tf.int32)[2:]
 
     weights = tf.transpose(in_weights, perm)
     dilations = node.attrs.get("dilations", [1] * spatial_size)
