@@ -12,6 +12,7 @@ import onnx
 from onnx_tf.backend import prepare
 from onnx import helper
 from onnx import TensorProto
+from onnx.backend.test.case.node.lstm import LSTM_Helper
 
 from onnx_tf.common.legacy import legacy_onnx_pre_ver
 
@@ -24,6 +25,61 @@ class TestModel(unittest.TestCase):
     return np.random.uniform(low, high, np.prod(shape)) \
                       .reshape(shape) \
                       .astype(np.float32)
+
+  def test_lstm_savedmodel(self):
+    input_size = 4
+    hidden_size = 3
+    weight_scale = 0.1
+    number_of_gates = 4
+
+    node_def = helper.make_node(
+      'LSTM',
+      inputs=['X', 'W', 'R', 'B', 'sequence_lens', 'initial_h'],
+      outputs=['Y', 'Y_h', 'Y_c'],
+      hidden_size=hidden_size)
+    graph_def = helper.make_graph(
+        [node_def],
+        name="test",
+        inputs=[helper.make_tensor_value_info("X", TensorProto.FLOAT, [1, 2, 4]),
+            helper.make_tensor_value_info("W", TensorProto.FLOAT, [1, 12, 4]),
+            helper.make_tensor_value_info("R", TensorProto.FLOAT, [1, 12, 3]),
+            helper.make_tensor_value_info("B", TensorProto.FLOAT, [1, 24]),
+            helper.make_tensor_value_info("sequence_lens", TensorProto.INT32, [2]),
+            helper.make_tensor_value_info("initial_h", TensorProto.FLOAT, [1, 2, 3])
+        ],
+        outputs=[
+            helper.make_tensor_value_info("Y", TensorProto.FLOAT, [1, 1, 2, 3]),
+            helper.make_tensor_value_info("Y_h", TensorProto.FLOAT, [1, 2, 3]),
+            helper.make_tensor_value_info("Y_c", TensorProto.FLOAT, [1, 2, 3])
+        ])
+
+    # prepare the ONNX model and save it as a Tensorflow SavedModel
+    tf_rep = prepare(helper.make_model(graph_def))
+    model_path = "lstm_savedmodel"
+    tf_rep.export_graph(model_path)
+
+    # Initializing Inputs
+    X = np.array([[[1., 2., 3., 4.], [5., 6., 7., 8.]]]).astype(np.float32)
+    W = weight_scale * np.ones((1, number_of_gates * hidden_size, input_size)).astype(np.float32)
+    R = weight_scale * np.ones((1, number_of_gates * hidden_size, hidden_size)).astype(np.float32)
+    B = np.zeros((1, 2 * number_of_gates * hidden_size)).astype(np.float32)
+    seq_lens = np.repeat(X.shape[0], X.shape[1]).astype(np.int32)
+    init_h = weight_scale * np.ones((1, X.shape[1], hidden_size)).astype(np.float32)
+
+    # use the ONNX reference implementation to get expected output
+    lstm = LSTM_Helper(X=X, W=W, R=R, B=B, initial_h=init_h)
+    _, Y_ref = lstm.step()
+
+    # load the SavedModel from file system
+    m = tf.saved_model.load(model_path)
+
+    # run the model
+    tf_output=m(X=X, W=W, R=R, B=B, sequence_lens=seq_lens, initial_h=init_h)
+
+    np.testing.assert_almost_equal(tf_output[1], Y_ref)
+
+    # clean up saved model folder
+    shutil.rmtree(model_path)
 
   def test_add_module(self):
     node_def = helper.make_node("Add", ["a", "b"], ["Y"])
