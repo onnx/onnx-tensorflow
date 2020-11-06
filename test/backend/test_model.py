@@ -13,6 +13,8 @@ from onnx_tf.backend import prepare
 from onnx import helper
 from onnx import TensorProto
 from onnx.backend.test.case.node.lstm import LSTM_Helper
+from onnx.backend.test.case.node.gru import GRU_Helper
+from onnx.backend.test.case.node.rnn import RNN_Helper
 
 from onnx_tf.common.legacy import legacy_onnx_pre_ver
 
@@ -39,7 +41,7 @@ class TestModel(unittest.TestCase):
       hidden_size=hidden_size)
     graph_def = helper.make_graph(
         [node_def],
-        name="test",
+        name="lstm_test",
         inputs=[helper.make_tensor_value_info("X", TensorProto.FLOAT, [1, 2, 4]),
             helper.make_tensor_value_info("W", TensorProto.FLOAT, [1, 12, 4]),
             helper.make_tensor_value_info("R", TensorProto.FLOAT, [1, 12, 3]),
@@ -81,13 +83,117 @@ class TestModel(unittest.TestCase):
     # clean up saved model folder
     shutil.rmtree(model_path)
 
+  def test_gru_savedmodel(self):
+    input_size = 3
+    hidden_size = 3
+    weight_scale = 0.1
+    custom_bias = 0.1
+    number_of_gates = 3
+
+    node_def = helper.make_node('GRU',
+                                inputs=['X', 'W', 'R', 'B'],
+                                outputs=['Y', 'Y_h'],
+                                hidden_size=hidden_size)
+    graph_def = helper.make_graph(
+        [node_def],
+        name="gru_test",
+        inputs=[
+            helper.make_tensor_value_info("X", TensorProto.FLOAT, [1, 3, 3]),
+            helper.make_tensor_value_info("W", TensorProto.FLOAT, [1, 9, 3]),
+            helper.make_tensor_value_info("R", TensorProto.FLOAT, [1, 9, 3]),
+            helper.make_tensor_value_info("B", TensorProto.FLOAT, [1, 18])
+        ],
+        outputs=[
+            helper.make_tensor_value_info("Y", TensorProto.FLOAT, [1, 1, 3, 3]),
+            helper.make_tensor_value_info("Y_h", TensorProto.FLOAT, [1, 3, 3])
+        ])
+
+    tf_rep = prepare(helper.make_model(graph_def))
+    model_path = "gru_savedmodel"
+    tf_rep.export_graph(model_path)
+
+    # initializing Inputs
+    X = np.array([[[1., 2., 3.], [4., 5., 6.], [7., 8.,
+                                                9.]]]).astype(np.float32)
+    W = weight_scale * np.ones(
+        (1, number_of_gates * hidden_size, input_size)).astype(np.float32)
+    R = weight_scale * np.ones(
+        (1, number_of_gates * hidden_size, hidden_size)).astype(np.float32)
+    W_B = custom_bias * np.ones(
+        (1, number_of_gates * hidden_size)).astype(np.float32)
+    R_B = np.zeros((1, number_of_gates * hidden_size)).astype(np.float32)
+    B = np.concatenate((W_B, R_B), axis=1)
+
+    # use the ONNX reference implementation to get the expected output
+    gru = GRU_Helper(X=X, W=W, R=R, B=B)
+    _, Y_ref = gru.step()
+
+    # load the savedmodel from file system
+    m = tf.saved_model.load(model_path)
+
+    # run the model
+    tf_output = m(X=X, W=W, R=R, B=B)
+
+    np.testing.assert_almost_equal(tf_output[1], Y_ref)
+
+    # clean up saved model folder
+    shutil.rmtree(model_path)
+
+  def test_rnn_savedmodel(self):
+    input_size = 2
+    hidden_size = 4
+    weight_scale = 0.1
+
+    node_def = helper.make_node('RNN',
+                                inputs=['X', 'W', 'R'],
+                                outputs=['Y', 'Y_h'],
+                                hidden_size=hidden_size)
+    graph_def = helper.make_graph(
+        [node_def],
+        name="rnn_test",
+        inputs=[
+            helper.make_tensor_value_info("X", TensorProto.FLOAT, [1, 3, 2]),
+            helper.make_tensor_value_info("W", TensorProto.FLOAT, [1, 4, 2]),
+            helper.make_tensor_value_info("R", TensorProto.FLOAT, [1, 4, 4])
+        ],
+        outputs=[
+            helper.make_tensor_value_info("Y", TensorProto.FLOAT, [1, 1, 2, 4]),
+            helper.make_tensor_value_info("Y_h", TensorProto.FLOAT, [1, 2, 4])
+        ])
+
+    tf_rep = prepare(helper.make_model(graph_def))
+    model_path = "rnn_savedmodel"
+    tf_rep.export_graph(model_path)
+
+    # initializing Inputs
+    X = np.array([[[1., 2.], [3., 4.], [5., 6.]]]).astype(np.float32)
+    W = weight_scale * np.ones((1, hidden_size, input_size)).astype(np.float32)
+    R = weight_scale * np.ones((1, hidden_size, hidden_size)).astype(np.float32)
+
+    # use the ONNX reference implementation to get the expected output
+    rnn = RNN_Helper(X=X, W=W, R=R)
+    _, Y_ref = rnn.step()
+
+    # load the savedmodel from file system
+    m = tf.saved_model.load(model_path)
+
+    # run the model
+    tf_output = m(X=X, W=W, R=R)
+
+    np.testing.assert_almost_equal(tf_output[1], Y_ref)
+
+    # clean up saved model folder
+    shutil.rmtree(model_path)
+
   def test_add_module(self):
     node_def = helper.make_node("Add", ["a", "b"], ["Y"])
     graph_def = helper.make_graph(
         [node_def],
         name="test",
-        inputs=[helper.make_tensor_value_info("a", TensorProto.FLOAT, [None, None]),
-            helper.make_tensor_value_info("b", TensorProto.FLOAT, [None, None])],
+        inputs=[
+            helper.make_tensor_value_info("a", TensorProto.FLOAT, [None, None]),
+            helper.make_tensor_value_info("b", TensorProto.FLOAT, [None, None])
+        ],
         outputs=[
             helper.make_tensor_value_info("Y", TensorProto.FLOAT, [None, None])
         ])
@@ -109,7 +215,7 @@ class TestModel(unittest.TestCase):
     np.testing.assert_almost_equal(output.Y, Y_ref)
 
     # check the output from using saved model
-    tf_output=m(a=a, b=b)
+    tf_output = m(a=a, b=b)
     np.testing.assert_almost_equal(tf_output[0], Y_ref)
 
     # change input shape to [2, 2]
@@ -117,7 +223,7 @@ class TestModel(unittest.TestCase):
     b = np.random.randn(2, 2).astype(np.float32)
     Y_ref = np.add(a, b)
 
-    tf_output=m(a=a, b=b)
+    tf_output = m(a=a, b=b)
     np.testing.assert_almost_equal(tf_output[0], Y_ref)
 
     # clean up saved model folder
@@ -442,9 +548,9 @@ class TestModel(unittest.TestCase):
                                           ['S'])
     concat_from_seq_node = helper.make_node('ConcatFromSequence', ['S'], ['Y'],
                                             axis=1)
-    a = np.array([[1, 2],[3, 4]]).astype(np.float32)
-    b = np.array([[5, 6],[7, 8]]).astype(np.float32)
-    c = np.array([[9, 10],[11, 12]]).astype(np.float32)
+    a = np.array([[1, 2], [3, 4]]).astype(np.float32)
+    b = np.array([[5, 6], [7, 8]]).astype(np.float32)
+    c = np.array([[9, 10], [11, 12]]).astype(np.float32)
     a_value_info = helper.make_tensor_value_info('a', onnx.TensorProto.FLOAT,
                                                  [2, 2])
     b_value_info = helper.make_tensor_value_info('b', onnx.TensorProto.FLOAT,

@@ -4,6 +4,7 @@ import tensorflow as tf
 
 from onnx_tf.common import get_unique_suffix
 from onnx_tf.common import exception
+from onnx_tf.common import get_variable_name
 from onnx_tf.handlers.backend_handler import BackendHandler
 from onnx_tf.handlers.handler import onnx_op
 from onnx_tf.handlers.handler import partial_support
@@ -16,10 +17,33 @@ from .rnn_mixin import RNNMixin
 @ps_description("RNN with clip is not supported in Tensorflow.")
 class RNN(RNNMixin, BackendHandler):
 
+  # declare variable names for custom getters
+  weight_var_name = 'kernel'
+  bias_var_name = 'bias'
+
   @classmethod
   def args_check(cls, node, **kwargs):
     if "clip" in node.attrs:
       exception.OP_UNSUPPORTED_EXCEPT("RNN with clip", "Tensorflow")
+
+  @classmethod
+  def get_req_vars_template(cls, node, init_dict):
+    """ Get required variables template, which is a dictionary of
+        variable names with initial value and shape
+        :return: Dict.
+    """
+    w_shape = node.attrs["hidden_size"]
+    b_shape = node.attrs["hidden_size"]
+    return {
+        cls.weight_var_name: [
+            tf.constant([[0.] * w_shape], dtype=tf.float32),
+            tf.TensorShape([None, w_shape])
+        ],
+        cls.bias_var_name: [
+            tf.constant([0.] * b_shape, dtype=tf.float32),
+            tf.TensorShape([b_shape])
+        ]
+    }
 
   @classmethod
   def _custom_getter(cls,
@@ -40,7 +64,9 @@ class RNN(RNNMixin, BackendHandler):
         raise RuntimeError("Can not get {} for bidirectional. "
                            "Either fw and bw is not in name scope.".format(
                                names[-1]))
+
     if names[-1] == "kernel":
+      weight_var = tensor_dict[get_variable_name(node, cls.weight_var_name)]
       if is_bidirectional:
         w = tf.split(tensor_dict[node.inputs[1]], 2)[index]
         r = tf.split(tensor_dict[node.inputs[2]], 2)[index]
@@ -49,9 +75,11 @@ class RNN(RNNMixin, BackendHandler):
         r = tensor_dict[node.inputs[2]]
       new_w = tf.transpose(tf.squeeze(w))
       new_r = tf.transpose(tf.squeeze(r))
-      kernel = tf.concat([new_w, new_r], 0)
-      return tf.Variable(kernel)
+      weight_var.assign(tf.concat([new_w, new_r], 0))
+      return weight_var
     if names[-1] == "bias":
+      b_shape = node.attrs["hidden_size"]
+      bias_var = tensor_dict[get_variable_name(node, cls.bias_var_name)]
       if len(node.inputs) >= 4:
         if is_bidirectional:
           b = tf.split(tensor_dict[node.inputs[3]], 2)[index]
@@ -60,8 +88,10 @@ class RNN(RNNMixin, BackendHandler):
         w_b, r_b = tf.split(tf.squeeze(b), 2)
         w_b = tf.transpose(w_b)
         r_b = tf.transpose(r_b)
-        return tf.Variable(tf.add(w_b, r_b))
-      return getter(name, *args, **kwargs)
+        bias_var.assign(tf.add(w_b, r_b))
+      else:
+        bias_var.assign(tf.zeros([b_shape], tf.float32))
+      return bias_var
     return getter(name, *args, **kwargs)
 
   @classmethod
@@ -73,7 +103,6 @@ class RNN(RNNMixin, BackendHandler):
     hidden_size = node.attrs["hidden_size"]
     direction = node.attrs.get("direction", "forward")
     num_directions = 2 if direction == "bidirectional" else 1
-
     output_sequence = node.attrs.get("output_sequence", 0)
 
     # TODO(fumihwh): check if prev node is one of RNN
@@ -103,13 +132,12 @@ class RNN(RNNMixin, BackendHandler):
                                    activation_beta[1]))
 
     # TODO(fumihwh): check if reverse and bidirectional works
-    with tf.compat.v1.variable_scope(
-        "RNN_" + get_unique_suffix(),
-        custom_getter=partial(
-            cls._custom_getter,
-            node=node,
-            tensor_dict=tensor_dict,
-            is_bidirectional=num_directions == 2)):
+    with tf.compat.v1.variable_scope("RNN_" + get_unique_suffix(),
+                                     custom_getter=partial(
+                                         cls._custom_getter,
+                                         node=node,
+                                         tensor_dict=tensor_dict,
+                                         is_bidirectional=num_directions == 2)):
 
       cell_kwargs["num_units"] = hidden_size
       initial_state = None
