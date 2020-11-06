@@ -4,6 +4,7 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import unittest
+import shutil
 
 from onnx import defs
 from onnx import helper
@@ -33,8 +34,8 @@ class TestDynamicShape(unittest.TestCase):
   def test_arg_max(self):
     if legacy_opset_pre_ver(12):
       raise unittest.SkipTest(
-          "ONNX version {} doesn't support select_last_index attribute for ArgMax that depends on shape.".format(
-              defs.onnx_opset_version()))
+          "ONNX version {} doesn't support select_last_index attribute for ArgMax that depends on shape."
+          .format(defs.onnx_opset_version()))
     axis = 1
     node_def = helper.make_node("ArgMax",
                                 inputs=['X'],
@@ -51,18 +52,26 @@ class TestDynamicShape(unittest.TestCase):
         outputs=[
             helper.make_tensor_value_info("Y", TensorProto.FLOAT, [None, None])
         ])
-    x = np.array([[ 1, 2, 3, 5, 3, 4, 5, 1 ], [ 2, 9, 3, 5, 9, 4, 5, 1 ]]).astype(np.float32)
+    x = np.array([[1, 2, 3, 5, 3, 4, 5, 1], [2, 9, 3, 5, 9, 4, 5,
+                                             1]]).astype(np.float32)
+    # get tf_rep
     tf_rep = onnx_graph_to_tensorflow_rep(graph_def)
-    output = tf_rep.run({"X": x})
+    # export to tf.saved_model
+    model_path = 'test_dynamic_shape/arg_max'
+    tf_rep.export_graph(model_path)
+    # load the saved_model back
+    tf_model = tf.saved_model.load(model_path)
+    # run the model
+    tf_model_output = tf_model(X=x)
     expected_output = np.argmax(np.flip(x, axis), axis=axis)
     expected_output = x.shape[axis] - expected_output - 1
-    np.testing.assert_almost_equal(output['Y'], expected_output)
+    np.testing.assert_almost_equal(tf_model_output[0], expected_output)
 
   def test_arg_min(self):
     if legacy_opset_pre_ver(12):
       raise unittest.SkipTest(
-          "ONNX version {} doesn't support select_last_index attribute for ArgMin that depends on shape.".format(
-              defs.onnx_opset_version()))
+          "ONNX version {} doesn't support select_last_index attribute for ArgMin that depends on shape."
+          .format(defs.onnx_opset_version()))
     axis = 1
     node_def = helper.make_node("ArgMin",
                                 inputs=['X'],
@@ -79,12 +88,19 @@ class TestDynamicShape(unittest.TestCase):
         outputs=[
             helper.make_tensor_value_info("Y", TensorProto.FLOAT, [None, None])
         ])
-    x = np.array([[ 1, 2, 3, 5, 3, 4, 5, 1 ], [ 2, 7, 3, 5, 2, 4, 5, 6 ]]).astype(np.float32)
+    x = np.array([[1, 2, 3, 5, 3, 4, 5, 1], [2, 7, 3, 5, 2, 4, 5,
+                                             6]]).astype(np.float32)
     tf_rep = onnx_graph_to_tensorflow_rep(graph_def)
-    output = tf_rep.run({"X": x})
+    # export to tf.saved_model
+    model_path = 'test_dynamic_shape/arg_min'
+    tf_rep.export_graph(model_path)
+    # load the saved_model back
+    tf_model = tf.saved_model.load(model_path)
+    # run the model
+    tf_model_output = tf_model(X=x)
     expected_output = np.argmin(np.flip(x, axis), axis=axis)
     expected_output = x.shape[axis] - expected_output - 1
-    np.testing.assert_almost_equal(output['Y'], expected_output)
+    np.testing.assert_almost_equal(tf_model_output[0], expected_output)
 
   def _batch_normalization(self, x, mean, variance, bias, scale,
                            variance_epsilon):
@@ -103,14 +119,16 @@ class TestDynamicShape(unittest.TestCase):
         [node_def],
         name="test_unknown_shape",
         inputs=[
-            helper.make_tensor_value_info("X", TensorProto.FLOAT, [None, None, None, None]),
+            helper.make_tensor_value_info("X", TensorProto.FLOAT,
+                                          [None, None, None, None]),
             helper.make_tensor_value_info("scale", TensorProto.FLOAT, [None]),
             helper.make_tensor_value_info("bias", TensorProto.FLOAT, [None]),
             helper.make_tensor_value_info("mean", TensorProto.FLOAT, [None]),
             helper.make_tensor_value_info("var", TensorProto.FLOAT, [None])
         ],
         outputs=[
-            helper.make_tensor_value_info("Y", TensorProto.FLOAT, [None, None, None, None])
+            helper.make_tensor_value_info("Y", TensorProto.FLOAT,
+                                          [None, None, None, None])
         ])
     x_shape = [3, 5, 4, 2]
     param_shape = [5]
@@ -126,8 +144,14 @@ class TestDynamicShape(unittest.TestCase):
     _bias = bias.reshape(_param_shape)
     golden = self._batch_normalization(x, _m, _v, _bias, _scale, 0.001)
     tf_rep = onnx_graph_to_tensorflow_rep(graph_def)
-    output = tf_rep.run({"X": x, "scale": scale, "bias": bias, "mean": m, "var": v})
-    np.testing.assert_almost_equal(output["Y"], golden, decimal=5)
+    # export to tf.saved_model
+    model_path = 'test_dynamic_shape/batch_normalization'
+    tf_rep.export_graph(model_path)
+    # load the saved_model back
+    tf_model = tf.saved_model.load(model_path)
+    # run the model
+    tf_model_output = tf_model(X=x, scale=scale, bias=bias, mean=m, var=v)
+    np.testing.assert_almost_equal(tf_model_output[0], golden, decimal=5)
 
   def test_compress(self):
     if legacy_opset_pre_ver(9):
@@ -154,8 +178,15 @@ class TestDynamicShape(unittest.TestCase):
     x = self._get_rnd_float32(shape=[5, 5, 5])
     cond = np.array([1, 0, 1]).astype(np.bool)
     tf_rep = onnx_graph_to_tensorflow_rep(graph_def)
-    output = tf_rep.run({"X": x, "condition": cond})
-    np.testing.assert_almost_equal(output['Y'], np.compress(cond, x, axis=axis))
+    # export to tf.saved_model
+    model_path = 'test_dynamic_shape/compress'
+    tf_rep.export_graph(model_path)
+    # load the saved_model back
+    tf_model = tf.saved_model.load(model_path)
+    # run the model
+    tf_model_output = tf_model(X=x, condition=cond)
+    np.testing.assert_almost_equal(tf_model_output[0],
+                                   np.compress(cond, x, axis=axis))
 
   def test_conv_transpose(self):
     # test dynamic batch size on transpose of 2d convolution
@@ -171,15 +202,24 @@ class TestDynamicShape(unittest.TestCase):
         [node_def],
         name="test_unknown_shape",
         inputs=[
-            helper.make_tensor_value_info("X", TensorProto.FLOAT, [None, 3, 4, 6]),
-            helper.make_tensor_value_info("weights", TensorProto.FLOAT, weight_shape)
+            helper.make_tensor_value_info("X", TensorProto.FLOAT,
+                                          [None, None, None, None]),
+            helper.make_tensor_value_info("weights", TensorProto.FLOAT,
+                                          [None, None, None, None])
         ],
         outputs=[
-            helper.make_tensor_value_info("Y", TensorProto.FLOAT, [None, None, None, None])
+            helper.make_tensor_value_info("Y", TensorProto.FLOAT,
+                                          [None, None, None, None])
         ])
 
     tf_rep = onnx_graph_to_tensorflow_rep(graph_def)
-    output = tf_rep.run({"X": x, "weights": weights})
+    # export to tf.saved_model
+    model_path = 'test_dynamic_shape/conv_transpose'
+    tf_rep.export_graph(model_path)
+    # load the saved_model back
+    tf_model = tf.saved_model.load(model_path)
+    # run the model
+    tf_model_output = tf_model(X=x, weights=weights)
 
     padh_left = weight_shape[2] - 1 - pads[0]
     padh_right = weight_shape[2] - 1 - pads[1]
@@ -206,7 +246,7 @@ class TestDynamicShape(unittest.TestCase):
                         k2 - padw_left] * weights[c][m][kh + h - 1 -
                                                         k1][kw + w - 1 - k2]
 
-    np.testing.assert_almost_equal(output["Y"], test_output, decimal=5)
+    np.testing.assert_almost_equal(tf_model_output[0], test_output, decimal=5)
 
   def test_eye_like(self):
     if legacy_opset_pre_ver(9):
@@ -229,8 +269,14 @@ class TestDynamicShape(unittest.TestCase):
             helper.make_tensor_value_info("y", TensorProto.FLOAT, [None, None])
         ])
     tf_rep = onnx_graph_to_tensorflow_rep(graph_def)
-    output = tf_rep.run({"x": x})
-    np.testing.assert_equal(output["y"], y)
+    # export to tf.saved_model
+    model_path = 'test_dynamic_shape/eye_like'
+    tf_rep.export_graph(model_path)
+    # load the saved_model back
+    tf_model = tf.saved_model.load(model_path)
+    # run the model
+    tf_model_output = tf_model(x=x)
+    np.testing.assert_equal(tf_model_output[0], y)
 
   def test_flatten(self):
     shape = [2, 3, 4]
@@ -246,9 +292,15 @@ class TestDynamicShape(unittest.TestCase):
         ],
         outputs=[helper.make_tensor_value_info("Y", TensorProto.FLOAT, [None])])
     tf_rep = onnx_graph_to_tensorflow_rep(graph_def)
-    output = tf_rep.run({"X": x})
+    # export to tf.saved_model
+    model_path = 'test_dynamic_shape/flatten'
+    tf_rep.export_graph(model_path)
+    # load the saved_model back
+    tf_model = tf.saved_model.load(model_path)
+    # run the model
+    tf_model_output = tf_model(X=x)
     new_shape = (np.prod(shape[0:axis]).astype(int), -1)
-    np.testing.assert_almost_equal(output["Y"], np.reshape(x, new_shape))
+    np.testing.assert_almost_equal(tf_model_output[0], np.reshape(x, new_shape))
 
   def test_gather_nd(self):
     if legacy_opset_pre_ver(11):
@@ -273,8 +325,14 @@ class TestDynamicShape(unittest.TestCase):
             helper.make_tensor_value_info("outputs", TensorProto.INT32, [None])
         ])
     tf_rep = onnx_graph_to_tensorflow_rep(graph_def)
-    output = tf_rep.run({"data": data, "indices": indices})
-    np.testing.assert_almost_equal(output["outputs"], ref_output)
+    # export to tf.saved_model
+    model_path = 'test_dynamic_shape/gather_nd'
+    tf_rep.export_graph(model_path)
+    # load the saved_model back
+    tf_model = tf.saved_model.load(model_path)
+    # run the model
+    tf_model_output = tf_model(data=data, indices=indices)
+    np.testing.assert_almost_equal(tf_model_output[0], ref_output)
 
   def test_is_inf(self):
     if legacy_opset_pre_ver(10):
@@ -292,8 +350,14 @@ class TestDynamicShape(unittest.TestCase):
         ],
         outputs=[helper.make_tensor_value_info("Y", TensorProto.BOOL, [None])])
     tf_rep = onnx_graph_to_tensorflow_rep(graph_def)
-    output = tf_rep.run({"X": inp})
-    np.testing.assert_equal(output["Y"], expected_output)
+    # export to tf.saved_model
+    model_path = 'test_dynamic_shape/is_inf'
+    tf_rep.export_graph(model_path)
+    # load the saved_model back
+    tf_model = tf.saved_model.load(model_path)
+    # run the model
+    tf_model_output = tf_model(X=inp)
+    np.testing.assert_equal(tf_model_output[0], expected_output)
 
   def test_matmul_integer(self):
     if legacy_opset_pre_ver(10):
@@ -330,13 +394,17 @@ class TestDynamicShape(unittest.TestCase):
                                           [None, None, None])
         ])
     tf_rep = onnx_graph_to_tensorflow_rep(graph_def)
-    output = tf_rep.run({
-        "A": A,
-        "B": B,
-        "a_zero_point": a_zero_point,
-        "b_zero_point": b_zero_point
-    })
-    np.testing.assert_almost_equal(output["Z"], z)
+    # export to tf.saved_model
+    model_path = 'test_dynamic_shape/matmul_integer'
+    tf_rep.export_graph(model_path)
+    # load the saved_model back
+    tf_model = tf.saved_model.load(model_path)
+    # run the model
+    tf_model_output = tf_model(A=A,
+                               B=B,
+                               a_zero_point=a_zero_point,
+                               b_zero_point=b_zero_point)
+    np.testing.assert_almost_equal(tf_model_output[0], z)
     # A & B are 4-D tensor and a_zero_point & b_zero_point are 1-D tensor
     A = self._get_rnd_int(-20, 20, shape=(2, 5, 3, 4), dtype=np.int8)
     B = self._get_rnd_int(-20, 20, shape=(2, 1, 4, 6), dtype=np.int8)
@@ -372,13 +440,16 @@ class TestDynamicShape(unittest.TestCase):
                                           [None, None, None, None])
         ])
     tf_rep = onnx_graph_to_tensorflow_rep(graph_def)
-    output = tf_rep.run({
-        "A": A,
-        "B": B,
-        "a_zero_point": a_zero_point,
-        "b_zero_point": b_zero_point
-    })
-    np.testing.assert_almost_equal(output["Z"], z)
+    # export to tf.saved_model
+    tf_rep.export_graph(model_path)
+    # load the saved_model back
+    tf_model = tf.saved_model.load(model_path)
+    # run the model
+    tf_model_output = tf_model(A=A,
+                               B=B,
+                               a_zero_point=a_zero_point,
+                               b_zero_point=b_zero_point)
+    np.testing.assert_almost_equal(tf_model_output[0], z)
 
   def test_non_max_suppression(self):
     if legacy_opset_pre_ver(10):
@@ -424,14 +495,112 @@ class TestDynamicShape(unittest.TestCase):
                                           [None, None])
         ])
     tf_rep = onnx_graph_to_tensorflow_rep(graph_def)
-    output = tf_rep.run({
-        "boxes": boxes,
-        "scores": scores,
-        "max_output_boxes_per_class": max_output_boxes_per_class,
-        "iou_threshold": iou_threshold,
-        "score_threshold": score_threshold
-    })
-    np.testing.assert_almost_equal(output["selected_indices"], selected_indices)
+    # export to tf.saved_model
+    model_path = 'test_dynamic_shape/non_max_suppression'
+    tf_rep.export_graph(model_path)
+    # load the saved_model back
+    tf_model = tf.saved_model.load(model_path)
+    # run the model
+    tf_model_output = tf_model(
+        boxes=boxes,
+        scores=scores,
+        max_output_boxes_per_class=max_output_boxes_per_class,
+        iou_threshold=iou_threshold,
+        score_threshold=score_threshold)
+    np.testing.assert_almost_equal(tf_model_output[0], selected_indices)
+
+  def test_non_max_suppression_with_if(self):
+    # if cond
+    #   return NonMaxSuppression suppress by IOU
+    # else
+    #   return NonNaxSuppression suppress by IOU and score
+    boxes = np.array([[[0.0, 0.0, 1.0, 1.0], [0.0, 0.1, 1.0, 1.1],
+                       [0.0, -0.1, 1.0, 0.9], [0.0, 10.0, 1.0, 11.0],
+                       [0.0, 10.1, 1.0, 11.1], [0.0, 100.0, 1.0,
+                                                101.0]]]).astype(np.float32)
+    scores = np.array([[[0.9, 0.75, 0.6, 0.95, 0.5, 0.3]]]).astype(np.float32)
+    max_output_boxes_per_class = np.array([3]).astype(np.int64)
+    iou_threshold = np.array([0.5]).astype(np.float32)
+    score_threshold = np.array([0.4]).astype(np.float32)
+    selected_indices_1 = np.array([[0, 0, 3], [0, 0, 0], [0, 0,
+                                                          5]]).astype(np.int64)
+    selected_indices_2 = np.array([[0, 0, 3], [0, 0, 0]]).astype(np.int64)
+
+    boxes_in = helper.make_tensor_value_info("boxes", TensorProto.FLOAT,
+                                             [None, None, None])
+    scores_in = helper.make_tensor_value_info("scores", TensorProto.FLOAT,
+                                              [None, None, None])
+    max_output_boxes_per_class_in = helper.make_tensor_value_info(
+        "max_output_boxes_per_class", TensorProto.INT64, [None])
+    iou_threshold_in = helper.make_tensor_value_info("iou_threshold",
+                                                     TensorProto.FLOAT, [None])
+    score_threshold_in = helper.make_tensor_value_info("score_threshold",
+                                                       TensorProto.FLOAT,
+                                                       [None])
+    cond_in = helper.make_tensor_value_info('cond', TensorProto.BOOL, [])
+
+    selected_indices_1_out = helper.make_tensor_value_info(
+        "selected_indices_1", TensorProto.INT64, [None, None])
+    selected_indices_2_out = helper.make_tensor_value_info(
+        "selected_indices_2", TensorProto.INT64, [None, None])
+    selected_indices_out = helper.make_tensor_value_info(
+        "selected_indices", TensorProto.INT64, [None, None])
+
+    non_max_suppression_node_1 = helper.make_node(
+        "NonMaxSuppression",
+        ["boxes", "scores", "max_output_boxes_per_class", "iou_threshold"],
+        ["selected_indices_1"],
+        center_point_box=0)
+    non_max_suppression_node_2 = helper.make_node("NonMaxSuppression", [
+        "boxes", "scores", "max_output_boxes_per_class", "iou_threshold",
+        "score_threshold"
+    ], ["selected_indices_2"],
+                                                  center_point_box=0)
+
+    then_graph = helper.make_graph(nodes=[non_max_suppression_node_1],
+                                   name="then_graph",
+                                   inputs=[
+                                       boxes_in, scores_in,
+                                       max_output_boxes_per_class_in,
+                                       iou_threshold_in
+                                   ],
+                                   outputs=[selected_indices_1_out])
+    else_graph = helper.make_graph(nodes=[non_max_suppression_node_2],
+                                   name="then_graph",
+                                   inputs=[
+                                       boxes_in, scores_in,
+                                       max_output_boxes_per_class_in,
+                                       iou_threshold_in, score_threshold_in
+                                   ],
+                                   outputs=[selected_indices_2_out])
+    if_node = helper.make_node('If', ['cond'], ["selected_indices"],
+                               then_branch=then_graph,
+                               else_branch=else_graph)
+    graph_def = helper.make_graph(nodes=[if_node],
+                                  name='test_if',
+                                  inputs=[
+                                      boxes_in, scores_in,
+                                      max_output_boxes_per_class_in,
+                                      iou_threshold_in, score_threshold_in,
+                                      cond_in
+                                  ],
+                                  outputs=[selected_indices_out])
+    tf_rep = onnx_graph_to_tensorflow_rep(graph_def)
+    # export to tf.saved_model
+    model_path = 'test_dynamic_shape/non_max_suppression/if'
+    tf_rep.export_graph(model_path)
+    # load the saved_model back
+    tf_model = tf.saved_model.load(model_path)
+    # run the model
+    for cond, exp in [[True, selected_indices_1], [False, selected_indices_2]]:
+      tf_model_output = tf_model(
+          boxes=boxes,
+          scores=scores,
+          max_output_boxes_per_class=max_output_boxes_per_class,
+          iou_threshold=iou_threshold,
+          score_threshold=score_threshold,
+          cond=cond)
+      np.testing.assert_almost_equal(tf_model_output[0], exp)
 
   def test_scatter_nd(self):
     if legacy_opset_pre_ver(11):
@@ -465,8 +634,14 @@ class TestDynamicShape(unittest.TestCase):
                                           [None, None, None])
         ])
     tf_rep = onnx_graph_to_tensorflow_rep(graph_def)
-    output = tf_rep.run({"data": data, "indices": indices, "updates": updates})
-    np.testing.assert_almost_equal(output["outputs"], ref_output)
+    # export to tf.saved_model
+    model_path = 'test_dynamic_shape/scatter_nd'
+    tf_rep.export_graph(model_path)
+    # load the saved_model back
+    tf_model = tf.saved_model.load(model_path)
+    # run the model
+    tf_model_output = tf_model(data=data, indices=indices, updates=updates)
+    np.testing.assert_almost_equal(tf_model_output[0], ref_output)
 
   def test_max_pool_2d_dilations_ceil_pads(self):
     if legacy_opset_pre_ver(10):
@@ -513,9 +688,70 @@ class TestDynamicShape(unittest.TestCase):
                                           [None, None, None, None])
         ])
     tf_rep = onnx_graph_to_tensorflow_rep(graph_def)
-    output = tf_rep.run({"X": x})
+    # export to tf.saved_model
+    model_path = 'test_dynamic_shape/max_pool_2d_dilations_ceil_pads'
+    tf_rep.export_graph(model_path)
+    # load the saved_model back
+    tf_model = tf.saved_model.load(model_path)
+    # run the model
+    tf_model_output = tf_model(X=x)
+    np.testing.assert_almost_equal(tf_model_output[0], test_output)
 
-    np.testing.assert_almost_equal(output["Y"], test_output)
+  def test_max_pool_with_argmax_2d_dilations_ceil_pads(self):
+    if legacy_opset_pre_ver(10):
+      raise unittest.SkipTest(
+          "ONNX version {} doesn't support dilations nor ceil mode.".format(
+              defs.onnx_opset_version()))
+
+    kernel_shape = [3, 3]
+    strides = [2, 2]
+    dilations = [3, 3]
+    pads = [1, 1, 2, 2]
+    ceil_mode = True
+
+    input_shape = [10, 3, 23, 23]
+    x = self._get_rnd_float32(shape=input_shape) - 2
+
+    node_def = helper.make_node("MaxPool", ["X"], ["Y", "Ind"],
+                                kernel_shape=kernel_shape,
+                                strides=strides,
+                                dilations=dilations,
+                                pads=pads,
+                                ceil_mode=ceil_mode)
+
+    graph_def = helper.make_graph(
+        [node_def],
+        name="test_unknown_shape",
+        inputs=[
+            helper.make_tensor_value_info("X", TensorProto.FLOAT,
+                                          [None, None, None, None]),
+        ],
+        outputs=[
+            helper.make_tensor_value_info("Y", TensorProto.FLOAT,
+                                          [None, None, None, None]),
+            helper.make_tensor_value_info("Ind", TensorProto.INT64,
+                                          [None, None, None, None])
+        ])
+
+    tf_rep = onnx_graph_to_tensorflow_rep(graph_def)
+    # export to tf.saved_model
+    model_path = 'test_dynamic_shape/max_pool_with_argmax_2d_dilations_ceil_pads'
+    tf_rep.export_graph(model_path)
+    # load the saved_model back
+    tf_model = tf.saved_model.load(model_path)
+    # run the model
+    tf_model_output = tf_model(X=x)
+
+    test_output, test_ind = py_pool(x,
+                                    kernel_shape=kernel_shape,
+                                    strides=strides,
+                                    dilations=dilations,
+                                    padding=pads,
+                                    ceil_mode=ceil_mode,
+                                    pooling_type="MAX")
+
+    np.testing.assert_almost_equal(tf_model_output[0], test_output)
+    np.testing.assert_almost_equal(tf_model_output[1], test_ind)
 
   def test_average_pool_2d(self):
     kernel_shape = [1, 2]
@@ -548,9 +784,14 @@ class TestDynamicShape(unittest.TestCase):
                                           [None, None, None, None])
         ])
     tf_rep = onnx_graph_to_tensorflow_rep(graph_def)
-    output = tf_rep.run({"X": x})
-
-    np.testing.assert_almost_equal(output["Y"], test_output)
+    # export to tf.saved_model
+    model_path = 'test_dynamic_shape/average_pool_2d'
+    tf_rep.export_graph(model_path)
+    # load the saved_model back
+    tf_model = tf.saved_model.load(model_path)
+    # run the model
+    tf_model_output = tf_model(X=x)
+    np.testing.assert_almost_equal(tf_model_output[0], test_output)
 
   def test_max_unpool(self):
     input_shape = [10, 3, 24, 24]
@@ -559,20 +800,19 @@ class TestDynamicShape(unittest.TestCase):
     kernel_shape = [2, 2]
     strides = [2, 2]
 
-    maxpool_node_def = helper.make_node(
-            op_type="MaxPool",
-            inputs=["X"],
-            outputs=["Pool", "Indices"],
-            kernel_shape=kernel_shape,
-            strides=strides)
+    maxpool_node_def = helper.make_node(op_type="MaxPool",
+                                        inputs=["X"],
+                                        outputs=["Pool", "Indices"],
+                                        kernel_shape=kernel_shape,
+                                        strides=strides)
 
-    maxunpool_node_def = helper.make_node(
-        "MaxUnpool", ["Pool", "Indices"], ["Y"],
-        kernel_shape=kernel_shape,
-        strides=strides)
+    maxunpool_node_def = helper.make_node("MaxUnpool", ["Pool", "Indices"],
+                                          ["Y"],
+                                          kernel_shape=kernel_shape,
+                                          strides=strides)
 
     graph_def = helper.make_graph(
-        [maxpool_node_def,maxunpool_node_def],
+        [maxpool_node_def, maxunpool_node_def],
         name="test_unknown_shape",
         inputs=[
             helper.make_tensor_value_info("X", TensorProto.FLOAT,
@@ -583,7 +823,13 @@ class TestDynamicShape(unittest.TestCase):
                                           [None, None, None, None])
         ])
     tf_rep = onnx_graph_to_tensorflow_rep(graph_def)
-    output_unpool = tf_rep.run({"X": x})
+    # export to tf.saved_model
+    model_path = 'test_dynamic_shape/max_unpool'
+    tf_rep.export_graph(model_path)
+    # load the saved_model back
+    tf_model = tf.saved_model.load(model_path)
+    # run the model
+    tf_model_output = tf_model(X=x)
 
     test_output = np.zeros(input_shape)
     for i1 in range(0, input_shape[0]):
@@ -591,14 +837,14 @@ class TestDynamicShape(unittest.TestCase):
         for i3 in range(0, input_shape[2], 2):
           for i4 in range(0, input_shape[3], 2):
             max_val = float('-inf')
-            for j1 in range(i3,i3+2):
-              for j2 in range(i4,i4+2):
+            for j1 in range(i3, i3 + 2):
+              for j2 in range(i4, i4 + 2):
                 if x[i1][i2][j1][j2] > max_val:
                   max_val = x[i1][i2][j1][j2]
                   max_ind = (j1, j2)
             j1, j2 = max_ind
             test_output[i1][i2][j1][j2] = max_val
-    np.testing.assert_almost_equal(output_unpool["Y"], test_output)
+    np.testing.assert_almost_equal(tf_model_output[0], test_output)
 
   def test_slice(self):
     # test case 1 with normal inputs
@@ -641,20 +887,20 @@ class TestDynamicShape(unittest.TestCase):
                                             [None, None, None])
           ])
     tf_rep = onnx_graph_to_tensorflow_rep(graph_def)
+    # export to tf.saved_model
+    model_path = 'test_dynamic_shape/slice'
+    tf_rep.export_graph(model_path)
+    # load the saved_model back
+    tf_model = tf.saved_model.load(model_path)
 
     if legacy_opset_pre_ver(10):
       x = self._get_rnd_float32(shape=[1000]).reshape([10, 10, 10])
-      output = tf_rep.run({"X": x})
-      np.testing.assert_almost_equal(output["S"], x[0:2, 0:2, 0:2])
+      tf_model_output = tf_model(X=x)
+      np.testing.assert_almost_equal(tf_model_output[0], x[0:2, 0:2, 0:2])
     else:
       x = self._get_rnd_float32(shape=[1000]).reshape([10, 10, 10])
-      output = tf_rep.run({
-          "X": x,
-          "starts": starts,
-          "ends": ends,
-          "axes": axes
-      })
-      np.testing.assert_almost_equal(output["S"], x[0:2, 0:2, 0:2])
+      tf_model_output = tf_model(X=x, starts=starts, ends=ends, axes=axes)
+      np.testing.assert_almost_equal(tf_model_output[0], x[0:2, 0:2, 0:2])
 
     # test case 2 with negative, out-of-bound and default inputs
     axes = [0, 2]
@@ -699,20 +945,24 @@ class TestDynamicShape(unittest.TestCase):
                                             [None, None, None])
           ])
     tf_rep = onnx_graph_to_tensorflow_rep(graph_def)
+    # export to tf.saved_model
+    model_path = 'test_dynamic_shape/slice'
+    tf_rep.export_graph(model_path)
+    # load the saved_model back
+    tf_model = tf.saved_model.load(model_path)
+
     if legacy_opset_pre_ver(10):
       x = self._get_rnd_float32(shape=[1000]).reshape([10, 10, 10])
-      output = tf_rep.run({"X": x})
-      np.testing.assert_almost_equal(output["S"], x[0:-8, :, -7:20])
+      tf_model_output = tf_model(X=x)
+      np.testing.assert_almost_equal(tf_model_output[0], x[0:-8, :, -7:20])
     else:
       x = self._get_rnd_float32(shape=[1000]).reshape([10, 10, 10])
-      output = tf_rep.run({
-          "X": x,
-          "starts": starts,
-          "ends": ends,
-          "axes": axes,
-          "steps": steps
-      })
-      np.testing.assert_almost_equal(output["S"], x[0:-8, :, -7:20])
+      tf_model_output = tf_model(X=x,
+                                 starts=starts,
+                                 ends=ends,
+                                 axes=axes,
+                                 steps=steps)
+      np.testing.assert_almost_equal(tf_model_output[0], x[0:-8, :, -7:20])
 
     # test case 3 with non-default steps
     axes = [0, 1, 2]
@@ -722,14 +972,13 @@ class TestDynamicShape(unittest.TestCase):
 
     if not legacy_opset_pre_ver(10):
       x = self._get_rnd_float32(shape=[1000]).reshape([10, 10, 10])
-      output = tf_rep.run({
-          "X": x,
-          "starts": starts,
-          "ends": ends,
-          "axes": axes,
-          "steps": steps
-      })
-      np.testing.assert_almost_equal(output["S"], x[0:2:2, 0:2:-2, 0:2:-1])
+      tf_model_output = tf_model(X=x,
+                                 starts=starts,
+                                 ends=ends,
+                                 axes=axes,
+                                 steps=steps)
+      np.testing.assert_almost_equal(tf_model_output[0], x[0:2:2, 0:2:-2,
+                                                           0:2:-1])
 
   def test_split(self):
     shape = [12, 12]
@@ -752,13 +1001,29 @@ class TestDynamicShape(unittest.TestCase):
         ])
 
     tf_rep = onnx_graph_to_tensorflow_rep(graph_def)
+    # export to tf.saved_model
+    model_path = 'test_dynamic_shape/split'
+    tf_rep.export_graph(model_path)
+    # load the saved_model back
+    tf_model = tf.saved_model.load(model_path)
+    # run the model
     x = self._get_rnd_float32(shape=shape)
-    output = tf_rep.run({"X": x})
+    tf_model_output = tf_model(X=x)
 
     per_part = shape[axis] // output_count
     split = [per_part] * output_count
-    for a, b in zip(list(output), np.split(x, np.cumsum(split))[:-1]):
+    for a, b in zip(list(tf_model_output), np.split(x, np.cumsum(split))[:-1]):
       np.testing.assert_almost_equal(a, b)
+
+  @classmethod
+  def tearDownClass(cls):
+    # clean up saved model folder
+    try:
+      model_path = 'test_dynamic_shape'
+      shutil.rmtree(model_path)
+    except FileNotFoundError:
+      # the model folder doesn't exist
+      pass
 
 
 if __name__ == '__main__':

@@ -71,3 +71,7 @@ class Constant(BackendHandler):
                                        inputs=[value],
                                        attrs={"dtype": dtype})
     ]
+
+  @classmethod
+  def version_13(cls, node, **kwargs):
+    return cls.version_12(node, **kwargs)

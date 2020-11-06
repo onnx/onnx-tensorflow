@@ -1,9 +1,10 @@
 import tensorflow as tf
 
+from onnx_tf.common import exception
 from onnx_tf.common import get_data_format
 from onnx_tf.common import get_perm_from_formats
-from onnx_tf.common import supports_device
-from onnx_tf.common import exception
+from onnx_tf.common.tf_helper import tf_shape
+from onnx_tf.common import sys_config
 from .broadcast_mixin import BroadcastMixin
 from .pad_mixin import PadMixin
 
@@ -27,10 +28,9 @@ class ConvMixin(BroadcastMixin):
     """
     x = input_dict[node.inputs[0]]
     x_rank = len(x.get_shape())
-    x_shape = x.get_shape().as_list()
+    x_shape = tf_shape(x, tf.int32)
     spatial_size = x_rank - 2
 
-    support_cuda = supports_device("CUDA")
     storage_format, compute_format = get_data_format(x_rank)
     compute_c_idx = compute_format.find("C")
     spatial_format = "".join([d for d in compute_format if d not in ["N", "C"]])
@@ -46,14 +46,15 @@ class ConvMixin(BroadcastMixin):
 
     if "kernel_shape" in node.attrs.keys():
       kernel_shape = node.attrs["kernel_shape"]
-      assert in_weights.get_shape().as_list()[2:] == kernel_shape, (
-          "kernel_shape "
-          "attr of convolution does not match the actual weight "
-          "passed to this operation, attr {}, actual {}").format(
-              kernel_shape,
-              in_weights.get_shape().as_list())
+      if in_weights.get_shape().is_fully_defined():
+        assert in_weights.get_shape().as_list()[2:] == kernel_shape, (
+            "kernel_shape "
+            "attr of convolution does not match the actual weight "
+            "passed to this operation, attr {}, actual {}").format(
+                kernel_shape,
+                in_weights.get_shape().as_list())
     else:
-      kernel_shape = in_weights.get_shape().as_list()[2:]
+      kernel_shape = tf_shape(in_weights, tf.int32)[2:]
 
     weights = tf.transpose(in_weights, perm)
     dilations = node.attrs.get("dilations", [1] * spatial_size)
@@ -93,7 +94,7 @@ class ConvMixin(BroadcastMixin):
 
     weight_groups = tf.split(weights, num_or_size_splits=group, axis=-1)
 
-    if support_cuda:
+    if sys_config.device == 'CUDA':
       xs = tf.split(x, num_or_size_splits=group, axis=1)
     else:
       x = tf.transpose(x,
@@ -112,7 +113,7 @@ class ConvMixin(BroadcastMixin):
         x_spatial_shape = [
             x_shape[storage_format.find(d)] for d in spatial_format
         ]
-        weights_shape = weights.get_shape().as_list()
+        weights_shape = tf_shape(weights, tf.int32)
         output_shape = node.attrs.get("output_shape", None)
         conv_output_shape = [x_shape[storage_format.find("N")]]
 
@@ -130,16 +131,6 @@ class ConvMixin(BroadcastMixin):
                 for i, s in enumerate(output_shape[-2:])
             ]
           conv_output_shape.insert(compute_c_idx, weights_shape[-2])
-
-          def handle_dynamic_batch_size(output_shape, batch_idx):
-            output_shape[batch_idx] = tf.shape(x)[batch_idx]
-            return tf.stack(output_shape)
-
-          # process dynamic batch size
-          if conv_output_shape[storage_format.find("N")] is None:
-            batch_idx = storage_format.find("N")
-            conv_output_shape = handle_dynamic_batch_size(conv_output_shape,
-                    batch_idx)
 
           # make strides to match input rank
           strides_full = [1] + strides
@@ -174,19 +165,17 @@ class ConvMixin(BroadcastMixin):
             conv_rs = tf.pad(conv_rs, output_padding)
 
           # remove pads set in pads attr
-          conv_rs_shape = conv_rs.get_shape().as_list()
+          conv_rs_shape = tf_shape(conv_rs, tf.int32)
+          conv_rs_shape_list = [
+              conv_rs_shape[i] for i in range(conv_rs.shape.rank)
+          ]
           begin = [0] + pads[:spatial_size]
           begin.insert(compute_c_idx, 0)
           size = [
               s if d in ["N", "C"] else s - pads[spatial_format.find(d)] -
               pads[spatial_format.find(d) + spatial_size]
-              for d, s in zip(compute_format, conv_rs_shape)
+              for d, s in zip(compute_format, conv_rs_shape_list)
           ]
-
-          # process dynamic batch size
-          if size[compute_format.find("N")] is None:
-            batch_idx = compute_format.find("N")
-            size = handle_dynamic_batch_size(size, batch_idx)
 
           conv_rs = tf.slice(conv_rs, begin=begin, size=size)
 
@@ -209,19 +198,13 @@ class ConvMixin(BroadcastMixin):
             ]
           conv_output_shape.insert(compute_c_idx, weights_shape[-2])
 
-          # process dynamic batch size
-          if conv_output_shape[storage_format.find("N")] is None:
-            batch_idx = storage_format.find("N")
-            conv_output_shape = handle_dynamic_batch_size(conv_output_shape,
-                    batch_idx)
-
           # make strides to match input rank
           strides_full = [1] + strides
           strides_full.insert(compute_c_idx, 1)
 
           # get corresponding function in tf
           if spatial_size == 1:
-            conv_func = tf.contrib.nn.conv1d_transpose
+            conv_func = tf.nn.conv1d_transpose
             strides_full = strides[0]
           elif spatial_size == 2:
             conv_func = tf.nn.conv2d_transpose
@@ -253,7 +236,7 @@ class ConvMixin(BroadcastMixin):
       ]
 
     if len(node.inputs) == 2:
-      if support_cuda:
+      if sys_config.device == 'CUDA':
         output = tf.concat(convolved, axis=1)
       else:
         output = tf.concat(convolved, axis=-1)
@@ -264,7 +247,7 @@ class ConvMixin(BroadcastMixin):
       bias = input_dict[node.inputs[2]]
       bias = cls.explicit_broadcast([x, bias], compute_c_idx)
 
-      if support_cuda:
+      if sys_config.device == 'CUDA':
         output = tf.concat(convolved, axis=1)
         output = tf.add(output, bias)
       else:

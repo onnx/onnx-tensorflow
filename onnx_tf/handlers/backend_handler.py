@@ -11,7 +11,7 @@ import tensorflow as tf
 from onnx_tf.common import IS_PYTHON3
 from onnx_tf.common import get_data_format
 from onnx_tf.common import get_perm_from_formats
-from onnx_tf.common import supports_device
+from onnx_tf.common import sys_config
 from .handler import Handler
 
 
@@ -24,6 +24,15 @@ class BackendHandler(Handler):
   """
 
   TF_FUNC = None
+  VAR_COUNT = 0
+
+  @classmethod
+  def get_req_vars_template(cls):
+    """ Get required variables template.
+
+    :return: Dict.
+    """
+    return {}
 
   @classmethod
   def get_attrs_processor_param(cls):
@@ -120,8 +129,7 @@ class BackendHandler(Handler):
     :param attrs: Attributes.
     :return: Tensor.
     """
-    support_cuda = supports_device("CUDA")
-    if not support_cuda:
+    if sys_config.device == 'CPU':
       return cls._tuck_transpose(tf_func, inputs, attrs)
     return cls._run_tf_func(tf_func, inputs, attrs)
 
@@ -178,10 +186,14 @@ class BackendHandler(Handler):
         params = inspect.getargspec(tf_func).args
 
     attrs = cls._process_attrs(attrs)
+
+    if "name" in attrs.keys():
+      attrs["name"] = "onnx_tf_prefix_" + attrs["name"]
+
     attrs = {p: v for p, v in attrs.items() if p in params}
     kwargs = dict(zip(params, inputs))
-    ambiguous_arguments = any(kwargs.get(p) is not None and v is not None
-                              for p, v in attrs.items())
+    ambiguous_arguments = any(
+        kwargs.get(p) is not None and v is not None for p, v in attrs.items())
     if ambiguous_arguments:
       raise TypeError('Ambiguous arguments for {}()'.format(tf_func.__name__))
     kwargs.update((p, v) for p, v in attrs.items() if v is not None)

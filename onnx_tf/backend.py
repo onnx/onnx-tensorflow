@@ -49,7 +49,7 @@ class TensorflowBackend(Backend):
     the converted representation.
 
     :param model: The ONNX model to be converted.
-    :param device: The device to execute this model on.
+    :param device: The device to execute this model on. It can be either CPU (default) or CUDA.
     :param strict: Whether to enforce semantic equivalence between the original model
       and the converted tensorflow model, defaults to True (yes, enforce semantic equivalence).
       Changing to False is strongly discouraged.
@@ -65,6 +65,7 @@ class TensorflowBackend(Backend):
     common.logger.setLevel(logging_level)
     common.logger.handlers[0].setLevel(logging_level)
     common.sys_config.auto_cast = auto_cast
+    common.sys_config.device = device
 
     return cls.onnx_model_to_tensorflow_rep(model, strict, **kwargs)
 
@@ -114,12 +115,11 @@ class TensorflowBackend(Backend):
     # initialized: A list of names of the initialized tensors.
 
     if graph_def.initializer:
-      input_dict_items = cls._onnx_initializer_to_input_dict_items(
-          graph_def.initializer)
       initialized = {init.name for init in graph_def.initializer}
     else:
-      input_dict_items = []
       initialized = set()
+
+    input_dict = dict()
 
     module = BackendTFModule(handlers, opset, strict, graph_def, cls)
     signatures = dict()
@@ -146,7 +146,7 @@ class TensorflowBackend(Backend):
             shape=shape
         ) if value_info.name not in input_tensor_dict else input_tensor_dict[
             value_info.name]
-        input_dict_items.append((value_info_name, x))
+        input_dict[value_info.name] = x
 
     tf_rep = TensorflowRep()
     tf_rep.inputs = [
@@ -159,9 +159,39 @@ class TensorflowBackend(Backend):
     tf_rep.tf_module = module
     tf_rep.signatures = signatures
     tf_rep.tensor_dict = module.gen_tensor_dict(
-        input_dict_items) if gen_tensor_dict else None
-
+        input_dict) if gen_tensor_dict else None
+    tf_rep.onnx_op_list = cls._get_onnx_op_list(graph_def)
     return tf_rep
+
+  @classmethod
+  def _get_onnx_op_list(cls, graph_def):
+    """ Get ONNX operator counts of the model.
+
+    :param graph_def: ONNX GraphProto object.
+    :return: Dictionary of all operators counts in the model.
+    """
+
+    def get_onnx_op_from_graph_and_subgraph(graph, op_list):
+      for node in graph.node:
+        op_list[node.op_type] = 1 if node.op_type not in op_list.keys(
+        ) else op_list[node.op_type] + 1
+        if node.op_type in ['Loop', 'Scan']:
+          onnx_node = OnnxNode(node)
+          body = onnx_node.attrs["body"]
+          op_list = get_onnx_op_from_graph_and_subgraph(body, op_list)
+        elif node.op_type == 'If':
+          onnx_node = OnnxNode(node)
+          then_branch = onnx_node.attrs['then_branch']
+          op_list = get_onnx_op_from_graph_and_subgraph(then_branch, op_list)
+          else_branch = onnx_node.attrs['else_branch']
+          op_list = get_onnx_op_from_graph_and_subgraph(else_branch, op_list)
+      return op_list
+
+    op_list = get_onnx_op_from_graph_and_subgraph(graph_def, dict())
+    sorted_op_list = dict()
+    for key in sorted(op_list):
+      sorted_op_list[key] = op_list[key]
+    return sorted_op_list
 
   @classmethod
   def run_node(cls, node, inputs, device='CPU', outputs_info=None, **kwargs):
@@ -186,6 +216,7 @@ class TensorflowBackend(Backend):
         return cls._onnx_node_to_tensorflow_op(self.node, input_dict)
 
     super(TensorflowBackend, cls).run_node(node, inputs, device)
+    common.sys_config.device = device
 
     node = OnnxNode(node)
     input_tensors = []
@@ -288,21 +319,14 @@ class TensorflowBackend(Backend):
   @classmethod
   def onnx_graph_to_tensorflow_ops(cls,
                                    subgraph,
-                                   input_values,
                                    tensor_dict,
                                    opset=None,
                                    strict=True):
     """
     Converts ONNX graph to Tensorflow operations
     Args:
-      subgraph:         the ONNX graph to be converted
-      input_values:     dictionary with values/tensors to initialize
-                        the subgraph inputs. if the subgraph.input
-                        are send in as parameters then it is required,
-                        otherwise this can be empty dictionary
-      tensor_dict:      the dictionary that contain values for all the
-                        node.inputs in the subgraph that are not defined
-                        in the subgraph or input_values.
+      subgraph:         the ONNX graph to be converted.
+      tensor_dict:      tensor dict of the subgraph.
       opset:            opset version of the operator set.
       strict:           whether to enforce semantic equivalence between the
                         original model and the converted tensorflow model,
@@ -310,33 +334,15 @@ class TensorflowBackend(Backend):
     Returns:
       array of Tensorflow Tensors
     """
-    # get the subgraph.input from input_values
-    subgraph_tensor_dict = input_values.copy()
-    # get the rest of the subgraph input from tensor_dict
-    for i in subgraph.input:
-      if i.name not in subgraph_tensor_dict.keys():
-        subgraph_tensor_dict[i.name] = tensor_dict[i.name]
-    # get the required initializer constant node(s) for the subgraph
-    # Need to get the initializer constant nodes from tensor_dict here
-    # because input from initializer will not be send in as inputs
-    # to the subgraph and those nodes are not in the subgraph
-    nodes_outputs = []
     for node in subgraph.node:
-      for o_name in node.output:
-        nodes_outputs.append(o_name)
-    for node in subgraph.node:
-      for i_name in node.input:
-        if i_name not in nodes_outputs and i_name not in subgraph_tensor_dict.keys(
-        ):
-          subgraph_tensor_dict[i_name] = tensor_dict[i_name]
       onnx_node = OnnxNode(node)
       output_ops = cls._onnx_node_to_tensorflow_op(onnx_node,
-                                                   subgraph_tensor_dict,
+                                                   tensor_dict,
                                                    opset=opset,
                                                    strict=strict)
       curr_node_output_map = dict(zip(onnx_node.outputs, output_ops))
-      subgraph_tensor_dict.update(curr_node_output_map)
-    return subgraph_tensor_dict
+      tensor_dict.update(curr_node_output_map)
+    return tensor_dict
 
   @classmethod
   def onnx_graph_to_tensorflow_rep(cls, graph_def, strict=True, **kwargs):

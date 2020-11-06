@@ -1,7 +1,5 @@
 import tensorflow as tf
 
-from onnx_tf.common import get_data_format
-from onnx_tf.common import get_perm_from_formats
 from onnx_tf.common.tf_helper import tf_shape
 
 
@@ -12,7 +10,7 @@ class UnpoolMixin(object):
   def max_unpool(cls, node, input_dict):
     """
             MaxUnpooling operation
-        """
+    """
     x = input_dict[node.inputs[0]]
     ind = input_dict[node.inputs[1]]
     if len(node.inputs) > 2:
@@ -23,8 +21,6 @@ class UnpoolMixin(object):
     kernel_shape = node.attrs["kernel_shape"]
 
     spatial_size = len(kernel_shape)
-    x_rank = spatial_size + 2
-    storage_format, _ = get_data_format(x_rank)
 
     # if strides are not provided default is 1 along each spatial axis
     strides = node.attrs.get("strides", [1] * spatial_size)
@@ -32,22 +28,9 @@ class UnpoolMixin(object):
 
     input_shape = tf_shape(x)
     default_shape = cls._get_default_shape(input_shape, kernel_shape, strides)
-
-    need_trans = storage_format != "NHWC"
-    if need_trans:
-      x = tf.transpose(x, perm=get_perm_from_formats(storage_format, "NHWC"))
-      ind = tf.transpose(
-          ind, perm=get_perm_from_formats(storage_format, "NHWC"))
-
-    # default_shape to NHWC storage format
-    default_shape = [input_shape[0]] + default_shape + \
-                    [input_shape[1]]
+    default_shape = [input_shape[0]] + [input_shape[1]] + default_shape
 
     unpooled = cls._unpool(x, ind, default_shape)
-
-    if need_trans:
-      unpooled = tf.transpose(
-          unpooled, perm=get_perm_from_formats("NHWC", storage_format))
 
     if output_shape is not None:
       pads = cls._get_pads_from_output_shape(unpooled, output_shape)
@@ -66,11 +49,11 @@ class UnpoolMixin(object):
                 output_shape:  stride along each spatial axis
           Return:
             default_shape: calculated default_shape
-        """
+    """
     default_shape = []
     for d in range(len(kernel_shape)):
-      default_shape.append((
-          input_shape[d + 2] - 1) * int(strides[d]) + int(kernel_shape[d]))
+      default_shape.append((input_shape[d + 2] - 1) * int(strides[d]) +
+                           int(kernel_shape[d]))
     return default_shape
 
   @classmethod
@@ -85,7 +68,7 @@ class UnpoolMixin(object):
                               [x1_begin, x2_begin,.., x1_end, x2_end]
                               where xi_... represent pads added to begin
                               or end of axis i
-        """
+    """
     unpool_shape = tf.cast(tf.shape(unpool), dtype=tf.int32)
     new_shape = tf.cast(output_shape, dtype=tf.int32)
 
@@ -113,13 +96,15 @@ class UnpoolMixin(object):
                 constant_values: constant value to fill up the padded spaces
             Return:
                 padded:         padded tensor
-        """
+    """
     unpool_shape = unpool.get_shape()
     paddings = []
     for d in range(len(unpool_shape)):
       paddings = paddings + [[pads[d], pads[d + len(unpool_shape)]]]
-    padded = tf.pad(
-        unpool, paddings, 'CONSTANT', constant_values=constant_values)
+    padded = tf.pad(unpool,
+                    paddings,
+                    'CONSTANT',
+                    constant_values=constant_values)
     return padded
 
   @classmethod
@@ -133,25 +118,18 @@ class UnpoolMixin(object):
                 output_shape:  the shape of the output
             Return:
                 unpool:        unpooling tensor
-        """
+    """
     with tf.compat.v1.variable_scope(scope):
       input_shape = tf.shape(pool)
 
       flat_input_size = tf.reduce_prod(input_shape)
-      flat_output_shape = [
-          output_shape[0], output_shape[1] * output_shape[2] * output_shape[3]
-      ]
+      flat_output_shape = [tf.reduce_prod(output_shape)]
 
       pool_ = tf.reshape(pool, [flat_input_size])
-      batch_range = tf.reshape(
-          tf.range(tf.cast(output_shape[0], tf.int64), dtype=ind.dtype),
-          shape=[input_shape[0], 1, 1, 1])
-      b = tf.ones_like(ind) * batch_range
-      b1 = tf.reshape(b, [flat_input_size, 1])
       ind_ = tf.reshape(ind, [flat_input_size, 1])
-      ind_ = tf.concat([b1, ind_], 1)
 
-      ret = tf.scatter_nd(
-          ind_, pool_, shape=tf.cast(flat_output_shape, tf.int64))
+      ret = tf.scatter_nd(ind_,
+                          pool_,
+                          shape=tf.cast(flat_output_shape, tf.int64))
       ret = tf.reshape(ret, output_shape)
     return ret

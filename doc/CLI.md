@@ -22,11 +22,11 @@ optional arguments:
 ### Convert:
 
 #### From ONNX to Tensorflow:
-`onnx-tf convert -i /path/to/input.onnx -o /path/to/output.pb`
+`onnx-tf convert -i /path/to/input.onnx -o /path/to/output`
 
 More information: `onnx-tf convert -h`
 ```
-usage: onnx-tf [-h] --infile INFILE --outfile OUTFILE [--device DEVICE]
+usage: onnx-tf [-h] --infile INFILE --outdir OUTDIR [--device DEVICE]
                [--strict STRICT] [--logging_level LOGGING_LEVEL]
                [--auto_cast AUTO_CAST]
 
@@ -36,12 +36,12 @@ optional arguments:
   -h, --help            show this help message and exit
   --infile INFILE, -i INFILE
                         Input file path.
-  --outfile OUTFILE, -o OUTFILE
-                        Output file path.
+  --outdir OUTDIR, -o OUTDIR
+                        Output directory.
 
 backend arguments (onnx -> tf):
-  --device DEVICE       The device to execute this model on. (from
-                        onnx_tf.backend.prepare)
+  --device DEVICE       The device to execute this model on. It can be either
+                        CPU (default) or CUDA. (from onnx_tf.backend.prepare)
   --strict STRICT       Whether to enforce semantic equivalence between the
                         original model and the converted tensorflow model,
                         defaults to True (yes, enforce semantic equivalence).
