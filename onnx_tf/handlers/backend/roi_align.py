@@ -5,6 +5,8 @@ from onnx_tf.common import get_data_format
 from onnx_tf.common import get_perm_from_formats
 
 from onnx_tf.handlers.backend_handler import BackendHandler
+from onnx_tf.handlers.handler import partial_support
+from onnx_tf.handlers.handler import ps_description
 from onnx_tf.handlers.handler import onnx_op
 
 
@@ -75,6 +77,8 @@ def crop_and_resize(image,
 
 
 @onnx_op("RoiAlign")
+@partial_support(True)
+@ps_description("sampling_ratio <= 0 is not fully supported.")
 class RoiAlign(BackendHandler):
     @classmethod
     def _common(cls, node, **kwargs):

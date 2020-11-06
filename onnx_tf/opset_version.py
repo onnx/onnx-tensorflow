@@ -242,6 +242,7 @@ backend_partial_support = {
               '\t- Note (*): The accuracy of your model will go down, if the '
               'height and the width of the new sizes(scales * origial sizes) '
               'are not in whole numbers.',
+    'RoiAlign': 'sampling_ratio <= 0 is not fully supported.',
     'SplitToSequence': 'Scalar as the split input not supported.',
     'Upsample': 'Upsample required 4D input in Tensorflow.'
 }
