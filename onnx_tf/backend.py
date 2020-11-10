@@ -49,7 +49,7 @@ class TensorflowBackend(Backend):
     the converted representation.
 
     :param model: The ONNX model to be converted.
-    :param device: The device to execute this model on.
+    :param device: The device to execute this model on. It can be either CPU (default) or CUDA.
     :param strict: Whether to enforce semantic equivalence between the original model
       and the converted tensorflow model, defaults to True (yes, enforce semantic equivalence).
       Changing to False is strongly discouraged.
@@ -65,6 +65,7 @@ class TensorflowBackend(Backend):
     common.logger.setLevel(logging_level)
     common.logger.handlers[0].setLevel(logging_level)
     common.sys_config.auto_cast = auto_cast
+    common.sys_config.device = device
 
     return cls.onnx_model_to_tensorflow_rep(model, strict, **kwargs)
 
@@ -159,7 +160,38 @@ class TensorflowBackend(Backend):
     tf_rep.signatures = signatures
     tf_rep.tensor_dict = module.gen_tensor_dict(
         input_dict) if gen_tensor_dict else None
+    tf_rep.onnx_op_list = cls._get_onnx_op_list(graph_def)
     return tf_rep
+
+  @classmethod
+  def _get_onnx_op_list(cls, graph_def):
+    """ Get ONNX operator counts of the model.
+
+    :param graph_def: ONNX GraphProto object.
+    :return: Dictionary of all operators counts in the model.
+    """
+
+    def get_onnx_op_from_graph_and_subgraph(graph, op_list):
+      for node in graph.node:
+        op_list[node.op_type] = 1 if node.op_type not in op_list.keys(
+        ) else op_list[node.op_type] + 1
+        if node.op_type in ['Loop', 'Scan']:
+          onnx_node = OnnxNode(node)
+          body = onnx_node.attrs["body"]
+          op_list = get_onnx_op_from_graph_and_subgraph(body, op_list)
+        elif node.op_type == 'If':
+          onnx_node = OnnxNode(node)
+          then_branch = onnx_node.attrs['then_branch']
+          op_list = get_onnx_op_from_graph_and_subgraph(then_branch, op_list)
+          else_branch = onnx_node.attrs['else_branch']
+          op_list = get_onnx_op_from_graph_and_subgraph(else_branch, op_list)
+      return op_list
+
+    op_list = get_onnx_op_from_graph_and_subgraph(graph_def, dict())
+    sorted_op_list = dict()
+    for key in sorted(op_list):
+      sorted_op_list[key] = op_list[key]
+    return sorted_op_list
 
   @classmethod
   def run_node(cls, node, inputs, device='CPU', outputs_info=None, **kwargs):
@@ -184,6 +216,7 @@ class TensorflowBackend(Backend):
         return cls._onnx_node_to_tensorflow_op(self.node, input_dict)
 
     super(TensorflowBackend, cls).run_node(node, inputs, device)
+    common.sys_config.device = device
 
     node = OnnxNode(node)
     input_tensors = []

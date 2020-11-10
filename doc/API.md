@@ -20,7 +20,7 @@ _params_:
 `model` : The ONNX model to be converted.
 
 
-`device` : The device to execute this model on.
+`device` : The device to execute this model on. It can be either CPU (default) or CUDA.
 
 
 `strict` : Whether to enforce semantic equivalence between the original model

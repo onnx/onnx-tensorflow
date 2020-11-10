@@ -7,8 +7,20 @@ from onnx_tf.handlers.handler import onnx_op
 
 @onnx_op("NonMaxSuppression")
 class NonMaxSuppression(BackendHandler):
+  var_prefix = 'non_max_suppression_result'
 
-  result = None
+  @classmethod
+  def get_req_vars_template(cls):
+    """ Get required variables template.
+
+    :return: Dict.
+    """
+    return {
+        cls.var_prefix: [
+            tf.constant([[0, 0, 0]], dtype=tf.int64),
+            tf.TensorShape([None, 3])
+        ]
+    }
 
   @classmethod
   def _common(cls, node, **kwargs):
@@ -84,19 +96,13 @@ class NonMaxSuppression(BackendHandler):
           result = output if tf.equal(batch_i, 0) and tf.equal(
               class_j, 0) else tf.concat([result, output], 0)
 
+      cls.VAR_COUNT = cls.VAR_COUNT + 1
       return result
 
-    # Since tf.function doesn't support locals() and it require all the variables
-    # are defined before use in the "for loop" before it will perform any auto
-    # convertion of the python code. Therefore need to define "result" as a
-    # Variable here and send it in as a parameter to "create_nodes"
-    if cls.result is None:
-      cls.result = tf.Variable([[0, 0, 0]],
-                           dtype=tf.int64,
-                           shape=tf.TensorShape([None, 3]))
+    result = tensor_dict[cls.var_prefix + '_' + str(cls.VAR_COUNT)]
     return [
         create_nodes(boxes, scores, max_output_boxes_per_class, iou_threshold,
-                     score_threshold, cls.result)
+                     score_threshold, result)
     ]
 
   @classmethod
