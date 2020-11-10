@@ -24,13 +24,15 @@ class BackendHandler(Handler):
   """
 
   TF_FUNC = None
-  VAR_COUNT = 0
 
   @classmethod
-  def get_req_vars_template(cls):
-    """ Get required variables template.
-
-    :return: Dict.
+  def get_req_vars_template(cls, node, init_dict):
+    """ Get required variables template, which is a
+    dictionary of variable names with initial value and
+    shape
+    :param node: ONNX NodeProto object.
+    :param init_dict: initializer dictionary of the graph.
+    :return: Dictionary.
     """
     return {}
 
