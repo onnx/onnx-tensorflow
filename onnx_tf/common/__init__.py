@@ -31,7 +31,6 @@ class SysConfig:
     self.device = 'CPU'
 
 
-
 sys_config = SysConfig()
 
 
@@ -181,6 +180,16 @@ def supports_device(device):
   elif device == "CPU":
     return True
   return False
+
+
+def get_variable_name(node, var_name):
+  """ Get variable name.
+  :param node: ONNX NodeProto object
+  :param var_name: name of the variable
+  :return: unique variable name
+  """
+  v_name = node.op_type.lower() + '_' + var_name
+  return v_name + '_' + node.name.lower() if node.name else v_name
 
 
 CONST_MINUS_ONE_INT32 = "_onnx_tf_internal_minus_one_int32"

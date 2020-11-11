@@ -550,12 +550,14 @@ class TestDynamicShape(unittest.TestCase):
         "NonMaxSuppression",
         ["boxes", "scores", "max_output_boxes_per_class", "iou_threshold"],
         ["selected_indices_1"],
-        center_point_box=0)
+        center_point_box=0,
+        name='NonMaxSuppression_1')
     non_max_suppression_node_2 = helper.make_node("NonMaxSuppression", [
         "boxes", "scores", "max_output_boxes_per_class", "iou_threshold",
         "score_threshold"
     ], ["selected_indices_2"],
-                                                  center_point_box=0)
+                                                  center_point_box=0,
+                                                  name='NonMaxSuppression_2')
 
     then_graph = helper.make_graph(nodes=[non_max_suppression_node_1],
                                    name="then_graph",
