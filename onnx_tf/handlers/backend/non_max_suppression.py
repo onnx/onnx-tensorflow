@@ -1,5 +1,6 @@
 import tensorflow as tf
 
+from onnx_tf.common import get_variable_name
 from onnx_tf.common.tf_helper import tf_shape
 from onnx_tf.handlers.backend_handler import BackendHandler
 from onnx_tf.handlers.handler import onnx_op
@@ -7,16 +8,19 @@ from onnx_tf.handlers.handler import onnx_op
 
 @onnx_op("NonMaxSuppression")
 class NonMaxSuppression(BackendHandler):
-  var_prefix = 'non_max_suppression_result'
+  var_name = 'result'
 
   @classmethod
-  def get_req_vars_template(cls):
-    """ Get required variables template.
-
-    :return: Dict.
+  def get_req_vars_template(cls, node, init_dict):
+    """ Get required variables template, which is a
+    dictionary of variable names with initial value and
+    shape.
+    :param node: ONNX NodeProto object.
+    :param init_dict: initializer dictionary of the graph.
+    :return: Dictionary.
     """
     return {
-        cls.var_prefix: [
+        cls.var_name: [
             tf.constant([[0, 0, 0]], dtype=tf.int64),
             tf.TensorShape([None, 3])
         ]
@@ -96,10 +100,9 @@ class NonMaxSuppression(BackendHandler):
           result = output if tf.equal(batch_i, 0) and tf.equal(
               class_j, 0) else tf.concat([result, output], 0)
 
-      cls.VAR_COUNT = cls.VAR_COUNT + 1
       return result
 
-    result = tensor_dict[cls.var_prefix + '_' + str(cls.VAR_COUNT)]
+    result = tensor_dict[get_variable_name(node, cls.var_name)]
     return [
         create_nodes(boxes, scores, max_output_boxes_per_class, iou_threshold,
                      score_threshold, result)

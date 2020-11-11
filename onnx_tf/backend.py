@@ -26,7 +26,7 @@ from onnx_tf.common import get_unique_suffix
 from onnx_tf.common import supports_device as common_supports_device
 from onnx_tf.common.handler_helper import get_all_backend_handlers
 from onnx_tf.pb_wrapper import OnnxNode
-from onnx_tf.backend_tf_module import BackendTFModule
+from onnx_tf.backend_tf_module import BackendTFModule, TFModule
 import onnx_tf.common as common
 
 
@@ -205,16 +205,6 @@ class TensorflowBackend(Backend):
     :return: Outputs.
     """
 
-    class TFModule(tf.Module):
-
-      def __init__(self, node):
-        super(TFModule, self).__init__()
-        self.node = node
-
-      @tf.function
-      def __call__(self, **input_dict):
-        return cls._onnx_node_to_tensorflow_op(self.node, input_dict)
-
     super(TensorflowBackend, cls).run_node(node, inputs, device)
     common.sys_config.device = device
 
@@ -233,7 +223,7 @@ class TensorflowBackend(Backend):
     input_dict = dict([(x[0], tf.constant(x[1])) for x in feed_dict_raw.items()
                       ])
 
-    module = TFModule(node)
+    module = TFModule(node, cls)
 
     output_vals = module(**input_dict)
     output_vals = [
