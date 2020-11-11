@@ -15,9 +15,9 @@ class NonMaxSuppression(BackendHandler):
     """ Get required variables template, which is a
     dictionary of variable names with initial value and
     shape.
-    :param node: ONNX NodeProto object.
+    :param node: OnnxNode object.
     :param init_dict: initializer dictionary of the graph.
-    :return: Dictionary.
+    :return: template dictionary.
     """
     return {
         cls.var_name: [
