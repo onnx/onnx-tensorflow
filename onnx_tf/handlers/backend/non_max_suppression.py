@@ -1,5 +1,6 @@
 import tensorflow as tf
 
+from onnx_tf.common import get_variable_name
 from onnx_tf.common.tf_helper import tf_shape
 from onnx_tf.handlers.backend_handler import BackendHandler
 from onnx_tf.handlers.handler import onnx_op
@@ -7,8 +8,23 @@ from onnx_tf.handlers.handler import onnx_op
 
 @onnx_op("NonMaxSuppression")
 class NonMaxSuppression(BackendHandler):
+  var_name = 'result'
 
-  result = None
+  @classmethod
+  def get_req_vars_template(cls, node, init_dict):
+    """ Get required variables template, which is a
+    dictionary of variable names with initial value and
+    shape.
+    :param node: ONNX NodeProto object.
+    :param init_dict: initializer dictionary of the graph.
+    :return: Dictionary.
+    """
+    return {
+        cls.var_name: [
+            tf.constant([[0, 0, 0]], dtype=tf.int64),
+            tf.TensorShape([None, 3])
+        ]
+    }
 
   @classmethod
   def _common(cls, node, **kwargs):
@@ -86,17 +102,10 @@ class NonMaxSuppression(BackendHandler):
 
       return result
 
-    # Since tf.function doesn't support locals() and it require all the variables
-    # are defined before use in the "for loop" before it will perform any auto
-    # convertion of the python code. Therefore need to define "result" as a
-    # Variable here and send it in as a parameter to "create_nodes"
-    if cls.result is None:
-      cls.result = tf.Variable([[0, 0, 0]],
-                           dtype=tf.int64,
-                           shape=tf.TensorShape([None, 3]))
+    result = tensor_dict[get_variable_name(node, cls.var_name)]
     return [
         create_nodes(boxes, scores, max_output_boxes_per_class, iou_threshold,
-                     score_threshold, cls.result)
+                     score_threshold, result)
     ]
 
   @classmethod

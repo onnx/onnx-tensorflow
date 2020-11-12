@@ -26,6 +26,17 @@ class BackendHandler(Handler):
   TF_FUNC = None
 
   @classmethod
+  def get_req_vars_template(cls, node, init_dict):
+    """ Get required variables template, which is a
+    dictionary of variable names with initial value and
+    shape
+    :param node: ONNX NodeProto object.
+    :param init_dict: initializer dictionary of the graph.
+    :return: Dictionary.
+    """
+    return {}
+
+  @classmethod
   def get_attrs_processor_param(cls):
     """ Get param for attrs processor.
 
@@ -183,8 +194,8 @@ class BackendHandler(Handler):
 
     attrs = {p: v for p, v in attrs.items() if p in params}
     kwargs = dict(zip(params, inputs))
-    ambiguous_arguments = any(kwargs.get(p) is not None and v is not None
-                              for p, v in attrs.items())
+    ambiguous_arguments = any(
+        kwargs.get(p) is not None and v is not None for p, v in attrs.items())
     if ambiguous_arguments:
       raise TypeError('Ambiguous arguments for {}()'.format(tf_func.__name__))
     kwargs.update((p, v) for p, v in attrs.items() if v is not None)
