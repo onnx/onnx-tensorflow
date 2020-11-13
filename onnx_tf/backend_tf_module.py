@@ -1,7 +1,39 @@
 import tensorflow as tf
-from onnx_tf.common import exception
-from onnx_tf.common import get_variable_name
 from onnx_tf.pb_wrapper import OnnxNode
+
+
+class TFModuleHelper(object):
+  """ Helper class for BackendTFModule and TFModule
+  """
+
+  # create tf.Variable for handlers that required to use variable in handler
+  @classmethod
+  def _create_handlers_variables_for_graph(cls,
+                                           handlers,
+                                           graph,
+                                           init_dict,
+                                           var_dict=None):
+    var_dict = dict() if var_dict is None else var_dict
+    for node in graph.node:
+      var_dict = cls._create_handler_variables_for_node(handlers,
+                                                        OnnxNode(node),
+                                                        init_dict, var_dict)
+    return var_dict
+
+  @classmethod
+  def _create_handler_variables_for_node(cls,
+                                         handlers,
+                                         node,
+                                         init_dict=None,
+                                         var_dict=None):
+    init_dict = dict() if init_dict is None else init_dict
+    var_dict = dict() if var_dict is None else var_dict
+    handler = handlers[node.domain].get(
+        node.op_type, None) if node.domain in handlers else None
+    var_dict = handler.create_variables(
+        handlers, node, init_dict, var_dict,
+        cls._create_handlers_variables_for_graph) if handler else var_dict
+    return var_dict
 
 
 class BackendTFModule(tf.Module):
@@ -18,63 +50,24 @@ class BackendTFModule(tf.Module):
     self.backend = backend
     self.outputs = []
     self.initializer_dict = self._get_initializer_from_graph_and_subgraphs(
-        self.graph_def, dict())
-    self.handler_variables = self._create_handlers_variables(
-        self.graph_def, dict())
+        graph_def)
+    self.handler_variables = TFModuleHelper._create_handlers_variables_for_graph(
+        handlers, graph_def, self.initializer_dict)
 
   # get initializer from the main graph and all subgraphs in loop or if or scan
   # into tensor_dict
-  def _get_initializer_from_graph_and_subgraphs(self, graph, graph_tensor_dict):
+  def _get_initializer_from_graph_and_subgraphs(self, graph, init_dict=None):
+    init_dict = dict() if init_dict is None else init_dict
     if graph.initializer:
-      graph_tensor_dict.update(
+      init_dict.update(
           self.backend._onnx_initializer_to_input_dict_items(graph.initializer))
     for node in graph.node:
-      if node.op_type in ['Loop', 'Scan']:
-        onnx_node = OnnxNode(node)
-        body = onnx_node.attrs["body"]
-        graph_tensor_dict = self._get_initializer_from_graph_and_subgraphs(
-            body, graph_tensor_dict)
-      elif node.op_type == 'If':
-        onnx_node = OnnxNode(node)
-        then_branch = onnx_node.attrs['then_branch']
-        graph_tensor_dict = self._get_initializer_from_graph_and_subgraphs(
-            then_branch, graph_tensor_dict)
-        else_branch = onnx_node.attrs['else_branch']
-        graph_tensor_dict = self._get_initializer_from_graph_and_subgraphs(
-            else_branch, graph_tensor_dict)
-    return graph_tensor_dict
-
-  # create tf.Variable for handlers that required to use variable in handler
-  def _create_handlers_variables(self, graph, vars_dict):
-    if self.handlers:
-      handlers = self.backend._get_handlers(self.opset)
-      for node in graph.node:
-        handler = handlers[node.domain].get(
-            node.op_type, None) if node.domain in handlers else None
-        if handler and bool(
-            handler.get_req_vars_template(node, self.initializer_dict)):
-          for v_name, v_template in handler.get_req_vars_template(
-              node, self.initializer_dict).items():
-            v_init, v_shape = v_template
-            v_name = get_variable_name(node, v_name)
-            if v_name in vars_dict.keys():
-              # found duplicated variable name due to non unique node name
-              exception.NON_UNIQUE_NODE_NAME_EXCEPT()
-            vars_dict[v_name] = tf.Variable(v_init,
-                                            dtype=v_init.dtype,
-                                            shape=v_shape,
-                                            name=v_name)
-        if node.op_type in ['Loop', 'Scan']:
-          onnx_node = OnnxNode(node)
-          body = onnx_node.attrs["body"]
-          vars_dict = self._create_handlers_variables(body, vars_dict)
-        elif node.op_type == 'If':
-          onnx_node = OnnxNode(node)
-          then_branch = onnx_node.attrs['then_branch']
-          vars_dict = self._create_handlers_variables(then_branch, vars_dict)
-          else_branch = onnx_node.attrs['else_branch']
-          vars_dict = self._create_handlers_variables(else_branch, vars_dict)
-    return vars_dict
+      handler = self.handlers[node.domain].get(
+          node.op_type, None) if node.domain in self.handlers else None
+      init_dict = handler.get_initializer_from_subgraph(
+          OnnxNode(node), init_dict, self.
+          _get_initializer_from_graph_and_subgraphs) if handler else init_dict
+    return init_dict
 
   @tf.function
   def gen_tensor_dict(self, input_dict):
@@ -124,24 +117,8 @@ class TFModule(tf.Module):
     self.node = node
     self.backend = backend
     self.handlers = backend._get_handlers(opset=None)
-    self.handler_variables = self._create_handlers_variables(dict())
-
-  def _create_handlers_variables(self, vars_dict):
-    if self.handlers:
-      handler = self.handlers[self.node.domain].get(
-          self.node.op_type,
-          None) if self.node.domain in self.handlers else None
-      if handler and bool(
-          handler.get_req_vars_template(self.node, self.node.attrs)):
-        for v_name, v_template in handler.get_req_vars_template(
-            self.node, self.node.attrs).items():
-          v_init, v_shape = v_template
-          v_name = get_variable_name(self.node, v_name)
-          vars_dict[v_name] = tf.Variable(v_init,
-                                          dtype=v_init.dtype,
-                                          shape=v_shape,
-                                          name=v_name)
-    return vars_dict
+    self.handler_variables = TFModuleHelper._create_handler_variables_for_node(
+        self.handlers, node)
 
   @tf.function
   def __call__(self, **input_dict):

@@ -12,6 +12,22 @@ from onnx_tf.handlers.handler import tf_func
 class If(BackendHandler):
 
   @classmethod
+  def get_initializer_from_subgraph(cls, node, init_dict, callback_func):
+    then_branch = node.attrs['then_branch']
+    init_dict = callback_func(then_branch, init_dict)
+    else_branch = node.attrs['else_branch']
+    init_dict = callback_func(else_branch, init_dict)
+    return init_dict
+
+  @classmethod
+  def create_variables(cls, handlers, node, init_dict, var_dict, callback_func):
+    then_branch = node.attrs['then_branch']
+    var_dict = callback_func(handlers, then_branch, init_dict, var_dict)
+    else_branch = node.attrs['else_branch']
+    var_dict = callback_func(handlers, else_branch, init_dict, var_dict)
+    return var_dict
+
+  @classmethod
   def _common(cls, node, **kwargs):
     cond = kwargs["tensor_dict"][node.inputs[0]]
     then_branch = node.attrs["then_branch"]
