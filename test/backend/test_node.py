@@ -9,8 +9,10 @@ import unittest
 from onnx import defs
 from onnx import helper
 from onnx import TensorProto
+from onnx.backend.test.case.node import hardmax
 import numpy as np
 import tensorflow as tf
+import tensorflow_addons as tfa
 
 from onnx_tf.backend import onnx_graph_to_tensorflow_rep
 from onnx_tf.backend import run_node
@@ -1056,11 +1058,20 @@ class TestNode(unittest.TestCase):
     for axis in range(-len(shape), len(shape)):
       node_def = helper.make_node("Hardmax", ["X"], ["Y"], axis=axis)
       output = run_node(node_def, [x])
-      shape_in_2d = (np.prod(shape[0:axis]).astype(int),
-                     np.prod(shape[axis:len(shape)]))
-      x_in_2d = np.reshape(x, shape_in_2d)
-      y = np.eye(x_in_2d.shape[1], dtype=x.dtype)[np.argmax(x_in_2d, axis=1)]
-      np.testing.assert_almost_equal(output["Y"], np.reshape(y, shape))
+
+      axis = axis if axis >= 0 else len(np.shape(x)) + axis
+      if axis == len(np.shape(x)) - 1:
+          np.testing.assert_almost_equal(output["Y"], tfa.seq2seq.hardmax(x))
+      else:
+          if not legacy_opset_pre_ver(13):
+            y = hardmax.hardmax(x, axis)
+            np.testing.assert_almost_equal(output["Y"], y)
+          else:
+            shape_in_2d = (np.prod(shape[0:axis]).astype(int),
+                           np.prod(shape[axis:len(shape)]))
+            x_in_2d = np.reshape(x, shape_in_2d)
+            y = np.eye(x_in_2d.shape[1], dtype=x.dtype)[np.argmax(x_in_2d, axis=1)]
+            np.testing.assert_almost_equal(output["Y"], np.reshape(y, shape))
 
   def test_if(self):
     true_val = helper.make_tensor(name='true_tensor',

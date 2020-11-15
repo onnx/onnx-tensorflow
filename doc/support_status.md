@@ -1,8 +1,8 @@
 # ONNX-Tensorflow Support Status
 |||
 |-:|:-|
-|ONNX-Tensorflow Version|Master ( commit id: f64afb48034af7121341f4ba5d6f56e275c5aedb )|
-|ONNX Version|Master ( commit id: a7a0fec7f25cae567429af62b7eaaee1c3f0e247 )|
+|ONNX-Tensorflow Version|Master ( commit id: 5184f393f7e262add46ada96108b2c711db14740 )|
+|ONNX Version|Master ( commit id: 994c6181247d7b419b28889fc57d5817e2089419 )|
 |Tensorflow Version|v2.3.1|
 
 Notes:
@@ -71,7 +71,7 @@ Notes:
 |Greater|**1**|1|1|1|1|1|**7**|7|**9**|9|9|9|**13**|Greater|
 |GreaterOrEqual|-|-|-|-|-|-|-|-|-|-|-|**12**|12|GreaterOrEqual|
 |HardSigmoid|**1**|1|1|1|1|**6**|6|6|6|6|6|6|6|HardSigmoid|
-|Hardmax|**1**|1|1|1|1|1|1|1|1|1|**11**|11|**13**:small_red_triangle:|Hardmax|
+|Hardmax|**1**|1|1|1|1|1|1|1|1|1|**11**|11|**13**|Hardmax|
 |Identity|**1**|1|1|1|1|1|1|1|1|1|1|1|**13**|Identity|
 |If|**1**|1|1|1|1|1|1|1|1|1|**11**|11|**13**|If|
 |InstanceNormalization|**1**|1|1|1|1|**6**|6|6|6|6|6|6|6|InstanceNormalization|
@@ -133,7 +133,7 @@ Notes:
 |Reshape|**1**|1|1|1|**5**|5|5|5|5|5|5|5|**13**:small_red_triangle:|Reshape|
 |Resize|-|-|-|-|-|-|-|-|-|**10**:small_orange_diamond:|**11**:small_orange_diamond:|11:small_orange_diamond:|**13**:small_orange_diamond:|Resize|
 |ReverseSequence|-|-|-|-|-|-|-|-|-|**10**|10|10|10|ReverseSequence|
-|RoiAlign|-|-|-|-|-|-|-|-|-|**10**:small_orange_diamond:|10:small_orange_diamond:|10:small_orange_diamond:|10:small_orange_diamond:|RoiAlign|
+|RoiAlign|-|-|-|-|-|-|-|-|-|**10**:small_red_triangle:|10:small_red_triangle:|10:small_red_triangle:|10:small_red_triangle:|RoiAlign|
 |Round|-|-|-|-|-|-|-|-|-|-|**11**|11|11|Round|
 |Scan|-|-|-|-|-|-|-|**8**|**9**|9|**11**|11|11|Scan|
 |Scatter|-|-|-|-|-|-|-|-|**9**|9|**11**\*|11\*|11\*|Scatter|
@@ -179,7 +179,7 @@ Notes:
 |Where|-|-|-|-|-|-|-|-|**9**|9|9|9|9|Where|
 |Xor|**1**|1|1|1|1|1|**7**|7|7|7|7|7|7|Xor|
 
-ONNX-TF Supported Operators / ONNX Operators: 118 / 162
+ONNX-TF Supported Operators / ONNX Operators: 119 / 162
 
 Notes:
 1. Cast: Cast string to data types other than float32/float64/int32/int64 is not supported in Tensorflow
@@ -204,4 +204,3 @@ Notes:
 	- Note (*): The accuracy of your model will go down, if the height and the width of the new sizes(scales * origial sizes) are not in whole numbers.
 9. SplitToSequence: Scalar as the split input not supported.
 10. Upsample: Upsample required 4D input in Tensorflow.
-11. RoiAlign: sampling_ratio <= 0 if not fully supported.

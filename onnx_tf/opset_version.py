@@ -64,7 +64,7 @@ backend_opset_version = {
     'Greater': [1, 7, 9, 13],
     'GreaterOrEqual': [12],
     'HardSigmoid': [1, 6],
-    'Hardmax': [1, 11],
+    'Hardmax': [1, 11, 13],
     'Identity': [1, 13],
     'If': [1, 11, 13],
     'ImageScaler': [1],
