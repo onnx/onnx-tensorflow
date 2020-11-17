@@ -4,6 +4,7 @@ import tensorflow as tf
 
 from onnx_tf.common import get_unique_suffix
 from onnx_tf.common import exception
+from onnx_tf.common import get_variable_name
 from onnx_tf.handlers.backend_handler import BackendHandler
 from onnx_tf.handlers.handler import onnx_op
 from onnx_tf.handlers.handler import partial_support
@@ -17,6 +18,43 @@ from .rnn_mixin import RNNMixin
                 "LSTM not using the same activation for `g` and `h` " +
                 "are not supported in Tensorflow.")
 class LSTM(RNNMixin, BackendHandler):
+
+  # declare variable names for custom getters
+  weight_var_name = 'kernel'
+  bias_var_name = 'bias'
+  peephole_weight_forget_var_name = 'w_f_diag'
+  peephole_weight_input_var_name = 'w_i_diag'
+  peephole_weight_output_var_name = 'w_o_diag'
+
+  @classmethod
+  def get_req_vars_template(cls, node, init_dict):
+    """ Get required variables template, which is a dictionary of
+        variable names with initial value and shape
+        :return: Dict.
+    """
+    b_shape = node.attrs["hidden_size"] * 4
+    return {
+        cls.weight_var_name: [
+            tf.constant([[0.]], dtype=tf.float32),
+            tf.TensorShape([None, None])
+        ],
+        cls.bias_var_name: [
+            tf.constant([0.] * b_shape, dtype=tf.float32),
+            tf.TensorShape([b_shape])
+        ],
+        cls.peephole_weight_forget_var_name: [
+            tf.constant([[0.]], dtype=tf.float32),
+            tf.TensorShape([None, None])
+        ],
+        cls.peephole_weight_input_var_name: [
+            tf.constant([[0.]], dtype=tf.float32),
+            tf.TensorShape([None, None])
+        ],
+        cls.peephole_weight_output_var_name: [
+            tf.constant([[0.]], dtype=tf.float32),
+            tf.TensorShape([None, None])
+        ]
+    }
 
   @classmethod
   def args_check(cls, node, **kwargs):
@@ -62,6 +100,8 @@ class LSTM(RNNMixin, BackendHandler):
                                names[-1]))
 
     if names[-1] == "kernel":
+      weight_variable = tensor_dict[get_variable_name(node,
+                                                      cls.weight_var_name)]
       # onnx W[iofc], R[iofc]
       if is_bidirectional:
         w = tf.split(tensor_dict[node.inputs[1]], 2)[index]
@@ -74,8 +114,11 @@ class LSTM(RNNMixin, BackendHandler):
       new_w = tf.transpose(tf.concat([w_i, w_c, w_f, w_o], 0))
       new_r = tf.transpose(tf.concat([r_i, r_c, r_f, r_o], 0))
       kernel = tf.concat([new_w, new_r], 0)
-      return tf.Variable(kernel)
+      weight_variable.assign(kernel)
+      return weight_variable
+
     if names[-1] == "bias":
+      bias_variable = tensor_dict[get_variable_name(node, cls.bias_var_name)]
       if len(node.inputs) >= 4:
         # onnx Wb[iofc], Rb[iofc]
         if is_bidirectional:
@@ -87,8 +130,10 @@ class LSTM(RNNMixin, BackendHandler):
         r_b_i, r_b_o, r_b_f, r_b_c = tf.split(r_b, 4)
         w_b = tf.transpose(tf.concat([w_b_i, w_b_c, w_b_f, w_b_o], 0))
         r_b = tf.transpose(tf.concat([r_b_i, r_b_c, r_b_f, r_b_o], 0))
-        return tf.Variable(tf.add(w_b, r_b))
-      return getter(name, *args, **kwargs)
+        bias_variable.assign(tf.add(w_b, r_b))
+
+      return bias_variable
+
     # Only use_peepholes is True,
     # will try to get w_f_diag, w_i_diag, w_o_diag
     # onnx P[iof]
@@ -98,11 +143,20 @@ class LSTM(RNNMixin, BackendHandler):
       else:
         p = tensor_dict[node.inputs[7]]
       if names[-1] == "w_f_diag":
-        return tf.Variable(tf.split(p, 3, axis=1)[2])
+        w_f_variable = tensor_dict[get_variable_name(
+            node, cls.peephole_weight_forget_var_name)]
+        w_f_variable.assign(tf.split(p, 3, axis=1)[2])
+        return w_f_variable
       if names[-1] == "w_i_diag":
-        return tf.Variable(tf.split(p, 3, axis=1)[0])
+        w_i_variable = tensor_dict[get_variable_name(
+            node, cls.peephole_weight_input_var_name)]
+        w_i_variable.assign(tf.split(p, 3, axis=1)[0])
+        return w_i_variable
       if names[-1] == "w_o_diag":
-        return tf.Variable(tf.split(p, 3, axis=1)[1])
+        w_o_variable = tensor_dict[get_variable_name(
+            node, cls.peephole_weight_output_var_name)]
+        w_o_variable.assign(tf.split(p, 3, axis=1)[1])
+        return w_o_variable
     return getter(name, *args, **kwargs)
 
   @classmethod
@@ -149,13 +203,12 @@ class LSTM(RNNMixin, BackendHandler):
       ]
 
     # TODO(fumihwh): check if reverse and bidirectional works
-    with tf.compat.v1.variable_scope(
-        "LSTM_" + get_unique_suffix(),
-        custom_getter=partial(
-            cls._custom_getter,
-            node=node,
-            tensor_dict=tensor_dict,
-            is_bidirectional=num_directions == 2)):
+    with tf.compat.v1.variable_scope("LSTM_" + get_unique_suffix(),
+                                     custom_getter=partial(
+                                         cls._custom_getter,
+                                         node=node,
+                                         tensor_dict=tensor_dict,
+                                         is_bidirectional=num_directions == 2)):
       cell_kwargs[
           "use_peepholes"] = input_size == 8 and node.inputs[7] in tensor_dict
       cell_kwargs["forget_bias"] = 0.
