@@ -750,9 +750,8 @@ class TestNode(unittest.TestCase):
 
   def test_einsum(self):
     if legacy_opset_pre_ver(12):
-      raise unittest.SkipTest(
-          "ONNX version {} doesn't support Einsum.".format(
-              defs.onnx_opset_version()))
+      raise unittest.SkipTest("ONNX version {} doesn't support Einsum.".format(
+          defs.onnx_opset_version()))
     equation = 'ij,jk->ik'  #matmul
     node_def = helper.make_node("Einsum", ["X", "Y"], ["Z"], equation=equation)
     x = self._get_rnd_float32(shape=[3, 4])
@@ -1279,12 +1278,12 @@ class TestNode(unittest.TestCase):
     np.testing.assert_almost_equal(output["Y"], test_output)
 
   def test_greater(self):
-      node_def = helper.make_node("Greater", ["X", "Y"], ["Z"])
-      x = self._get_rnd_float32(shape=[5, 3, 3, 2])
-      y = self._get_rnd_float32(shape=[3, 3, 1])
-      output = run_node(node_def, [x, y])
-      np.testing.assert_equal(output["Z"], np.greater(x, np.reshape(y,
-                                                                 [1, 3, 3, 1])))
+    node_def = helper.make_node("Greater", ["X", "Y"], ["Z"])
+    x = self._get_rnd_float32(shape=[5, 3, 3, 2])
+    y = self._get_rnd_float32(shape=[3, 3, 1])
+    output = run_node(node_def, [x, y])
+    np.testing.assert_equal(output["Z"],
+                            np.greater(x, np.reshape(y, [1, 3, 3, 1])))
 
   def test_less(self):
     node_def = helper.make_node("Less", ["X", "Y"], ["Z"])
@@ -3601,6 +3600,11 @@ class TestNode(unittest.TestCase):
                                   axis=axis)
       output = run_node(node_def, [data, indices, updates])
       np.testing.assert_almost_equal(output["outputs"], ref_output)
+
+      # test data types that are not natively supported by Tensorflow
+      self.assertRaises(RuntimeError, run_node, node_def,
+                        [np.complex64(data), indices,
+                         np.complex64(updates)])
 
   def test_scatter_elements2(self):
     data = np.array([
