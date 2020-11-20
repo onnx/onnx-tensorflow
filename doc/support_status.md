@@ -1,7 +1,7 @@
 # ONNX-Tensorflow Support Status
 |||
 |-:|:-|
-|ONNX-Tensorflow Version|Master ( commit id: 9e7b54b1d14aafc4aa6329c12f0ee74226255eca )|
+|ONNX-Tensorflow Version|Master ( commit id: fb3b6758903516d80ad4cc506bc4f589be8a7231 )|
 |ONNX Version|Master ( commit id: 274e8b54e4c11c40a8c0a89599196f5311088b64 )|
 |Tensorflow Version|v2.3.1|
 
@@ -129,7 +129,7 @@ Notes:
 |ReduceProd|**1**|1|1|1|1|1|1|1|1|1|**11**|11|**13**|ReduceProd|
 |ReduceSum|**1**|1|1|1|1|1|1|1|1|1|**11**|11|**13**:small_red_triangle:|ReduceSum|
 |ReduceSumSquare|**1**|1|1|1|1|1|1|1|1|1|**11**|11|**13**:small_red_triangle:|ReduceSumSquare|
-|Relu|**1**|1|1|1|1|**6**|6|6|6|6|6|6|**13**:small_red_triangle:|Relu|
+|Relu|**1**|1|1|1|1|**6**|6|6|6|6|6|6|**13**|Relu|
 |Reshape|**1**|1|1|1|**5**|5|5|5|5|5|5|5|**13**:small_red_triangle:|Reshape|
 |Resize|-|-|-|-|-|-|-|-|-|**10**:small_orange_diamond:|**11**:small_orange_diamond:|11:small_orange_diamond:|**13**:small_orange_diamond:|Resize|
 |ReverseSequence|-|-|-|-|-|-|-|-|-|**10**|10|10|10|ReverseSequence|
@@ -179,7 +179,7 @@ Notes:
 |Where|-|-|-|-|-|-|-|-|**9**|9|9|9|9|Where|
 |Xor|**1**|1|1|1|1|1|**7**|7|7|7|7|7|7|Xor|
 
-ONNX-TF Supported Operators / ONNX Operators: 122 / 162
+ONNX-TF Supported Operators / ONNX Operators: 123 / 162
 
 Notes:
 1. Cast: Cast string to data types other than float32/float64/int32/int64 is not supported in Tensorflow
