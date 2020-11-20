@@ -19,11 +19,14 @@ class Min(BackendHandler):
       tf.int8: tf.int32,
       tf.int16: tf.int32
   }
-  cast_map[tf.uint64] = tf.int64 if sys_config.auto_cast else None
 
   @classmethod
   def args_check(cls, node, **kwargs):
+    # update cast map based on the auto_cast config option
+    cls.cast_map[tf.uint64] = tf.int64 if sys_config.auto_cast else None
+
     inp_dtype = kwargs["tensor_dict"][node.inputs[0]].dtype
+
     if inp_dtype in cls.cast_map and cls.cast_map[inp_dtype] is None:
       exception.DTYPE_NOT_CAST_EXCEPT(
           "Min input " + node.inputs[0] + " with data type '" +

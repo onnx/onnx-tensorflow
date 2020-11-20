@@ -48,19 +48,21 @@ class Resize(BackendHandler):
       tf.float32, tf.float64, tf.bfloat16
   ]
   x_cast_map = {tf.uint32: tf.int64, tf.bool: None, tf.string: None}
-  x_cast_map[tf.uint64] = tf.int64 if sys_config.auto_cast else None
-  x_cast_map[tf.complex64] = tf.float64 if sys_config.auto_cast else None
-  x_cast_map[tf.complex128] = tf.float64 if sys_config.auto_cast else None
   cr_x_supported_types = x_supported_types
   cr_x_supported_types.remove(tf.bfloat16)
   cr_x_cast_map = x_cast_map
   cr_x_cast_map[tf.bfloat16] = tf.float32
   roi_supported_types = [tf.float32]
   roi_cast_map = {tf.float16: tf.float32}
-  roi_cast_map[tf.float64] = tf.float32 if sys_config.auto_cast else None
 
   @classmethod
   def args_check(cls, node, **kwargs):
+    # update cast maps based on the auto_cast config option
+    cls.x_cast_map[tf.uint64] = tf.int64 if sys_config.auto_cast else None
+    cls.x_cast_map[tf.complex64] = tf.float64 if sys_config.auto_cast else None
+    cls.x_cast_map[tf.complex128] = tf.float64 if sys_config.auto_cast else None
+    cls.roi_cast_map[tf.float64] = tf.float32 if sys_config.auto_cast else None
+
     x = kwargs["tensor_dict"][node.inputs[0]]
     x_shape = x.get_shape().as_list()
     x_dtype = x.dtype

@@ -185,6 +185,28 @@ class TestModel(unittest.TestCase):
     # clean up saved model folder
     shutil.rmtree(model_path)
 
+  def test_auto_cast(self):
+    node_def = helper.make_node("Equal", ["a", "b"], ["Y"])
+    graph_def = helper.make_graph(
+        [node_def],
+        name="test_auto_cast",
+        inputs=[helper.make_tensor_value_info("a", TensorProto.UINT64, [None, None]),
+            helper.make_tensor_value_info("b", TensorProto.UINT64, [None, None])],
+        outputs=[
+            helper.make_tensor_value_info("Y", TensorProto.BOOL, [None, None])
+        ])
+    tf_rep = prepare(helper.make_model(graph_def), auto_cast=True)
+
+    # random inputs with shape [5, 5]
+    a = np.random.randint(low=0, high=10, size=(5, 5)).astype(np.uint64)
+    b = np.random.randint(low=0, high=10, size=(5, 5)).astype(np.uint64)  
+    Y_ref = np.equal(a, b)
+
+    # check the output from converter API against numpy's output
+    output = tf_rep.run({"a": a, "b": b})
+    np.testing.assert_almost_equal(output.Y, Y_ref)
+
+
   def test_add_module(self):
     node_def = helper.make_node("Add", ["a", "b"], ["Y"])
     graph_def = helper.make_graph(
