@@ -10,6 +10,7 @@ from onnx import defs
 from onnx import helper
 from onnx import TensorProto
 from onnx.backend.test.case.node import hardmax
+from onnx.backend.test.case.node.onehot import one_hot
 import numpy as np
 import tensorflow as tf
 import tensorflow_addons as tfa
@@ -2380,6 +2381,8 @@ class TestNode(unittest.TestCase):
     if legacy_opset_pre_ver(9):
       raise unittest.SkipTest("ONNX version {} doesn't support OneHot.".format(
           defs.onnx_opset_version()))
+
+    # with default axis
     indices = np.array([[0, 2], [1, 2], [0, 1]])
     depth = np.int32(5)
     on_value = 6.0
@@ -2387,9 +2390,47 @@ class TestNode(unittest.TestCase):
     values = np.array([off_value, on_value])
     node_def = helper.make_node('OneHot',
                                 inputs=['indices', 'depth', 'values'],
+                                outputs=['y'])
+    y = one_hot(indices, depth, dtype=values.dtype)
+    y = y * (on_value - off_value) + off_value
+    output = run_node(node_def, inputs=[indices, depth, values])
+    np.testing.assert_equal(output['y'], y)
+    # test data types that are not natively supported by tensorflow
+    output = run_node(
+        node_def, inputs=[indices.astype(np.uint16),
+                          np.uint16(depth), values])
+    np.testing.assert_equal(output['y'], y)
+    self.assertRaises(RuntimeError, run_node, node_def,
+                      [indices, np.int64(depth), values])
+
+    # with axis
+    axis = 1
+    indices = np.array([[0, 9], [3, 7], [5, 2]])
+    depth = np.int32(10)
+    on_value = 8
+    off_value = -1
+    values = np.array([off_value, on_value], np.int8)
+    node_def = helper.make_node('OneHot',
+                                inputs=['indices', 'depth', 'values'],
                                 outputs=['y'],
-                                axis=-1)
-    y = (np.arange(depth) == indices[..., None]).astype(int)
+                                axis=axis)
+    y = one_hot(indices, depth, axis=axis, dtype=values.dtype)
+    y = y * (on_value - off_value) + off_value
+    output = run_node(node_def, inputs=[indices, depth, values])
+    np.testing.assert_equal(output['y'], y)
+
+    # with negative indices and negative axis
+    axis = -3
+    indices = np.array([[0, -9], [-3, 7], [5, -2]])
+    depth = np.int32(10)
+    on_value = 4
+    off_value = 1
+    values = np.array([off_value, on_value], np.int16)
+    node_def = helper.make_node('OneHot',
+                                inputs=['indices', 'depth', 'values'],
+                                outputs=['y'],
+                                axis=axis)
+    y = one_hot(indices, depth, axis=axis, dtype=values.dtype)
     y = y * (on_value - off_value) + off_value
     output = run_node(node_def, inputs=[indices, depth, values])
     np.testing.assert_equal(output['y'], y)

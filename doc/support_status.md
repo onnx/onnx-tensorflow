@@ -1,7 +1,7 @@
 # ONNX-Tensorflow Support Status
 |||
 |-:|:-|
-|ONNX-Tensorflow Version|Master ( commit id: 1150bd009684a0dcd3fdde51f307a6409ceab7ba )|
+|ONNX-Tensorflow Version|Master ( commit id: 9e7b54b1d14aafc4aa6329c12f0ee74226255eca )|
 |ONNX Version|Master ( commit id: 274e8b54e4c11c40a8c0a89599196f5311088b64 )|
 |Tensorflow Version|v2.3.1|
 
@@ -133,7 +133,7 @@ Notes:
 |Reshape|**1**|1|1|1|**5**|5|5|5|5|5|5|5|**13**:small_red_triangle:|Reshape|
 |Resize|-|-|-|-|-|-|-|-|-|**10**:small_orange_diamond:|**11**:small_orange_diamond:|11:small_orange_diamond:|**13**:small_orange_diamond:|Resize|
 |ReverseSequence|-|-|-|-|-|-|-|-|-|**10**|10|10|10|ReverseSequence|
-|RoiAlign|-|-|-|-|-|-|-|-|-|**10**|10|10|10|RoiAlign|
+|RoiAlign|-|-|-|-|-|-|-|-|-|**10**:small_orange_diamond:|10:small_orange_diamond:|10:small_orange_diamond:|10:small_orange_diamond:|RoiAlign|
 |Round|-|-|-|-|-|-|-|-|-|-|**11**|11|11|Round|
 |Scan|-|-|-|-|-|-|-|**8**|**9**|9|**11**|11|11|Scan|
 |Scatter|-|-|-|-|-|-|-|-|**9**|9|**11**\*|11\*|11\*|Scatter|
@@ -202,5 +202,6 @@ Notes:
 	10. mode=nearest, coordinate_transformation_mode=tf_crop_and_resize, extrapolation_value=any_float_value, nearest_mode=round_prefer_ceil, can use scales or sizes.
 	11. mode=linear, coordinate_transformation_mode=tf_crop_and_resize, extrapolation_value=any_float_value, can use scales or sizes.
 	- Note (*): The accuracy of your model will go down, if the height and the width of the new sizes(scales * origial sizes) are not in whole numbers.
-9. SplitToSequence: Scalar as the split input not supported.
-10. Upsample: Upsample required 4D input in Tensorflow.
+9. RoiAlign: sampling_ratio <= 0 is not fully supported.
+10. SplitToSequence: Scalar as the split input not supported.
+11. Upsample: Upsample required 4D input in Tensorflow.
