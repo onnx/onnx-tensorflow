@@ -1,5 +1,8 @@
 import tensorflow as tf
 
+from onnx_tf.common import exception
+from onnx_tf.common import data_type
+from onnx_tf.common import sys_config
 from onnx_tf.common.tf_helper import tf_shape
 from onnx_tf.handlers.backend_handler import BackendHandler
 from onnx_tf.handlers.handler import onnx_op
@@ -8,13 +11,33 @@ from .gather_and_scatter_mixin import GatherAndScatterMixin
 
 @onnx_op("ScatterElements")
 class ScatterElements(GatherAndScatterMixin, BackendHandler):
+  supported_types = [
+      tf.uint8, tf.uint16, tf.uint32, tf.uint64, tf.int8, tf.int16, tf.int32,
+      tf.int64, tf.bfloat16, tf.float16, tf.float32, tf.float64
+  ]
+  cast_map = {}
 
   @classmethod
-  def version_11(cls, node, **kwargs):
+  def args_check(cls, node, **kwargs):
+    # update cast_map base on auto_cast flag
+    cls.cast_map[tf.complex64] = tf.float64 if sys_config.auto_cast else None
+    cls.cast_map[tf.complex128] = tf.float64 if sys_config.auto_cast else None
+
+    data = kwargs["tensor_dict"][node.inputs[0]]
+    data_dtype = data.dtype
+    if data_dtype in cls.cast_map and cls.cast_map[data_dtype] is None:
+      exception.DTYPE_NOT_CAST_EXCEPT(
+          "ScatterElements input " + node.inputs[0] + " and " + node.inputs[2] +
+          " with data type '" + data_type.tf_to_np_str(data_dtype) + "'",
+          data_type.tf_to_np_str_list(cls.supported_types))
+
+  @classmethod
+  def _common(cls, node, **kwargs):
     axis = node.attrs.get("axis", 0)
     data = kwargs["tensor_dict"][node.inputs[0]]
     indices = kwargs["tensor_dict"][node.inputs[1]]
     updates = kwargs["tensor_dict"][node.inputs[2]]
+    data_dtype = data.dtype
 
     # poocess negative axis
     axis = axis if axis >= 0 else tf.add(tf.rank(data), axis)
@@ -46,14 +69,16 @@ class ScatterElements(GatherAndScatterMixin, BackendHandler):
       #   So we update coordinate vector tensor elements at psotion=axis with
       #   the sparse coordinate indices.
 
-      idx_tensors_per_axis = tf.meshgrid(
-          *list(
-              map(lambda x: tf.range(x, dtype=tf.dtypes.int64),
-                  sparsified_dense_idx_shape)),
-          indexing='ij')
+      idx_tensors_per_axis = [
+          tf.range(sparsified_dense_idx_shape[i])
+          for i in range(updates.shape.rank)
+      ]
+      idx_tensors_per_axis = tf.meshgrid(*idx_tensors_per_axis, indexing='ij')
       idx_tensors_per_axis[axis] = indices
-      dim_expanded_idx_tensors_per_axis = list(
-          map(lambda x: tf.expand_dims(x, axis=-1), idx_tensors_per_axis))
+      dim_expanded_idx_tensors_per_axis = [
+          tf.expand_dims(idx_tensor, axis=-1)
+          for idx_tensor in idx_tensors_per_axis
+      ]
       coordinate = tf.concat(dim_expanded_idx_tensors_per_axis, axis=-1)
 
       # Now the coordinate tensor is in the shape
@@ -63,4 +88,22 @@ class ScatterElements(GatherAndScatterMixin, BackendHandler):
       indices = tf.reshape(coordinate, [-1, tf.rank(data)])
       updates = tf.reshape(updates, [-1])
 
-      return [tf.tensor_scatter_nd_update(data, indices, updates)]
+      # process tf.tensor_scatter_nd_update unsupported datatype for data and updates
+      data = tf.cast(
+          data,
+          cls.cast_map[data_dtype]) if data_dtype in cls.cast_map else data
+      updates = tf.cast(
+          updates,
+          cls.cast_map[data_dtype]) if data_dtype in cls.cast_map else updates
+      output = tf.tensor_scatter_nd_update(data, indices, updates)
+      return [
+          tf.cast(output, data_dtype) if data_dtype in cls.cast_map else output
+      ]
+
+  @classmethod
+  def version_11(cls, node, **kwargs):
+    return cls._common(node, **kwargs)
+
+  @classmethod
+  def version_13(cls, node, **kwargs):
+    return cls._common(node, **kwargs)
