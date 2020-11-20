@@ -20,11 +20,13 @@ class Pow(BasicMathMixin, BackendHandler):
       tf.int8: tf.int16,
       tf.int16: tf.int32
   }
-  y_cast_map[tf.uint64] = tf.int64 if sys_config.auto_cast else None
   supported_types = [tf.int32, tf.int64, tf.float16, tf.float32, tf.float64]
 
   @classmethod
   def args_check(cls, node, **kwargs):
+    # update cast map based on the auto_cast config option
+    cls.y_cast_map[tf.uint64] = tf.int64 if sys_config.auto_cast else None
+
     y = kwargs["tensor_dict"][node.inputs[1]]
 
     # throw an error if the data type is not natively supported by
