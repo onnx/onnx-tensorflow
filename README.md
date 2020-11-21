@@ -1,5 +1,5 @@
 # Tensorflow Backend for ONNX
-[![Build Status](https://travis-ci.org/onnx/onnx-tensorflow.svg?branch=master)](https://travis-ci.org/onnx/onnx-tensorflow)
+[![Build Status](https://travis-ci.com/onnx/onnx-tensorflow.svg?branch=master)](https://travis-ci.com/github/onnx/onnx-tensorflow)
 
 ## To convert models from ONNX to Tensorflow:
 
@@ -7,7 +7,7 @@
 
 [Command Line Interface Documentation](https://github.com/onnx/onnx-tensorflow/blob/master/doc/CLI.md)
 
-From ONNX to Tensorflow: `onnx-tf convert -i /path/to/input.onnx -o /path/to/output.pb`
+From ONNX to Tensorflow: `onnx-tf convert -i /path/to/input.onnx -o /path/to/output`
 
 ### Convert programmatically:
 
@@ -34,9 +34,14 @@ ONNX-TF requires ONNX (Open Neural Network Exchange) as an external dependency, 
 
 The specific ONNX release version that we support in the master branch of ONNX-TF can be found [here](https://github.com/onnx/onnx-tensorflow/blob/master/ONNX_VERSION_NUMBER). This information about ONNX version requirement is automatically encoded in `setup.py`, therefore users needn't worry about ONNX version requirement when installing ONNX-TF.
 
-To install the latest version of ONNX-TF via pip, run `pip install onnx-tf`.
+As of November 24, 2020, we are unable to publish release 1.7.0 to PyPi due to problem described in issue #738.\
+Once the issue is resolved you should install the latest version of ONNX-TF via pip, by running `pip install onnx-tf`\
+In the mean time please get release 1.7.0 by running the following commands to checkout v1.7.0 tag and install it from source via pip.\
+`git clone https://github.com/onnx/onnx-tensorflow.git && cd onnx-tensorflow`\
+`git checkout v1.7.0`\
+`pip install -e .`
 
-Because users often have their own preferences for which variant of Tensorflow to install (i.e., a GPU version instead of a CPU version), we do not explicitly require tensorflow in the installation script. It is therefore users' responsibility to ensure that the proper variant of Tensorflow is available to ONNX-TF. Moreover, we require Tensorflow version == 2.2.0.
+Because users often have their own preferences for which variant of Tensorflow to install (i.e., a GPU version instead of a CPU version), we do not explicitly require tensorflow in the installation script. It is therefore users' responsibility to ensure that the proper variant of Tensorflow is available to ONNX-TF. Moreover, we require Tensorflow version == 2.3.1.
 
 ## Development:
 
@@ -48,7 +53,7 @@ Because users often have their own preferences for which variant of Tensorflow t
 
 ### Installation:
 - Install ONNX master branch from source. 
-- Install Tensorflow >= 2.2.0 and tensorflow-addons. (Note for Tensorflow 1.x please refer the [tf-1.x branch](https://github.com/onnx/onnx-tensorflow/tree/tf-1.x))
+- Install Tensorflow >= 2.3.1 and tensorflow-addons. (Note for Tensorflow 1.x please refer the [tf-1.x branch](https://github.com/onnx/onnx-tensorflow/tree/tf-1.x))
 - Run `git clone https://github.com/onnx/onnx-tensorflow.git && cd onnx-tensorflow`.
 - Run `pip install -e .`.
 
@@ -78,17 +83,6 @@ http://sphinxcontrib-napoleon.readthedocs.io/en/latest/example_google.html
 ### To test:
 To perfom unit tests, run `python -m unittest discover test`.
 Testing requires significant hardware resources, but nonetheless, we highly recommend that users run through the complete test suite before deploying onnx-tf. The complete test suite typically takes between 15 and 45 minutes to complete, depending on hardware configurations.
-
-PS. Please ensure your code is backward compatible with older version of ONNX. You can easily test it by running the following [docker container](https://hub.docker.com/r/winnietsang/onnx-tensorflow) with your code. If you don't have Docker installed yet, please follow this link to install [Docker](https://docs.docker.com/install/) on your environment.
-```
-sudo docker pull winnietsang/onnx-tensorflow:onnx1.7.0-tf2.2
-sudo docker run -it --name=YOUR-CONTAINER-NAME winnietsang/onnx-tensorflow:onnx1.7.0-tf2.2 /bin/bash
-git clone https://github.com/YOUR-USERNAME/onnx-tensorflow.git
-cd onnx-tensorflow
-git checkout -b YOUR-BRANCH --track remotes/origin/YOUR-BRANCH
-pip3 install -e .
-python3 -m unittest discover test
-```
 
 #### Test Help:
 https://docs.python.org/2/library/unittest.html
