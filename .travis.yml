@@ -18,8 +18,8 @@ cache: pip
 # at the time of the ONNX-TensorFlow release.
 
 env:
-  - ONNX_PIP=onnx==1.6.0 TF_PIP=tensorflow==2.0.2 TFA_PIP=tensorflow-addons==0.6.0
   - ONNX_PIP=onnx==1.7.0 TF_PIP=tensorflow-cpu==2.3.1 TFA_PIP=tensorflow-addons==0.11.2
+  - ONNX_PIP=onnx==1.8.0 TF_PIP=tensorflow-cpu==2.3.1 TFA_PIP=tensorflow-addons==0.11.2
   - ONNX_PIP=git+https://github.com/onnx/onnx.git@master TF_PIP=tensorflow-cpu TFA_PIP=tensorflow-addons
 
 jobs:
