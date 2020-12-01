@@ -1,9 +1,9 @@
 # ONNX-Tensorflow Support Status
 |||
 |-:|:-|
-|ONNX-Tensorflow Version|Master ( commit id: a1d07e0ded182a4d78c19806f53e1fa9d1c9ca04 )|
-|ONNX Version|v1.7.0|
-|Tensorflow Version|v1.15.4|
+|ONNX-Tensorflow Version|Master ( commit id: 6b9e76d6fca74d5ddbf47049b9670120abaaf70f )|
+|ONNX Version|Master ( commit id: 0c070abb0c40fec649f81a73a75b0098662ec486 )|
+|Tensorflow Version|v1.15.0|
 
 Notes:
 * Values that are new or updated from a previous opset version are in bold.
@@ -51,7 +51,7 @@ Notes:
 |Div|**1**|1|1|1|1|**6**|**7**|7|7|7|7|7|Div|
 |Dropout|**1**|1|1|1|1|**6**|**7**|7|7|**10**|10|**12**:small_red_triangle:|Dropout|
 |DynamicQuantizeLinear|-|-|-|-|-|-|-|-|-|-|**11**|11|DynamicQuantizeLinear|
-|Einsum|-|-|-|-|-|-|-|-|-|-|-|**12**:small_red_triangle:|Einsum|
+|Einsum|-|-|-|-|-|-|-|-|-|-|-|**12**|Einsum|
 |Elu|**1**|1|1|1|1|**6**|6|6|6|6|6|6|Elu|
 |Equal|**1**:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|**7**:small_orange_diamond:|7:small_orange_diamond:|7:small_orange_diamond:|7:small_orange_diamond:|**11**:small_orange_diamond:|11:small_orange_diamond:|Equal|
 |Erf|-|-|-|-|-|-|-|-|**9**|9|9|9|Erf|
@@ -63,13 +63,13 @@ Notes:
 |GRU|**1**:small_orange_diamond:|1:small_orange_diamond:|**3**:small_orange_diamond:|3:small_orange_diamond:|3:small_orange_diamond:|3:small_orange_diamond:|**7**:small_orange_diamond:|7:small_orange_diamond:|7:small_orange_diamond:|7:small_orange_diamond:|7:small_orange_diamond:|7:small_orange_diamond:|GRU|
 |Gather|**1**|1|1|1|1|1|1|1|1|1|**11**|11|Gather|
 |GatherElements|-|-|-|-|-|-|-|-|-|-|**11**|11|GatherElements|
-|GatherND|-|-|-|-|-|-|-|-|-|-|**11**|**12**:small_red_triangle:|GatherND|
+|GatherND|-|-|-|-|-|-|-|-|-|-|**11**|**12**|GatherND|
 |Gemm|**1**|1|1|1|1|**6**|**7**|7|**9**|9|**11**|11|Gemm|
 |GlobalAveragePool|**1**|1|1|1|1|1|1|1|1|1|1|1|GlobalAveragePool|
 |GlobalLpPool|**1**|**2**|2|2|2|2|2|2|2|2|2|2|GlobalLpPool|
 |GlobalMaxPool|**1**|1|1|1|1|1|1|1|1|1|1|1|GlobalMaxPool|
 |Greater|**1**|1|1|1|1|1|**7**|7|**9**|9|9|9|Greater|
-|GreaterOrEqual|-|-|-|-|-|-|-|-|-|-|-|**12**:small_red_triangle:|GreaterOrEqual|
+|GreaterOrEqual|-|-|-|-|-|-|-|-|-|-|-|**12**|GreaterOrEqual|
 |HardSigmoid|**1**|1|1|1|1|**6**|6|6|6|6|6|6|HardSigmoid|
 |Hardmax|**1**|1|1|1|1|1|1|1|1|1|**11**|11|Hardmax|
 |Identity|**1**|1|1|1|1|1|1|1|1|1|1|1|Identity|
@@ -81,7 +81,7 @@ Notes:
 |LSTM|**1**:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|**7**:small_orange_diamond:|7:small_orange_diamond:|7:small_orange_diamond:|7:small_orange_diamond:|7:small_orange_diamond:|7:small_orange_diamond:|LSTM|
 |LeakyRelu|**1**|1|1|1|1|**6**|6|6|6|6|6|6|LeakyRelu|
 |Less|**1**|1|1|1|1|1|**7**|7|**9**|9|9|9|Less|
-|LessOrEqual|-|-|-|-|-|-|-|-|-|-|-|**12**:small_red_triangle:|LessOrEqual|
+|LessOrEqual|-|-|-|-|-|-|-|-|-|-|-|**12**|LessOrEqual|
 |Log|**1**|1|1|1|1|**6**|6|6|6|6|6|6|Log|
 |LogSoftmax|**1**|1|1|1|1|1|1|1|1|1|**11**|11|LogSoftmax|
 |Loop|**1**|1|1|1|1|1|1|1|1|1|**11**|11|Loop|
@@ -179,7 +179,7 @@ Notes:
 |Where|-|-|-|-|-|-|-|-|**9**|9|9|9|Where|
 |Xor|**1**|1|1|1|1|1|**7**|7|7|7|7|7|Xor|
 
-ONNX-TF Supported Operators / ONNX Operators: 147 / 162
+ONNX-TF Supported Operators / ONNX Operators: 148 / 162
 
 Notes:
 1. Cast: Cast string to float32/float64/int32/int64 are not supported in Tensorflow.
@@ -206,5 +206,5 @@ Notes:
 	10. mode=nearest, coordinate_transformation_mode=tf_crop_and_resize, extrapolation_value=any_float_value, nearest_mode=round_prefer_ceil, can use scales or sizes.
 	11. mode=linear, coordinate_transformation_mode=tf_crop_and_resize, extrapolation_value=any_float_value, can use scales or sizes.
 	- Note (*): The accuracy of your model will go down, if the height and the width of the new sizes(scales * origial sizes) are not in whole numbers.
-13. RoiAlign: sampling_ratio <= 0 is not fully supported.
-14. Upsample: Upsample required 4D input in Tensorflow.
+13. Upsample: Upsample required 4D input in Tensorflow.
+14. RoiAlign: sampling_ratio > 0 if not fully supported.

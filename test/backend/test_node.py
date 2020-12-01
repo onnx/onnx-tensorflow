@@ -632,6 +632,18 @@ class TestNode(unittest.TestCase):
     np.testing.assert_almost_equal(output["Y_Scale"], y_scale)
     np.testing.assert_almost_equal(output["Y_Zero_Point"], y_zero_point)
 
+  def test_einsum(self):
+    if legacy_opset_pre_ver(12):
+      raise unittest.SkipTest("ONNX version {} doesn't support Einsum.".format(
+          defs.onnx_opset_version()))
+    equation = 'ij,jk->ik'  #matmul
+    node_def = helper.make_node("Einsum", ["X", "Y"], ["Z"], equation=equation)
+    x = self._get_rnd_float32(shape=[3, 4])
+    y = self._get_rnd_float32(shape=[4, 5])
+    z = np.einsum(equation, x, y)
+    output = run_node(node_def, [x, y])
+    np.testing.assert_almost_equal(output["Z"], z)
+
   def test_elu(self):
     node_def = helper.make_node("Elu", ["X"], ["Y"])
     x = self._get_rnd_float32(shape=[100])
@@ -822,11 +834,35 @@ class TestNode(unittest.TestCase):
 
     # indices out of bounds
     indices = np.array([[5, 0], [-1, -3]], dtype=np.int64)
-    with np.testing.assert_raises(tf.errors.InvalidArgumentError):
-      output = run_node(node_def, [data, indices])
+    self.assertRaises(tf.errors.InvalidArgumentError, run_node, node_def,
+                      [data, indices])
     indices = np.array([[1, 1, 6], [-2, -1, -9]], dtype=np.int32)
-    with np.testing.assert_raises(tf.errors.InvalidArgumentError):
+    self.assertRaises(tf.errors.InvalidArgumentError, run_node, node_def,
+                      [data, indices])
+
+    if not legacy_opset_pre_ver(12):
+      # set batch_dims
+      data = np.reshape(np.arange(0, 120, dtype=np.float64), [2, 3, 4, 5])
+      indices = np.array(
+          [[[1, 2], [0, 1], [-1, 4]], [[-3, -4], [0, -2], [2, 3]]],
+          dtype=np.int64)
+      ref_output = np.array([[7, 21, 59], [66, 83, 113]], dtype=np.float64)
+      node_def = helper.make_node("GatherND", ["data", "indices"], ["outputs"],
+                                  batch_dims=2)
       output = run_node(node_def, [data, indices])
+      np.testing.assert_almost_equal(output["outputs"], ref_output)
+
+      # indices out of bounds
+      indices = np.array(
+          [[[4, 1], [0, 1], [-1, 4]], [[-3, -4], [0, -2], [2, 3]]],
+          dtype=np.int64)
+      self.assertRaises(tf.errors.InvalidArgumentError, run_node, node_def,
+                        [data, indices])
+      indices = np.array(
+          [[[3, 5], [0, 1], [-1, 4]], [[-3, -4], [0, -2], [2, 3]]],
+          dtype=np.int64)
+      self.assertRaises(tf.errors.InvalidArgumentError, run_node, node_def,
+                        [data, indices])
 
   def test_gemm(self):
     # Compute Y = alpha * A * B + beta * C
@@ -863,6 +899,32 @@ class TestNode(unittest.TestCase):
             sum += x[i1][i2][j1][j2]
         test_output[i1][i2][0][0] = sum / 6.
     np.testing.assert_almost_equal(output["Y"], test_output)
+
+  def test_greater_or_equal(self):
+    if legacy_opset_pre_ver(12):
+      raise unittest.SkipTest(
+          "ONNX version {} doesn't support GreaterOrEqual.".format(
+              defs.onnx_opset_version()))
+    node_def = helper.make_node('GreaterOrEqual', ['X', 'Y'], ['Z'])
+    shape = [2, 3, 4, 5]
+    x = self._get_rnd_int(
+        np.iinfo(np.uint8).min,
+        np.iinfo(np.uint8).max, shape, np.uint8)
+    y = self._get_rnd_int(
+        np.iinfo(np.uint8).min,
+        np.iinfo(np.uint8).max, shape, np.uint8)
+    output = run_node(node_def, [x, y])
+    np.testing.assert_equal(output['Z'], np.greater_equal(x, y))
+    # test with broadcast
+    shape2 = [5]
+    x = self._get_rnd_float32(
+        np.finfo(np.float16).min,
+        np.finfo(np.float16).max, shape).astype(np.float16)
+    y = self._get_rnd_float32(
+        np.finfo(np.float16).min,
+        np.finfo(np.float16).max, shape2).astype(np.float16)
+    output = run_node(node_def, [x, y])
+    np.testing.assert_equal(output['Z'], np.greater_equal(x, y))
 
   def test_hardmax(self):
     shape = [2, 3, 4, 5]
@@ -1080,6 +1142,32 @@ class TestNode(unittest.TestCase):
     output = run_node(node_def, [x, y])
     np.testing.assert_equal(output["Z"], np.less(x, np.reshape(y,
                                                                [1, 3, 3, 1])))
+
+  def test_less_or_equal(self):
+    if legacy_opset_pre_ver(12):
+      raise unittest.SkipTest(
+          "ONNX version {} doesn't support LessOrEqual.".format(
+              defs.onnx_opset_version()))
+    node_def = helper.make_node('LessOrEqual', ['X', 'Y'], ['Z'])
+    shape = [2, 3, 4, 5]
+    x = self._get_rnd_int(
+        np.iinfo(np.uint64).min,
+        np.iinfo(np.uint64).max, shape, np.uint64)
+    y = self._get_rnd_int(
+        np.iinfo(np.uint64).min,
+        np.iinfo(np.uint64).max, shape, np.uint64)
+    output = run_node(node_def, [x, y])
+    np.testing.assert_equal(output['Z'], np.less_equal(x, y))
+    # test with broadcast
+    shape2 = [5]
+    x = self._get_rnd_float32(
+        np.finfo(np.float16).min,
+        np.finfo(np.float16).max, shape).astype(np.float16)
+    y = self._get_rnd_float32(
+        np.finfo(np.float16).min,
+        np.finfo(np.float16).max, shape2).astype(np.float16)
+    output = run_node(node_def, [x, y])
+    np.testing.assert_equal(output['Z'], np.less_equal(x, y))
 
   def test_lp_normalization(self):
     for ordr in range(1, 3):

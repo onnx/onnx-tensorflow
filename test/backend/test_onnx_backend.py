@@ -116,6 +116,9 @@ if not legacy_opset_pre_ver(10):
 # (x,y tensors must have same shape, broadcastable shapes not supported)
 backend_test.exclude(r'test_negative_log_likelihood_loss_[a-z,_]*')
 
+# TF 1.15 return error for this testcase but fixed in TF 2.x
+backend_test.exclude(r'test_einsum_batch_diagonal_[a-z,_]*')
+
 # import all test cases at global scope to make them visible to python.unittest
 globals().update(backend_test.enable_report().test_cases)
 
