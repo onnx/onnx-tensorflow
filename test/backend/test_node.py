@@ -1466,6 +1466,22 @@ class TestNode(unittest.TestCase):
     except RuntimeError as e:
       assert "M and cond in Loop are not set" in str(e)
 
+  def test_matmul(self):
+    node_def = helper.make_node("MatMul", ["A", "B"], ["Y"])
+    a = self._get_rnd_float32(shape=[5, 6])
+    b = self._get_rnd_float32(shape=[6, 5])
+    output = run_node(node_def, [a, b])
+    np.testing.assert_almost_equal(output["Y"], np.matmul(a, b), decimal=6)
+    # test data types that are not natively supported by Tensorflow
+    a = self._get_rnd_int(0, 1000, [10, 10], np.uint32)
+    b = self._get_rnd_int(0, 1000, [10, 10], np.uint32)
+    output = run_node(node_def, [a, b])
+    np.testing.assert_almost_equal(output["Y"], np.matmul(a, b))
+    # sys_config.auto_cast=False and a or b dtype=uint64 should throw exception
+    self.assertRaises(
+        RuntimeError, run_node, node_def,
+        [a.astype(np.uint64), b.astype(np.uint64)])
+
   def test_matmul_integer(self):
     if legacy_opset_pre_ver(10):
       raise unittest.SkipTest(
@@ -2885,7 +2901,7 @@ class TestNode(unittest.TestCase):
     node_def = helper.make_node("Relu", ["X"], ["Y"])
     x = self._get_rnd_float32(shape=[1000])
     output = run_node(node_def, [x])
-    np.testing.assert_almost_equal(output["Y"], np.maximum(x, 0))
+    np.testing.assert_almost_equal(output["Y"], np.maximum(x, 0), decimal=5)
 
   def test_pad(self):
     x = self._get_rnd_float32(shape=[100, 100])
@@ -3670,6 +3686,10 @@ class TestNode(unittest.TestCase):
     y = self._get_rnd_float32(shape=[10, 10])
     output = run_node(node_def, [x, y])
     np.testing.assert_almost_equal(output["Z"], np.subtract(x, y))
+    # sys_config.auto_cast=False and x or y dtype=uint64 should throw exception
+    x = self._get_rnd_int(0, 3000, [10, 10], np.uint64)
+    y = self._get_rnd_int(0, 1000, [10, 10], np.uint64)
+    self.assertRaises(RuntimeError, run_node, node_def, [x, y])
 
   def test_sum(self):
     node_def = helper.make_node("Sum", ["X1", "X2", "X3", "X4"], ["Z"])

@@ -16,6 +16,8 @@ class Loop(BackendHandler):
     body = node.attrs["body"]
     tensor_dict = kwargs["tensor_dict"]
     M = tensor_dict[node.inputs[0]] if node.inputs[0] != "" else None
+    M = tf.where(tf.greater(M, tf.int32.max), tf.constant(
+        tf.int32.max, tf.int32), tf.cast(M, tf.int32)) if M is not None else M
     cond = tf.cast(tensor_dict[node.inputs[1]],
                    tf.bool) if node.inputs[1] != "" else None
     v_initial = [tensor_dict[graph_input] for graph_input in node.inputs[2:]]
@@ -54,7 +56,6 @@ class Loop(BackendHandler):
 
     # for loop
     if M is not None and cond is None:
-      M = tf.cast(M, tf.int32)
       condition = lambda cond, v, scan_outputs: True
       _, v_final, scan_outputs = tf.while_loop(
           cond=condition,
@@ -77,7 +78,6 @@ class Loop(BackendHandler):
           ])
     # combine for loop and while loop together
     elif M is not None and cond is not None:
-      M = tf.cast(M, tf.int32)
       condition = lambda cond, v, scan_outputs: tf.reduce_all(
           tf.equal(cond, True))
       cond, v_final, scan_outputs = tf.while_loop(
@@ -88,7 +88,7 @@ class Loop(BackendHandler):
               tf.TensorShape(None), v_shapes, scan_outputs_shapes
           ],
           maximum_iterations=M)
-    else: # M is None and cond is None
+    else:  # M is None and cond is None
       exception.OP_UNSUPPORTED_EXCEPT(
           "Both M and cond in Loop are not set at the same time",
           "Tensorflow.(PS. if you want to create a do-while loop " +

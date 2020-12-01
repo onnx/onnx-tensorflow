@@ -29,6 +29,7 @@ class SysConfig:
   def __init__(self):
     self.auto_cast = False
 
+
 sys_config = SysConfig()
 
 

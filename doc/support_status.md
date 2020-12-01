@@ -89,13 +89,13 @@ Notes:
 |LpPool|**1**|**2**|2|2|2|2|2|2|2|2|**11**|11|LpPool|
 |MatMul|**1**|1|1|1|1|1|1|1|**9**|9|9|9|MatMul|
 |MatMulInteger|-|-|-|-|-|-|-|-|-|**10**|10|10|MatMulInteger|
-|Max|**1**|1|1|1|1|**6**|6|**8**|8|8|8|**12**:small_red_triangle:|Max|
+|Max|**1**|1|1|1|1|**6**|6|**8**|8|8|8|**12**|Max|
 |MaxPool|**1**:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|**8**:small_orange_diamond:|8:small_orange_diamond:|**10**:small_orange_diamond:|**11**:small_orange_diamond:|**12**:small_orange_diamond:|MaxPool|
 |MaxRoiPool|**1**:small_red_triangle:|1:small_red_triangle:|1:small_red_triangle:|1:small_red_triangle:|1:small_red_triangle:|1:small_red_triangle:|1:small_red_triangle:|1:small_red_triangle:|1:small_red_triangle:|1:small_red_triangle:|1:small_red_triangle:|1:small_red_triangle:|MaxRoiPool|
 |MaxUnpool|-|-|-|-|-|-|-|-|**9**|9|**11**|11|MaxUnpool|
 |Mean|**1**|1|1|1|1|**6**|6|**8**|8|8|8|8|Mean|
 |MeanVarianceNormalization|-|-|-|-|-|-|-|-|**9**|9|9|9|MeanVarianceNormalization|
-|Min|**1**|1|1|1|1|**6**|6|**8**|8|8|8|**12**:small_red_triangle:|Min|
+|Min|**1**|1|1|1|1|**6**|6|**8**|8|8|8|**12**|Min|
 |Mod|-|-|-|-|-|-|-|-|-|**10**:small_orange_diamond:|10:small_orange_diamond:|10:small_orange_diamond:|Mod|
 |Mul|**1**|1|1|1|1|**6**|**7**|7|7|7|7|7|Mul|
 |Multinomial|-|-|-|-|-|-|**7**:small_red_triangle:|7:small_red_triangle:|7:small_red_triangle:|7:small_red_triangle:|7:small_red_triangle:|7:small_red_triangle:|Multinomial|

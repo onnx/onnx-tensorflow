@@ -79,6 +79,4 @@ def tf_to_np_str(from_type):
 
 
 def tf_to_np_str_list(from_list):
-  return [
-      tf_to_np_str(from_list[i]) for i in range(len(from_list))
-  ]
+  return [tf_to_np_str(from_list[i]) for i in range(len(from_list))]
