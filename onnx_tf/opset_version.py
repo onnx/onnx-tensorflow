@@ -95,7 +95,7 @@ backend_opset_version = {
     'Mean': [1, 6, 8],
     'MeanVarianceNormalization': [1, 9],
     'Min': [1, 6, 8, 12],
-    'Mod': [10],
+    'Mod': [10, 13],
     'Momentum': [],
     'Mul': [1, 6, 7],
     'Multinomial': [],
@@ -191,7 +191,6 @@ backend_opset_version = {
 backend_partial_support = {
     'Cast': 'Cast string to float32/float64/int32/int64 are not supported in '
             'Tensorflow.',
-    'Clip': 'Clip input in uint64 is not supported in Tensorflow.',
     'ConvTranspose': 'ConvTranspose with dilations != 1, or transposed '
                      'convolution for 4D or higher are not supported in '
                      'Tensorflow.',
@@ -208,8 +207,6 @@ backend_partial_support = {
     'MaxPool': 'MaxPoolWithArgmax with pad is None or incompatible mode, or '
                'MaxPoolWithArgmax with 4D or higher input, orMaxPoolWithArgmax '
                'with column major are not supported in Tensorflow.',
-    'Mod': 'Mod Dividend or Divisor in int8/int16/uint8/uint16/uint32/uint64 '
-           'are not supported in Tensorflow.',
     'OneHot': 'OneHot indices in '
               'uint16/uint32/uint64/int8/int16/float16/float/double, or OneHot '
               'depth in '
