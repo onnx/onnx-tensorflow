@@ -119,6 +119,9 @@ backend_test.exclude(r'test_negative_log_likelihood_loss_[a-z,_]*')
 # TF 1.15 return error for this testcase but fixed in TF 2.x
 backend_test.exclude(r'test_einsum_batch_diagonal_[a-z,_]*')
 
+# TF pow does not support uint64 when auto-cast is False (default)
+backend_test.exclude(r'test_pow_types_float[0-9]+_uint64+_[a-z,_]*')
+
 # import all test cases at global scope to make them visible to python.unittest
 globals().update(backend_test.enable_report().test_cases)
 
