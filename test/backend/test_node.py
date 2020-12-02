@@ -556,6 +556,11 @@ class TestNode(unittest.TestCase):
     y = np.cumsum(x, axis).astype(np.int32)
     output = run_node(node_def, [x, axis])
     np.testing.assert_almost_equal(output["y"], y)
+    # test data types that are not natively supported by Tensorflow
+    x = np.array([[1, 2, 3], [4, 5, 6]]).astype(np.uint32)
+    y = np.cumsum(x, axis).astype(np.uint32)
+    output = run_node(node_def, [x, axis])
+    np.testing.assert_almost_equal(output["y"], y)
 
   def test_depth_to_space(self):
     for device in self._get_device_list():
@@ -664,6 +669,16 @@ class TestNode(unittest.TestCase):
     output = run_node(node_def, [x, y])
     np.testing.assert_equal(output["Z"], np.equal(x,
                                                   np.reshape(y, [1, 3, 3, 1])))
+    # test data types that are not natively supported by Tensorflow
+    x = np.arange(8).reshape((2, 2, 2)).astype(np.uint16)
+    y = np.arange(8).reshape((2, 2, 2)).astype(np.uint16)
+    output = run_node(node_def, [x, y])
+    np.testing.assert_equal(output["Z"], np.equal(x, y))
+
+    x = np.arange(8).reshape((2, 2, 2)).astype(np.uint64)
+    y = np.arange(8).reshape((2, 2, 2)).astype(np.uint64)
+    with np.testing.assert_raises(RuntimeError):
+      output = run_node(node_def, [x, y])
 
   def test_erf(self):
     if legacy_opset_pre_ver(9):
