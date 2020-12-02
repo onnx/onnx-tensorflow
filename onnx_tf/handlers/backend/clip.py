@@ -1,26 +1,39 @@
 import tensorflow as tf
 
 from onnx_tf.common import exception
+from onnx_tf.common import sys_config
 from onnx_tf.handlers.backend_handler import BackendHandler
 from onnx_tf.handlers.handler import onnx_op
-from onnx_tf.handlers.handler import partial_support
-from onnx_tf.handlers.handler import ps_description
+import onnx_tf.common.data_type as data_type
 
 
 @onnx_op("Clip")
-@partial_support(True)
-@ps_description("Clip input in uint64 is not supported in Tensorflow.")
 class Clip(BackendHandler):
+  cast_map = {
+      tf.uint8: tf.int32,
+      tf.uint16: tf.int32,
+      tf.uint32: tf.int64,
+      tf.int8: tf.int32,
+      tf.int16: tf.int32
+  }
+  supported_types = [
+      tf.int32, tf.int64, tf.float16, tf.float32, tf.float64, tf.bfloat16
+  ]
 
   @classmethod
   def args_check(cls, node, **kwargs):
+    # update cast map based on the auto_cast config option
+    cls.cast_map[tf.uint64] = tf.int64 if sys_config.auto_cast else None
+
     x = kwargs["tensor_dict"][node.inputs[0]]
-    # uint64 cannot upcast to any tensorflow supported datatype
-    # for tf.clip_by_value that didn't lose precision
-    if x.dtype == tf.uint64:
-      exception.OP_UNSUPPORTED_EXCEPT(
-          "Clip input, min and max in " + str(x.dtype) + " datatype",
-          "Tensorflow")
+
+    # throw an error if the data type is not natively supported by
+    # Tensorflow, cannot be safely cast, and auto-cast option is False
+    if x.dtype in cls.cast_map and cls.cast_map[x.dtype] is None:
+      exception.DTYPE_NOT_CAST_EXCEPT(
+          "Clip input " + node.inputs[0] + " with data type '" +
+          data_type.tf_to_np_str(x.dtype) + "'",
+          data_type.tf_to_np_str_list(cls.supported_types))
 
   @classmethod
   def _common(cls, node, **kwargs):
@@ -41,15 +54,14 @@ class Clip(BackendHandler):
 
     # tf.clip_by_value doesn't support uint8, uint16, uint32, int8 and int16
     # dtype for x, therefore need to upcast it to tf.int32 or tf.int64
-    if x_dtype in [tf.uint8, tf.uint16, tf.uint32, tf.int8, tf.int16]:
-      cast_to = tf.int64 if x_dtype == tf.uint32 else tf.int32
-      x = tf.cast(x, cast_to)
-      clip_value_min = tf.cast(clip_value_min, cast_to)
-      clip_value_max = tf.cast(clip_value_max, cast_to)
-      y = tf.clip_by_value(x, clip_value_min, clip_value_max)
-      y = tf.cast(y, x_dtype)
-    else:
-      y = tf.clip_by_value(x, clip_value_min, clip_value_max)
+    need_cast = x_dtype in cls.cast_map
+    x = tf.cast(x, cls.cast_map[x_dtype]) if need_cast else x
+    clip_value_min = tf.cast(
+        clip_value_min, cls.cast_map[x_dtype]) if need_cast else clip_value_min
+    clip_value_max = tf.cast(
+        clip_value_max, cls.cast_map[x_dtype]) if need_cast else clip_value_max
+    y = tf.clip_by_value(x, clip_value_min, clip_value_max)
+    y = tf.cast(y, x_dtype) if need_cast else y
 
     return [y]
 
