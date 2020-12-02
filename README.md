@@ -34,12 +34,7 @@ ONNX-TF requires ONNX (Open Neural Network Exchange) as an external dependency, 
 
 The specific ONNX release version that we support in the master branch of ONNX-TF can be found [here](https://github.com/onnx/onnx-tensorflow/blob/master/ONNX_VERSION_NUMBER). This information about ONNX version requirement is automatically encoded in `setup.py`, therefore users needn't worry about ONNX version requirement when installing ONNX-TF.
 
-As of November 24, 2020, we are unable to publish release 1.7.0 to PyPi due to problem described in issue #738.\
-Once the issue is resolved you should install the latest version of ONNX-TF via pip, by running `pip install onnx-tf`\
-In the mean time please get release 1.7.0 by running the following commands to checkout v1.7.0 tag and install it from source via pip.\
-`git clone https://github.com/onnx/onnx-tensorflow.git && cd onnx-tensorflow`\
-`git checkout v1.7.0`\
-`pip install -e .`
+To install the latest version of ONNX-TF via pip, run `pip install onnx-tf`.
 
 Because users often have their own preferences for which variant of Tensorflow to install (i.e., a GPU version instead of a CPU version), we do not explicitly require tensorflow in the installation script. It is therefore users' responsibility to ensure that the proper variant of Tensorflow is available to ONNX-TF. Moreover, we require Tensorflow version == 2.3.1.
 
