@@ -16,13 +16,15 @@ class Clip(BackendHandler):
       tf.int8: tf.int32,
       tf.int16: tf.int32
   }
-  cast_map[tf.uint64] = tf.int64 if sys_config.auto_cast else None
   supported_types = [
       tf.int32, tf.int64, tf.float16, tf.float32, tf.float64, tf.bfloat16
   ]
 
   @classmethod
   def args_check(cls, node, **kwargs):
+    # update cast map based on the auto_cast config option
+    cls.cast_map[tf.uint64] = tf.int64 if sys_config.auto_cast else None
+
     x = kwargs["tensor_dict"][node.inputs[0]]
 
     # throw an error if the data type is not natively supported by
