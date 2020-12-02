@@ -177,6 +177,10 @@ class BackendHandler(Handler):
         params = inspect.getargspec(tf_func).args
 
     attrs = cls._process_attrs(attrs)
+
+    if "name" in attrs.keys():
+      attrs["name"] = "onnx_tf_prefix_" + attrs["name"]
+
     attrs = {p: v for p, v in attrs.items() if p in params}
     kwargs = dict(zip(params, inputs))
     ambiguous_arguments = any(kwargs.get(p) is not None and v is not None

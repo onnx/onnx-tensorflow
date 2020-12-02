@@ -77,6 +77,5 @@ def any_dtype_to_onnx_dtype(np_dtype=None, tf_dtype=None, onnx_dtype=None):
 def tf_to_np_str(from_type):
   return mapping.TENSOR_TYPE_TO_NP_TYPE[int(tf2onnx(from_type))].name
 
-
 def tf_to_np_str_list(from_list):
   return [tf_to_np_str(from_list[i]) for i in range(len(from_list))]
