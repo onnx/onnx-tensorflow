@@ -158,6 +158,9 @@ def py_pool(input, kernel_shape, strides=None, dilations=None,
 
     def _loop_over_output(batch, channel):
         dims = [range(output_sp_shape[d]) for d in range(spatial_size)]
+        image_size = 1
+        for d in input_shape[2:]:
+          image_size *= d
         for counters in itertools.product(*dims):
             input_ranges = []
             for dim in range(spatial_size):
@@ -190,6 +193,10 @@ def py_pool(input, kernel_shape, strides=None, dilations=None,
                     if val > maxval:
                         maxval = val
                         ind = 0
+                        # batch_offset = batch * C * image_size
+                        # channel_offset = channel * image_size
+                        # ind = batch_offset + channel_offset
+                        ind = image_size * (batch * input_shape[1] + channel)
                         for i in range(spatial_size):
                             coef = 1
                             for j in range(i+1, spatial_size):
