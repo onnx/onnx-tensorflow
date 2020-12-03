@@ -95,7 +95,7 @@ backend_opset_version = {
     'Mean': [1, 6, 8],
     'MeanVarianceNormalization': [1, 9],
     'Min': [1, 6, 8, 12],
-    'Mod': [10, 13],
+    'Mod': [10],
     'Momentum': [],
     'Mul': [1, 6, 7],
     'Multinomial': [],
@@ -194,9 +194,6 @@ backend_partial_support = {
     'ConvTranspose': 'ConvTranspose with dilations != 1, or transposed '
                      'convolution for 4D or higher are not supported in '
                      'Tensorflow.',
-    'CumSum': 'CumSum inputs in uint32/uint64 are not supported in Tensorflow.',
-    'Equal': 'Equal inputs in uint16/uint32/uint64 are not supported in '
-             'Tensorflow.',
     'GRU': 'GRU with clip or GRU with linear_before_reset, or GRU not using '
            'sigmoid for z and r, or GRU using Elu as the activation function '
            'with alpha != 1, or GRU using HardSigmoid as the activation '
@@ -207,11 +204,6 @@ backend_partial_support = {
     'MaxPool': 'MaxPoolWithArgmax with pad is None or incompatible mode, or '
                'MaxPoolWithArgmax with 4D or higher input, orMaxPoolWithArgmax '
                'with column major are not supported in Tensorflow.',
-    'OneHot': 'OneHot indices in '
-              'uint16/uint32/uint64/int8/int16/float16/float/double, or OneHot '
-              'depth in '
-              'uint8/uint16/uint32/uint64/int8/int16/int64/float16/float/double '
-              'are not supported in Tensorflow.',
     'RNN': 'RNN with clip is not supported in Tensorflow.',
     'Resize': 'Resize required 4D input in Tensorflow. For opset 11, only the '
               'following attributes and inputs conbination are supported in '
