@@ -370,9 +370,11 @@ def modelzoo_report(models_dir='models',
         results.append_detail(dir_path)
         results.append_detail('')
         results.append_detail(
-            'Status | Model | Size | IR | Opset | Validated | Converted')
+            'Status | Model | Size | IR | Opset | ONNX Checker | '
+            'ONNX-TF Converted')
         results.append_detail(
-            '------ | ----- | ---- | -- | ----- | --------- | ---------')
+            '------ | ----- | ---- | -- | ----- | ------------ | '
+            '---------')
     onnx_model_count = 0
     for item in sorted(files):
       if item.endswith('.onnx'):
