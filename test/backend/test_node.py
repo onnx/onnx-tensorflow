@@ -620,15 +620,85 @@ class TestNode(unittest.TestCase):
     # Since current ONNX only support inference and
     # dropout at inference mode is a no-op,
     # therefore dropout is always a no-op operator
-    # in ONNX.
-    node_def = helper.make_node("Dropout", ["X"], ["Y"])
-    if legacy_opset_pre_ver(7):
-      # at inference mode, is_test is always set to 1
-      node_def = helper.make_node("Dropout", ["X"], ["Y"], is_test=1)
+    # in ONNX. This has changed in Opset 12. In Opset
+    # 12 ONNX has added support for training.
+
     x = self._get_rnd_float32(shape=[3, 4, 5])
-    y = x
-    output = run_node(node_def, [x])
-    np.testing.assert_equal(output["Y"], y)
+    if legacy_opset_pre_ver(7):
+      # at inference mode, is_test attribute is always set to 1
+      node_def = helper.make_node("Dropout", ["X"], ["Y"], is_test=1)
+      y = x  # output is same is input i.e. nothing is dropped
+      output = run_node(node_def, [x])
+      np.testing.assert_equal(output["Y"], y)
+    elif legacy_opset_pre_ver(12):  # for Opset 7, 10
+      # no is_test attribute anymore
+      node_def = helper.make_node("Dropout", ["X"], ["Y"])
+      y = x  # output is same is input i.e. nothing is dropped
+      output = run_node(node_def, [x])
+      np.testing.assert_equal(output["Y"], y)
+    else:  # for Opset 12
+      # Inference mode tests
+      #   training_mode is false by default
+      #   ratio is ignored
+      #   nothing will be dropped from the input data
+      #   if mask is requested as output it will contain all ones
+
+      # Inference, mask not requested
+      node_def = helper.make_node("Dropout", ["X"], ["Y"])
+      y = x  # output is same is input i.e. nothing is dropped
+      output = run_node(node_def, [x])
+      np.testing.assert_equal(output["Y"], y)
+
+      # Inference, mask requested
+      node_def = helper.make_node("Dropout", inputs=["X"], outputs=["Y", "Z"])
+      y = x  # output is same is input i.e. nothing is dropped
+      z = np.ones(x.shape, dtype=bool)  # mask returned is all ones
+      output = run_node(node_def, [x])
+      np.testing.assert_equal(output["Y"], y)
+      np.testing.assert_equal(output["Z"], z)
+
+      # Training mode tests
+      #   training_mode is true
+      #   output is  a random dropout that scales masked
+      #     input using the following equation
+      #     output = scale * data * mask
+      #     scale = 1. / (1. - ratio)
+
+      ratio = np.float32(0.5)
+      training_mode = np.bool_(True)
+      no_of_runs = 20  # run 20 times and make sure that on average we have the desired dropout
+
+      # Training, mask not requested
+      node_def = helper.make_node("Dropout",
+                                  inputs=["X", "X1", "X2"],
+                                  outputs=["Y"])
+      sum_ratio_in_output = 0
+      for _ in range(no_of_runs):
+        output = run_node(node_def, [x, ratio, training_mode])
+        output_nonzero_count = np.count_nonzero(output["Y"])
+        output_size = output["Y"].size
+        ratio_in_output = (output_size - output_nonzero_count) / output_size
+        sum_ratio_in_output += ratio_in_output
+      ratio_in_output = sum_ratio_in_output / no_of_runs
+      # test by confirming that the dropout is close to the ratio passed in
+      np.testing.assert_almost_equal(ratio_in_output, ratio, decimal=1)
+
+      # Training, mask requested
+      node_def = helper.make_node("Dropout",
+                                  inputs=["X", "X1", "X2"],
+                                  outputs=["Y", "Z"])
+      sum_ratio_in_output = 0
+      for _ in range(no_of_runs):
+        output = run_node(node_def, [x, ratio, training_mode])
+        output_nonzero_count = np.count_nonzero(output["Y"])
+        output_size = output["Y"].size
+        ratio_in_output = (output_size - output_nonzero_count) / output_size
+        sum_ratio_in_output += ratio_in_output
+      ratio_in_output = sum_ratio_in_output / no_of_runs
+      # test by confirming that the dropout is close to the ratio passed in
+      np.testing.assert_almost_equal(ratio_in_output, ratio, decimal=1)
+      # test mask
+      np.testing.assert_equal(output["Z"], output["Y"].astype(bool))
 
   def test_dot(self):
     # this op is removed

@@ -1,7 +1,7 @@
 # ONNX-Tensorflow Support Status
 |||
 |-:|:-|
-|ONNX-Tensorflow Version|Master ( commit id: ae34d61ed58ab95fc44bd7d20b94e11495570430 )|
+|ONNX-Tensorflow Version|Master ( commit id: 13c461496b84724c29a39d326ae4f4b12ff1e9b5 )|
 |ONNX Version|v1.7.0|
 |Tensorflow Version|v1.15.4|
 
@@ -49,7 +49,7 @@ Notes:
 |DequantizeLinear|-|-|-|-|-|-|-|-|-|**10**|10|10|DequantizeLinear|
 |Det|-|-|-|-|-|-|-|-|-|-|**11**|11|Det|
 |Div|**1**|1|1|1|1|**6**|**7**|7|7|7|7|7|Div|
-|Dropout|**1**|1|1|1|1|**6**|**7**|7|7|**10**|10|**12**:small_red_triangle:|Dropout|
+|Dropout|**1**|1|1|1|1|**6**|**7**|7|7|**10**|10|**12**|Dropout|
 |DynamicQuantizeLinear|-|-|-|-|-|-|-|-|-|-|**11**|11|DynamicQuantizeLinear|
 |Einsum|-|-|-|-|-|-|-|-|-|-|-|**12**|Einsum|
 |Elu|**1**|1|1|1|1|**6**|6|6|6|6|6|6|Elu|
@@ -179,7 +179,7 @@ Notes:
 |Where|-|-|-|-|-|-|-|-|**9**|9|9|9|Where|
 |Xor|**1**|1|1|1|1|1|**7**|7|7|7|7|7|Xor|
 
-ONNX-TF Supported Operators / ONNX Operators: 153 / 162
+ONNX-TF Supported Operators / ONNX Operators: 154 / 162
 
 Notes:
 1. Cast: Cast string to float32/float64/int32/int64 are not supported in Tensorflow.
@@ -187,9 +187,8 @@ Notes:
 3. GRU: GRU with clip or GRU with linear_before_reset, or GRU not using sigmoid for z and r, or GRU using Elu as the activation function with alpha != 1, or GRU using HardSigmoid as the activation function with alpha != 0.2 or beta != 0.5 are not supported in TensorFlow.
 4. LSTM: LSTM not using sigmoid for `f`, or LSTM not using the same activation for `g` and `h` are not supported in Tensorflow.
 5. MaxPool: MaxPoolWithArgmax with pad is None or incompatible mode, or MaxPoolWithArgmax with 4D or higher input, orMaxPoolWithArgmax with column major are not supported in Tensorflow.
-6. OneHot: OneHot indices in uint16/uint32/uint64/int8/int16/float16/float/double, or OneHot depth in uint8/uint16/uint32/uint64/int8/int16/int64/float16/float/double are not supported in Tensorflow.
-7. RNN: RNN with clip is not supported in Tensorflow.
-8. Resize: Resize required 4D input in Tensorflow. For opset 11, only the following attributes and inputs conbination are supported in Tensorflow:
+6. RNN: RNN with clip is not supported in Tensorflow.
+7. Resize: Resize required 4D input in Tensorflow. For opset 11, only the following attributes and inputs conbination are supported in Tensorflow:
 	1. mode=nearest, coordinate_transformation_mode=align_corners, nearest_mode=round_prefer_ceil, can use scales(*) or sizes.
 	2. mode=nearest, coordinate_transformation_mode=asymmetric, nearest_mode=floor, can use scales(*) or sizes.
 	3. mode=nearest, coordinate_transformation_mode=tf_half_pixel_for_nn, nearest_mode=floor, can use scales(*) or sizes.
@@ -202,10 +201,5 @@ Notes:
 	10. mode=nearest, coordinate_transformation_mode=tf_crop_and_resize, extrapolation_value=any_float_value, nearest_mode=round_prefer_ceil, can use scales or sizes.
 	11. mode=linear, coordinate_transformation_mode=tf_crop_and_resize, extrapolation_value=any_float_value, can use scales or sizes.
 	- Note (*): The accuracy of your model will go down, if the height and the width of the new sizes(scales * origial sizes) are not in whole numbers.
-<<<<<<< HEAD
 8. RoiAlign: sampling_ratio <= 0 is not fully supported.
 9. Upsample: Upsample required 4D input in Tensorflow.
-=======
-9. RoiAlign: sampling_ratio <= 0 is not fully supported.
-10. Upsample: Upsample required 4D input in Tensorflow.
->>>>>>> Backport celu and pow support for opset 12
