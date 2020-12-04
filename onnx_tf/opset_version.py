@@ -25,7 +25,7 @@ backend_opset_version = {
     'Clip': [1, 6, 11, 12],
     'Compress': [9, 11],
     'Concat': [1, 4, 11],
-    'ConcatFromSequence': [],
+    'ConcatFromSequence': [11],
     'Constant': [1, 9, 11, 12],
     'ConstantFill': [1],
     'ConstantOfShape': [9],
@@ -165,7 +165,7 @@ backend_opset_version = {
     'Softsign': [1],
     'SpaceToDepth': [1],
     'Split': [1, 2, 11],
-    'SplitToSequence': [],
+    'SplitToSequence': [11],
     'Sqrt': [1, 6],
     'Squeeze': [1, 11],
     'StringNormalizer': [],
@@ -191,6 +191,7 @@ backend_opset_version = {
 backend_partial_support = {
     'Cast': 'Cast string to float32/float64/int32/int64 are not supported in '
             'Tensorflow.',
+    'ConcatFromSequence': 'new_axis=1 not supported in Tensorflow.',
     'ConvTranspose': 'ConvTranspose with dilations != 1, or transposed '
                      'convolution for 4D or higher are not supported in '
                      'Tensorflow.',
@@ -242,5 +243,6 @@ backend_partial_support = {
               'height and the width of the new sizes(scales * origial sizes) '
               'are not in whole numbers.',
     'RoiAlign': 'sampling_ratio <= 0 is not fully supported.',
+    'SplitToSequence': 'Scalar as the split input not supported.',
     'Upsample': 'Upsample required 4D input in Tensorflow.'
 }
