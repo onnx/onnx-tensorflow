@@ -111,6 +111,12 @@ if not legacy_opset_pre_ver(10):
   # Do not support dilations != 1 for ConvTranspose, test is added in opset 10
   backend_test.exclude(r'[a-z,_]*convtranspose_dilations[a-z,_]*')
 
+# Concat from sequence with new_axis=1 not supported
+backend_test.exclude(r'test_sequence_model5_[a-z,_]*')
+
+# TF session run does not support sequence/RaggedTensor as model inputs
+backend_test.exclude(r'test_sequence_insert+_[a-z,_]*')
+
 # some NLL test cases do not use the `NegativeLogLikelihoodLoss` operator
 # however they use the `where` operator which has some restrictions in TF 1.x
 # (x,y tensors must have same shape, broadcastable shapes not supported)
