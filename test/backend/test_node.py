@@ -2401,6 +2401,8 @@ class TestNode(unittest.TestCase):
                           np.uint16(depth), values])
     np.testing.assert_equal(output['y'], y)
     self.assertRaises(RuntimeError, run_node, node_def,
+                      [indices.astype(np.uint64), depth, values])
+    self.assertRaises(RuntimeError, run_node, node_def,
                       [indices, np.int64(depth), values])
 
     # with axis
