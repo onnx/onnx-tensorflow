@@ -106,5 +106,9 @@ venv.bak/
 # mypy
 .mypy_cache/
 
+# ModelZoo test report
+models/
+wiki/
+
 *.cf
 *.tf
