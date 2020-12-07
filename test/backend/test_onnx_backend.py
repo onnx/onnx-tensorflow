@@ -86,9 +86,6 @@ backend_test.exclude(r'test_loop13_seq[a-z,_]*')
 backend_test.exclude(r'test_min_uint64_[a-z,_]*')
 backend_test.exclude(r'test_max_uint64_[a-z,_]*')
 
-# TF one_hot do not support float32 for depth when auto-cast is False (default)
-backend_test.exclude(r'test_onehot_[a-z,_]*')
-
 if legacy_opset_pre_ver(7):
   backend_test.exclude(r'[a-z,_]*Upsample[a-z,_]*')
 
