@@ -1,8 +1,8 @@
 # ONNX-Tensorflow Support Status
 |||
 |-:|:-|
-|ONNX-Tensorflow Version|Master ( commit id: f64afb48034af7121341f4ba5d6f56e275c5aedb )|
-|ONNX Version|Master ( commit id: a7a0fec7f25cae567429af62b7eaaee1c3f0e247 )|
+|ONNX-Tensorflow Version|Master ( commit id: 9871ba020edac2d7122b38391c9f3a0a906a148d )|
+|ONNX Version|Master ( commit id: 274e8b54e4c11c40a8c0a89599196f5311088b64 )|
 |Tensorflow Version|v2.3.1|
 
 Notes:
@@ -62,7 +62,7 @@ Notes:
 |Floor|**1**|1|1|1|1|**6**|6|6|6|6|6|6|**13**|Floor|
 |GRU|**1**:small_orange_diamond:|1:small_orange_diamond:|**3**:small_orange_diamond:|3:small_orange_diamond:|3:small_orange_diamond:|3:small_orange_diamond:|**7**:small_orange_diamond:|7:small_orange_diamond:|7:small_orange_diamond:|7:small_orange_diamond:|7:small_orange_diamond:|7:small_orange_diamond:|7:small_orange_diamond:|GRU|
 |Gather|**1**|1|1|1|1|1|1|1|1|1|**11**|11|**13**:small_red_triangle:|Gather|
-|GatherElements|-|-|-|-|-|-|-|-|-|-|**11**|11|**13**:small_red_triangle:|GatherElements|
+|GatherElements|-|-|-|-|-|-|-|-|-|-|**11**|11|**13**|GatherElements|
 |GatherND|-|-|-|-|-|-|-|-|-|-|**11**|**12**|**13**|GatherND|
 |Gemm|**1**|1|1|1|1|**6**|**7**|7|**9**|9|**11**|11|**13**:small_red_triangle:|Gemm|
 |GlobalAveragePool|**1**|1|1|1|1|1|1|1|1|1|1|1|1|GlobalAveragePool|
@@ -71,7 +71,7 @@ Notes:
 |Greater|**1**|1|1|1|1|1|**7**|7|**9**|9|9|9|**13**|Greater|
 |GreaterOrEqual|-|-|-|-|-|-|-|-|-|-|-|**12**|12|GreaterOrEqual|
 |HardSigmoid|**1**|1|1|1|1|**6**|6|6|6|6|6|6|6|HardSigmoid|
-|Hardmax|**1**|1|1|1|1|1|1|1|1|1|**11**|11|**13**:small_red_triangle:|Hardmax|
+|Hardmax|**1**|1|1|1|1|1|1|1|1|1|**11**|11|**13**|Hardmax|
 |Identity|**1**|1|1|1|1|1|1|1|1|1|1|1|**13**|Identity|
 |If|**1**|1|1|1|1|1|1|1|1|1|**11**|11|**13**|If|
 |InstanceNormalization|**1**|1|1|1|1|**6**|6|6|6|6|6|6|6|InstanceNormalization|
@@ -129,15 +129,15 @@ Notes:
 |ReduceProd|**1**|1|1|1|1|1|1|1|1|1|**11**|11|**13**|ReduceProd|
 |ReduceSum|**1**|1|1|1|1|1|1|1|1|1|**11**|11|**13**:small_red_triangle:|ReduceSum|
 |ReduceSumSquare|**1**|1|1|1|1|1|1|1|1|1|**11**|11|**13**:small_red_triangle:|ReduceSumSquare|
-|Relu|**1**|1|1|1|1|**6**|6|6|6|6|6|6|**13**:small_red_triangle:|Relu|
+|Relu|**1**|1|1|1|1|**6**|6|6|6|6|6|6|**13**|Relu|
 |Reshape|**1**|1|1|1|**5**|5|5|5|5|5|5|5|**13**:small_red_triangle:|Reshape|
 |Resize|-|-|-|-|-|-|-|-|-|**10**:small_orange_diamond:|**11**:small_orange_diamond:|11:small_orange_diamond:|**13**:small_orange_diamond:|Resize|
 |ReverseSequence|-|-|-|-|-|-|-|-|-|**10**|10|10|10|ReverseSequence|
-|RoiAlign|-|-|-|-|-|-|-|-|-|**10**:small_red_triangle:|10:small_red_triangle:|10:small_red_triangle:|10:small_red_triangle:|RoiAlign|
+|RoiAlign|-|-|-|-|-|-|-|-|-|**10**:small_orange_diamond:|10:small_orange_diamond:|10:small_orange_diamond:|10:small_orange_diamond:|RoiAlign|
 |Round|-|-|-|-|-|-|-|-|-|-|**11**|11|11|Round|
 |Scan|-|-|-|-|-|-|-|**8**|**9**|9|**11**|11|11|Scan|
 |Scatter|-|-|-|-|-|-|-|-|**9**|9|**11**\*|11\*|11\*|Scatter|
-|ScatterElements|-|-|-|-|-|-|-|-|-|-|**11**|11|**13**:small_red_triangle:|ScatterElements|
+|ScatterElements|-|-|-|-|-|-|-|-|-|-|**11**|11|**13**|ScatterElements|
 |ScatterND|-|-|-|-|-|-|-|-|-|-|**11**|11|**13**:small_red_triangle:|ScatterND|
 |Selu|**1**|1|1|1|1|**6**|6|6|6|6|6|6|6|Selu|
 |SequenceAt|-|-|-|-|-|-|-|-|-|-|**11**|11|11|SequenceAt|
@@ -179,7 +179,7 @@ Notes:
 |Where|-|-|-|-|-|-|-|-|**9**|9|9|9|9|Where|
 |Xor|**1**|1|1|1|1|1|**7**|7|7|7|7|7|7|Xor|
 
-ONNX-TF Supported Operators / ONNX Operators: 118 / 162
+ONNX-TF Supported Operators / ONNX Operators: 123 / 162
 
 Notes:
 1. Cast: Cast string to data types other than float32/float64/int32/int64 is not supported in Tensorflow
@@ -202,5 +202,6 @@ Notes:
 	10. mode=nearest, coordinate_transformation_mode=tf_crop_and_resize, extrapolation_value=any_float_value, nearest_mode=round_prefer_ceil, can use scales or sizes.
 	11. mode=linear, coordinate_transformation_mode=tf_crop_and_resize, extrapolation_value=any_float_value, can use scales or sizes.
 	- Note (*): The accuracy of your model will go down, if the height and the width of the new sizes(scales * origial sizes) are not in whole numbers.
-9. SplitToSequence: Scalar as the split input not supported.
-10. Upsample: Upsample required 4D input in Tensorflow.
+9. RoiAlign: sampling_ratio <= 0 is not fully supported.
+10. SplitToSequence: Scalar as the split input not supported.
+11. Upsample: Upsample required 4D input in Tensorflow.

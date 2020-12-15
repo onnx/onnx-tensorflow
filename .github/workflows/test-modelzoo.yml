@@ -1,0 +1,49 @@
+name: ModelZoo test
+
+on:
+  push:
+    branches:
+      - master
+      - rel-*
+      - mz-*
+    tags:
+      - v*
+
+jobs:
+  conversion-test:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout ONNX-TF
+      uses: actions/checkout@v2
+    - name: Checkout ONNX models
+      uses: actions/checkout@v2
+      with:
+        repository: onnx/models
+        path: models
+    - name: Checkout ONNX-TF wiki
+      uses: actions/checkout@v2
+      with:
+        repository: onnx/onnx-tensorflow.wiki
+        # Make sure path matches WIKI_DIR below
+        path: wiki
+    - uses: actions/setup-python@v2
+      with:
+        python-version: '3.6'
+    - name: Install dependencies
+      run: |
+        pip install onnx==1.7.0 tensorflow-cpu==2.3.1 tensorflow-addons==0.11.2
+        pip install -e .
+    - name: Run ModelZoo tests
+      run: |
+        # Make sure model and wiki match the checkout paths above
+        python test/test_modelzoo.py -m models -o wiki -v
+    - name: Update wiki content
+      uses: Andrew-Chen-Wang/github-wiki-action@v2
+      env:
+        # Make sure WIKI_DIR ends with '/' and matches the checkout path above
+        WIKI_DIR: wiki/
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        # These are used for the wiki commit author and push credentials.
+        # Username must have push rights to wiki repository.
+        GH_NAME: ${{ github.event.pusher.name }}
+        GH_MAIL: ${{ github.event.pusher.email }}

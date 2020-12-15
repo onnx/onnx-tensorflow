@@ -81,10 +81,10 @@ class DtypeNotCastException(object):
     return self._message.format(op, supported_dtypes)
 
 
-class NonUniqueNodeNameException(object):
+class NonuniqueNodeNameException(object):
 
   def __init__(self):
-    super(NonUniqueNodeNameException, self).__init__()
+    super(NonuniqueNodeNameException, self).__init__()
     self._func = RuntimeError
     self._message = "Node name is not unique in your model. Please recreate your model with unique node name."
 
@@ -100,4 +100,4 @@ OP_UNIMPLEMENTED_EXCEPT = OpUnimplementedException()
 OP_UNSUPPORTED_EXCEPT = OpUnsupportedException()
 CONST_NOT_FOUND_EXCEPT = ConstNotFoundException()
 DTYPE_NOT_CAST_EXCEPT = DtypeNotCastException()
-NONUNIQUE_NODE_NAME_EXCEPT = NonUniqueNodeNameException()
+NONUNIQUE_NODE_NAME_EXCEPT = NonuniqueNodeNameException()

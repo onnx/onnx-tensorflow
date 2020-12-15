@@ -1,0 +1,52 @@
+name: Backend test
+
+on: [push, pull_request]
+
+jobs:
+  unittest:
+
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        # Test current versions on all platforms
+        # - use oldest and latest supported python versions
+        # - use pinned versions for current onnx-tf release
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        python-version: [3.6, 3.8]
+        onnx-version: ['onnx==1.8.0']
+        tensorflow-version: ['tensorflow-cpu==2.3.1 tensorflow-addons==0.11.2']
+        include:
+          - # Test previous versions on Linux only (regression)
+            # - use pinned versions for previous onnx-tf release
+            os: ubuntu-latest
+            python-version: 3.6
+            onnx-version: 'onnx==1.7.0'
+            tensorflow-version: 'tensorflow-cpu==2.3.1 tensorflow-addons==0.11.2'
+          - # Test development versions on Linux only
+            # - latest development versions
+            # - allow failure via GitHub branch protection rule
+            os: ubuntu-latest
+            python-version: 3.8
+            onnx-version: 'git+https://github.com/onnx/onnx.git@master'
+            tensorflow-version: 'tensorflow-cpu tensorflow-addons'
+
+    steps:
+    - name: Checkout ONNX-TF
+      uses: actions/checkout@v2
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v2
+      with:
+        python-version: ${{ matrix.python-version }}
+    - # protobuf is required only when ONNX is built from source
+      name: Install protobuf
+      if: ${{ matrix.os == 'ubuntu-latest' && startsWith(matrix.onnx-version, 'git+') }}
+      run: |
+        sudo apt-get install -y protobuf-compiler libprotoc-dev
+    - name: Install dependencies, ONNX ${{ matrix.onnx-version }}
+      run: |
+        pip install pytest tabulate ${{ matrix.tensorflow-version }}
+        pip install ${{ matrix.onnx-version }}
+        pip install -e .
+    - name: Run Backend tests
+      run: |
+        python -m unittest discover test -v

@@ -16,8 +16,10 @@ from onnx_tf.backend import TensorflowBackend
 from onnx_tf.common.legacy import legacy_onnx_pre_ver
 from onnx_tf.common.legacy import legacy_opset_pre_ver
 
+
 def get_onnxtf_supported_ops():
   return opset_version.backend_opset_version
+
 
 def get_onnx_supported_ops():
   onnx_ops_dict = {}
@@ -27,6 +29,7 @@ def get_onnx_supported_ops():
         'deprecated': schema.deprecated
     }
   return onnx_ops_dict
+
 
 # This is a pytest magic variable to load extra plugins
 pytest_plugins = 'onnx.backend.test.report',
@@ -64,10 +67,8 @@ backend_test.exclude(r'test_resize_[a-z,_]*')
 
 # range is using loop in the model test but all the outputs datatype are
 # missing in the body attribute of the loop
-backend_test.exclude(
-    r'test_range_float_type_positive_delta_expanded[a-z,_]*')
-backend_test.exclude(
-    r'test_range_int32_type_negative_delta_expanded[a-z,_]*')
+backend_test.exclude(r'test_range_float_type_positive_delta_expanded[a-z,_]*')
+backend_test.exclude(r'test_range_int32_type_negative_delta_expanded[a-z,_]*')
 
 # skip all the cumsum testcases because all the axis in the testcases
 # are created as a 1-D 1 element tensor, but the spec clearly state
@@ -134,8 +135,9 @@ backend_test.exclude('test_training_dropout_default_mask_[a-z,_]*')
 backend_test.exclude('test_training_dropout_mask_[a-z,_]*')
 
 # TF module can't run gru, lstm, rnn in one session using custom variables
-backend_test.exclude(r'test_gru_with_initial_bias_[a-z,_]*')
-backend_test.exclude(r'test_lstm_with_[a-z,_]*')
+backend_test.exclude(r'test_gru_[a-z,_]*')
+backend_test.exclude(r'test_lstm_[a-z,_]*')
+backend_test.exclude(r'test_rnn_[a-z,_]*')
 backend_test.exclude(r'test_simple_rnn_[a-z,_]*')
 
 # import all test cases at global scope to make them visible to python.unittest

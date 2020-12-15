@@ -7,7 +7,16 @@ import onnx
 
 
 def get_onnx_version():
-  return tuple(map(int, onnx.version.version.split(".")))
+  # We will treat an onnx rc, release candidate, as a formal
+  # release in the context of onnx-tf for verification purpose.
+  # In formal releases, there should not be any non numeric
+  # characters in onnx version.
+  # The assumption is onnx release candidate version is in the 
+  # pattern of 1.8.0rc, as seen in the recent 1.8, where 'rc' is
+  # appended to the patch number to indicate release candidates.
+  rc_index = onnx.version.version.lower().find('rc')
+  onnx_version = onnx.version.version if rc_index == -1 else onnx.version.version[:rc_index]
+  return tuple(map(int, onnx_version.split(".")))
 
 
 # Returns whether onnx version is prior to major.minor.patch

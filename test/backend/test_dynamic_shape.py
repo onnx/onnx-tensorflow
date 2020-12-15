@@ -334,6 +334,41 @@ class TestDynamicShape(unittest.TestCase):
     tf_model_output = tf_model(data=data, indices=indices)
     np.testing.assert_almost_equal(tf_model_output[0], ref_output)
 
+  def test_gather_elements(self):
+    if legacy_opset_pre_ver(11):
+      raise unittest.SkipTest(
+          "ONNX version {} doesn't support GatherND.".format(
+              defs.onnx_opset_version()))
+    # valid positive and negative indices for elements
+    axis = 1
+    data = np.array([[1, 2, 3], [4, 5, 6]], dtype=np.int32)
+    indices = np.array([[0, 0], [1, -3]], dtype=np.int64)
+    ref_output = np.array([[1, 1], [5, 4]], dtype=np.int32)
+    node_def = helper.make_node("GatherElements", ["data", "indices"],
+                                ["outputs"],
+                                axis=axis)
+    graph_def = helper.make_graph(
+        [node_def],
+        name="test_unknown_shape",
+        inputs=[
+            helper.make_tensor_value_info("data", TensorProto.INT32,
+                                          [None, None]),
+            helper.make_tensor_value_info("indices", TensorProto.INT64,
+                                          [None, None])
+        ],
+        outputs=[
+            helper.make_tensor_value_info("outputs", TensorProto.INT32, [None])
+        ])
+    tf_rep = onnx_graph_to_tensorflow_rep(graph_def)
+    # export to tf.saved_model
+    model_path = 'test_dynamic_shape/gather_elements'
+    tf_rep.export_graph(model_path)
+    # load the saved_model back
+    tf_model = tf.saved_model.load(model_path)
+    # run the model
+    tf_model_output = tf_model(data=data, indices=indices)
+    np.testing.assert_almost_equal(tf_model_output[0], ref_output)
+
   def test_is_inf(self):
     if legacy_opset_pre_ver(10):
       raise unittest.SkipTest("ONNX version {} doesn't support IsInf.".format(
@@ -603,6 +638,44 @@ class TestDynamicShape(unittest.TestCase):
           score_threshold=score_threshold,
           cond=cond)
       np.testing.assert_almost_equal(tf_model_output[0], exp)
+
+  def test_scatter_elements(self):
+    if legacy_opset_pre_ver(11):
+      raise unittest.SkipTest(
+          "ONNX version {} doesn't support ScatterElements.".format(
+              defs.onnx_opset_version()))
+    data = np.array([[1.0, 2.0, 3.0, 4.0, 5.0]], dtype=np.float32)
+    indices = np.array([[1, 3]], dtype=np.int64)
+    updates = np.array([[1.1, 2.1]], dtype=np.float32)
+    axis = 1
+    ref_output = np.array([[1.0, 1.1, 3.0, 2.1, 5.0]], dtype=np.float32)
+    node_def = helper.make_node("ScatterElements",
+                                ["data", "indices", "updates"], ["outputs"],
+                                axis=axis)
+    graph_def = helper.make_graph(
+        [node_def],
+        name="test_unknown_shape",
+        inputs=[
+            helper.make_tensor_value_info("data", TensorProto.FLOAT,
+                                          [None, None]),
+            helper.make_tensor_value_info("indices", TensorProto.INT64,
+                                          [None, None]),
+            helper.make_tensor_value_info("updates", TensorProto.FLOAT,
+                                          [None, None])
+        ],
+        outputs=[
+            helper.make_tensor_value_info("outputs", TensorProto.FLOAT,
+                                          [None, None])
+        ])
+    tf_rep = onnx_graph_to_tensorflow_rep(graph_def)
+    # export to tf.saved_model
+    model_path = 'test_dynamic_shape/scatter_elements'
+    tf_rep.export_graph(model_path)
+    # load the saved_model back
+    tf_model = tf.saved_model.load(model_path)
+    # run the model
+    tf_model_output = tf_model(data=data, indices=indices, updates=updates)
+    np.testing.assert_almost_equal(tf_model_output[0], ref_output)
 
   def test_scatter_nd(self):
     if legacy_opset_pre_ver(11):

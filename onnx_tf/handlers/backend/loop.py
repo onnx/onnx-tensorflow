@@ -13,6 +13,14 @@ from onnx_tf.handlers.handler import onnx_op
 class Loop(BackendHandler):
 
   @classmethod
+  def get_initializer_from_subgraph(cls, node, init_dict, callback_func):
+    return callback_func(node.attrs["body"], init_dict)
+
+  @classmethod
+  def create_variables(cls, handlers, node, init_dict, var_dict, callback_func):
+    return callback_func(handlers, node.attrs["body"], init_dict, var_dict)
+
+  @classmethod
   def _common(cls, node, **kwargs):
     body = node.attrs["body"]
     tensor_dict = kwargs["tensor_dict"]

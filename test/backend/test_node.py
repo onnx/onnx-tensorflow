@@ -9,8 +9,11 @@ import unittest
 from onnx import defs
 from onnx import helper
 from onnx import TensorProto
+from onnx.backend.test.case.node import hardmax
+from onnx.backend.test.case.node.onehot import one_hot
 import numpy as np
 import tensorflow as tf
+import tensorflow_addons as tfa
 
 from onnx_tf.backend import onnx_graph_to_tensorflow_rep
 from onnx_tf.backend import run_node
@@ -748,9 +751,8 @@ class TestNode(unittest.TestCase):
 
   def test_einsum(self):
     if legacy_opset_pre_ver(12):
-      raise unittest.SkipTest(
-          "ONNX version {} doesn't support Einsum.".format(
-              defs.onnx_opset_version()))
+      raise unittest.SkipTest("ONNX version {} doesn't support Einsum.".format(
+          defs.onnx_opset_version()))
     equation = 'ij,jk->ik'  #matmul
     node_def = helper.make_node("Einsum", ["X", "Y"], ["Z"], equation=equation)
     x = self._get_rnd_float32(shape=[3, 4])
@@ -1056,11 +1058,20 @@ class TestNode(unittest.TestCase):
     for axis in range(-len(shape), len(shape)):
       node_def = helper.make_node("Hardmax", ["X"], ["Y"], axis=axis)
       output = run_node(node_def, [x])
-      shape_in_2d = (np.prod(shape[0:axis]).astype(int),
-                     np.prod(shape[axis:len(shape)]))
-      x_in_2d = np.reshape(x, shape_in_2d)
-      y = np.eye(x_in_2d.shape[1], dtype=x.dtype)[np.argmax(x_in_2d, axis=1)]
-      np.testing.assert_almost_equal(output["Y"], np.reshape(y, shape))
+
+      axis = axis if axis >= 0 else len(np.shape(x)) + axis
+      if axis == len(np.shape(x)) - 1:
+          np.testing.assert_almost_equal(output["Y"], tfa.seq2seq.hardmax(x))
+      else:
+          if not legacy_opset_pre_ver(13):
+            y = hardmax.hardmax(x, axis)
+            np.testing.assert_almost_equal(output["Y"], y)
+          else:
+            shape_in_2d = (np.prod(shape[0:axis]).astype(int),
+                           np.prod(shape[axis:len(shape)]))
+            x_in_2d = np.reshape(x, shape_in_2d)
+            y = np.eye(x_in_2d.shape[1], dtype=x.dtype)[np.argmax(x_in_2d, axis=1)]
+            np.testing.assert_almost_equal(output["Y"], np.reshape(y, shape))
 
   def test_if(self):
     true_val = helper.make_tensor(name='true_tensor',
@@ -1268,12 +1279,12 @@ class TestNode(unittest.TestCase):
     np.testing.assert_almost_equal(output["Y"], test_output)
 
   def test_greater(self):
-      node_def = helper.make_node("Greater", ["X", "Y"], ["Z"])
-      x = self._get_rnd_float32(shape=[5, 3, 3, 2])
-      y = self._get_rnd_float32(shape=[3, 3, 1])
-      output = run_node(node_def, [x, y])
-      np.testing.assert_equal(output["Z"], np.greater(x, np.reshape(y,
-                                                                 [1, 3, 3, 1])))
+    node_def = helper.make_node("Greater", ["X", "Y"], ["Z"])
+    x = self._get_rnd_float32(shape=[5, 3, 3, 2])
+    y = self._get_rnd_float32(shape=[3, 3, 1])
+    output = run_node(node_def, [x, y])
+    np.testing.assert_equal(output["Z"],
+                            np.greater(x, np.reshape(y, [1, 3, 3, 1])))
 
   def test_less(self):
     node_def = helper.make_node("Less", ["X", "Y"], ["Z"])
@@ -2370,6 +2381,8 @@ class TestNode(unittest.TestCase):
     if legacy_opset_pre_ver(9):
       raise unittest.SkipTest("ONNX version {} doesn't support OneHot.".format(
           defs.onnx_opset_version()))
+
+    # with default axis
     indices = np.array([[0, 2], [1, 2], [0, 1]])
     depth = np.int32(5)
     on_value = 6.0
@@ -2377,9 +2390,49 @@ class TestNode(unittest.TestCase):
     values = np.array([off_value, on_value])
     node_def = helper.make_node('OneHot',
                                 inputs=['indices', 'depth', 'values'],
+                                outputs=['y'])
+    y = one_hot(indices, depth, dtype=values.dtype)
+    y = y * (on_value - off_value) + off_value
+    output = run_node(node_def, inputs=[indices, depth, values])
+    np.testing.assert_equal(output['y'], y)
+    # test data types that are not natively supported by tensorflow
+    output = run_node(
+        node_def, inputs=[indices.astype(np.uint16),
+                          np.uint16(depth), values])
+    np.testing.assert_equal(output['y'], y)
+    self.assertRaises(RuntimeError, run_node, node_def,
+                      [indices.astype(np.uint64), depth, values])
+    self.assertRaises(RuntimeError, run_node, node_def,
+                      [indices, np.int64(depth), values])
+
+    # with axis
+    axis = 1
+    indices = np.array([[0, 9], [3, 7], [5, 2]])
+    depth = np.int32(10)
+    on_value = 8
+    off_value = -1
+    values = np.array([off_value, on_value], np.int8)
+    node_def = helper.make_node('OneHot',
+                                inputs=['indices', 'depth', 'values'],
                                 outputs=['y'],
-                                axis=-1)
-    y = (np.arange(depth) == indices[..., None]).astype(int)
+                                axis=axis)
+    y = one_hot(indices, depth, axis=axis, dtype=values.dtype)
+    y = y * (on_value - off_value) + off_value
+    output = run_node(node_def, inputs=[indices, depth, values])
+    np.testing.assert_equal(output['y'], y)
+
+    # with negative indices and negative axis
+    axis = -3
+    indices = np.array([[0, -9], [-3, 7], [5, -2]])
+    depth = np.int32(10)
+    on_value = 4
+    off_value = 1
+    values = np.array([off_value, on_value], np.int16)
+    node_def = helper.make_node('OneHot',
+                                inputs=['indices', 'depth', 'values'],
+                                outputs=['y'],
+                                axis=axis)
+    y = one_hot(indices, depth, axis=axis, dtype=values.dtype)
     y = y * (on_value - off_value) + off_value
     output = run_node(node_def, inputs=[indices, depth, values])
     np.testing.assert_equal(output['y'], y)
@@ -3590,6 +3643,11 @@ class TestNode(unittest.TestCase):
                                   axis=axis)
       output = run_node(node_def, [data, indices, updates])
       np.testing.assert_almost_equal(output["outputs"], ref_output)
+
+      # test data types that are not natively supported by Tensorflow
+      self.assertRaises(RuntimeError, run_node, node_def,
+                        [np.complex64(data), indices,
+                         np.complex64(updates)])
 
   def test_scatter_elements2(self):
     data = np.array([
