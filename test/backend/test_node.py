@@ -1302,11 +1302,11 @@ class TestNode(unittest.TestCase):
     node_def = helper.make_node('LessOrEqual', ['X', 'Y'], ['Z'])
     shape = [2, 3, 4, 5]
     x = self._get_rnd_int(
-        np.iinfo(np.uint64).min,
-        np.iinfo(np.uint64).max, shape, np.uint64)
+        np.iinfo(np.int64).min,
+        np.iinfo(np.int64).max, shape, np.int64)
     y = self._get_rnd_int(
-        np.iinfo(np.uint64).min,
-        np.iinfo(np.uint64).max, shape, np.uint64)
+        np.iinfo(np.int64).min,
+        np.iinfo(np.int64).max, shape, np.int64)
     output = run_node(node_def, [x, y])
     np.testing.assert_equal(output['Z'], np.less_equal(x, y))
     # test with broadcast
@@ -1319,6 +1319,22 @@ class TestNode(unittest.TestCase):
         np.finfo(np.float16).max, shape2).astype(np.float16)
     output = run_node(node_def, [x, y])
     np.testing.assert_equal(output['Z'], np.less_equal(x, y))
+    # test data types that are not natively supported by Tensorflow
+    x = self._get_rnd_int(
+        np.iinfo(np.uint32).min,
+        np.iinfo(np.uint32).max, shape, np.uint32)
+    y = self._get_rnd_int(
+        np.iinfo(np.uint32).min,
+        np.iinfo(np.uint32).max, shape, np.uint32)
+    output = run_node(node_def, [x, y])
+    np.testing.assert_equal(output['Z'], np.less_equal(x, y))
+    x = self._get_rnd_int(
+        np.iinfo(np.uint64).min,
+        np.iinfo(np.uint64).max, shape, np.uint64)
+    y = self._get_rnd_int(
+        np.iinfo(np.uint64).min,
+        np.iinfo(np.uint64).max, shape, np.uint64)
+    self.assertRaises(RuntimeError, run_node, node_def, [x, y])
 
   def test_lp_normalization(self):
     for ordr in range(1, 3):
@@ -1627,12 +1643,12 @@ class TestNode(unittest.TestCase):
     a = self._get_rnd_float32(shape=[5, 6])
     b = self._get_rnd_float32(shape=[6, 5])
     output = run_node(node_def, [a, b])
-    np.testing.assert_almost_equal(output["Y"], np.matmul(a, b))
+    np.testing.assert_allclose(output["Y"], np.matmul(a, b), rtol=1e-6, atol=1e-6)
     # test data types that are not natively supported by Tensorflow
     a = self._get_rnd_int(0, 1000, [10, 10], np.uint32)
     b = self._get_rnd_int(0, 1000, [10, 10], np.uint32)
     output = run_node(node_def, [a, b])
-    np.testing.assert_almost_equal(output["Y"], np.matmul(a, b))
+    np.testing.assert_allclose(output["Y"], np.matmul(a, b), rtol=1e-6, atol=1e-6)
     # sys_config.auto_cast=False and a or b dtype=uint64 should throw exception
     self.assertRaises(
         RuntimeError, run_node, node_def,
