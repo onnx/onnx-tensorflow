@@ -6,6 +6,8 @@ jobs:
   unittest:
 
     runs-on: ${{ matrix.os }}
+    continue-on-error: ${{ startsWith(matrix.onnx-version, 'git+') }}
+
     strategy:
       matrix:
         # Test current versions on all platforms
