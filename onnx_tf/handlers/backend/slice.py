@@ -14,7 +14,8 @@ class Slice(BackendHandler):
     tensor_dict = kwargs["tensor_dict"]
     x = tensor_dict[node.inputs[0]]
 
-    full_sizes = tf.shape(x)
+    # Shape output as int64 since the spec implicitly allows int64
+    full_sizes = tf.shape(x, out_type=tf.int64)
 
     starts = node.attrs.get("starts")
     ends = node.attrs.get("ends")
