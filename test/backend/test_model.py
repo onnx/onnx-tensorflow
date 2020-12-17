@@ -55,11 +55,6 @@ class TestModel(unittest.TestCase):
             helper.make_tensor_value_info("Y_c", TensorProto.FLOAT, [1, 2, 3])
         ])
 
-    # prepare the ONNX model and save it as a Tensorflow SavedModel
-    tf_rep = prepare(helper.make_model(graph_def))
-    model_path = "lstm_savedmodel"
-    tf_rep.export_graph(model_path)
-
     # Initializing Inputs
     X = np.array([[[1., 2., 3., 4.], [5., 6., 7., 8.]]]).astype(np.float32)
     W = weight_scale * np.ones((1, number_of_gates * hidden_size, input_size)).astype(np.float32)
@@ -67,6 +62,12 @@ class TestModel(unittest.TestCase):
     B = np.zeros((1, 2 * number_of_gates * hidden_size)).astype(np.float32)
     seq_lens = np.repeat(X.shape[0], X.shape[1]).astype(np.int32)
     init_h = weight_scale * np.ones((1, X.shape[1], hidden_size)).astype(np.float32)
+
+    # prepare the ONNX model and save it as a Tensorflow SavedModel
+    tf_rep = prepare(helper.make_model(graph_def))
+    tf_rep.run({"X": X, "W": W, "R": R, "B": B, "sequence_lens": seq_lens, "initial_h": init_h })
+    model_path = "lstm_savedmodel"
+    tf_rep.export_graph(model_path)
 
     # use the ONNX reference implementation to get expected output
     lstm = LSTM_Helper(X=X, W=W, R=R, B=B, initial_h=init_h)
@@ -108,10 +109,6 @@ class TestModel(unittest.TestCase):
             helper.make_tensor_value_info("Y_h", TensorProto.FLOAT, [1, 3, 3])
         ])
 
-    tf_rep = prepare(helper.make_model(graph_def))
-    model_path = "gru_savedmodel"
-    tf_rep.export_graph(model_path)
-
     # initializing Inputs
     X = np.array([[[1., 2., 3.], [4., 5., 6.], [7., 8.,
                                                 9.]]]).astype(np.float32)
@@ -123,6 +120,12 @@ class TestModel(unittest.TestCase):
         (1, number_of_gates * hidden_size)).astype(np.float32)
     R_B = np.zeros((1, number_of_gates * hidden_size)).astype(np.float32)
     B = np.concatenate((W_B, R_B), axis=1)
+
+    # prepare the ONNX model and save it as a Tensorflow SavedModel
+    tf_rep = prepare(helper.make_model(graph_def))
+    tf_rep.run({"X": X, "W": W, "R": R, "B": B})
+    model_path = "gru_savedmodel"
+    tf_rep.export_graph(model_path)
 
     # use the ONNX reference implementation to get the expected output
     gru = GRU_Helper(X=X, W=W, R=R, B=B)
@@ -161,14 +164,16 @@ class TestModel(unittest.TestCase):
             helper.make_tensor_value_info("Y_h", TensorProto.FLOAT, [1, 2, 4])
         ])
 
-    tf_rep = prepare(helper.make_model(graph_def))
-    model_path = "rnn_savedmodel"
-    tf_rep.export_graph(model_path)
-
     # initializing Inputs
     X = np.array([[[1., 2.], [3., 4.], [5., 6.]]]).astype(np.float32)
     W = weight_scale * np.ones((1, hidden_size, input_size)).astype(np.float32)
     R = weight_scale * np.ones((1, hidden_size, hidden_size)).astype(np.float32)
+
+    # prepare the ONNX model and save it as a Tensorflow SavedModel
+    tf_rep = prepare(helper.make_model(graph_def))
+    tf_rep.run({"X": X, "W": W, "R": R})
+    model_path = "rnn_savedmodel"
+    tf_rep.export_graph(model_path)
 
     # use the ONNX reference implementation to get the expected output
     rnn = RNN_Helper(X=X, W=W, R=R)
