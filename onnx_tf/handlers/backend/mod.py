@@ -15,10 +15,11 @@ class Mod(ArithmeticMixin, BackendHandler):
       tf.uint16: tf.int32,
       tf.uint32: tf.int64,
       tf.int8: tf.int32,
-      tf.int16: tf.int32
+      tf.int16: tf.int32,
+      tf.float16: tf.float32
   }
   supported_types = [
-      tf.int32, tf.int64, tf.float16, tf.float32, tf.float64, tf.bfloat16
+      tf.int32, tf.int64, tf.float32, tf.float64, tf.bfloat16
   ]
 
   @classmethod
