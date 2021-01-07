@@ -14,13 +14,13 @@ class MatMul(BackendHandler):
   supported_types = [
       tf.bfloat16, tf.float16, tf.float32, tf.float64, tf.int32, tf.int64
   ]
-  cast_map = {
-      tf.uint32: tf.int64
-  }
-  cast_map[tf.uint64] = tf.int64 if sys_config.auto_cast else None
+  cast_map = {tf.uint32: tf.int64}
 
   @classmethod
   def args_check(cls, node, **kwargs):
+    # update cast map based on the auto_cast config option
+    cls.cast_map[tf.uint64] = tf.int64 if sys_config.auto_cast else None
+
     dtype = kwargs["tensor_dict"][node.inputs[0]].dtype
     if dtype in cls.cast_map and cls.cast_map[dtype] is None:
       exception.DTYPE_NOT_CAST_EXCEPT(
