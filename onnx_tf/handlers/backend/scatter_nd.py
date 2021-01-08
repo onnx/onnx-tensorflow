@@ -11,7 +11,7 @@ from .gather_and_scatter_mixin import GatherAndScatterMixin
 class ScatterND(GatherAndScatterMixin, BackendHandler):
 
   @classmethod
-  def version_11(cls, node, **kwargs):
+  def _common(cls, node, **kwargs):
     data = kwargs["tensor_dict"][node.inputs[0]]
     indices = kwargs["tensor_dict"][node.inputs[1]]
     updates = kwargs["tensor_dict"][node.inputs[2]]
@@ -26,3 +26,11 @@ class ScatterND(GatherAndScatterMixin, BackendHandler):
                                          inputs=[data, indices, updates],
                                          **kwargs)
       ]
+
+  @classmethod
+  def version_11(cls, node, **kwargs):
+    return cls._common(node, **kwargs)
+
+  @classmethod
+  def version_13(cls, node, **kwargs):
+    return cls._common(node, **kwargs)
