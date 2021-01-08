@@ -29,7 +29,7 @@ class DepthToSpace(BackendHandler):
     ]
 
   @classmethod
-  def version_11(cls, node, **kwargs):
+  def _common(cls, node, **kwargs):
     x = kwargs["tensor_dict"][node.inputs[0]]
     x_rank = len(x.get_shape())
     storage_format, compute_format = get_data_format(x_rank)
@@ -55,3 +55,11 @@ class DepthToSpace(BackendHandler):
           cls.make_tensor_from_onnx_node(
               node, attrs=attrs, c_first_cuda_only=True, **kwargs)
       ]
+
+  @classmethod
+  def version_11(cls, node, **kwargs):
+    return cls._common(node, **kwargs)
+
+  @classmethod
+  def version_13(cls, node, **kwargs):
+    return cls._common(node, **kwargs)
