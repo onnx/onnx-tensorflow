@@ -1004,6 +1004,12 @@ class TestNode(unittest.TestCase):
     test_output = np.matmul(x, y) + z
     np.testing.assert_almost_equal(output["Y"], test_output)
 
+    # sys_config.auto_cast=False and x,y,z dtype=uint64 should throw exception
+    self.assertRaises(
+        RuntimeError, run_node, node_def,
+        [x.astype(np.uint64), y.astype(np.uint64), z.astype(np.uint64)])
+
+
   def test_global_average_pool(self):
     #   Image case:  (N x C x H x W), where N is the batch size,
     # C is the number of channels, and H and W are the height
