@@ -8,7 +8,7 @@ from onnx_tf.handlers.handler import onnx_op
 class Expand(BackendHandler):
 
   @classmethod
-  def version_8(cls, node, **kwargs):
+  def _common(cls, node, **kwargs):
     tensor_dict = kwargs["tensor_dict"]
     x, shape = tensor_dict[node.inputs[0]], tensor_dict[node.inputs[1]]
 
@@ -20,3 +20,11 @@ class Expand(BackendHandler):
     else:
       ones = tf.ones(shape, dtype=x.dtype)
       return [x * ones]
+
+  @classmethod
+  def version_8(cls, node, **kwargs):
+    return cls._common(node, **kwargs)
+
+  @classmethod
+  def version_13(cls, node, **kwargs):
+    return cls._common(node, **kwargs)
