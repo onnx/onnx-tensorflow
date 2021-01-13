@@ -3897,6 +3897,14 @@ class TestNode(unittest.TestCase):
                      (1, 1, 1, 12))
       y = np.transpose(y, (0, 3, 1, 2))
       np.testing.assert_allclose(output["Y"], y, rtol=1e-3)
+      # test data type that is not natively supported by Tensorflow GPU
+      x = self._get_rnd_float32(shape=x_shape).astype(np.float64)
+      output = run_node(node_def, [x], device=device)
+      x = np.transpose(x, (0, 2, 3, 1))
+      y = np.reshape(np.swapaxes(x.reshape(1, 1, 1, 1, 1, 12), 2, 3),
+                     (1, 1, 1, 12))
+      y = np.transpose(y, (0, 3, 1, 2))
+      np.testing.assert_allclose(output["Y"], y, rtol=1e-3)
 
   def test_split(self):
     split = np.array([3, 3, 4]).astype(np.int64)
@@ -4072,6 +4080,10 @@ class TestNode(unittest.TestCase):
     node_def = helper.make_node("Tile", ["X1", "X2"], ["Z"])
     x = self._get_rnd_float32(shape=[3, 5, 5, 3])
     repeats = [1, 1, 2, 1]
+    output = run_node(node_def, [x, repeats])
+    np.testing.assert_allclose(output["Z"], np.tile(x, repeats), rtol=1e-3)
+    # test data types that are not natively supported by Tensorflow
+    x = self._get_rnd_int(0, 100, shape=[3, 5, 5, 3], dtype=np.uint16)
     output = run_node(node_def, [x, repeats])
     np.testing.assert_allclose(output["Z"], np.tile(x, repeats), rtol=1e-3)
 
