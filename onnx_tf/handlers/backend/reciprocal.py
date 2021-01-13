@@ -11,9 +11,17 @@ from .math_mixin import BasicMathMixin
 class Reciprocal(BasicMathMixin, BackendHandler):
 
   @classmethod
-  def version_1(cls, node, **kwargs):
+  def _common(cls, node, **kwargs):
     return [cls.make_tensor_from_onnx_node(node, **kwargs)]
 
   @classmethod
+  def version_1(cls, node, **kwargs):
+    return cls._common(node, **kwargs)
+
+  @classmethod
   def version_6(cls, node, **kwargs):
-    return [cls.make_tensor_from_onnx_node(node, **kwargs)]
+    return cls._common(node, **kwargs)
+
+  @classmethod
+  def version_13(cls, node, **kwargs):
+    return cls._common(node, **kwargs)
