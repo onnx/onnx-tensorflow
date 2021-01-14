@@ -3878,6 +3878,23 @@ class TestNode(unittest.TestCase):
       output = run_node(node_def, [x, starts, ends, axes, steps])
       np.testing.assert_almost_equal(output["S"], x[0:2:2, 0:2:-2, 0:2:-1])
 
+  def test_softmax(self):
+    node_def = helper.make_node("Softmax", ["X"], ["Y"], axis=0)
+    x = self._get_rnd_float32(shape=[3, 4, 5])
+    output = run_node(node_def, [x])
+    if legacy_opset_pre_ver(13): # opset 1 & 11
+      x = x.reshape(1, 60)
+      max_x = np.max(x, axis=1).reshape((-1, 1))
+      exp_x = np.exp(x - max_x)
+      y = exp_x / np.sum(exp_x, axis=1).reshape((-1, 1))
+      y = y.reshape(3, 4, 5)
+    else: # opset 13
+      x_max = np.max(x, axis=0, keepdims=True)
+      tmp = np.exp(x - x_max)
+      s = np.sum(tmp, axis=0, keepdims=True)
+      y = tmp / s
+    np.testing.assert_almost_equal(output["Y"], y)
+
   def test_softplus(self):
     node_def = helper.make_node("Softplus", ["X"], ["Y"])
     x = self._get_rnd_float32(shape=[3, 4, 5])
