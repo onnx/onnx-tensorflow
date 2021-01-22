@@ -133,4 +133,4 @@ def convert(infile, outdir, **kwargs):
   onnx_model = onnx.load(infile)
   tf_rep = backend.prepare(onnx_model, **kwargs)
   tf_rep.export_graph(outdir)
-  common.logger.info("Converting completes successfully.")
+  common.logger.info("Converting completed successfully.")
