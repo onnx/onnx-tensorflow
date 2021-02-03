@@ -1,8 +1,10 @@
 import numpy as np
 import tensorflow as tf
 
+
 def is_tensor_or_var(obj):
-    return isinstance(obj, tf.Tensor) or isinstance(obj, tf.Variable)
+  return isinstance(obj, tf.Tensor) or isinstance(obj, tf.Variable)
+
 
 class BroadcastMixin(object):
 

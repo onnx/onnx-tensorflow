@@ -32,6 +32,7 @@ import onnx_tf.common as common
 
 training_flag_name = "_onnx_tf_internal_is_training"
 
+
 class TensorflowBackend(Backend):
   """ Tensorflow Backend for ONNX
   """
@@ -129,45 +130,47 @@ class TensorflowBackend(Backend):
     signatures = dict()
     tf_rep_graph = tf.Graph()
     with tf_rep_graph.as_default():
-        for value_info in graph_def.input:
-          if value_info.name in initialized:
-            continue
-          shape = list(
-              d.dim_value if (d.dim_value > 0 and d.dim_param == "") else None
-              for d in value_info.type.tensor_type.shape.dim)
-          value_info_name = value_info.name.replace(
-              ":", "_tf_") + "_" + get_unique_suffix(
-              ) if ":" in value_info.name else value_info.name
-    
-          tf_spec = tf.TensorSpec(
-              shape, data_type.onnx2tf(value_info.type.tensor_type.elem_type),
-              value_info_name)
-          signatures[value_info.name] = tf_spec
-    
-          if gen_tensor_dict or training_mode:
-            x = tf.compat.v1.placeholder(data_type.onnx2tf(
-                value_info.type.tensor_type.elem_type),
-                                     name=value_info_name,
-                                     shape=shape
-                ) if value_info.name not in input_tensor_dict else input_tensor_dict[
-                value_info.name]
-            input_dict[value_info.name] = x
-        
+      for value_info in graph_def.input:
+        if value_info.name in initialized:
+          continue
+        shape = list(
+            d.dim_value if (d.dim_value > 0 and d.dim_param == "") else None
+            for d in value_info.type.tensor_type.shape.dim)
+        value_info_name = value_info.name.replace(
+            ":", "_tf_") + "_" + get_unique_suffix(
+            ) if ":" in value_info.name else value_info.name
+
+        tf_spec = tf.TensorSpec(
+            shape, data_type.onnx2tf(value_info.type.tensor_type.elem_type),
+            value_info_name)
+        signatures[value_info.name] = tf_spec
+
         if gen_tensor_dict or training_mode:
-            input_dict_items = cls._onnx_initializer_to_input_dict_items(graph_def.initializer)
-            tensor_dict = dict(input_dict)
-            tensor_dict.update(input_dict_items)
-            tensor_dict[training_flag_name] = tf.compat.v1.placeholder_with_default(False,shape=[])
-            for node in graph_def.node:
-                onnx_node = OnnxNode(node)
-                output_ops = cls._onnx_node_to_tensorflow_op(onnx_node,
-                                                     tensor_dict,
-                                                     handlers,
-                                                     opset=opset,
-                                                     strict=strict)
-                curr_node_output_map = dict(zip(onnx_node.outputs, output_ops))
-                tensor_dict.update(curr_node_output_map)
-        
+          x = tf.compat.v1.placeholder(
+              data_type.onnx2tf(value_info.type.tensor_type.elem_type),
+              name=value_info_name,
+              shape=shape
+          ) if value_info.name not in input_tensor_dict else input_tensor_dict[
+              value_info.name]
+          input_dict[value_info.name] = x
+
+      if gen_tensor_dict or training_mode:
+        input_dict_items = cls._onnx_initializer_to_input_dict_items(
+            graph_def.initializer)
+        tensor_dict = dict(input_dict)
+        tensor_dict.update(input_dict_items)
+        tensor_dict[training_flag_name] = tf.compat.v1.placeholder_with_default(
+            False, shape=[])
+        for node in graph_def.node:
+          onnx_node = OnnxNode(node)
+          output_ops = cls._onnx_node_to_tensorflow_op(onnx_node,
+                                                       tensor_dict,
+                                                       handlers,
+                                                       opset=opset,
+                                                       strict=strict)
+          curr_node_output_map = dict(zip(onnx_node.outputs, output_ops))
+          tensor_dict.update(curr_node_output_map)
+
     tf_rep = TensorflowRep()
     tf_rep.inputs = [
         value_info.name
@@ -179,9 +182,9 @@ class TensorflowBackend(Backend):
     tf_rep.tf_module = module
     tf_rep.signatures = signatures
     if gen_tensor_dict or training_mode:
-        tf_rep.tensor_dict = tensor_dict
+      tf_rep.tensor_dict = tensor_dict
     if training_mode:
-        tf_rep.graph = tf_rep_graph
+      tf_rep.graph = tf_rep_graph
     tf_rep.onnx_op_list = cls._get_onnx_op_list(graph_def)
     return tf_rep
 
