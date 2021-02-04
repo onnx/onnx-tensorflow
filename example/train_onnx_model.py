@@ -1,5 +1,4 @@
 import os
-import time
 import onnx
 import logging
 import numpy as np
@@ -7,7 +6,7 @@ import numpy as np
 import tensorflow as tf
 tf_compat = tf.compat.v1
 from tensorflow.keras import datasets, layers, models
-from onnx_tf.backend import prepare, training_flag_name
+import onnx_tf
 
 batch_size = 32
 epochs = 4
@@ -19,7 +18,7 @@ onnx_model_path = os.path.dirname(onnx_model_file)
 
 
 def get_dataset():
-  dataset = tf.keras.datasets.cifar10
+  dataset = datasets.cifar10
 
   (x_train, y_train), (x_test, y_test) = dataset.load_data()
   x_train, x_test = x_train / 255.0, x_test / 255.0
@@ -92,8 +91,11 @@ def convert_tf2onnx():
 
 def train_onnx_model():
   onnx_model = onnx.load(onnx_model_file)
-  tf_rep = prepare(onnx_model, training_mode=True, logging_level=logging.ERROR)
-  training_flag_placeholder = tf_rep.tensor_dict[training_flag_name]
+  tf_rep = onnx_tf.backend.prepare(onnx_model,
+                                   training_mode=True,
+                                   logging_level=logging.ERROR)
+  training_flag_placeholder = tf_rep.tensor_dict[
+      onnx_tf.backend.training_flag_name]
   input_name = onnx_model.graph.input[0].name
   output_name = onnx_model.graph.output[0].name
 
@@ -164,7 +166,7 @@ def train_onnx_model():
 
 def run_trained_onnx_model():
   onnx_model = onnx.load(trained_onnx_model)
-  tf_rep = prepare(onnx_model, logging_level=logging.ERROR)
+  tf_rep = onnx_tf.backend.prepare(onnx_model, logging_level=logging.ERROR)
   input_name = tf_rep.inputs[0]
   train_data, test_data = get_dataset()
 
