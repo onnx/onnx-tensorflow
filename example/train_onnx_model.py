@@ -17,6 +17,7 @@ onnx_model_file = './onnx_model/model.onnx'
 trained_onnx_model = './onnx_model/trained.onnx'
 onnx_model_path = os.path.dirname(onnx_model_file)
 
+
 def get_dataset():
   dataset = tf.keras.datasets.cifar10
 
@@ -92,8 +93,7 @@ def convert_tf2onnx():
 def train_onnx_model():
   onnx_model = onnx.load(onnx_model_file)
   tf_rep = prepare(onnx_model, training_mode=True, logging_level=logging.ERROR)
-  training_flag_placeholder = tf_rep.tensor_dict[
-      onnx_tf.backend.training_flag_name]
+  training_flag_placeholder = tf_rep.tensor_dict[training_flag_name]
   input_name = onnx_model.graph.input[0].name
   output_name = onnx_model.graph.output[0].name
 
