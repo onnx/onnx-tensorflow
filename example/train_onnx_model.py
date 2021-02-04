@@ -5,12 +5,9 @@ import logging
 import numpy as np
 
 import tensorflow as tf
-from _ast import Break
 tf_compat = tf.compat.v1
-import tensorflow_datasets as tfds
-
-import onnx_tf
-from onnx_tf.backend import prepare
+from tensorflow.keras import datasets, layers, models
+from onnx_tf.backend import prepare, training_flag_name
 
 batch_size = 32
 epochs = 4
@@ -19,7 +16,6 @@ saved_model_path = './saved_model/'
 onnx_model_file = './onnx_model/model.onnx'
 trained_onnx_model = './onnx_model/trained.onnx'
 onnx_model_path = os.path.dirname(onnx_model_file)
-
 
 def get_dataset():
   dataset = tf.keras.datasets.cifar10
@@ -53,8 +49,6 @@ def save_trained_onnx(tensor_dict, onnx_model, sess):
 
 
 def train_tf_model():
-  import tensorflow as tf
-  from tensorflow.keras import datasets, layers, models
   model = models.Sequential()
   model.add(
       layers.Conv2D(32, (3, 3), activation='relu', input_shape=(32, 32, 3)))
@@ -122,13 +116,11 @@ def train_onnx_model():
 
       for epoch in range(1, epochs + 1):
         step = 1
-        next_batch = tf.compat.v1.data.make_one_shot_iterator(
+        next_batch = tf_compat.data.make_one_shot_iterator(
             train_data).get_next()
         while True:
           try:
-            time1 = time.time()
             next_batch_value = sess.run(next_batch)
-            time2 = time.time()
             feed_dict = {
                 #tf_rep.tensor_dict[input_name]: next_batch_value[0].transpose((0, 3, 1, 2)),#for pytorch model
                 tf_rep.tensor_dict[input_name]:
@@ -139,15 +131,13 @@ def train_onnx_model():
             feed_dict[training_flag_placeholder] = True
             loss, accuracy, _ = sess.run([loss_op, eval_op, opt_op],
                                          feed_dict=feed_dict)
-            time3 = time.time()
             if (step % 100) == 0:
               print('Epoch {}, train step {}, loss:{}, accuracy:{}'.format(
                   epoch, step, loss, accuracy))
-              #print('Epoch {}, Train Step {}, Loss:{:.2f}, Use {}s'.format(epoch, step, loss, time3-time1))
             step += 1
           except tf.errors.OutOfRangeError:
             step = 1
-            next_batch = tf.compat.v1.data.make_one_shot_iterator(
+            next_batch = tf_compat.data.make_one_shot_iterator(
                 test_data).get_next()
             while True:
               try:
@@ -176,7 +166,6 @@ def run_trained_onnx_model():
   onnx_model = onnx.load(trained_onnx_model)
   tf_rep = prepare(onnx_model, logging_level=logging.ERROR)
   input_name = tf_rep.inputs[0]
-  output_name = tf_rep.outputs[0]
   train_data, test_data = get_dataset()
 
   for img, label in test_data:

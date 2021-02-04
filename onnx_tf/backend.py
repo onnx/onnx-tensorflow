@@ -111,7 +111,7 @@ class TensorflowBackend(Backend):
     input_tensor_dict = kwargs[
         'input_tensor_dict'] if 'input_tensor_dict' in kwargs else dict()
     training_mode = kwargs[
-        'training_mode'] if 'training_mode' in kwargs else dict()
+        'training_mode'] if 'training_mode' in kwargs else False
 
     handlers = cls._get_handlers(opset)
 
