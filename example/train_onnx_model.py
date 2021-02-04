@@ -38,7 +38,6 @@ def save_trained_onnx(tensor_dict, onnx_model, sess):
       retrained_params[name] = sess.run(tensor)
 
   # Update onnx model using new parameters:
-  from onnx import mapping
   for tensor in onnx_model.graph.initializer:
     if tensor.name in retrained_params:
       print("Updating {}.".format(tensor.name))
