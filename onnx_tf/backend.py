@@ -156,7 +156,7 @@ class TensorflowBackend(Backend):
 
       if gen_tensor_dict or training_mode:
         input_dict_items = cls._onnx_initializer_to_input_dict_items(
-            graph_def.initializer)
+            graph_def.initializer, training_mode=True)
         tensor_dict = dict(input_dict)
         tensor_dict.update(input_dict_items)
         tensor_dict[training_flag_name] = tf.compat.v1.placeholder_with_default(
@@ -259,7 +259,9 @@ class TensorflowBackend(Backend):
     return namedtupledict('Outputs', node.outputs)(*output_vals)
 
   @classmethod
-  def _onnx_initializer_to_input_dict_items(cls, initializer):
+  def _onnx_initializer_to_input_dict_items(cls,
+                                            initializer,
+                                            training_mode=False):
     """ Convert ONNX graph initializer to input dict items.
 
     :param initializer: ONNX graph initializer, list of TensorProto.
@@ -279,12 +281,23 @@ class TensorflowBackend(Backend):
       return name.replace(
           ":", "_tf_") + "_" + get_unique_suffix() if ":" in name else name
 
-    tensor_dict = [(init.name,
-                    tf.Variable(np.array(tensor2list(init)).reshape(init.dims),
-                                shape=init.dims,
-                                dtype=data_type.onnx2tf(init.data_type),
-                                name=validate_initializer_name(init.name)))
-                   for init in initializer]
+    if training_mode:
+      tensor_dict = [
+          (init.name,
+           tf.Variable(np.array(tensor2list(init)).reshape(init.dims),
+                       shape=init.dims,
+                       dtype=data_type.onnx2tf(init.data_type),
+                       name=validate_initializer_name(init.name)))
+          for init in initializer
+      ]
+    else:
+      tensor_dict = [(init.name,
+                      tf.constant(tensor2list(init),
+                                  shape=init.dims,
+                                  dtype=data_type.onnx2tf(init.data_type),
+                                  name=validate_initializer_name(init.name)))
+                     for init in initializer]
+
     return tensor_dict
 
   @classmethod

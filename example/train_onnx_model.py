@@ -9,19 +9,26 @@ from tensorflow.keras import datasets, layers, models
 import onnx_tf
 
 batch_size = 32
-epochs = 4
+epochs = 2
 
 saved_model_path = './saved_model/'
 onnx_model_file = './onnx_model/model.onnx'
 trained_onnx_model = './onnx_model/trained.onnx'
 onnx_model_path = os.path.dirname(onnx_model_file)
+use_dataset = 'mnist'  # mnist or cifar10
 
 
 def get_dataset():
-  dataset = datasets.cifar10
+  if use_dataset == 'mnist':
+    dataset = datasets.mnist
+  else:
+    dataset = datasets.cifar10
 
   (x_train, y_train), (x_test, y_test) = dataset.load_data()
   x_train, x_test = x_train / 255.0, x_test / 255.0
+  if use_dataset == 'mnist':
+    x_train = x_train[..., tf.newaxis]
+    x_test = x_test[..., tf.newaxis]
 
   train_ds = tf.data.Dataset.from_tensor_slices(
       (x_train, y_train)).shuffle(10000).batch(batch_size, drop_remainder=True)
@@ -48,9 +55,13 @@ def save_trained_onnx(tensor_dict, onnx_model, sess):
 
 
 def train_tf_model():
+  if use_dataset == 'mnist':
+    input_shape = (28, 28, 1)
+  else:
+    input_shape = (32, 32, 3)
   model = models.Sequential()
   model.add(
-      layers.Conv2D(32, (3, 3), activation='relu', input_shape=(32, 32, 3)))
+      layers.Conv2D(32, (3, 3), activation='relu', input_shape=input_shape))
   model.add(layers.MaxPooling2D((2, 2)))
   model.add(layers.Conv2D(64, (3, 3), activation='relu'))
   model.add(layers.MaxPooling2D((2, 2)))
