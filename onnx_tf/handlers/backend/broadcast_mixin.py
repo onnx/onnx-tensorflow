@@ -2,19 +2,21 @@ import numpy as np
 import tensorflow as tf
 
 
+def is_tensor_or_var(obj):
+  return isinstance(obj, tf.Tensor) or isinstance(obj, tf.Variable)
+
+
 class BroadcastMixin(object):
 
   @classmethod
   def explicit_broadcast(cls, inputs, axis=None, tensor_dict=None):
-    x = inputs[0] if isinstance(inputs[0],
-                                tf.Tensor) else tensor_dict[inputs[0]]
-    y = inputs[1] if isinstance(inputs[1],
-                                tf.Tensor) else tensor_dict[inputs[1]]
+    x = inputs[0] if is_tensor_or_var(inputs[0]) else tensor_dict[inputs[0]]
+    y = inputs[1] if is_tensor_or_var(inputs[1]) else tensor_dict[inputs[1]]
 
     if np.prod(y.shape) == 1:
       return y
 
-    if not isinstance(x, tf.Tensor) or not isinstance(y, tf.Tensor):
+    if not is_tensor_or_var(x) or not is_tensor_or_var(y):
       raise ValueError("Targets for explicit broadcasting need to be Tensor.")
 
     if axis is None:
