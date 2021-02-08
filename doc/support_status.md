@@ -1,9 +1,9 @@
 # ONNX-Tensorflow Support Status
 |||
 |-:|:-|
-|ONNX-Tensorflow Version|Master ( commit id: 1ec0592db7ccb8c7769eced105720cc8a3e9e8e9 )|
-|ONNX Version|Master ( commit id: 98c2c9c0ea37ee0438495d8c45b43dbcd406b39d )|
-|Tensorflow Version|v2.4.0|
+|ONNX-Tensorflow Version|Master ( commit id: b8a88ded3dc16f438b9d6360a482d25ba8d620f7 )|
+|ONNX Version|Master ( commit id: e1cf52650d29046bfe79e71f97ae8ee6b52bdd6f )|
+|Tensorflow Version|v2.4.1|
 
 Notes:
 * Values that are new or updated from a previous opset version are in bold.
@@ -72,7 +72,7 @@ Notes:
 |GreaterOrEqual|-|-|-|-|-|-|-|-|-|-|-|**12**|12|12|GreaterOrEqual|
 |HardSigmoid|**1**|1|1|1|1|**6**|6|6|6|6|6|6|6|6|HardSigmoid|
 |Hardmax|**1**|1|1|1|1|1|1|1|1|1|**11**|11|**13**|13|Hardmax|
-|Identity|**1**|1|1|1|1|1|1|1|1|1|1|1|**13**|13|Identity|
+|Identity|**1**:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|**13**:small_orange_diamond:|13:small_orange_diamond:|Identity|
 |If|**1**|1|1|1|1|1|1|1|1|1|**11**|11|**13**|13|If|
 |InstanceNormalization|**1**|1|1|1|1|**6**|6|6|6|6|6|6|6|6|InstanceNormalization|
 |IsInf|-|-|-|-|-|-|-|-|-|**10**|10|10|10|10|IsInf|
@@ -130,7 +130,7 @@ Notes:
 |ReduceSum|**1**|1|1|1|1|1|1|1|1|1|**11**|11|**13**:small_red_triangle:|13:small_red_triangle:|ReduceSum|
 |ReduceSumSquare|**1**|1|1|1|1|1|1|1|1|1|**11**|11|**13**:small_red_triangle:|13:small_red_triangle:|ReduceSumSquare|
 |Relu|**1**|1|1|1|1|**6**|6|6|6|6|6|6|**13**|**14**:small_red_triangle:|Relu|
-|Reshape|**1**|1|1|1|**5**|5|5|5|5|5|5|5|**13**:small_red_triangle:|13:small_red_triangle:|Reshape|
+|Reshape|**1**|1|1|1|**5**|5|5|5|5|5|5|5|**13**:small_red_triangle:|**14**:small_red_triangle:|Reshape|
 |Resize|-|-|-|-|-|-|-|-|-|**10**:small_orange_diamond:|**11**:small_orange_diamond:|11:small_orange_diamond:|**13**:small_orange_diamond:|13:small_orange_diamond:|Resize|
 |ReverseSequence|-|-|-|-|-|-|-|-|-|**10**|10|10|10|10|ReverseSequence|
 |RoiAlign|-|-|-|-|-|-|-|-|-|**10**:small_orange_diamond:|10:small_orange_diamond:|10:small_orange_diamond:|10:small_orange_diamond:|10:small_orange_diamond:|RoiAlign|
@@ -186,10 +186,11 @@ Notes:
 2. ConcatFromSequence: new_axis=1 not supported in Tensorflow.
 3. ConvTranspose: ConvTranspose with dilations != 1, or transposed convolution for 4D or higher are not supported in Tensorflow.
 4. GRU: GRU with clip or GRU with linear_before_reset, or GRU not using sigmoid for z and r, or GRU using Elu as the activation function with alpha != 1, or GRU using HardSigmoid as the activation function with alpha != 0.2 or beta != 0.5 are not supported in TensorFlow.
-5. LSTM: LSTM not using sigmoid for `f`, or LSTM not using the same activation for `g` and `h` are not supported in Tensorflow.
-6. MaxPool: MaxPoolWithArgmax with pad is None or incompatible mode, or MaxPoolWithArgmax with 4D or higher input, or MaxPoolWithArgmax with column major are not supported in Tensorflow.
-7. RNN: RNN with clip is not supported in Tensorflow.
-8. Resize: Resize required 4D input in Tensorflow. For opset 11, only the following attributes and inputs conbination are supported in Tensorflow:
+5. Identity: Identity with sequence type is not supported in Tensorflow
+6. LSTM: LSTM not using sigmoid for `f`, or LSTM not using the same activation for `g` and `h` are not supported in Tensorflow.
+7. MaxPool: MaxPoolWithArgmax with pad is None or incompatible mode, or MaxPoolWithArgmax with 4D or higher input, or MaxPoolWithArgmax with column major are not supported in Tensorflow.
+8. RNN: RNN with clip is not supported in Tensorflow.
+9. Resize: Resize required 4D input in Tensorflow. For opset 11, only the following attributes and inputs conbination are supported in Tensorflow:
 	1. mode=nearest, coordinate_transformation_mode=align_corners, nearest_mode=round_prefer_ceil, can use scales(*) or sizes.
 	2. mode=nearest, coordinate_transformation_mode=asymmetric, nearest_mode=floor, can use scales(*) or sizes.
 	3. mode=nearest, coordinate_transformation_mode=tf_half_pixel_for_nn, nearest_mode=floor, can use scales(*) or sizes.
@@ -202,6 +203,6 @@ Notes:
 	10. mode=nearest, coordinate_transformation_mode=tf_crop_and_resize, extrapolation_value=any_float_value, nearest_mode=round_prefer_ceil, can use scales or sizes.
 	11. mode=linear, coordinate_transformation_mode=tf_crop_and_resize, extrapolation_value=any_float_value, can use scales or sizes.
 	- Note (*): The accuracy of your model will go down, if the height and the width of the new sizes(scales * origial sizes) are not in whole numbers.
-9. RoiAlign: sampling_ratio <= 0 is not fully supported.
-10. SplitToSequence: Scalar as the split input not supported.
-11. Upsample: Upsample required 4D input in Tensorflow.
+10. RoiAlign: sampling_ratio <= 0 is not fully supported.
+11. SplitToSequence: Scalar as the split input not supported.
+12. Upsample: Upsample required 4D input in Tensorflow.
