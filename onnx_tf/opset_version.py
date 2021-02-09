@@ -199,6 +199,7 @@ backend_partial_support = {
            'with alpha != 1, or GRU using HardSigmoid as the activation '
            'function with alpha != 0.2 or beta != 0.5 are not supported in '
            'TensorFlow.',
+    'Identity': 'Identity with sequence type is not supported in Tensorflow',
     'LSTM': 'LSTM not using sigmoid for `f`, or LSTM not using the same '
             'activation for `g` and `h` are not supported in Tensorflow.',
     'MaxPool': 'MaxPoolWithArgmax with pad is None or incompatible mode, or '
