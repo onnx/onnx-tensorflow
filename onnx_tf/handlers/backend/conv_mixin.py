@@ -91,16 +91,45 @@ class ConvMixin(BroadcastMixin):
                                         "Tensorflow")
 
     group = node.attrs.get("group", 1)
+    weight_shape = weights.get_shape().as_list()
+    # Is this convolution depthwise we can support?
+    depthwise = (len(x_shape) == 4 and len(weight_shape) == 4 and
+                group != 1 and group == x_shape[1] and not transpose and
+                not (None in weight_shape))
 
-    weight_groups = tf.split(weights, num_or_size_splits=group, axis=-1)
+    if depthwise is True:
+      # Depthwise convolution.
+      # The convolution kernel layout in tf.depthwise_conv is:
+      # [filter_height, filter_width, in_channels, channel_multiplier]
+      # Weight is now (KH x KW X C/g X M), or more precisely, (KH x KW X C/g X (g * M/g)),
+      # we reshape it to (KH x KW x C x M/g)
+      # NOTE: Assuming weight has fixed shape.
 
-    if sys_config.device == 'CUDA':
-      xs = tf.split(x, num_or_size_splits=group, axis=1)
+      depthwise_filter_shape = weight_shape[0:2] + [-1, weight_shape[3] // group]
+      weights = tf.reshape(weights, depthwise_filter_shape)
+
+      if not sys_config.device == 'CUDA':
+        # transpose input to NHWC layout
+        x = tf.transpose(x,
+                         perm=get_perm_from_formats(storage_format,
+                                                    compute_format))
+      weight_groups = [weights]
+      xs = [x]
     else:
-      x = tf.transpose(x,
-                       perm=get_perm_from_formats(storage_format,
-                                                  compute_format))
-      xs = tf.split(x, num_or_size_splits=group, axis=-1)
+      weight_groups = tf.split(weights, num_or_size_splits=group, axis=-1)
+      if sys_config.device == 'CUDA':
+        if group == 1:
+          xs = [x]
+        else:
+          xs = tf.split(x, num_or_size_splits=group, axis=1)
+      else:
+        x = tf.transpose(x,
+                         perm=get_perm_from_formats(storage_format,
+                                                    compute_format))
+        if group == 1:
+          xs = [x]
+        else:
+          xs = tf.split(x, num_or_size_splits=group, axis=-1)
 
     if transpose:
       if dilations != [1] * spatial_size:
@@ -224,16 +253,35 @@ class ConvMixin(BroadcastMixin):
                               data_format=compute_format)
           convolved.append(conv_rs)
 
-    else:
-      convolved = [
-          tf.nn.convolution(x,
-                            weight,
-                            padding=pad_mode,
-                            strides=strides,
-                            dilations=dilations,
-                            data_format=compute_format)
-          for (x, weight) in zip(xs, weight_groups)
-      ]
+    else: # not transpose:
+      if depthwise is True:
+        if compute_format == "NHWC":
+          strides = [1] + strides + [1]
+        elif compute_format == 'NCHW':
+          strides = [1, 1] + strides
+        else:
+          raise ValueError("Invalid compute_format: {}".format(compute_format))
+
+        convolved = [
+            tf.nn.depthwise_conv2d(x,
+                                   weight,
+                                   padding=pad_mode,
+                                   strides=strides,
+                                   dilations=dilations,
+                                   data_format=compute_format)
+            for (x, weight) in zip(xs, weight_groups)
+        ]
+
+      else:
+        convolved = [
+            tf.nn.convolution(x,
+                              weight,
+                              padding=pad_mode,
+                              strides=strides,
+                              dilations=dilations,
+                              data_format=compute_format)
+            for (x, weight) in zip(xs, weight_groups)
+        ]
 
     if len(node.inputs) == 2:
       if sys_config.device == 'CUDA':
