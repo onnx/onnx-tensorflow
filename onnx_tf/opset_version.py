@@ -108,7 +108,7 @@ backend_opset_version = {
     'OneHotEncoder': [],
     'Or': [1, 7],
     'PRelu': [1, 6, 7, 9],
-    'Pad': [1, 2, 11],
+    'Pad': [1, 2, 11, 13],
     'Pow': [1, 7, 12, 13],
     'QLinearConv': [10],
     'QLinearMatMul': [10],
