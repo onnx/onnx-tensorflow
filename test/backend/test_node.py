@@ -1007,8 +1007,9 @@ class TestNode(unittest.TestCase):
     # sys_config.auto_cast=False and x,y,z dtype=uint64 should throw exception
     self.assertRaises(
         RuntimeError, run_node, node_def,
-        [x.astype(np.uint64), y.astype(np.uint64), z.astype(np.uint64)])
-
+        [x.astype(np.uint64),
+         y.astype(np.uint64),
+         z.astype(np.uint64)])
 
   def test_global_average_pool(self):
     #   Image case:  (N x C x H x W), where N is the batch size,
@@ -1067,17 +1068,18 @@ class TestNode(unittest.TestCase):
 
       axis = axis if axis >= 0 else len(np.shape(x)) + axis
       if axis == len(np.shape(x)) - 1:
-          np.testing.assert_almost_equal(output["Y"], tfa.seq2seq.hardmax(x))
+        np.testing.assert_almost_equal(output["Y"], tfa.seq2seq.hardmax(x))
       else:
-          if not legacy_opset_pre_ver(13):
-            y = hardmax.hardmax(x, axis)
-            np.testing.assert_almost_equal(output["Y"], y)
-          else:
-            shape_in_2d = (np.prod(shape[0:axis]).astype(int),
-                           np.prod(shape[axis:len(shape)]))
-            x_in_2d = np.reshape(x, shape_in_2d)
-            y = np.eye(x_in_2d.shape[1], dtype=x.dtype)[np.argmax(x_in_2d, axis=1)]
-            np.testing.assert_almost_equal(output["Y"], np.reshape(y, shape))
+        if not legacy_opset_pre_ver(13):
+          y = hardmax.hardmax(x, axis)
+          np.testing.assert_almost_equal(output["Y"], y)
+        else:
+          shape_in_2d = (np.prod(shape[0:axis]).astype(int),
+                         np.prod(shape[axis:len(shape)]))
+          x_in_2d = np.reshape(x, shape_in_2d)
+          y = np.eye(x_in_2d.shape[1], dtype=x.dtype)[np.argmax(x_in_2d,
+                                                                axis=1)]
+          np.testing.assert_almost_equal(output["Y"], np.reshape(y, shape))
 
   def test_if(self):
     true_val = helper.make_tensor(name='true_tensor',
@@ -1649,12 +1651,18 @@ class TestNode(unittest.TestCase):
     a = self._get_rnd_float32(shape=[5, 6])
     b = self._get_rnd_float32(shape=[6, 5])
     output = run_node(node_def, [a, b])
-    np.testing.assert_allclose(output["Y"], np.matmul(a, b), rtol=1e-6, atol=1e-6)
+    np.testing.assert_allclose(output["Y"],
+                               np.matmul(a, b),
+                               rtol=1e-6,
+                               atol=1e-6)
     # test data types that are not natively supported by Tensorflow
     a = self._get_rnd_int(0, 1000, [10, 10], np.uint32)
     b = self._get_rnd_int(0, 1000, [10, 10], np.uint32)
     output = run_node(node_def, [a, b])
-    np.testing.assert_allclose(output["Y"], np.matmul(a, b), rtol=1e-6, atol=1e-6)
+    np.testing.assert_allclose(output["Y"],
+                               np.matmul(a, b),
+                               rtol=1e-6,
+                               atol=1e-6)
     # sys_config.auto_cast=False and a or b dtype=uint64 should throw exception
     self.assertRaises(
         RuntimeError, run_node, node_def,
@@ -3147,7 +3155,7 @@ class TestNode(unittest.TestCase):
         output = run_node(node_def, [x])
         y = np.pad(x, ((1, 1), (1, 1)), mode)
         np.testing.assert_almost_equal(output["Y"], y)
-    else:  # for opset = 11
+    else:  # for opset >= 11
       # mode = constant
       node_def = helper.make_node("Pad", ["X", "pads", "constant_values"],
                                   ["Y"],
@@ -3179,6 +3187,34 @@ class TestNode(unittest.TestCase):
       y = np.array([7, 8, 9, 10]).reshape((1, 2, 2))
       output = run_node(node_def, [x, pads])
       np.testing.assert_almost_equal(output["Y"], y)
+
+      if legacy_opset_pre_ver(13) is False:  # for opset = 13
+        # data type = string, with specific constant_value
+        node_def = helper.make_node("Pad", ["X", "pads", "constant_values"],
+                                    ["Y"],
+                                    mode="constant")
+        x = np.chararray((10, 10), itemsize=2)
+        a1 = 'a1'
+        b1 = 'b1'
+        blank = ''
+        x[:] = a1.encode('UTF-8')
+        pads = np.array([1, 1, 1, 1], dtype=np.int64)
+        constant_values = b1.encode('UTF-8')
+        y = np.pad(x, ((1, 1), (1, 1)),
+                   'constant',
+                   constant_values=(b1.encode('UTF-8'), b1.encode('UTF-8')))
+        output = run_node(node_def, [x, pads, constant_values])
+        np.testing.assert_array_equal(output["Y"], y)
+
+        # data type = string, with default constant_value
+        node_def = helper.make_node("Pad", ["X", "pads"], ["Y"],
+                                    mode="constant")
+        y = np.pad(x, ((1, 1), (1, 1)),
+                   'constant',
+                   constant_values=(blank.encode('UTF-8'),
+                                    blank.encode('UTF-8')))
+        output = run_node(node_def, [x, pads])
+        np.testing.assert_array_equal(output["Y"], y)
 
   def test_qlinearconv(self):
     if legacy_opset_pre_ver(10):
@@ -3882,13 +3918,13 @@ class TestNode(unittest.TestCase):
     node_def = helper.make_node("Softmax", ["X"], ["Y"], axis=0)
     x = self._get_rnd_float32(shape=[3, 4, 5])
     output = run_node(node_def, [x])
-    if legacy_opset_pre_ver(13): # opset 1 & 11
+    if legacy_opset_pre_ver(13):  # opset 1 & 11
       x = x.reshape(1, 60)
       max_x = np.max(x, axis=1).reshape((-1, 1))
       exp_x = np.exp(x - max_x)
       y = exp_x / np.sum(exp_x, axis=1).reshape((-1, 1))
       y = y.reshape(3, 4, 5)
-    else: # opset 13
+    else:  # opset 13
       x_max = np.max(x, axis=0, keepdims=True)
       tmp = np.exp(x - x_max)
       s = np.sum(tmp, axis=0, keepdims=True)

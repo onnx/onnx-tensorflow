@@ -19,6 +19,7 @@ from onnx.backend.base import namedtupledict
 from onnx.backend.test.runner import BackendIsNotSupposedToImplementIt
 from onnx.helper import make_opsetid
 import tensorflow as tf
+import numpy as np
 
 from onnx_tf.backend_rep import TensorflowRep
 from onnx_tf.common import data_type
@@ -28,6 +29,8 @@ from onnx_tf.common.handler_helper import get_all_backend_handlers
 from onnx_tf.pb_wrapper import OnnxNode
 from onnx_tf.backend_tf_module import BackendTFModule, TFModule
 import onnx_tf.common as common
+
+training_flag_name = "_onnx_tf_internal_is_training"
 
 
 class TensorflowBackend(Backend):
@@ -107,6 +110,8 @@ class TensorflowBackend(Backend):
     # User provided input tensors, in the case the model inputs have unknown shapes
     input_tensor_dict = kwargs[
         'input_tensor_dict'] if 'input_tensor_dict' in kwargs else dict()
+    training_mode = kwargs[
+        'training_mode'] if 'training_mode' in kwargs else False
 
     handlers = cls._get_handlers(opset)
 
@@ -123,30 +128,48 @@ class TensorflowBackend(Backend):
 
     module = BackendTFModule(handlers, opset, strict, graph_def, cls)
     signatures = dict()
-    for value_info in graph_def.input:
-      if value_info.name in initialized:
-        continue
-      shape = list(
-          d.dim_value if (d.dim_value > 0 and d.dim_param == "") else None
-          for d in value_info.type.tensor_type.shape.dim)
-      value_info_name = value_info.name.replace(
-          ":", "_tf_") + "_" + get_unique_suffix(
-          ) if ":" in value_info.name else value_info.name
+    tf_rep_graph = tf.Graph()
+    with tf_rep_graph.as_default():
+      for value_info in graph_def.input:
+        if value_info.name in initialized:
+          continue
+        shape = list(
+            d.dim_value if (d.dim_value > 0 and d.dim_param == "") else None
+            for d in value_info.type.tensor_type.shape.dim)
+        value_info_name = value_info.name.replace(
+            ":", "_tf_") + "_" + get_unique_suffix(
+            ) if ":" in value_info.name else value_info.name
 
-      tf_spec = tf.TensorSpec(
-          shape, data_type.onnx2tf(value_info.type.tensor_type.elem_type),
-          value_info_name)
-      signatures[value_info.name] = tf_spec
+        tf_spec = tf.TensorSpec(
+            shape, data_type.onnx2tf(value_info.type.tensor_type.elem_type),
+            value_info_name)
+        signatures[value_info.name] = tf_spec
 
-      if gen_tensor_dict:
-        x = tf.constant(
-            0,
-            dtype=data_type.onnx2tf(value_info.type.tensor_type.elem_type),
-            name=value_info_name,
-            shape=shape
-        ) if value_info.name not in input_tensor_dict else input_tensor_dict[
-            value_info.name]
-        input_dict[value_info.name] = x
+        if gen_tensor_dict or training_mode:
+          x = tf.compat.v1.placeholder(
+              data_type.onnx2tf(value_info.type.tensor_type.elem_type),
+              name=value_info_name,
+              shape=shape
+          ) if value_info.name not in input_tensor_dict else input_tensor_dict[
+              value_info.name]
+          input_dict[value_info.name] = x
+
+      if gen_tensor_dict or training_mode:
+        input_dict_items = cls._onnx_initializer_to_input_dict_items(
+            graph_def.initializer, training_mode=True)
+        tensor_dict = dict(input_dict)
+        tensor_dict.update(input_dict_items)
+        tensor_dict[training_flag_name] = tf.compat.v1.placeholder_with_default(
+            False, shape=[])
+        for node in graph_def.node:
+          onnx_node = OnnxNode(node)
+          output_ops = cls._onnx_node_to_tensorflow_op(onnx_node,
+                                                       tensor_dict,
+                                                       handlers,
+                                                       opset=opset,
+                                                       strict=strict)
+          curr_node_output_map = dict(zip(onnx_node.outputs, output_ops))
+          tensor_dict.update(curr_node_output_map)
 
     tf_rep = TensorflowRep()
     tf_rep.inputs = [
@@ -158,8 +181,10 @@ class TensorflowBackend(Backend):
     module.outputs = tf_rep.outputs
     tf_rep.tf_module = module
     tf_rep.signatures = signatures
-    tf_rep.tensor_dict = module.gen_tensor_dict(
-        input_dict) if gen_tensor_dict else None
+    if gen_tensor_dict or training_mode:
+      tf_rep.tensor_dict = tensor_dict
+    if training_mode:
+      tf_rep.graph = tf_rep_graph
     tf_rep.onnx_op_list = cls._get_onnx_op_list(graph_def)
     return tf_rep
 
@@ -234,7 +259,9 @@ class TensorflowBackend(Backend):
     return namedtupledict('Outputs', node.outputs)(*output_vals)
 
   @classmethod
-  def _onnx_initializer_to_input_dict_items(cls, initializer):
+  def _onnx_initializer_to_input_dict_items(cls,
+                                            initializer,
+                                            training_mode=False):
     """ Convert ONNX graph initializer to input dict items.
 
     :param initializer: ONNX graph initializer, list of TensorProto.
@@ -254,12 +281,24 @@ class TensorflowBackend(Backend):
       return name.replace(
           ":", "_tf_") + "_" + get_unique_suffix() if ":" in name else name
 
-    return [(init.name,
-             tf.constant(tensor2list(init),
-                         shape=init.dims,
-                         dtype=data_type.onnx2tf(init.data_type),
-                         name=validate_initializer_name(init.name)))
-            for init in initializer]
+    if training_mode:
+      tensor_dict = [
+          (init.name,
+           tf.Variable(np.array(tensor2list(init)).reshape(init.dims),
+                       shape=init.dims,
+                       dtype=data_type.onnx2tf(init.data_type),
+                       name=validate_initializer_name(init.name)))
+          for init in initializer
+      ]
+    else:
+      tensor_dict = [(init.name,
+                      tf.constant(tensor2list(init),
+                                  shape=init.dims,
+                                  dtype=data_type.onnx2tf(init.data_type),
+                                  name=validate_initializer_name(init.name)))
+                     for init in initializer]
+
+    return tensor_dict
 
   @classmethod
   def _onnx_node_to_tensorflow_op(cls,
