@@ -1,7 +1,7 @@
 # ONNX-Tensorflow Support Status
 |||
 |-:|:-|
-|ONNX-Tensorflow Version|Master ( commit id: b8a88ded3dc16f438b9d6360a482d25ba8d620f7 )|
+|ONNX-Tensorflow Version|Master ( commit id: ca926d7d89aef9165ec252c4aaa740654d2ad8d4 )|
 |ONNX Version|Master ( commit id: e1cf52650d29046bfe79e71f97ae8ee6b52bdd6f )|
 |Tensorflow Version|v2.4.1|
 
@@ -107,7 +107,7 @@ Notes:
 |OneHot|-|-|-|-|-|-|-|-|**9**|9|**11**|11|11|11|OneHot|
 |Or|**1**|1|1|1|1|1|**7**|7|7|7|7|7|7|7|Or|
 |PRelu|**1**|1|1|1|1|**6**|**7**|7|**9**|9|9|9|9|9|PRelu|
-|Pad|**1**|**2**|2|2|2|2|2|2|2|2|**11**|11|**13**:small_red_triangle:|13:small_red_triangle:|Pad|
+|Pad|**1**|**2**|2|2|2|2|2|2|2|2|**11**|11|**13**|13|Pad|
 |Pow|**1**|1|1|1|1|1|**7**|7|7|7|7|**12**|**13**|13|Pow|
 |QLinearConv|-|-|-|-|-|-|-|-|-|**10**|10|10|10|10|QLinearConv|
 |QLinearMatMul|-|-|-|-|-|-|-|-|-|**10**|10|10|10|10|QLinearMatMul|
@@ -121,16 +121,16 @@ Notes:
 |Reciprocal|**1**|1|1|1|1|**6**|6|6|6|6|6|6|**13**|13|Reciprocal|
 |ReduceL1|**1**|1|1|1|1|1|1|1|1|1|**11**|11|**13**|13|ReduceL1|
 |ReduceL2|**1**|1|1|1|1|1|1|1|1|1|**11**|11|**13**|13|ReduceL2|
-|ReduceLogSum|**1**|1|1|1|1|1|1|1|1|1|**11**|11|**13**:small_red_triangle:|13:small_red_triangle:|ReduceLogSum|
-|ReduceLogSumExp|**1**|1|1|1|1|1|1|1|1|1|**11**|11|**13**:small_red_triangle:|13:small_red_triangle:|ReduceLogSumExp|
+|ReduceLogSum|**1**|1|1|1|1|1|1|1|1|1|**11**|11|**13**|13|ReduceLogSum|
+|ReduceLogSumExp|**1**|1|1|1|1|1|1|1|1|1|**11**|11|**13**|13|ReduceLogSumExp|
 |ReduceMax|**1**|1|1|1|1|1|1|1|1|1|**11**|**12**|**13**|13|ReduceMax|
 |ReduceMean|**1**|1|1|1|1|1|1|1|1|1|**11**|11|**13**|13|ReduceMean|
 |ReduceMin|**1**|1|1|1|1|1|1|1|1|1|**11**|**12**|**13**|13|ReduceMin|
 |ReduceProd|**1**|1|1|1|1|1|1|1|1|1|**11**|11|**13**|13|ReduceProd|
-|ReduceSum|**1**|1|1|1|1|1|1|1|1|1|**11**|11|**13**:small_red_triangle:|13:small_red_triangle:|ReduceSum|
-|ReduceSumSquare|**1**|1|1|1|1|1|1|1|1|1|**11**|11|**13**:small_red_triangle:|13:small_red_triangle:|ReduceSumSquare|
+|ReduceSum|**1**|1|1|1|1|1|1|1|1|1|**11**|11|**13**|13|ReduceSum|
+|ReduceSumSquare|**1**|1|1|1|1|1|1|1|1|1|**11**|11|**13**|13|ReduceSumSquare|
 |Relu|**1**|1|1|1|1|**6**|6|6|6|6|6|6|**13**|**14**:small_red_triangle:|Relu|
-|Reshape|**1**|1|1|1|**5**|5|5|5|5|5|5|5|**13**:small_red_triangle:|**14**:small_red_triangle:|Reshape|
+|Reshape|**1**|1|1|1|**5**|5|5|5|5|5|5|5|**13**|**14**:small_red_triangle:|Reshape|
 |Resize|-|-|-|-|-|-|-|-|-|**10**:small_orange_diamond:|**11**:small_orange_diamond:|11:small_orange_diamond:|**13**:small_orange_diamond:|13:small_orange_diamond:|Resize|
 |ReverseSequence|-|-|-|-|-|-|-|-|-|**10**|10|10|10|10|ReverseSequence|
 |RoiAlign|-|-|-|-|-|-|-|-|-|**10**:small_orange_diamond:|10:small_orange_diamond:|10:small_orange_diamond:|10:small_orange_diamond:|10:small_orange_diamond:|RoiAlign|
@@ -179,7 +179,7 @@ Notes:
 |Where|-|-|-|-|-|-|-|-|**9**|9|9|9|9|9|Where|
 |Xor|**1**|1|1|1|1|1|**7**|7|7|7|7|7|7|7|Xor|
 
-ONNX-TF Supported Operators / ONNX Operators: 146 / 162
+ONNX-TF Supported Operators / ONNX Operators: 151 / 162
 
 Notes:
 1. Cast: Cast string to data types other than float32/float64/int32/int64 is not supported in Tensorflow
