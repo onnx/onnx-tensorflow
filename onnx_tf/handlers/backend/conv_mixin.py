@@ -93,7 +93,7 @@ class ConvMixin(BroadcastMixin):
     group = node.attrs.get("group", 1)
     weight_shape = weights.get_shape().as_list()
     # Is this convolution depthwise we can support?
-    depthwise = (len(x_shape) == 4 and len(weight_shape) == 4 and
+    depthwise = (x_rank == 4 and len(weight_shape) == 4 and
                 group != 1 and group == x_shape[1] and not transpose and
                 not (None in weight_shape))
 
