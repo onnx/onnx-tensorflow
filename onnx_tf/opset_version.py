@@ -34,7 +34,7 @@ backend_opset_version = {
     'ConvTranspose': [1, 11],
     'Cos': [7],
     'Cosh': [9],
-    'CumSum': [11],
+    'CumSum': [11, 14],
     'DepthToSpace': [1, 11, 13],
     'DequantizeLinear': [10, 13],
     'Det': [11],
