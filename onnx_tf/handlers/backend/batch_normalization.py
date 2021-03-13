@@ -1,4 +1,5 @@
 import tensorflow as tf
+import onnx_tf.backend
 
 from onnx_tf.handlers.backend_handler import BackendHandler
 from onnx_tf.handlers.handler import onnx_op
@@ -27,8 +28,8 @@ class BatchNormalization(BackendHandler):
     x_shape = x.get_shape().as_list()
     x_rank = len(x_shape)
 
-    params_shape_broadcast = list(
-        [1, x_shape[1]] + [1 for _ in range(2, x_rank)])
+    params_shape_broadcast = list([1, x_shape[1]] +
+                                  [1 for _ in range(2, x_rank)])
     if params_shape_broadcast[1] is None:
       params_shape_broadcast[1] = tf.shape(x)[1]
       params_shape_broadcast = tf.stack(params_shape_broadcast)
@@ -36,24 +37,60 @@ class BatchNormalization(BackendHandler):
     total_num_dim = len(x.get_shape())
     scale = tf.reshape(tensor_dict[node.inputs[1]], params_shape_broadcast)
     bias = tf.reshape(tensor_dict[node.inputs[2]], params_shape_broadcast)
-    running_mean = tf.reshape(tensor_dict[node.inputs[3]],
-                              params_shape_broadcast)
-    running_variance = tf.reshape(tensor_dict[node.inputs[4]],
-                                  params_shape_broadcast)
 
-    # from version 7, force to use test mode
-    if cls.SINCE_VERSION >= 7 or node.attrs.get("is_test", 0):
-      inputs = [x, running_mean, running_variance, bias, scale]
-      return [cls.make_tensor_from_onnx_node(node, inputs=inputs)]
+    running_mean_1d = tensor_dict[node.inputs[3]]
+    running_var_1d = tensor_dict[node.inputs[4]]
+
+    # # from version 7, force to use test mode
+    # if cls.SINCE_VERSION >= 7 or node.attrs.get("is_test", 0):
+    #   inputs = [x, running_mean, running_variance, bias, scale]
+    #   return [cls.make_tensor_from_onnx_node(node, inputs=inputs)]
+
     spatial = node.attrs.get("spatial", 1) == 1
     momentum = node.attrs.get("momentum", 0.9)
-    axis = [0] if spatial else [0] + list(range(2, total_num_dim))
-    mean, variance = tf.nn.moments(x, axis)
-    running_mean = running_mean * momentum + mean * (1 - momentum)
-    running_variance = running_variance * momentum + variance * (1 - momentum)
-    # TODO: need to conform to the documentation here
-    inputs = [x, running_mean, running_variance, bias, scale]
-    return [cls.make_tensor_from_onnx_node(node, inputs=inputs)]
+    #axis = [0] if spatial else [0] + list(range(2, total_num_dim))
+    axis = [0] + list(range(2, total_num_dim))
+
+    if isinstance(running_mean_1d, tf.Variable):
+      # Model is in training mode
+      is_training = tensor_dict.get(
+          onnx_tf.backend.training_flag_name,
+          tf.compat.v1.placeholder_with_default(False, shape=[]))
+      batch_mean, batch_var = tf.nn.moments(x, axis)
+
+      # Update running mean/variance only in training,
+      # in inference, we perform identity assignment.
+      running_mean_to_assign = tf.cond(
+          is_training, lambda: running_mean_1d * momentum + batch_mean *
+          (1 - momentum), lambda: running_mean_1d)
+      running_var_to_assign = tf.cond(
+          is_training, lambda: running_var_1d * momentum + batch_var *
+          (1 - momentum), lambda: running_var_1d)
+
+      assign_mean = tf.compat.v1.assign(running_mean_1d, running_mean_to_assign)
+      assign_var = tf.compat.v1.assign(running_var_1d, running_var_to_assign)
+
+      with tf.control_dependencies([assign_mean, assign_var]):
+        # If in training, use batch mean, else if in inference,
+        # use running mean and variance recorded during training.
+        running_mean_to_use = tf.cond(is_training, lambda: batch_mean,
+                                      lambda: running_mean_1d)
+        running_var_to_use = tf.cond(is_training, lambda: batch_var,
+                                     lambda: running_var_1d)
+
+        running_mean = tf.reshape(running_mean_to_use, params_shape_broadcast)
+        running_variance = tf.reshape(running_var_to_use,
+                                      params_shape_broadcast)
+
+        inputs = [x, running_mean, running_variance, bias, scale]
+        return [cls.make_tensor_from_onnx_node(node, inputs=inputs)]
+    else:
+      # Model is in inference mode
+      running_mean = tf.reshape(running_mean_1d, params_shape_broadcast)
+      running_variance = tf.reshape(running_var_1d, params_shape_broadcast)
+
+      inputs = [x, running_mean, running_variance, bias, scale]
+      return [cls.make_tensor_from_onnx_node(node, inputs=inputs)]
 
   @classmethod
   def version_1(cls, node, **kwargs):
