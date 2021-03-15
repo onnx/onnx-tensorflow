@@ -248,6 +248,32 @@ class TestDynamicShape(unittest.TestCase):
 
     np.testing.assert_almost_equal(tf_model_output[0], test_output, decimal=5)
 
+  def test_depth_to_space(self):
+    b,c,h,w = shape = [2, 48, 5, 6]
+    blocksize = 4
+    x = self._get_rnd_float32(shape=shape)
+    node_def = helper.make_node("DepthToSpace", ["X"], ["Y"], blocksize=blocksize, mode="DCR")
+    graph_def = helper.make_graph(
+        [node_def],
+        name="test_unknown_shape",
+        inputs=[
+            helper.make_tensor_value_info("X", TensorProto.FLOAT,
+                                          [None, None, None, None])
+        ],
+        outputs=[helper.make_tensor_value_info("Y", TensorProto.FLOAT, [None, None, None, None])])
+    tf_rep = onnx_graph_to_tensorflow_rep(graph_def)
+    # export to tf.saved_model
+    model_path = 'test_dynamic_shape/depth_to_space'
+    tf_rep.export_graph(model_path)
+    # load the saved_model back
+    tf_model = tf.saved_model.load(model_path)
+    # run the model
+    tf_model_output = tf_model(X=x)
+    tmp = np.reshape(x, [b, blocksize, blocksize, c // (blocksize**2), h, w])
+    tmp = np.transpose(tmp, [0, 3, 4, 1, 5 ,2])
+    y = np.reshape(tmp, [b, c // (blocksize**2), h*blocksize, w*blocksize])
+    np.testing.assert_almost_equal(tf_model_output[0], y)
+
   def test_eye_like(self):
     if legacy_opset_pre_ver(9):
       raise unittest.SkipTest("ONNX version {} doesn't support EyeLike.".format(
