@@ -40,7 +40,8 @@ class DepthToSpace(BackendHandler):
     if mode == "CRD":
       # need native computation
       bsize = attrs.get("blocksize")
-      batch, channel, height, width = x.shape
+      x_shape = tf.shape(x)
+      batch, channel, height, width = x_shape[0], x_shape[1], x_shape[2], x_shape[3]
       csize = channel // (bsize**2)
 
       reshape_node = tf.reshape(x, [batch, csize, bsize, bsize, height, width])
