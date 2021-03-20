@@ -37,26 +37,31 @@ class BatchNormalization(BackendHandler):
     total_num_dim = len(x.get_shape())
     scale = tf.reshape(tensor_dict[node.inputs[1]], params_shape_broadcast)
     bias = tf.reshape(tensor_dict[node.inputs[2]], params_shape_broadcast)
+    spatial = node.attrs.get("spatial", 1) == 1
+    momentum = node.attrs.get("momentum", 0.9)
+    running_mean = tf.reshape(tensor_dict[node.inputs[3]],
+                              params_shape_broadcast)
+    running_variance = tf.reshape(tensor_dict[node.inputs[4]],
+                                  params_shape_broadcast)
+
+    if cls.SINCE_VERSION < 7 and not node.attrs.get("is_test", 0):
+      axis = [0] if spatial else [0] + list(range(2, total_num_dim))
+      mean, variance = tf.nn.moments(x, axis)
+      running_mean = running_mean * momentum + mean * (1 - momentum)
+      running_variance = running_variance * momentum + variance * (1 - momentum)
+      # TODO: need to conform to the documentation here
+      inputs = [x, running_mean, running_variance, bias, scale]
+      return [cls.make_tensor_from_onnx_node(node, inputs=inputs)]
 
     running_mean_1d = tensor_dict[node.inputs[3]]
     running_var_1d = tensor_dict[node.inputs[4]]
-
-    # # from version 7, force to use test mode
-    # if cls.SINCE_VERSION >= 7 or node.attrs.get("is_test", 0):
-    #   inputs = [x, running_mean, running_variance, bias, scale]
-    #   return [cls.make_tensor_from_onnx_node(node, inputs=inputs)]
-
-    spatial = node.attrs.get("spatial", 1) == 1
-    momentum = node.attrs.get("momentum", 0.9)
-    #axis = [0] if spatial else [0] + list(range(2, total_num_dim))
-    axis = [0] + list(range(2, total_num_dim))
-
     if isinstance(running_mean_1d, tf.Variable):
       # Model is in training mode
+      axis_1d = [0] + list(range(2, total_num_dim)) if spatial else [0]
       is_training = tensor_dict.get(
           onnx_tf.backend.training_flag_name,
           tf.compat.v1.placeholder_with_default(False, shape=[]))
-      batch_mean, batch_var = tf.nn.moments(x, axis)
+      batch_mean, batch_var = tf.nn.moments(x, axis_1d)
 
       # Update running mean/variance only in training,
       # in inference, we perform identity assignment.
@@ -86,9 +91,6 @@ class BatchNormalization(BackendHandler):
         return [cls.make_tensor_from_onnx_node(node, inputs=inputs)]
     else:
       # Model is in inference mode
-      running_mean = tf.reshape(running_mean_1d, params_shape_broadcast)
-      running_variance = tf.reshape(running_var_1d, params_shape_broadcast)
-
       inputs = [x, running_mean, running_variance, bias, scale]
       return [cls.make_tensor_from_onnx_node(node, inputs=inputs)]
 
