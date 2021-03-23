@@ -1,3 +1,5 @@
+import numpy as np
+
 import tensorflow as tf
 
 from onnx_tf.common import exception
@@ -93,9 +95,10 @@ class ConvMixin(BroadcastMixin):
     group = node.attrs.get("group", 1)
     weight_shape = weights.get_shape().as_list()
     # Is this convolution depthwise we can support?
-    depthwise = (x_rank == 4 and len(weight_shape) == 4 and
-                group != 1 and group == x_shape[1] and not transpose and
-                not (None in weight_shape))
+    depthwise = (x_rank == 4 and len(weight_shape) == 4 and group != 1 and
+                 not transpose and not (None in weight_shape))
+    if depthwise and isinstance(x_shape, np.ndarray):
+      depthwise = group == x_shape[1]
 
     if depthwise is True:
       # Depthwise convolution.
@@ -105,7 +108,9 @@ class ConvMixin(BroadcastMixin):
       # we reshape it to (KH x KW x C x M/g)
       # NOTE: Assuming weight has fixed shape.
 
-      depthwise_filter_shape = weight_shape[0:2] + [-1, weight_shape[3] // group]
+      depthwise_filter_shape = weight_shape[0:2] + [
+          -1, weight_shape[3] // group
+      ]
       weights = tf.reshape(weights, depthwise_filter_shape)
 
       if not sys_config.device == 'CUDA':
@@ -253,7 +258,7 @@ class ConvMixin(BroadcastMixin):
                               data_format=compute_format)
           convolved.append(conv_rs)
 
-    else: # not transpose:
+    else:  # not transpose:
       if depthwise is True:
         if compute_format == "NHWC":
           strides = [1] + strides + [1]
