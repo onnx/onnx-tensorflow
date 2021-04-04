@@ -9,6 +9,8 @@ from onnx_tf.common.tf_helper import tf_shape
 from onnx_tf.common import sys_config
 from .broadcast_mixin import BroadcastMixin
 from .pad_mixin import PadMixin
+from .pool_mixin import PAD_TF_INCOMPATIBLE
+from .pool_mixin import PoolMixin
 
 # Constant string used to indicate that requested padding
 # is not natively supported in Tensorflow.
@@ -46,6 +48,7 @@ class ConvMixin(BroadcastMixin):
       # Translate weights from (M x C x KH x KW) to (KH x KW X C X M)
       perm = list(range(2, weights_rank)) + [1, 0]
 
+    kernel_shape = in_weights.get_shape().as_list()[2:]
     if "kernel_shape" in node.attrs.keys():
       kernel_shape = node.attrs["kernel_shape"]
       if in_weights.get_shape().is_fully_defined():
