@@ -65,7 +65,7 @@ class TestDynamicShape(unittest.TestCase):
     tf_model_output = tf_model(X=x)
     expected_output = np.argmax(np.flip(x, axis), axis=axis)
     expected_output = x.shape[axis] - expected_output - 1
-    np.testing.assert_almost_equal(tf_model_output[0], expected_output)
+    np.testing.assert_almost_equal(tf_model_output["Y"], expected_output)
 
   def test_arg_min(self):
     if legacy_opset_pre_ver(12):
@@ -100,7 +100,7 @@ class TestDynamicShape(unittest.TestCase):
     tf_model_output = tf_model(X=x)
     expected_output = np.argmin(np.flip(x, axis), axis=axis)
     expected_output = x.shape[axis] - expected_output - 1
-    np.testing.assert_almost_equal(tf_model_output[0], expected_output)
+    np.testing.assert_almost_equal(tf_model_output["Y"], expected_output)
 
   def _batch_normalization(self, x, mean, variance, bias, scale,
                            variance_epsilon):
@@ -151,7 +151,7 @@ class TestDynamicShape(unittest.TestCase):
     tf_model = tf.saved_model.load(model_path)
     # run the model
     tf_model_output = tf_model(X=x, scale=scale, bias=bias, mean=m, var=v)
-    np.testing.assert_almost_equal(tf_model_output[0], golden, decimal=5)
+    np.testing.assert_almost_equal(tf_model_output["Y"], golden, decimal=5)
 
   def test_compress(self):
     if legacy_opset_pre_ver(9):
@@ -185,7 +185,7 @@ class TestDynamicShape(unittest.TestCase):
     tf_model = tf.saved_model.load(model_path)
     # run the model
     tf_model_output = tf_model(X=x, condition=cond)
-    np.testing.assert_almost_equal(tf_model_output[0],
+    np.testing.assert_almost_equal(tf_model_output["Y"],
                                    np.compress(cond, x, axis=axis))
 
   def test_conv_transpose(self):
@@ -246,7 +246,7 @@ class TestDynamicShape(unittest.TestCase):
                         k2 - padw_left] * weights[c][m][kh + h - 1 -
                                                         k1][kw + w - 1 - k2]
 
-    np.testing.assert_almost_equal(tf_model_output[0], test_output, decimal=5)
+    np.testing.assert_almost_equal(tf_model_output["Y"], test_output, decimal=5)
 
   def test_depth_to_space(self):
     b, c, h, w = shape = [2, 48, 5, 6]
@@ -277,7 +277,7 @@ class TestDynamicShape(unittest.TestCase):
     tmp = np.reshape(x, [b, blocksize, blocksize, c // (blocksize**2), h, w])
     tmp = np.transpose(tmp, [0, 3, 4, 1, 5, 2])
     y = np.reshape(tmp, [b, c // (blocksize**2), h * blocksize, w * blocksize])
-    np.testing.assert_almost_equal(tf_model_output[0], y)
+    np.testing.assert_almost_equal(tf_model_output["Y"], y)
 
   def test_eye_like(self):
     if legacy_opset_pre_ver(9):
@@ -307,7 +307,7 @@ class TestDynamicShape(unittest.TestCase):
     tf_model = tf.saved_model.load(model_path)
     # run the model
     tf_model_output = tf_model(x=x)
-    np.testing.assert_equal(tf_model_output[0], y)
+    np.testing.assert_equal(tf_model_output["y"], y)
 
   def test_flatten(self):
     shape = [2, 3, 4]
@@ -331,7 +331,7 @@ class TestDynamicShape(unittest.TestCase):
     # run the model
     tf_model_output = tf_model(X=x)
     new_shape = (np.prod(shape[0:axis]).astype(int), -1)
-    np.testing.assert_almost_equal(tf_model_output[0], np.reshape(x, new_shape))
+    np.testing.assert_almost_equal(tf_model_output["Y"], np.reshape(x, new_shape))
 
   def test_gather_nd(self):
     if legacy_opset_pre_ver(11):
@@ -363,7 +363,7 @@ class TestDynamicShape(unittest.TestCase):
     tf_model = tf.saved_model.load(model_path)
     # run the model
     tf_model_output = tf_model(data=data, indices=indices)
-    np.testing.assert_almost_equal(tf_model_output[0], ref_output)
+    np.testing.assert_almost_equal(tf_model_output["outputs"], ref_output)
 
   def test_gather_elements(self):
     if legacy_opset_pre_ver(11):
@@ -398,7 +398,7 @@ class TestDynamicShape(unittest.TestCase):
     tf_model = tf.saved_model.load(model_path)
     # run the model
     tf_model_output = tf_model(data=data, indices=indices)
-    np.testing.assert_almost_equal(tf_model_output[0], ref_output)
+    np.testing.assert_almost_equal(tf_model_output["outputs"], ref_output)
 
   def test_is_inf(self):
     if legacy_opset_pre_ver(10):
@@ -423,7 +423,7 @@ class TestDynamicShape(unittest.TestCase):
     tf_model = tf.saved_model.load(model_path)
     # run the model
     tf_model_output = tf_model(X=inp)
-    np.testing.assert_equal(tf_model_output[0], expected_output)
+    np.testing.assert_equal(tf_model_output["Y"], expected_output)
 
   def test_matmul_integer(self):
     if legacy_opset_pre_ver(10):
@@ -470,7 +470,7 @@ class TestDynamicShape(unittest.TestCase):
                                B=B,
                                a_zero_point=a_zero_point,
                                b_zero_point=b_zero_point)
-    np.testing.assert_almost_equal(tf_model_output[0], z)
+    np.testing.assert_almost_equal(tf_model_output["Z"], z)
     # A & B are 4-D tensor and a_zero_point & b_zero_point are 1-D tensor
     A = self._get_rnd_int(-20, 20, shape=(2, 5, 3, 4), dtype=np.int8)
     B = self._get_rnd_int(-20, 20, shape=(2, 1, 4, 6), dtype=np.int8)
@@ -515,7 +515,7 @@ class TestDynamicShape(unittest.TestCase):
                                B=B,
                                a_zero_point=a_zero_point,
                                b_zero_point=b_zero_point)
-    np.testing.assert_almost_equal(tf_model_output[0], z)
+    np.testing.assert_almost_equal(tf_model_output["Z"], z)
 
   def test_non_max_suppression(self):
     if legacy_opset_pre_ver(10):
@@ -573,7 +573,7 @@ class TestDynamicShape(unittest.TestCase):
         max_output_boxes_per_class=max_output_boxes_per_class,
         iou_threshold=iou_threshold,
         score_threshold=score_threshold)
-    np.testing.assert_almost_equal(tf_model_output[0], selected_indices)
+    np.testing.assert_almost_equal(tf_model_output["selected_indices"], selected_indices)
 
   def test_non_max_suppression_with_if(self):
     # if cond
@@ -668,7 +668,7 @@ class TestDynamicShape(unittest.TestCase):
           iou_threshold=iou_threshold,
           score_threshold=score_threshold,
           cond=cond)
-      np.testing.assert_almost_equal(tf_model_output[0], exp)
+      np.testing.assert_almost_equal(tf_model_output["selected_indices"], exp)
 
   def test_scatter_elements(self):
     if legacy_opset_pre_ver(11):
@@ -706,7 +706,7 @@ class TestDynamicShape(unittest.TestCase):
     tf_model = tf.saved_model.load(model_path)
     # run the model
     tf_model_output = tf_model(data=data, indices=indices, updates=updates)
-    np.testing.assert_almost_equal(tf_model_output[0], ref_output)
+    np.testing.assert_almost_equal(tf_model_output["outputs"], ref_output)
 
   def test_scatter_nd(self):
     if legacy_opset_pre_ver(11):
@@ -747,7 +747,7 @@ class TestDynamicShape(unittest.TestCase):
     tf_model = tf.saved_model.load(model_path)
     # run the model
     tf_model_output = tf_model(data=data, indices=indices, updates=updates)
-    np.testing.assert_almost_equal(tf_model_output[0], ref_output)
+    np.testing.assert_almost_equal(tf_model_output["outputs"], ref_output)
 
   def test_max_pool_2d_dilations_ceil_pads(self):
     if legacy_opset_pre_ver(10):
@@ -801,7 +801,7 @@ class TestDynamicShape(unittest.TestCase):
     tf_model = tf.saved_model.load(model_path)
     # run the model
     tf_model_output = tf_model(X=x)
-    np.testing.assert_almost_equal(tf_model_output[0], test_output)
+    np.testing.assert_almost_equal(tf_model_output["Y"], test_output)
 
   def test_max_pool_with_argmax_2d_dilations_ceil_pads(self):
     if legacy_opset_pre_ver(10):
@@ -856,8 +856,8 @@ class TestDynamicShape(unittest.TestCase):
                                     ceil_mode=ceil_mode,
                                     pooling_type="MAX")
 
-    np.testing.assert_almost_equal(tf_model_output[0], test_output)
-    np.testing.assert_almost_equal(tf_model_output[1], test_ind)
+    np.testing.assert_almost_equal(tf_model_output["Y"], test_output)
+    np.testing.assert_almost_equal(tf_model_output["Ind"], test_ind)
 
   def test_average_pool_2d(self):
     kernel_shape = [1, 2]
@@ -897,7 +897,7 @@ class TestDynamicShape(unittest.TestCase):
     tf_model = tf.saved_model.load(model_path)
     # run the model
     tf_model_output = tf_model(X=x)
-    np.testing.assert_almost_equal(tf_model_output[0], test_output)
+    np.testing.assert_almost_equal(tf_model_output["Y"], test_output)
 
   def test_max_unpool(self):
     input_shape = [10, 3, 24, 24]
@@ -950,7 +950,7 @@ class TestDynamicShape(unittest.TestCase):
                   max_ind = (j1, j2)
             j1, j2 = max_ind
             test_output[i1][i2][j1][j2] = max_val
-    np.testing.assert_almost_equal(tf_model_output[0], test_output)
+    np.testing.assert_almost_equal(tf_model_output["Y"], test_output)
 
   def test_slice(self):
     # test case 1 with normal inputs
@@ -1002,11 +1002,11 @@ class TestDynamicShape(unittest.TestCase):
     if legacy_opset_pre_ver(10):
       x = self._get_rnd_float32(shape=[1000]).reshape([10, 10, 10])
       tf_model_output = tf_model(X=x)
-      np.testing.assert_almost_equal(tf_model_output[0], x[0:2, 0:2, 0:2])
+      np.testing.assert_almost_equal(tf_model_output["S"], x[0:2, 0:2, 0:2])
     else:
       x = self._get_rnd_float32(shape=[1000]).reshape([10, 10, 10])
       tf_model_output = tf_model(X=x, starts=starts, ends=ends, axes=axes)
-      np.testing.assert_almost_equal(tf_model_output[0], x[0:2, 0:2, 0:2])
+      np.testing.assert_almost_equal(tf_model_output["S"], x[0:2, 0:2, 0:2])
 
     # test case 2 with negative, out-of-bound and default inputs
     axes = [0, 2]
@@ -1068,7 +1068,7 @@ class TestDynamicShape(unittest.TestCase):
                                  ends=ends,
                                  axes=axes,
                                  steps=steps)
-      np.testing.assert_almost_equal(tf_model_output[0], x[0:-8, :, -7:20])
+      np.testing.assert_almost_equal(tf_model_output["S"], x[0:-8, :, -7:20])
 
     # test case 3 with non-default steps
     axes = [0, 1, 2]
@@ -1083,7 +1083,7 @@ class TestDynamicShape(unittest.TestCase):
                                  ends=ends,
                                  axes=axes,
                                  steps=steps)
-      np.testing.assert_almost_equal(tf_model_output[0], x[0:2:2, 0:2:-2,
+      np.testing.assert_almost_equal(tf_model_output["S"], x[0:2:2, 0:2:-2,
                                                            0:2:-1])
 
   def test_split(self):
@@ -1118,8 +1118,9 @@ class TestDynamicShape(unittest.TestCase):
 
     per_part = shape[axis] // output_count
     split = [per_part] * output_count
-    for a, b in zip(list(tf_model_output), np.split(x, np.cumsum(split))[:-1]):
-      np.testing.assert_almost_equal(a, b)
+    for i in range(output_count):
+      o = tf_model_output["Z%i" % i]
+      np.testing.assert_almost_equal(o, np.split(x, np.cumsum(split))[i])
 
   @classmethod
   def tearDownClass(cls):

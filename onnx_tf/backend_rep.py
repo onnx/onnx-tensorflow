@@ -91,12 +91,14 @@ class TensorflowRep(BackendRep):
     input_dict = dict([(x[0], tf.constant(x[1])) for x in feed_dict.items()])
 
     output_values = self.tf_module(**input_dict)
-    output_values = [
-        val.numpy() if isinstance(val, tf.Tensor) else val
-        for val in output_values
+
+    o_values = [
+        output_values[o_name].numpy() if isinstance(
+            output_values[o_name], tf.Tensor) else output_values[o_name]
+        for o_name in output_values
     ]
 
-    return namedtupledict('Outputs', self.outputs)(*output_values)
+    return namedtupledict('Outputs', self.outputs)(*o_values)
 
   def export_graph(self, path):
     """Export backend representation to a Tensorflow proto file.

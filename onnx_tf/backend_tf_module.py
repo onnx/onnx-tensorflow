@@ -103,7 +103,9 @@ class BackendTFModule(tf.Module):
       curr_node_output_map = dict(zip(onnx_node.outputs, output_ops))
       tensor_dict.update(curr_node_output_map)
 
-    outputs = [tensor_dict[output] for output in self.outputs]
+    outputs = dict()
+    for output in self.outputs:
+      outputs[output]=tensor_dict[output]
 
     return outputs
 

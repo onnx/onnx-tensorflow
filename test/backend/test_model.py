@@ -79,7 +79,7 @@ class TestModel(unittest.TestCase):
     # run the model
     tf_output=m(X=X, W=W, R=R, B=B, sequence_lens=seq_lens, initial_h=init_h)
 
-    np.testing.assert_almost_equal(tf_output[1], Y_ref)
+    np.testing.assert_almost_equal(tf_output["Y_h"], Y_ref)
 
     # clean up saved model folder
     shutil.rmtree(model_path)
@@ -137,7 +137,7 @@ class TestModel(unittest.TestCase):
     # run the model
     tf_output = m(X=X, W=W, R=R, B=B)
 
-    np.testing.assert_almost_equal(tf_output[1], Y_ref)
+    np.testing.assert_almost_equal(tf_output["Y_h"], Y_ref)
 
     # clean up saved model folder
     shutil.rmtree(model_path)
@@ -185,7 +185,7 @@ class TestModel(unittest.TestCase):
     # run the model
     tf_output = m(X=X, W=W, R=R)
 
-    np.testing.assert_almost_equal(tf_output[1], Y_ref)
+    np.testing.assert_almost_equal(tf_output["Y_h"], Y_ref)
 
     # clean up saved model folder
     shutil.rmtree(model_path)
@@ -243,7 +243,7 @@ class TestModel(unittest.TestCase):
 
     # check the output from using saved model
     tf_output = m(a=a, b=b)
-    np.testing.assert_almost_equal(tf_output[0], Y_ref)
+    np.testing.assert_almost_equal(tf_output["Y"], Y_ref)
 
     # change input shape to [2, 2]
     a = np.random.randn(2, 2).astype(np.float32)
@@ -251,7 +251,7 @@ class TestModel(unittest.TestCase):
     Y_ref = np.add(a, b)
 
     tf_output = m(a=a, b=b)
-    np.testing.assert_almost_equal(tf_output[0], Y_ref)
+    np.testing.assert_almost_equal(tf_output["Y"], Y_ref)
 
     # clean up saved model folder
     shutil.rmtree(model_path)
