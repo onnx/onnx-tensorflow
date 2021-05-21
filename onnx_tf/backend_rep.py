@@ -111,8 +111,10 @@ class TensorflowRep(BackendRep):
 
     :returns: none.
     """
+    self.tf_module.is_export = True
     tf.saved_model.save(
         self.tf_module,
         path,
         signatures=self.tf_module.__call__.get_concrete_function(
             **self.signatures))
+    self.tf_module.is_export = False
