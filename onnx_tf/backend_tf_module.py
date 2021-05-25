@@ -53,6 +53,7 @@ class BackendTFModule(tf.Module):
         graph_def)
     self.handler_variables = TFModuleHelper._create_handlers_variables_for_graph(
         handlers, graph_def, self.initializer_dict)
+    self.is_export = False
 
   # get initializer from the main graph and all subgraphs in loop or if or scan
   # into tensor_dict
@@ -105,7 +106,17 @@ class BackendTFModule(tf.Module):
 
     outputs = dict()
     for output in self.outputs:
-      outputs[output]=tensor_dict[output]
+      if not self.is_export or tensor_dict[output].shape.is_fully_defined():
+        outputs[output] = tensor_dict[output]
+      else:
+        # Restore the output shape if not fully defined during export
+        for o in self.graph_def.output:
+          if o.name == output:
+            o_shape = [d.dim_value for d in o.type.tensor_type.shape.dim]
+            outputs[
+                output] = tensor_dict[output] if 0 in o_shape else tf.reshape(
+                    tensor_dict[output], o_shape)
+            break
 
     return outputs
 
