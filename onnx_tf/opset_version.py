@@ -97,7 +97,7 @@ backend_opset_version = {
     'Mod': [10, 13],
     'Momentum': [],
     'Mul': [1, 6, 7, 13],
-    'Multinomial': [],
+    'Multinomial': [7],
     'Neg': [1, 6, 13],
     'NegativeLogLikelihoodLoss': [],
     'NonMaxSuppression': [10, 11],
