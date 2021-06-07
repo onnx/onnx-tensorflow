@@ -1,9 +1,9 @@
 # ONNX-Tensorflow Support Status
 |||
 |-:|:-|
-|ONNX-Tensorflow Version|Master ( commit id: d0e90ec3fe6a030879bfd7f7a429b09eda8ec9b5 )|
-|ONNX Version|Master ( commit id: 685898bc6f3fd6eb16ba129ea990f96330537e38 )|
-|Tensorflow Version|v2.4.1|
+|ONNX-Tensorflow Version|Master ( commit id: 0874ca1378a8fe2d06e66f23323c3f828652e900 )|
+|ONNX Version|Master ( commit id: 994c6181247d7b419b28889fc57d5817e2089419 )|
+|Tensorflow Version|v2.5.0|
 
 Notes:
 * Values that are new or updated from a previous opset version are in bold.
@@ -98,7 +98,7 @@ Notes:
 |Min|**1**|1|1|1|1|**6**|6|**8**|8|8|8|**12**|**13**|Min|
 |Mod|-|-|-|-|-|-|-|-|-|**10**|10|10|**13**|Mod|
 |Mul|**1**|1|1|1|1|**6**|**7**|7|7|7|7|7|**13**|Mul|
-|Multinomial|-|-|-|-|-|-|**7**:small_red_triangle:|7:small_red_triangle:|7:small_red_triangle:|7:small_red_triangle:|7:small_red_triangle:|7:small_red_triangle:|7:small_red_triangle:|Multinomial|
+|Multinomial|-|-|-|-|-|-|**7**|7|7|7|7|7|7|Multinomial|
 |Neg|**1**|1|1|1|1|**6**|6|6|6|6|6|6|**13**|Neg|
 |NegativeLogLikelihoodLoss|-|-|-|-|-|-|-|-|-|-|-|**12**:small_red_triangle:|**13**:small_red_triangle:|NegativeLogLikelihoodLoss|
 |NonMaxSuppression|-|-|-|-|-|-|-|-|-|**10**|**11**|11|11|NonMaxSuppression|
@@ -179,7 +179,7 @@ Notes:
 |Where|-|-|-|-|-|-|-|-|**9**|9|9|9|9|Where|
 |Xor|**1**|1|1|1|1|1|**7**|7|7|7|7|7|7|Xor|
 
-ONNX-TF Supported Operators / ONNX Operators: 154 / 162
+ONNX-TF Supported Operators / ONNX Operators: 155 / 162
 
 Notes:
 1. Cast: Cast string to data types other than float32/float64/int32/int64 is not supported in Tensorflow

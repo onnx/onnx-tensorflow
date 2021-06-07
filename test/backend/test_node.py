@@ -2391,6 +2391,17 @@ class TestNode(unittest.TestCase):
     output = run_node(node_def, [x, y])
     np.testing.assert_almost_equal(output["Z"], np.mod(x, y))
 
+  def test_multinomial(self):
+    node_def = helper.make_node("Multinomial", ["X"], ["Y"],
+                                sample_size=5,
+                                dtype=TensorProto.INT64)
+    x = np.array([[math.log(0.5), math.log(0.5)]], dtype=np.float32)
+    output = run_node(node_def, [x])
+    # the output shape should be [1, 5]
+    np.testing.assert_equal(output["Y"].shape, [1, 5])
+    # the output dtype should be int64
+    np.testing.assert_equal(output["Y"].dtype, np.int64)
+
   def test_neg(self):
     node_def = helper.make_node("Neg", ["X"], ["Y"])
     x = self._get_rnd_float32(shape=[1000])
