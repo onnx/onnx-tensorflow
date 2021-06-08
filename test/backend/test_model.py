@@ -10,6 +10,7 @@ import tensorflow as tf
 import numpy as np
 import onnx
 from onnx_tf.backend import prepare
+from onnx import defs
 from onnx import helper
 from onnx import TensorProto
 from onnx.backend.test.case.node.lstm import LSTM_Helper
@@ -17,6 +18,7 @@ from onnx.backend.test.case.node.gru import GRU_Helper
 from onnx.backend.test.case.node.rnn import RNN_Helper
 
 from onnx_tf.common.legacy import legacy_onnx_pre_ver
+from onnx_tf.common.legacy import legacy_opset_pre_ver
 
 
 class TestModel(unittest.TestCase):
@@ -35,19 +37,22 @@ class TestModel(unittest.TestCase):
     number_of_gates = 4
 
     node_def = helper.make_node(
-      'LSTM',
-      inputs=['X', 'W', 'R', 'B', 'sequence_lens', 'initial_h'],
-      outputs=['Y', 'Y_h', 'Y_c'],
-      hidden_size=hidden_size)
+        'LSTM',
+        inputs=['X', 'W', 'R', 'B', 'sequence_lens', 'initial_h'],
+        outputs=['Y', 'Y_h', 'Y_c'],
+        hidden_size=hidden_size)
     graph_def = helper.make_graph(
         [node_def],
         name="lstm_test",
-        inputs=[helper.make_tensor_value_info("X", TensorProto.FLOAT, [1, 2, 4]),
+        inputs=[
+            helper.make_tensor_value_info("X", TensorProto.FLOAT, [1, 2, 4]),
             helper.make_tensor_value_info("W", TensorProto.FLOAT, [1, 12, 4]),
             helper.make_tensor_value_info("R", TensorProto.FLOAT, [1, 12, 3]),
             helper.make_tensor_value_info("B", TensorProto.FLOAT, [1, 24]),
-            helper.make_tensor_value_info("sequence_lens", TensorProto.INT32, [2]),
-            helper.make_tensor_value_info("initial_h", TensorProto.FLOAT, [1, 2, 3])
+            helper.make_tensor_value_info("sequence_lens", TensorProto.INT32,
+                                          [2]),
+            helper.make_tensor_value_info("initial_h", TensorProto.FLOAT,
+                                          [1, 2, 3])
         ],
         outputs=[
             helper.make_tensor_value_info("Y", TensorProto.FLOAT, [1, 1, 2, 3]),
@@ -57,15 +62,25 @@ class TestModel(unittest.TestCase):
 
     # Initializing Inputs
     X = np.array([[[1., 2., 3., 4.], [5., 6., 7., 8.]]]).astype(np.float32)
-    W = weight_scale * np.ones((1, number_of_gates * hidden_size, input_size)).astype(np.float32)
-    R = weight_scale * np.ones((1, number_of_gates * hidden_size, hidden_size)).astype(np.float32)
+    W = weight_scale * np.ones(
+        (1, number_of_gates * hidden_size, input_size)).astype(np.float32)
+    R = weight_scale * np.ones(
+        (1, number_of_gates * hidden_size, hidden_size)).astype(np.float32)
     B = np.zeros((1, 2 * number_of_gates * hidden_size)).astype(np.float32)
     seq_lens = np.repeat(X.shape[0], X.shape[1]).astype(np.int32)
-    init_h = weight_scale * np.ones((1, X.shape[1], hidden_size)).astype(np.float32)
+    init_h = weight_scale * np.ones(
+        (1, X.shape[1], hidden_size)).astype(np.float32)
 
     # prepare the ONNX model and save it as a Tensorflow SavedModel
     tf_rep = prepare(helper.make_model(graph_def))
-    tf_rep.run({"X": X, "W": W, "R": R, "B": B, "sequence_lens": seq_lens, "initial_h": init_h })
+    tf_rep.run({
+        "X": X,
+        "W": W,
+        "R": R,
+        "B": B,
+        "sequence_lens": seq_lens,
+        "initial_h": init_h
+    })
     model_path = "lstm_savedmodel"
     tf_rep.export_graph(model_path)
 
@@ -77,7 +92,7 @@ class TestModel(unittest.TestCase):
     m = tf.saved_model.load(model_path)
 
     # run the model
-    tf_output=m(X=X, W=W, R=R, B=B, sequence_lens=seq_lens, initial_h=init_h)
+    tf_output = m(X=X, W=W, R=R, B=B, sequence_lens=seq_lens, initial_h=init_h)
 
     np.testing.assert_almost_equal(tf_output["Y_h"], Y_ref)
 
@@ -195,8 +210,11 @@ class TestModel(unittest.TestCase):
     graph_def = helper.make_graph(
         [node_def],
         name="test_auto_cast",
-        inputs=[helper.make_tensor_value_info("a", TensorProto.UINT64, [None, None]),
-            helper.make_tensor_value_info("b", TensorProto.UINT64, [None, None])],
+        inputs=[
+            helper.make_tensor_value_info("a", TensorProto.UINT64,
+                                          [None, None]),
+            helper.make_tensor_value_info("b", TensorProto.UINT64, [None, None])
+        ],
         outputs=[
             helper.make_tensor_value_info("Y", TensorProto.BOOL, [None, None])
         ])
@@ -204,13 +222,12 @@ class TestModel(unittest.TestCase):
 
     # random inputs with shape [5, 5]
     a = np.random.randint(low=0, high=10, size=(5, 5)).astype(np.uint64)
-    b = np.random.randint(low=0, high=10, size=(5, 5)).astype(np.uint64)  
+    b = np.random.randint(low=0, high=10, size=(5, 5)).astype(np.uint64)
     Y_ref = np.equal(a, b)
 
     # check the output from converter API against numpy's output
     output = tf_rep.run({"a": a, "b": b})
     np.testing.assert_almost_equal(output.Y, Y_ref)
-
 
   def test_add_module(self):
     node_def = helper.make_node("Add", ["a", "b"], ["Y"])
@@ -293,6 +310,11 @@ class TestModel(unittest.TestCase):
     np.testing.assert_almost_equal(output.X2, Y_ref)
 
   def test_if_with_sequence(self):
+    if legacy_opset_pre_ver(14):
+      raise unittest.SkipTest(
+          "ONNX version {} doesn't support helper.make_tensor_sequence_value_info."
+          .format(defs.onnx_opset_version()))
+
     # S = [a]
     # if cond is True
     #   S = [a,b]
@@ -309,15 +331,15 @@ class TestModel(unittest.TestCase):
     b_in = helper.make_tensor_value_info('b', onnx.TensorProto.FLOAT, [1, 1, 2])
     c_in = helper.make_tensor_value_info('c', onnx.TensorProto.FLOAT, [3, 1, 2])
     cond_in = helper.make_tensor_value_info('cond', TensorProto.BOOL, [])
-    s_in = helper.make_sequence_value_info('S', TensorProto.FLOAT,
-                                           [None, None, None, None])
-
-    sb_out = helper.make_sequence_value_info('Sb', TensorProto.FLOAT,
-                                             [None, None, None, None])
-    sc_out = helper.make_sequence_value_info('Sc', TensorProto.FLOAT,
-                                             [None, None, None, None])
-    s_final_out = helper.make_sequence_value_info('S_final', TensorProto.FLOAT,
+    s_in = helper.make_tensor_sequence_value_info('S', TensorProto.FLOAT,
                                                   [None, None, None, None])
+
+    sb_out = helper.make_tensor_sequence_value_info('Sb', TensorProto.FLOAT,
+                                                    [None, None, None, None])
+    sc_out = helper.make_tensor_sequence_value_info('Sc', TensorProto.FLOAT,
+                                                    [None, None, None, None])
+    s_final_out = helper.make_tensor_sequence_value_info(
+        'S_final', TensorProto.FLOAT, [None, None, None, None])
 
     then_graph = helper.make_graph(nodes=[seq_insert_node1],
                                    name="then_graph",
@@ -392,6 +414,11 @@ class TestModel(unittest.TestCase):
     np.testing.assert_almost_equal(output["W2"], W_ref)
 
   def test_loop_with_sequence(self):
+    if legacy_opset_pre_ver(14):
+      raise unittest.SkipTest(
+          "ONNX version {} doesn't support helper.make_tensor_sequence_value_info."
+          .format(defs.onnx_opset_version()))
+
     # construct sequence S with tensor a in it
     # insert tensor b into sequence S for 3 time
     a = np.random.randn(2, 1, 2).astype(np.float32)
@@ -410,14 +437,15 @@ class TestModel(unittest.TestCase):
     iter_count_in = helper.make_tensor_value_info('iter_count',
                                                   TensorProto.INT64, [])
     cond_in = helper.make_tensor_value_info('cond', TensorProto.BOOL, [])
-    s_in = helper.make_sequence_value_info('S', TensorProto.FLOAT,
-                                           [None, None, None, None])
+    s_in = helper.make_tensor_sequence_value_info('S', TensorProto.FLOAT,
+                                                  [None, None, None, None])
 
     cond_out = helper.make_tensor_value_info('cond', TensorProto.BOOL, [])
-    s_out = helper.make_sequence_value_info('Updated_S', TensorProto.FLOAT,
-                                            [None, None, None, None])
-    s_final_out = helper.make_sequence_value_info('S_final', TensorProto.FLOAT,
-                                                  [None, None, None, None])
+    s_out = helper.make_tensor_sequence_value_info('Updated_S',
+                                                   TensorProto.FLOAT,
+                                                   [None, None, None, None])
+    s_final_out = helper.make_tensor_sequence_value_info(
+        'S_final', TensorProto.FLOAT, [None, None, None, None])
 
     body_graph = helper.make_graph(nodes=[seq_insert_node],
                                    name="for_loop_graph",
