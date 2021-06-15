@@ -14,7 +14,7 @@ from .math_mixin import ArithmeticMixin
 class Sub(ArithmeticMixin, BackendHandler):
   supported_types = [
       tf.bfloat16, tf.float16, tf.float32, tf.float64, tf.int32, tf.int64,
-      tf.uint32
+      tf.uint32, tf.int8, tf.int16, tf.uint8, tf.uint16
   ]
   cast_map = {}
   cast_map[tf.uint64] = tf.int64 if sys_config.auto_cast else None
@@ -51,4 +51,8 @@ class Sub(ArithmeticMixin, BackendHandler):
 
   @classmethod
   def version_13(cls, node, **kwargs):
+    return cls._common(node, **kwargs)
+
+  @classmethod
+  def version_14(cls, node, **kwargs):
     return cls._common(node, **kwargs)
