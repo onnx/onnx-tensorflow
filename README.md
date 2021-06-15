@@ -32,7 +32,7 @@ output = prepare(onnx_model).run(input)  # run the loaded model
 ```
 
 ## More Tutorials
-[Running an ONNX model using TensorFlow](https://github.com/onnx/tutorials/blob/master/tutorials/OnnxTensorFlowImport.ipynb)
+[Running an ONNX model using TensorFlow](https://github.com/onnx/tutorials/blob/master/tutorials/OnnxTensorflowImport.ipynb)
 
 ## Production Installation
 ONNX-TF requires ONNX (Open Neural Network Exchange) as an external dependency, for any issues related to ONNX installation, we refer our users to [ONNX project repository](https://github.com/onnx/onnx) for documentation and help. Notably, please ensure that `protoc` is available if you plan to install ONNX via pip.
