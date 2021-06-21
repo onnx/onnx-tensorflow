@@ -132,7 +132,7 @@ backend_opset_version = {
     'ReduceSum': [1, 11, 13],
     'ReduceSumSquare': [1, 11, 13],
     'Relu': [1, 6, 13],
-    'Reshape': [1, 5, 13],
+    'Reshape': [1, 5, 13, 14],
     'Resize': [10, 11, 13],
     'ReverseSequence': [10],
     'RoiAlign': [10],

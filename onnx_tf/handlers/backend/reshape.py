@@ -18,6 +18,12 @@ class Reshape(BackendHandler):
       shape = tf.constant(node.attrs["shape"], dtype=tf.int64)
     else:  # since_version >= 5
       shape = tf.cast(kwargs["tensor_dict"][node.inputs[1]], tf.int64)
+      if cls.SINCE_VERSION >= 14:
+        if node.attrs.get("allowzero", 0) == 1:
+           return [
+             cls.make_tensor_from_onnx_node(node, **kwargs)
+           ]
+
     input_shape = tf.shape(tensor, out_type=tf.int64)
 
     # Extract indicies of the shape parameter where
@@ -51,4 +57,8 @@ class Reshape(BackendHandler):
 
   @classmethod
   def version_13(cls, node, **kwargs):
+    return cls._common(node, **kwargs)
+
+  @classmethod
+  def version_14(cls, node, **kwargs):
     return cls._common(node, **kwargs)
