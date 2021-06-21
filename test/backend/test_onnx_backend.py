@@ -147,6 +147,11 @@ backend_test.exclude(r'test_convtranspose_autopad_same_[a-z,_]*')
 # TF doesn't support sequence type for Identity
 backend_test.exclude(r'[a-z,_]*identity_sequence_[a-z,_]*')
 
+# Exclude non-deterministic tests
+backend_test.exclude(r'test_bernoulli_expanded[a-z,_]*')
+backend_test.exclude(r'test_bernoulli_double_expanded[a-z,_]*')
+backend_test.exclude(r'test_bernoulli_seed_expanded[a-z,_]*')
+
 # import all test cases at global scope to make them visible to python.unittest
 globals().update(backend_test.enable_report().test_cases)
 
