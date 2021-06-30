@@ -181,7 +181,7 @@ backend_opset_version = {
     'Transpose': [1, 13],
     'TreeEnsembleClassifier': [],
     'TreeEnsembleRegressor': [],
-    'Trilu': [],
+    'Trilu': [14],
     'Unique': [],
     'Unsqueeze': [1, 11],
     'Upsample': [7, 9],

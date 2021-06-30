@@ -331,7 +331,8 @@ class TestDynamicShape(unittest.TestCase):
     # run the model
     tf_model_output = tf_model(X=x)
     new_shape = (np.prod(shape[0:axis]).astype(int), -1)
-    np.testing.assert_almost_equal(tf_model_output["Y"], np.reshape(x, new_shape))
+    np.testing.assert_almost_equal(tf_model_output["Y"],
+                                   np.reshape(x, new_shape))
 
   def test_gather_nd(self):
     if legacy_opset_pre_ver(11):
@@ -573,7 +574,8 @@ class TestDynamicShape(unittest.TestCase):
         max_output_boxes_per_class=max_output_boxes_per_class,
         iou_threshold=iou_threshold,
         score_threshold=score_threshold)
-    np.testing.assert_almost_equal(tf_model_output["selected_indices"], selected_indices)
+    np.testing.assert_almost_equal(tf_model_output["selected_indices"],
+                                   selected_indices)
 
   def test_non_max_suppression_with_if(self):
     # if cond
@@ -1084,7 +1086,7 @@ class TestDynamicShape(unittest.TestCase):
                                  axes=axes,
                                  steps=steps)
       np.testing.assert_almost_equal(tf_model_output["S"], x[0:2:2, 0:2:-2,
-                                                           0:2:-1])
+                                                             0:2:-1])
 
   def test_split(self):
     shape = [12, 12]
@@ -1121,6 +1123,50 @@ class TestDynamicShape(unittest.TestCase):
     for i in range(output_count):
       o = tf_model_output["Z%i" % i]
       np.testing.assert_almost_equal(o, np.split(x, np.cumsum(split))[i])
+
+  def test_trilu(self):
+    if legacy_opset_pre_ver(14):
+      raise unittest.SkipTest("ONNX version {} doesn't support Trilu.".format(
+          defs.onnx_opset_version()))
+    shape = [2, 4, 6]
+    k = np.array(1).astype(np.int64)
+    x = self._get_rnd_int(0, 100, shape=shape)
+    y = np.triu(x, k)
+    node_def = helper.make_node("Trilu",
+                                inputs=["x", "k"],
+                                outputs=['y'],
+                                upper=1)
+    graph_def = helper.make_graph(
+        [node_def],
+        name="test_unknown_shape",
+        inputs=[
+            helper.make_tensor_value_info("x", TensorProto.INT32,
+                                          [None, None, None]),
+            helper.make_tensor_value_info("k", TensorProto.INT64, [])
+        ],
+        outputs=[
+            helper.make_tensor_value_info("y", TensorProto.FLOAT,
+                                          [None, None, None])
+        ])
+    tf_rep = onnx_graph_to_tensorflow_rep(graph_def)
+    # export to tf.saved_model
+    model_path = 'test_dynamic_shape/trilu'
+    tf_rep.export_graph(model_path)
+    # load the saved_model back
+    tf_model = tf.saved_model.load(model_path)
+    # run the model
+    tf_model_output = tf_model(x=x, k=k)
+    np.testing.assert_equal(tf_model_output["y"], y)
+
+    k = np.array(7).astype(np.int64)
+    y = np.triu(x, k)
+    tf_model_output = tf_model(x=x, k=k)
+    np.testing.assert_equal(tf_model_output["y"], y)
+
+    k = np.array(-7).astype(np.int64)
+    y = np.triu(x, k)
+    tf_model_output = tf_model(x=x, k=k)
+    np.testing.assert_equal(tf_model_output["y"], y)
 
   @classmethod
   def tearDownClass(cls):

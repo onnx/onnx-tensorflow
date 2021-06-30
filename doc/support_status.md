@@ -1,8 +1,8 @@
 # ONNX-Tensorflow Support Status
 |||
 |-:|:-|
-|ONNX-Tensorflow Version|Master ( commit id: af76e1e684ab05b4f4e4f340b66a879bd1a3158b )|
-|ONNX Version|Master ( commit id: e6ea9356fb4ba62515fa1cc9591eab5130c2e5ab )|
+|ONNX-Tensorflow Version|Master ( commit id: 59997c924845f66202f8d0fef000f1ab369f96bf )|
+|ONNX Version|Master ( commit id: 3c857c57826cf434626cb8c99f0b9517efb62451 )|
 |Tensorflow Version|v2.5.0|
 
 Notes:
@@ -175,14 +175,14 @@ Notes:
 |Tile|**1**|1|1|1|1|**6**|6|6|6|6|6|6|**13**|13|13|Tile|
 |TopK|**1**|1|1|1|1|1|1|1|1|**10**|**11**|11|11|11|11|TopK|
 |Transpose|**1**|1|1|1|1|1|1|1|1|1|1|1|**13**|13|13|Transpose|
-|Trilu|-|-|-|-|-|-|-|-|-|-|-|-|-|**14**:small_red_triangle:|14:small_red_triangle:|Trilu|
+|Trilu|-|-|-|-|-|-|-|-|-|-|-|-|-|**14**|14|Trilu|
 |Unique|-|-|-|-|-|-|-|-|-|-|**11**:small_red_triangle:|11:small_red_triangle:|11:small_red_triangle:|11:small_red_triangle:|11:small_red_triangle:|Unique|
 |Unsqueeze|**1**|1|1|1|1|1|1|1|1|1|**11**|11|**13**:small_red_triangle:|13:small_red_triangle:|13:small_red_triangle:|Unsqueeze|
 |Upsample|**1**:small_red_triangle:|1:small_red_triangle:|1:small_red_triangle:|1:small_red_triangle:|1:small_red_triangle:|1:small_red_triangle:|**7**:small_orange_diamond:|7:small_orange_diamond:|**9**:small_orange_diamond:|**10**\*|10\*|10\*|10\*|10\*|10\*|Upsample|
 |Where|-|-|-|-|-|-|-|-|**9**|9|9|9|9|9|9|Where|
 |Xor|**1**|1|1|1|1|1|**7**|7|7|7|7|7|7|7|7|Xor|
 
-ONNX-TF Supported Operators / ONNX Operators: 150 / 165
+ONNX-TF Supported Operators / ONNX Operators: 151 / 165
 
 Notes:
 1. Cast: Cast string to data types other than float32/float64/int32/int64 is not supported in Tensorflow
