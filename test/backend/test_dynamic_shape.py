@@ -1129,7 +1129,7 @@ class TestDynamicShape(unittest.TestCase):
       raise unittest.SkipTest("ONNX version {} doesn't support Trilu.".format(
           defs.onnx_opset_version()))
     shape = [2, 4, 6]
-    k = np.array(1).astype(np.int32)
+    k = np.array(1).astype(np.int64)
     x = self._get_rnd_int(0, 100, shape=shape)
     y = np.triu(x, k)
     node_def = helper.make_node("Trilu",
@@ -1142,7 +1142,7 @@ class TestDynamicShape(unittest.TestCase):
         inputs=[
             helper.make_tensor_value_info("x", TensorProto.INT32,
                                           [None, None, None]),
-            helper.make_tensor_value_info("k", TensorProto.INT32, [])
+            helper.make_tensor_value_info("k", TensorProto.INT64, [])
         ],
         outputs=[
             helper.make_tensor_value_info("y", TensorProto.FLOAT,
@@ -1158,12 +1158,12 @@ class TestDynamicShape(unittest.TestCase):
     tf_model_output = tf_model(x=x, k=k)
     np.testing.assert_equal(tf_model_output["y"], y)
 
-    k = np.array(7).astype(np.int32)
+    k = np.array(7).astype(np.int64)
     y = np.triu(x, k)
     tf_model_output = tf_model(x=x, k=k)
     np.testing.assert_equal(tf_model_output["y"], y)
 
-    k = np.array(-7).astype(np.int32)
+    k = np.array(-7).astype(np.int64)
     y = np.triu(x, k)
     tf_model_output = tf_model(x=x, k=k)
     np.testing.assert_equal(tf_model_output["y"], y)

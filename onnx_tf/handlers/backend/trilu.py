@@ -20,7 +20,7 @@ class Trilu(BackendHandler):
       elif k < 0 - x_shape[-2]:
         k = 0 - x_shape[-2]
     else:
-      k = tf.constant(0, dtype=tf.int32)
+      k = tf.constant(0, dtype=tf.int64)
     keep_triangle = tf.constant(-1, dtype=k.dtype)
     upper = node.attrs.get("upper", 1)
 
