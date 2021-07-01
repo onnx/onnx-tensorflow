@@ -22,8 +22,8 @@ class Slice(BackendHandler):
     slice_len = len(starts)
     axes = node.attrs.get("axes", list(range(slice_len)))
 
-    updated_full_sizes = [0] * len(full_sizes)
-    updated_full_begin = [0] * len(full_sizes)
+    updated_full_sizes = [0] * len(x.get_shape())
+    updated_full_begin = [0] * len(x.get_shape())
     updated_starts = [0] * slice_len
     updated_ends = [0] * slice_len
 
