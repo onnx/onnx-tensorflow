@@ -88,7 +88,12 @@ class TensorflowRep(BackendRep):
       # single input
       feed_dict = dict([(self.inputs[0], inputs)])
 
-    input_dict = dict([(x[0], tf.constant(x[1])) for x in feed_dict.items()])
+    input_dict = {}
+    for k, v in feed_dict.items():
+      if isinstance(v, list):
+        input_dict[k] = [tf.constant(x) for x in v]
+      else:
+        input_dict[k] = tf.constant(v)
 
     output_values = self.tf_module(**input_dict)
 
