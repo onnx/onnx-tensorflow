@@ -131,7 +131,8 @@ class TensorflowBackend(Backend):
     tf_rep_graph = tf.Graph()
     with tf_rep_graph.as_default():
       for value_info in graph_def.input:
-        if value_info.name in initialized:
+        if value_info.name in initialized or not value_info.type.HasField(
+            'tensor_type'):
           continue
         shape = list(
             d.dim_value if (d.dim_value > 0 and d.dim_param == "") else None

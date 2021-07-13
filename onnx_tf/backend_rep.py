@@ -97,11 +97,20 @@ class TensorflowRep(BackendRep):
 
     output_values = self.tf_module(**input_dict)
 
-    o_values = [
-        output_values[o_name].numpy() if isinstance(
-            output_values[o_name], tf.Tensor) else output_values[o_name]
-        for o_name in output_values
-    ]
+    o_values = []
+    for o_name in output_values:
+      if isinstance(output_values[o_name], (list, tuple)):
+        v_list = []
+        for v in output_values[o_name]:
+          if isinstance(v, tf.Tensor):
+            v_list.append(v.numpy())
+          else:
+            v_list.append(v)
+        o_values.append(v_list)
+      elif isinstance(output_values[o_name], tf.Tensor):
+        o_values.append(output_values[o_name].numpy())
+      else:
+        o_values.append(output_values[o_name])
 
     return namedtupledict('Outputs', self.outputs)(*o_values)
 
