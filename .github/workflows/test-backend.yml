@@ -29,7 +29,7 @@ jobs:
             # - allow failure via GitHub branch protection rule
             os: ubuntu-latest
             python-version: 3.8
-            onnx-version: 'https://github.com/onnx/onnx.git'
+            onnx-version: 'development'
             tensorflow-version: 'tensorflow-cpu tensorflow-addons'
 
     steps:
@@ -40,13 +40,13 @@ jobs:
       with:
         python-version: ${{ matrix.python-version }}
     - name: Install protobuf
-      if: ${{ startsWith(matrix.onnx-version, 'https') }}
+      if: ${{ matrix.onnx-version == 'development' }}
       run: |
         pip install pytest tabulate ${{ matrix.tensorflow-version }}
         #build onnx 
         auth_header="$(git config --local --get http.https://github.com/.extraheader)"
         tmp_dir=$(mktemp -d)
-        git clone ${{ https://github.com/onnx/onnx.git }} $tmp_dir
+        git clone https://github.com/onnx/onnx.git $tmp_dir
         cd $tmp_dir
         git submodule sync --recursive
         git -c "http.extraheader=$auth_header" -c protocol.version=2 submodule update --init --force --recursive --depth=1
