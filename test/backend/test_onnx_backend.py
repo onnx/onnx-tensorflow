@@ -149,6 +149,10 @@ backend_test.exclude(r'test_bernoulli_expanded[a-z,_]*')
 backend_test.exclude(r'test_bernoulli_double_expanded[a-z,_]*')
 backend_test.exclude(r'test_bernoulli_seed_expanded[a-z,_]*')
 
+# Exclude optional_get_element, test_optional_has_element tests
+backend_test.exclude(r'test_optional_get_element[a-z,_]*')
+backend_test.exclude(r'test_optional_has_element[a-z,_]*')
+
 # import all test cases at global scope to make them visible to python.unittest
 globals().update(backend_test.enable_report().test_cases)
 
