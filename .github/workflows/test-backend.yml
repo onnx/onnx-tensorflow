@@ -29,7 +29,7 @@ jobs:
             # - allow failure via GitHub branch protection rule
             os: ubuntu-latest
             python-version: 3.8
-            onnx-version: 'git+https://github.com/onnx/onnx.git@master'
+            onnx-version: 'onnx==development'
             tensorflow-version: 'tensorflow-cpu tensorflow-addons'
 
     steps:
@@ -39,15 +39,22 @@ jobs:
       uses: actions/setup-python@v2
       with:
         python-version: ${{ matrix.python-version }}
-    - # protobuf is required only when ONNX is built from source
-      name: Install protobuf
-      if: ${{ matrix.os == 'ubuntu-latest' && startsWith(matrix.onnx-version, 'git+') }}
-      run: |
-        sudo apt-get install -y protobuf-compiler libprotoc-dev
     - name: Install dependencies, ONNX ${{ matrix.onnx-version }}
       run: |
         pip install pytest tabulate ${{ matrix.tensorflow-version }}
-        pip install ${{ matrix.onnx-version }}
+        if [ "${{ matrix.onnx-version }}" == "onnx==development" ];then
+          auth_header="$(git config --local --get http.https://github.com/.extraheader)"
+          tmp_dir=$(mktemp -d)
+          git clone https://github.com/onnx/onnx.git $tmp_dir
+          cd $tmp_dir
+          git submodule sync --recursive
+          git -c "http.extraheader=$auth_header" -c protocol.version=2 submodule update --init --force --recursive --depth=1
+          docker run --rm -v $(pwd):/github/workspace --workdir /github/workspace --entrypoint bash \
+          quay.io/pypa/manylinux2010_x86_64 .github/workflows/manylinux/entrypoint.sh ${{ matrix.python-version }} manylinux2010_x86_64 pull_request
+          pip install dist/*manylinux2010_x86_64.whl 
+        else
+          pip install ${{ matrix.onnx-version }}
+        fi
         pip install -e .
     - name: Run Backend tests
       run: |
