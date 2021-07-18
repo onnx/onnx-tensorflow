@@ -40,7 +40,7 @@ jobs:
       with:
         python-version: ${{ matrix.python-version }}
     - name: Install protobuf
-      if: ${{ matrix.onnx-version == 'https://github.com/onnx/onnx.git' }}
+      if: ${{ startsWith(matrix.onnx-version, 'https') }}
       run: |
         pip install pytest tabulate ${{ matrix.tensorflow-version }}
         #build onnx 
