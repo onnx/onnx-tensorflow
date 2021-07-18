@@ -39,7 +39,7 @@ jobs:
       uses: actions/setup-python@v2
       with:
         python-version: ${{ matrix.python-version }}
-    - name: Install protobuf
+    - name: Install dependencies, ONNX ${{ matrix.onnx-version }}
       if: ${{ matrix.onnx-version == 'development' }}
       run: |
         pip install pytest tabulate ${{ matrix.tensorflow-version }}
