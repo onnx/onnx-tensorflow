@@ -88,15 +88,29 @@ class TensorflowRep(BackendRep):
       # single input
       feed_dict = dict([(self.inputs[0], inputs)])
 
-    input_dict = dict([(x[0], tf.constant(x[1])) for x in feed_dict.items()])
+    input_dict = {}
+    for k, v in feed_dict.items():
+      if isinstance(v, list):
+        input_dict[k] = [tf.constant(x) for x in v]
+      else:
+        input_dict[k] = tf.constant(v)
 
     output_values = self.tf_module(**input_dict)
 
-    o_values = [
-        output_values[o_name].numpy() if isinstance(
-            output_values[o_name], tf.Tensor) else output_values[o_name]
-        for o_name in output_values
-    ]
+    o_values = []
+    for o_name in output_values:
+      if isinstance(output_values[o_name], (list, tuple)):
+        v_list = []
+        for v in output_values[o_name]:
+          if isinstance(v, tf.Tensor):
+            v_list.append(v.numpy())
+          else:
+            v_list.append(v)
+        o_values.append(v_list)
+      elif isinstance(output_values[o_name], tf.Tensor):
+        o_values.append(output_values[o_name].numpy())
+      else:
+        o_values.append(output_values[o_name])
 
     return namedtupledict('Outputs', self.outputs)(*o_values)
 

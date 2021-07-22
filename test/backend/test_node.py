@@ -230,7 +230,7 @@ class TestNode(unittest.TestCase):
         test_cases.append((TensorProto.BFLOAT16, tf.bfloat16))
     for ty, tf_type in test_cases:
       node_def = helper.make_node("Cast", ["input"], ["output"], to=ty)
-      vector = [2, 3]
+      vector = np.array([2, 3])
       output = run_node(node_def, [vector])
       np.testing.assert_equal(output["output"].dtype, tf_type)
     if not legacy_opset_pre_ver(9):
@@ -243,7 +243,7 @@ class TestNode(unittest.TestCase):
                      (TensorProto.DOUBLE, tf.float64)]
       for ty, tf_type in test_cases2:
         node_def = helper.make_node("Cast", ["input"], ["output"], to=ty)
-        vector = ['2', '3']
+        vector = np.array(['2', '3'])
         output = run_node(node_def, [vector])
         np.testing.assert_equal(output["output"].dtype, tf_type)
 
@@ -253,7 +253,7 @@ class TestNode(unittest.TestCase):
                      (TensorProto.DOUBLE, tf.float64)]
       for ty, tf_type in test_cases3:
         node_def = helper.make_node("Cast", ["input"], ["output"], to=ty)
-        vector = ['3.14159', '1e-5', '1E8', 'NaN', '-INF', '+INF']
+        vector = np.array(['3.14159', '1e-5', '1E8', 'NaN', '-INF', '+INF'])
         output = run_node(node_def, [vector])
         np.testing.assert_equal(output["output"].dtype, tf_type)
 
@@ -804,7 +804,7 @@ class TestNode(unittest.TestCase):
 
   def test_expand(self):
     node_def = helper.make_node("Expand", ["X", "shape"], ["Y"])
-    x = [[True], [False], [True]]
+    x = np.array([[True], [False], [True]])
     shape = [2, 1, 6]
     y = x * np.ones(shape, dtype=np.bool)
     output = run_node(node_def, [x, shape])
@@ -839,7 +839,7 @@ class TestNode(unittest.TestCase):
   def test_gather(self):
     node_def = helper.make_node("Gather", ["X", "Y"], ["Z"])
     x = self._get_rnd_float32(shape=[10, 10])
-    y = [[0, 1], [1, 2]]
+    y = np.array([[0, 1], [1, 2]])
     output = run_node(node_def, [x, y])
     test_output = np.zeros((2, 2, 10))
     for i in range(0, 2):
@@ -851,11 +851,11 @@ class TestNode(unittest.TestCase):
     np.testing.assert_almost_equal(output["Z"], test_output)
     if defs.onnx_opset_version() >= 11:
       # test negative indices
-      y = [[-10, -9], [1, -8]]
+      y = np.array([[-10, -9], [1, -8]])
       output = run_node(node_def, [x, y])
       np.testing.assert_almost_equal(output["Z"], test_output)
       # test out of bound indices
-      for y in ([[-10, 11], [1, -8]], [[-10, -11], [1, -8]]):
+      for y in (np.array([[-10, 11], [1, -8]]), np.array([[-10, -11], [1, -8]])):
         try:
           output = run_node(node_def, [x, y])
           np.testing.assert_almost_equal(output["Z"], test_output)
@@ -3870,10 +3870,10 @@ class TestNode(unittest.TestCase):
 
   def test_slice(self):
     # test case 1 with normal inputs
-    axes = [0, 1, 2]
-    starts = [0, 0, 0]
-    ends = [2, 2, 2]
-    steps = [1, 1, 1]
+    axes = np.array([0, 1, 2])
+    starts = np.array([0, 0, 0])
+    ends = np.array([2, 2, 2])
+    steps = np.array([1, 1, 1])
 
     if legacy_opset_pre_ver(10):
       node_def = helper.make_node("Slice", ["X"], ["S"],
@@ -3892,9 +3892,9 @@ class TestNode(unittest.TestCase):
       np.testing.assert_almost_equal(output["S"], x[0:2, 0:2, 0:2])
 
     # test case 2 with negative, out-of-bound and default inputs
-    axes = [0, 2]
-    starts = [0, -7]
-    ends = [-8, 20]
+    axes = np.array([0, 2])
+    starts = np.array([0, -7])
+    ends = np.array([-8, 20])
 
     if legacy_opset_pre_ver(10):
       node_def = helper.make_node("Slice", ["X"], ["S"],
@@ -3912,10 +3912,10 @@ class TestNode(unittest.TestCase):
       np.testing.assert_almost_equal(output["S"], x[0:-8, :, -7:20])
 
     # test case 3 with non-default steps
-    axes = [0, 1, 2]
-    starts = [0, 0, 0]
-    ends = [2, 2, 2]
-    steps = [2, -2, -1]
+    axes = np.array([0, 1, 2])
+    starts = np.array([0, 0, 0])
+    ends = np.array([2, 2, 2])
+    steps = np.array([2, -2, -1])
 
     if legacy_opset_pre_ver(10) == False:
       node_def = helper.make_node("Slice",
@@ -4201,3 +4201,4 @@ class TestNode(unittest.TestCase):
 
 if __name__ == '__main__':
   unittest.main()
+

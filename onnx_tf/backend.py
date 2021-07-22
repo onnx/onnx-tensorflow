@@ -131,7 +131,8 @@ class TensorflowBackend(Backend):
     tf_rep_graph = tf.Graph()
     with tf_rep_graph.as_default():
       for value_info in graph_def.input:
-        if value_info.name in initialized:
+        if value_info.name in initialized or not value_info.type.HasField(
+            'tensor_type'):
           continue
         shape = list(
             d.dim_value if (d.dim_value > 0 and d.dim_param == "") else None
@@ -245,8 +246,12 @@ class TensorflowBackend(Backend):
       feed_dict_raw = dict(zip(node.inputs, inputs))
 
     # TODO: is constant the best way for feeding inputs?
-    input_dict = dict([(x[0], tf.constant(x[1])) for x in feed_dict_raw.items()
-                      ])
+    input_dict = {}
+    for k, v in feed_dict_raw.items():
+      if isinstance(v, list):
+        input_dict[k] = [tf.constant(x) for x in v]
+      else:
+        input_dict[k] = tf.constant(v)
 
     module = TFModule(node, cls)
 
