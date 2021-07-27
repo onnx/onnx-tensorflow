@@ -97,8 +97,8 @@ class ConvMixin(BroadcastMixin):
     # Is this convolution depthwise we can support?
     depthwise = (x_rank == 4 and len(weight_shape) == 4 and group != 1 and
                  not transpose and not (None in weight_shape))
-    if depthwise and isinstance(x_shape, np.ndarray):
-      depthwise = bool(group == x_shape[1])
+    if depthwise and (x_rank > 1 and x.get_shape().as_list()[1] != None):
+      depthwise = bool(group == x.get_shape().as_list()[1])
 
     if depthwise is True:
       # Depthwise convolution.
