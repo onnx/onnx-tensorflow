@@ -1,5 +1,3 @@
-import numpy as np
-
 import tensorflow as tf
 
 from onnx_tf.common import exception
