@@ -66,7 +66,10 @@ class GatherAndScatterMixin(object):
     send it to Tensorflow.
     """
     data_shape = tf_shape(data)
-    indices_shape = tf_shape(indices)
+    if data.get_shape().is_fully_defined():
+      indices_shape = indices.get_shape().as_list()
+    else:
+      indices_shape = tf_shape(indices)
     if batch_dims > 0:
       max_i = tf.cast(data_shape[batch_dims:indices_shape[-1] + batch_dims],
                       indices.dtype)
