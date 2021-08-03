@@ -1,14 +1,27 @@
 import tensorflow as tf
 import onnx_tf.backend
 
+from onnx_tf.common import exception
 from onnx_tf.handlers.backend_handler import BackendHandler
 from onnx_tf.handlers.handler import onnx_op
+from onnx_tf.handlers.handler import partial_support
+from onnx_tf.handlers.handler import ps_description
 from onnx_tf.handlers.handler import tf_func
 
 
 @onnx_op("BatchNormalization")
 @tf_func(tf.nn.batch_normalization)
+@partial_support(True)
+@ps_description(
+    "BatchNormalization with training_mode=1 is not supported in Tensorflow converte."
+)
 class BatchNormalization(BackendHandler):
+
+  @classmethod
+  def args_check(cls, node, **kwargs):
+    if node.attrs.get("training_mode", 0) == 1:
+      exception.OP_UNSUPPORTED_EXCEPT("BatchNormalization with training_mode=1",
+                                      "Tensorflow converter")
 
   @classmethod
   def get_attrs_processor_param(cls):
@@ -108,4 +121,8 @@ class BatchNormalization(BackendHandler):
 
   @classmethod
   def version_9(cls, node, **kwargs):
+    return cls._common(node, **kwargs)
+
+  @classmethod
+  def version_14(cls, node, **kwargs):
     return cls._common(node, **kwargs)
