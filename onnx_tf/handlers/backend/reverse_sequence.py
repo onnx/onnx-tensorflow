@@ -11,15 +11,8 @@ class ReverseSequence(BackendHandler):
 
   @classmethod
   def get_attrs_processor_param(cls):
-    return {
-        "default": {
-            "time_axis": 0,
-            "batch_axis": 1
-        },
-        "rename": {
-            "time_axis": "seq_axis"
-        }
-    }
+    return {"default": {"time_axis": 0, "batch_axis": 1},
+            "rename": {"time_axis": "seq_axis"}}
 
   @classmethod
   def version_10(cls, node, **kwargs):

@@ -4,7 +4,6 @@ import tensorflow as tf
 
 from onnx_tf.common import get_unique_suffix
 from onnx_tf.common import exception
-from onnx_tf.common import get_variable_name
 from onnx_tf.handlers.backend_handler import BackendHandler
 from onnx_tf.handlers.handler import onnx_op
 from onnx_tf.handlers.handler import partial_support
@@ -14,49 +13,14 @@ from .rnn_mixin import RNNMixin
 
 @onnx_op("GRU")
 @partial_support(True)
-@ps_description(
-    "GRU with clip or GRU with linear_before_reset, or " +
-    "GRU not using sigmoid for z and r, or " +
-    "GRU using Elu as the activation function " + "with alpha != 1, or " +
-    "GRU using HardSigmoid as the activation function " +
-    "with alpha != 0.2 or beta != 0.5 " + "are not supported in TensorFlow.")
+@ps_description("GRU with clip or GRU with linear_before_reset, or " +
+                "GRU not using sigmoid for z and r, or " +
+                "GRU using Elu as the activation function " +
+                "with alpha != 1, or " +
+                "GRU using HardSigmoid as the activation function " +
+                "with alpha != 0.2 or beta != 0.5 " +
+                "are not supported in TensorFlow.")
 class GRU(RNNMixin, BackendHandler):
-
-  # declare variable names for custom getters
-  weight_gates_var_name = 'kernel_gates'
-  weight_candidate_var_name = 'kernel_candidate'
-  weight_other_var_name = 'kernel_other'
-  bias_gates_var_name = 'bias_gates'
-  bias_candidate_var_name = 'bias_candidate'
-
-  @classmethod
-  def get_req_vars_template(cls, node, init_dict):
-    """ Get required variables template, which is a dictionary of
-        variable names with initial value and shape
-        :return: Dict.
-    """
-    return {
-        cls.weight_gates_var_name: [
-            tf.constant([[0.]], dtype=tf.float32),
-            tf.TensorShape([None, None])
-        ],
-        cls.weight_candidate_var_name: [
-            tf.constant([[0.]], dtype=tf.float32),
-            tf.TensorShape([None, None])
-        ],
-        cls.weight_other_var_name: [
-            tf.constant([[0.]], dtype=tf.float32),
-            tf.TensorShape([None, None])
-        ],
-        cls.bias_gates_var_name: [
-            tf.constant([0.], dtype=tf.float32),
-            tf.TensorShape([None])
-        ],
-        cls.bias_candidate_var_name: [
-            tf.constant([0.], dtype=tf.float32),
-            tf.TensorShape([None])
-        ]
-    }
 
   @classmethod
   def args_check(cls, node, **kwargs):
@@ -107,28 +71,14 @@ class GRU(RNNMixin, BackendHandler):
       w_z, w_r, w_h = tf.split(tf.squeeze(w), 3)
       r_z, r_r, r_h = tf.split(tf.squeeze(r), 3)
       if names[-2] == "gates":
-        weight_var = tensor_dict[get_variable_name(node,
-                                                   cls.weight_gates_var_name)]
         new_w = tf.transpose(tf.concat([w_r, w_z], 0))
         new_r = tf.transpose(tf.concat([r_r, r_z], 0))
       elif names[-2] == "candidate":
-        weight_var = tensor_dict[get_variable_name(
-            node, cls.weight_candidate_var_name)]
         new_w = tf.transpose(w_h)
         new_r = tf.transpose(r_h)
-      else:
-        weight_var = tensor_dict[get_variable_name(node,
-                                                   cls.weight_other_var_name)]
-        new_w = None
-        new_r = None
-      weight_var.assign(tf.concat([new_w, new_r], 0))
-      return weight_var
+      kernel = tf.concat([new_w, new_r], 0)
+      return kernel
     if names[-1] == "bias":
-      if names[-2] == "gates":
-        bias_var = tensor_dict[get_variable_name(node, cls.bias_gates_var_name)]
-      elif names[-2] == "candidate":
-        bias_var = tensor_dict[get_variable_name(node,
-                                                 cls.bias_candidate_var_name)]
       if len(node.inputs) >= 4:
         # onnx Wb[zrh], Rb[zrh]
         if is_bidirectional:
@@ -144,13 +94,9 @@ class GRU(RNNMixin, BackendHandler):
         elif names[-2] == "candidate":
           w_b = tf.transpose(w_b_h)
           r_b = tf.transpose(r_b_h)
-        bias_var.assign(tf.add(w_b, r_b))
-      else:
-        bias_var.assign(tf.zeros([node.attrs["hidden_size"]], tf.float32))
-      return bias_var
+        return tf.add(w_b, r_b)
+      return getter(name, *args, **kwargs)
     return getter(name, *args, **kwargs)
-
-  scope = None
 
   @classmethod
   def _common(cls, node, **kwargs):
@@ -192,13 +138,14 @@ class GRU(RNNMixin, BackendHandler):
                                    activation_beta[3]))
 
     # TODO(fumihwh): check if reverse and bidirectional works
-    with tf.compat.v1.variable_scope("GRU_" + get_unique_suffix(),
-                                     custom_getter=partial(
-                                         cls._custom_getter,
-                                         node=node,
-                                         tensor_dict=tensor_dict,
-                                         is_bidirectional=num_directions == 2),
-                                     reuse=False):
+    with tf.variable_scope(
+        "GRU_" + get_unique_suffix(),
+        custom_getter=partial(
+            cls._custom_getter,
+            node=node,
+            tensor_dict=tensor_dict,
+            is_bidirectional=num_directions == 2)):
+
       cell_kwargs["num_units"] = hidden_size
       if input_size < 4 or node.inputs[3] not in tensor_dict:
         cell_kwargs["bias_initializer"] = tf.zeros_initializer
@@ -221,9 +168,8 @@ class GRU(RNNMixin, BackendHandler):
       rnn_kwargs["time_major"] = True
       rnn_kwargs["dtype"] = tf.float32
 
-      outputs, states = cls.rnn(x, tf.compat.v1.nn.rnn_cell.GRUCell,
-                                cell_kwargs, rnn_kwargs, tf_activations,
-                                direction)
+      outputs, states = cls.rnn(x, tf.nn.rnn_cell.GRUCell, cell_kwargs,
+                                rnn_kwargs, tf_activations, direction)
 
     if num_directions == 1:
       state = states[0]

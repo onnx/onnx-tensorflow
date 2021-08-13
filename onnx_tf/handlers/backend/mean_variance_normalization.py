@@ -19,14 +19,14 @@ class MeanVarianceNormalization(BackendHandler):
     moments_axes = [0] if not across_channels else [0, 1]
     moments_axes += list(range(inputs_rank))[2:]
 
-    mean, variance = tf.nn.moments(inputs, moments_axes, keepdims=True)
+    mean, variance = tf.nn.moments(inputs, moments_axes, keep_dims=True)
 
     if not normalize_variance:
       return [inputs - mean]
     return [(inputs - mean) / tf.sqrt(variance)]
 
   @classmethod
-  def _common(cls, node, **kwargs):
+  def version_9(cls, node, **kwargs):
     tensor_dict = kwargs["tensor_dict"]
     inputs = tensor_dict[node.inputs[0]]
     inputs_rank = inputs.shape.ndims
@@ -43,14 +43,5 @@ class MeanVarianceNormalization(BackendHandler):
     default_axes = [0] if inputs_rank < 3 else [0, 2]
     default_axes += list(range(inputs_rank))[3:]
     moments_axes = node.attrs.get("axes", default_axes)
-    mean, variance = tf.nn.moments(inputs, moments_axes, keepdims=True)
+    mean, variance = tf.nn.moments(inputs, moments_axes, keep_dims=True)
     return [(inputs - mean) / tf.sqrt(variance)]
-
-  @classmethod
-  def version_9(cls, node, **kwargs):
-    return cls._common(node, **kwargs)
-
-  @classmethod
-  def version_13(cls, node, **kwargs):
-    return cls._common(node, **kwargs)
-

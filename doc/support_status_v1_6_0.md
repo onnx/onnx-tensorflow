@@ -3,7 +3,7 @@
 |-:|:-|
 |ONNX-Tensorflow Version|v1.6.0|
 |ONNX Version|v1.6.0|
-|Tensorflow Version|v2.2.0|
+|Tensorflow Version|v1.15.0|
 
 Notes:
 * Values that are new or updated from a previous opset version are in bold.
@@ -35,7 +35,7 @@ Notes:
 |Clip|**1**:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|**6**:small_orange_diamond:|6:small_orange_diamond:|6:small_orange_diamond:|6:small_orange_diamond:|6:small_orange_diamond:|**11**:small_orange_diamond:|Clip|
 |Compress|-|-|-|-|-|-|-|-|**9**|9|**11**|Compress|
 |Concat|**1**|1|1|**4**|4|4|4|4|4|4|**11**|Concat|
-|ConcatFromSequence|-|-|-|-|-|-|-|-|-|-|**11**:small_orange_diamond:|ConcatFromSequence|
+|ConcatFromSequence|-|-|-|-|-|-|-|-|-|-|**11**:small_red_triangle:|ConcatFromSequence|
 |Constant|**1**|1|1|1|1|1|1|1|**9**|9|**11**|Constant|
 |ConstantOfShape|-|-|-|-|-|-|-|-|**9**|9|9|ConstantOfShape|
 |Conv|**1**|1|1|1|1|1|1|1|1|1|**11**|Conv|
@@ -154,7 +154,7 @@ Notes:
 |Softsign|**1**|1|1|1|1|1|1|1|1|1|1|Softsign|
 |SpaceToDepth|**1**|1|1|1|1|1|1|1|1|1|1|SpaceToDepth|
 |Split|**1**|**2**|2|2|2|2|2|2|2|2|**11**|Split|
-|SplitToSequence|-|-|-|-|-|-|-|-|-|-|**11**:small_orange_diamond:|SplitToSequence|
+|SplitToSequence|-|-|-|-|-|-|-|-|-|-|**11**:small_red_triangle:|SplitToSequence|
 |Sqrt|**1**|1|1|1|1|**6**|6|6|6|6|6|Sqrt|
 |Squeeze|**1**|1|1|1|1|1|1|1|1|1|**11**|Squeeze|
 |StringNormalizer|-|-|-|-|-|-|-|-|-|**10**:small_red_triangle:|10:small_red_triangle:|StringNormalizer|
@@ -173,22 +173,21 @@ Notes:
 |Where|-|-|-|-|-|-|-|-|**9**|9|9|Where|
 |Xor|**1**|1|1|1|1|1|**7**|7|7|7|7|Xor|
 
-ONNX-TF Supported Operators / ONNX Operators: 151 / 156
+ONNX-TF Supported Operators / ONNX Operators: 149 / 156
 
 Notes:
 1. Cast: Cast string to float32/float64/int32/int64 are not supported in Tensorflow.
 2. Clip: Clip input in uint64 is not supported in Tensorflow.
-3. ConcatFromSequence: new_axis=1 not supported in Tensorflow.
-4. ConvTranspose: ConvTranspose with dilations != 1, or transposed convolution for 4D or higher are not supported in Tensorflow.
-5. CumSum: CumSum inputs in uint32/uint64 are not supported in Tensorflow.
-6. Equal: Equal inputs in uint16/uint32/uint64 are not supported in Tensorflow.
-7. GRU: GRU with clip or GRU with linear_before_reset, or GRU not using sigmoid for z and r, or GRU using Elu as the activation function with alpha != 1, or GRU using HardSigmoid as the activation function with alpha != 0.2 or beta != 0.5 are not supported in TensorFlow.
-8. LSTM: LSTM not using sigmoid for `f`, or LSTM not using the same activation for `g` and `h` are not supported in Tensorflow.
-9. MaxPool: MaxPoolWithArgmax with pad is None or incompatible mode, or MaxPoolWithArgmax with 4D or higher input, or MaxPoolWithArgmax with column major are not supported in Tensorflow.
-10. Mod: Mod Dividend or Divisor in int8/int16/uint8/uint16/uint32/uint64 are not supported in Tensorflow.
-11. OneHot: OneHot indices in uint16/uint32/uint64/int8/int16/float16/float/double, or OneHot depth in uint8/uint16/uint32/uint64/int8/int16/int64/float16/float/double are not supported in Tensorflow.
-12. RNN: RNN with clip is not supported in Tensorflow.
-13. Resize: Resize required 4D input in Tensorflow. For opset 11, only the following attributes and inputs conbination are supported in Tensorflow:
+3. ConvTranspose: ConvTranspose with dilations != 1, or transposed convolution for 4D or higher are not supported in Tensorflow.
+4. CumSum: CumSum inputs in uint32/uint64 are not supported in Tensorflow.
+5. Equal: Equal inputs in uint16/uint32/uint64 are not supported in Tensorflow.
+6. GRU: GRU with clip or GRU with linear_before_reset, or GRU not using sigmoid for z and r, or GRU using Elu as the activation function with alpha != 1, or GRU using HardSigmoid as the activation function with alpha != 0.2 or beta != 0.5 are not supported in TensorFlow.
+7. LSTM: LSTM not using sigmoid for `f`, or LSTM not using the same activation for `g` and `h` are not supported in Tensorflow.
+8. MaxPool: MaxPoolWithArgmax with pad is None or incompatible mode, or MaxPoolWithArgmax with 4D or higher input, orMaxPoolWithArgmax with column major are not supported in Tensorflow.
+9. Mod: Mod Dividend or Divisor in int8/int16/uint8/uint16/uint32/uint64 are not supported in Tensorflow.
+10. OneHot: OneHot indices in uint16/uint32/uint64/int8/int16/float16/float/double, or OneHot depth in uint8/uint16/uint32/uint64/int8/int16/int64/float16/float/double are not supported in Tensorflow.
+11. RNN: RNN with clip is not supported in Tensorflow.
+12. Resize: Resize required 4D input in Tensorflow. For opset 11, only the following attributes and inputs conbination are supported in Tensorflow:
 	1. mode=nearest, coordinate_transformation_mode=align_corners, nearest_mode=round_prefer_ceil, can use scales(*) or sizes.
 	2. mode=nearest, coordinate_transformation_mode=asymmetric, nearest_mode=floor, can use scales(*) or sizes.
 	3. mode=nearest, coordinate_transformation_mode=tf_half_pixel_for_nn, nearest_mode=floor, can use scales(*) or sizes.
@@ -201,5 +200,4 @@ Notes:
 	10. mode=nearest, coordinate_transformation_mode=tf_crop_and_resize, extrapolation_value=any_float_value, nearest_mode=round_prefer_ceil, can use scales or sizes.
 	11. mode=linear, coordinate_transformation_mode=tf_crop_and_resize, extrapolation_value=any_float_value, can use scales or sizes.
 	- Note (*): The accuracy of your model will go down, if the height and the width of the new sizes(scales * origial sizes) are not in whole numbers.
-14. SplitToSequence: Scalar as the split input not supported.
-15. Upsample: Upsample required 4D input in Tensorflow.
+13. Upsample: Upsample required 4D input in Tensorflow.

@@ -9,10 +9,8 @@ import inspect
 import tensorflow as tf
 
 from onnx_tf.common import IS_PYTHON3
-from onnx_tf.common import exception
 from onnx_tf.common import get_data_format
 from onnx_tf.common import get_perm_from_formats
-from onnx_tf.common import get_variable_name
 from onnx_tf.common import sys_config
 from .handler import Handler
 
@@ -26,50 +24,6 @@ class BackendHandler(Handler):
   """
 
   TF_FUNC = None
-
-  @classmethod
-  def get_initializer_from_subgraph(cls, node, init_dict, callback_func):
-    """ Get initializer from subgraph in node
-    :param node: OnnxNode object.
-    :param init_dict: initializer dictionary for the model so far
-    :param callback_func: the callback function
-    :return: updated initializer dictionary
-    """
-    return init_dict
-
-  @classmethod
-  def get_req_vars_template(cls, node, init_dict):
-    """ Get required variables template, which is a
-    dictionary of variable names with initial value and shape
-    :param node: OnnxNode object.
-    :param init_dict: initializer dictionary of the graph.
-    :return: template Dictionary.
-    """
-    return {}
-
-  @classmethod
-  def create_variables(cls, handlers, node, init_dict, var_dict, callback_func):
-    """ Create variable base on variable template return in
-    get_req_vars_template.
-    :param handlers: all backend handlers
-    :param node: OnnxNode object.
-    :param var_dict: variable dictionary for the model so far
-    :param callback_func: the callback function
-    :return: updated variable dictionary.
-    """
-    if bool(cls.get_req_vars_template(node, init_dict)):
-      for v_name, v_template in cls.get_req_vars_template(node,
-                                                          init_dict).items():
-        v_init, v_shape = v_template
-        v_name = get_variable_name(node, v_name)
-        if v_name in var_dict.keys():
-          # found duplicated variable name due to non unique node name
-          exception.NONUNIQUE_NODE_NAME_EXCEPT()
-        var_dict[v_name] = tf.Variable(v_init,
-                                       dtype=v_init.dtype,
-                                       shape=v_shape,
-                                       name=v_name)
-    return var_dict
 
   @classmethod
   def get_attrs_processor_param(cls):
@@ -229,8 +183,8 @@ class BackendHandler(Handler):
 
     attrs = {p: v for p, v in attrs.items() if p in params}
     kwargs = dict(zip(params, inputs))
-    ambiguous_arguments = any(
-        kwargs.get(p) is not None and v is not None for p, v in attrs.items())
+    ambiguous_arguments = any(kwargs.get(p) is not None and v is not None
+                              for p, v in attrs.items())
     if ambiguous_arguments:
       raise TypeError('Ambiguous arguments for {}()'.format(tf_func.__name__))
     kwargs.update((p, v) for p, v in attrs.items() if v is not None)

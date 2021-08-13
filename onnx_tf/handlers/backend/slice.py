@@ -1,8 +1,13 @@
 import tensorflow as tf
+try:
+  from tensorflow.math import floormod as tf_floormod
+except ImportError: # for older tf-1.x versions
+  from tensorflow import floormod as tf_floormod
 
 from onnx_tf.handlers.backend_handler import BackendHandler
 from onnx_tf.handlers.handler import onnx_op
 from onnx_tf.handlers.handler import tf_func
+from onnx_tf.common.tf_helper import tf_shape
 
 
 @onnx_op("Slice")
@@ -14,16 +19,15 @@ class Slice(BackendHandler):
     tensor_dict = kwargs["tensor_dict"]
     x = tensor_dict[node.inputs[0]]
 
-    # Shape output as int64 since the spec implicitly allows int64
-    full_sizes = tf.shape(x, out_type=tf.int64)
+    full_sizes = tf_shape(x)
 
     starts = node.attrs.get("starts")
     ends = node.attrs.get("ends")
     slice_len = len(starts)
     axes = node.attrs.get("axes", list(range(slice_len)))
 
-    updated_full_sizes = [0] * len(x.get_shape())
-    updated_full_begin = [0] * len(x.get_shape())
+    updated_full_sizes = [0] * x.shape.rank
+    updated_full_begin = [0] * x.shape.rank
     updated_starts = [0] * slice_len
     updated_ends = [0] * slice_len
 
@@ -50,14 +54,15 @@ class Slice(BackendHandler):
             updated_full_sizes[axis] = updated_ends[i] - updated_starts[i]
 
     return [
-        cls.make_tensor_from_onnx_node(node,
-                                       tf_func=tf.slice,
-                                       inputs=[
-                                           tensor_dict[node.inputs[0]],
-                                           updated_full_begin,
-                                           updated_full_sizes
-                                       ],
-                                       **kwargs)
+        cls.make_tensor_from_onnx_node(
+            node,
+            tf_func=tf.slice,
+            inputs=[
+                tensor_dict[node.inputs[0]],
+                updated_full_begin,
+                updated_full_sizes
+            ],
+            **kwargs)
     ]
 
   @classmethod
@@ -70,19 +75,19 @@ class Slice(BackendHandler):
     # first of all, get the input tensor shape
     input_tensor_shape = tf.shape(input_tensor, out_type=ends.dtype)
 
-    axes = tensor_dict[node.inputs[3]] if len(node.inputs) >= 4 else tf.range(
-        tf.shape(starts)[0], dtype=ends.dtype)
+    axes = tensor_dict[node.inputs[3]] if len(
+        node.inputs) >= 4 else tf.range(tf.shape(starts, out_type=ends.dtype)[0])
 
-    is_axes_negative = tf.less(axes, tf.zeros_like(axes))
-    axes = tf.where(is_axes_negative,
-                    axes + tf.cast(tf.rank(input_tensor), axes.dtype), axes)
+    # process negative axes
+    input_rank = tf.cast(tf.rank(input_tensor), axes.dtype)
+    axes = tf_floormod(tf.add(axes, input_rank), input_rank)
 
     # expand a dimension of 1 at the end
-    sparse_indices = tf.cast(tf.expand_dims(axes, -1), tf.int64)
+    sparse_indices = tf.expand_dims(axes, -1)
 
     # build the indexed dimension sizes as sparse_shape
-    sparse_shape = tf.gather_nd(params=input_tensor_shape,
-                                indices=sparse_indices)
+    sparse_shape = tf.gather_nd(
+        params=input_tensor_shape, indices=sparse_indices)
     sparse_shape = tf.cast(sparse_shape, ends.dtype)
 
     # take care of starts, ends that are larger than the dim size.
@@ -99,46 +104,42 @@ class Slice(BackendHandler):
     # need to densify everything for the inputs to slice
     # the output shape is the input_tensor rank
     output_shape = tf.reshape(tf.rank(input_tensor), [1])
-    output_shape = tf.cast(output_shape, tf.int64)
+    output_shape = tf.cast(output_shape, ends.dtype)
 
     # create dense tensor, pad 0 as default begins
-    dense_begins = tf.sparse.to_dense(
-        tf.sparse.SparseTensor(sparse_indices, starts_final, output_shape))
-
+    dense_begins = tf.sparse_to_dense(sparse_indices, output_shape,
+                                      starts_final)
     # create dense tensor, pad -1 for next step
-    dense_ends = tf.sparse.SparseTensor(sparse_indices, ends_final,
-                                        output_shape)
-    dense_ends = tf.sparse.to_dense(dense_ends,
-                                    default_value=tf.constant(
-                                        -1, dtype=dense_begins.dtype))
+    dense_ends = tf.sparse_to_dense(
+        sparse_indices,
+        output_shape,
+        ends_final,
+        default_value=tf.constant(-1, dtype=dense_begins.dtype))
+    # replace -1 with respective dimension sizes
     dense_ends = tf.where(
         tf.equal(dense_ends, tf.constant(-1, dtype=dense_begins.dtype)),
         input_tensor_shape, dense_ends)
 
     # create dense tensor for steps if not already so
     if len(node.inputs) >= 5:
-      dense_steps = tf.sparse.SparseTensor(sparse_indices,
-                                           tensor_dict[node.inputs[4]],
-                                           output_shape)
-      dense_steps = tf.sparse.to_dense(
-          dense_steps,
+      dense_steps = tf.sparse_to_dense(
+          sparse_indices,
+          output_shape,
+          tensor_dict[node.inputs[4]],
           default_value=tf.constant(1, dtype=tensor_dict[node.inputs[4]].dtype))
     else:
       dense_steps = tf.ones(input_tensor_shape.shape, ends.dtype)
 
     return [
-        cls.make_tensor_from_onnx_node(node,
-                                       inputs=[
-                                           tensor_dict[node.inputs[0]],
-                                           dense_begins, dense_ends, dense_steps
-                                       ],
-                                       **kwargs)
+        cls.make_tensor_from_onnx_node(
+            node,
+            inputs=[
+                tensor_dict[node.inputs[0]], dense_begins, dense_ends,
+                dense_steps
+            ],
+            **kwargs)
     ]
 
   @classmethod
   def version_11(cls, node, **kwargs):
-    return cls.version_10(node, **kwargs)
-
-  @classmethod
-  def version_13(cls, node, **kwargs):
     return cls.version_10(node, **kwargs)

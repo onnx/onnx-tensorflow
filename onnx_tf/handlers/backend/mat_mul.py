@@ -11,14 +11,12 @@ from onnx_tf.handlers.handler import tf_func
 @onnx_op("MatMul")
 @tf_func(tf.matmul)
 class MatMul(BackendHandler):
-  supported_types = [
-      tf.bfloat16, tf.float16, tf.float32, tf.float64, tf.int32, tf.int64
-  ]
+  supported_types = [tf.float16, tf.float32, tf.float64, tf.int32, tf.int64]
   cast_map = {tf.uint32: tf.int64}
 
   @classmethod
   def args_check(cls, node, **kwargs):
-    # update cast map based on the auto_cast config option
+    # update cast_map base on auto_cast flag
     cls.cast_map[tf.uint64] = tf.int64 if sys_config.auto_cast else None
 
     dtype = kwargs["tensor_dict"][node.inputs[0]].dtype
@@ -43,8 +41,4 @@ class MatMul(BackendHandler):
 
   @classmethod
   def version_9(cls, node, **kwargs):
-    return cls._common(node, **kwargs)
-
-  @classmethod
-  def version_13(cls, node, **kwargs):
     return cls._common(node, **kwargs)

@@ -19,9 +19,10 @@ class Constant(BackendHandler):
     dtype = data_type.onnx2tf(attr_value.data_type)
     value = numpy_helper.to_array(attr_value)
     return [
-        cls.make_tensor_from_onnx_node(node,
-                                       inputs=[value],
-                                       attrs={"dtype": dtype})
+        cls.make_tensor_from_onnx_node(
+            node, inputs=[value], attrs={
+                "dtype": dtype
+            })
     ]
 
   @classmethod
@@ -71,7 +72,3 @@ class Constant(BackendHandler):
                                        inputs=[value],
                                        attrs={"dtype": dtype})
     ]
-
-  @classmethod
-  def version_13(cls, node, **kwargs):
-    return cls.version_12(node, **kwargs)

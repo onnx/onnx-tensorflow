@@ -14,7 +14,7 @@ class Equal(ComparisonMixin, BackendHandler):
   cast_map = {tf.uint16: tf.int32, tf.uint32: tf.int64}
   supported_types = [
       tf.bool, tf.uint8, tf.int8, tf.int16, tf.int32, tf.int64, tf.float16,
-      tf.float32, tf.float64, tf.bfloat16
+      tf.float32, tf.float64
   ]
 
   @classmethod
@@ -55,8 +55,4 @@ class Equal(ComparisonMixin, BackendHandler):
 
   @classmethod
   def version_11(cls, node, **kwargs):
-    return cls._common(node, **kwargs)
-
-  @classmethod
-  def version_13(cls, node, **kwargs):
     return cls._common(node, **kwargs)

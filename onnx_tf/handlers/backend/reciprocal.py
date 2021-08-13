@@ -7,21 +7,13 @@ from .math_mixin import BasicMathMixin
 
 
 @onnx_op("Reciprocal")
-@tf_func(tf.math.reciprocal)
+@tf_func(tf.reciprocal)
 class Reciprocal(BasicMathMixin, BackendHandler):
 
   @classmethod
-  def _common(cls, node, **kwargs):
+  def version_1(cls, node, **kwargs):
     return [cls.make_tensor_from_onnx_node(node, **kwargs)]
 
   @classmethod
-  def version_1(cls, node, **kwargs):
-    return cls._common(node, **kwargs)
-
-  @classmethod
   def version_6(cls, node, **kwargs):
-    return cls._common(node, **kwargs)
-
-  @classmethod
-  def version_13(cls, node, **kwargs):
-    return cls._common(node, **kwargs)
+    return [cls.make_tensor_from_onnx_node(node, **kwargs)]

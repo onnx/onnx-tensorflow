@@ -20,8 +20,7 @@ def main():
     backend_opset_dict[op_name] = []
 
   backend_onnx_coverage, backend_experimental_op = get_backend_coverage()
-  for domain in backend_onnx_coverage.keys():
-    backend_opset_dict.update(backend_onnx_coverage.get(domain, {}))
+  backend_opset_dict.update(backend_onnx_coverage.get(defs.ONNX_DOMAIN, {}))
   backend_ps_dict = get_backend_partial_support_detail()
 
   with open('opset_version.py', 'w') as version_file:

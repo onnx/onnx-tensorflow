@@ -22,22 +22,10 @@ class MatMulInteger(BackendHandler):
     # apply a_zero_point to A
     if len(node.inputs) > 2:
       a_zero_point = tensor_dict[node.inputs[2]]
-
-      if a_zero_point.shape.is_fully_defined():
-        shape = a_zero_point.get_shape().as_list()
-        if len(shape) > 0  and shape[0] > 1:
-          # reshape a_zero_point before subtract it from A
-          a_zero_point = tf.reshape(a_zero_point, [shape[0], 1])
-      else:
-        @tf.function
-        def get_a_zero_point(a_zero_point):
-          shape = tf.shape(a_zero_point)
-          if len(shape) > 0 and shape[0] > 1:
-            # reshape a_zero_point before subtract it from A
-            a_zero_point = tf.reshape(a_zero_point, [shape[0], 1])
-          return a_zero_point
-        a_zero_point = get_a_zero_point(a_zero_point)
-
+      shape = a_zero_point.get_shape().as_list()
+      if len(shape) > 0 and shape[0] > 1:
+        # reshape a_zero_point before subtract it from A
+        a_zero_point = tf.reshape(a_zero_point, [shape[0], 1])
       a_zero_point = tf.cast(a_zero_point, tf.int32)
       A = tf.subtract(A, a_zero_point)
 

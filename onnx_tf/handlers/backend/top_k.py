@@ -71,7 +71,7 @@ class TopK(BackendHandler):
       x = tf.transpose(x, perm=pre_perm)
       values, indices = tf.nn.top_k(x, k, sort)
       values = tf.transpose(values, perm=post_perm)
-    else:
+    else :
       values, indices = tf.nn.top_k(x, k, sort)
 
     if largest == 0:

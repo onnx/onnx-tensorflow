@@ -9,11 +9,9 @@ import unittest
 from onnx import defs
 from onnx import helper
 from onnx import TensorProto
-from onnx.backend.test.case.node import hardmax
 from onnx.backend.test.case.node.onehot import one_hot
 import numpy as np
 import tensorflow as tf
-import tensorflow_addons as tfa
 
 from onnx_tf.backend import onnx_graph_to_tensorflow_rep
 from onnx_tf.backend import run_node
@@ -69,7 +67,7 @@ class TestNode(unittest.TestCase):
                               high=np.finfo(np.float32).max,
                               shape=[3, 4, 5])
     output = run_node(node_def, [x])
-    np.testing.assert_almost_equal(output["Y"], np.arccosh(x), decimal=5)
+    np.testing.assert_almost_equal(output["Y"], np.arccosh(x))
 
   def test_add(self):
     node_def = helper.make_node("Add", ["X", "Y"], ["Z"])
@@ -100,7 +98,6 @@ class TestNode(unittest.TestCase):
       output = run_node(node_def, [data])
       np.testing.assert_almost_equal(output["reduced"],
                                      np.argmax(data, axis=axis))
-
       # test select_last_index
       if not legacy_opset_pre_ver(12):
         # select_last_index = 0
@@ -133,7 +130,6 @@ class TestNode(unittest.TestCase):
       output = run_node(node_def, [data])
       np.testing.assert_almost_equal(output["reduced"],
                                      np.argmin(data, axis=axis))
-
       # test select_last_index
       if not legacy_opset_pre_ver(12):
         # select_last_index = 0
@@ -173,7 +169,7 @@ class TestNode(unittest.TestCase):
     node_def = helper.make_node("Atanh", ["X"], ["Y"])
     x = self._get_rnd_float32(shape=[3, 4, 5])
     output = run_node(node_def, [x])
-    np.testing.assert_almost_equal(output["Y"], np.arctanh(x), decimal=6)
+    np.testing.assert_almost_equal(output["Y"], np.arctanh(x))
 
   def _batch_normalization(self, x, mean, variance, bias, scale,
                            variance_epsilon):
@@ -225,35 +221,20 @@ class TestNode(unittest.TestCase):
                     (TensorProto.COMPLEX128, tf.complex128)]
       if not legacy_opset_pre_ver(9):
         test_cases.append((TensorProto.STRING, tf.string))
-      # added casting to bfloat16 from number in opset 13
-      if not legacy_opset_pre_ver(13):
-        test_cases.append((TensorProto.BFLOAT16, tf.bfloat16))
     for ty, tf_type in test_cases:
       node_def = helper.make_node("Cast", ["input"], ["output"], to=ty)
-      vector = np.array([2, 3])
+      vector = [2, 3]
       output = run_node(node_def, [vector])
       np.testing.assert_equal(output["output"].dtype, tf_type)
+
     if not legacy_opset_pre_ver(9):
-      # test_cases2 is focused on Strings to Numbers
-      # Note: casting from string to bfloat16 is not allowed by tf.strings.to_number
-      # so no BFLOAT16 in test_cases2.
       test_cases2 = [(TensorProto.FLOAT, tf.float32),
                      (TensorProto.INT32, tf.int32),
                      (TensorProto.INT64, tf.int64),
                      (TensorProto.DOUBLE, tf.float64)]
       for ty, tf_type in test_cases2:
         node_def = helper.make_node("Cast", ["input"], ["output"], to=ty)
-        vector = np.array(['2', '3'])
-        output = run_node(node_def, [vector])
-        np.testing.assert_equal(output["output"].dtype, tf_type)
-
-    if not legacy_opset_pre_ver(9):
-      # test_case3 is focused on Strings to float and the special floating-point values.
-      test_cases3 = [(TensorProto.FLOAT, tf.float32),
-                     (TensorProto.DOUBLE, tf.float64)]
-      for ty, tf_type in test_cases3:
-        node_def = helper.make_node("Cast", ["input"], ["output"], to=ty)
-        vector = np.array(['3.14159', '1e-5', '1E8', 'NaN', '-INF', '+INF'])
+        vector = ['2', '3']
         output = run_node(node_def, [vector])
         np.testing.assert_equal(output["output"].dtype, tf_type)
 
@@ -265,13 +246,13 @@ class TestNode(unittest.TestCase):
 
   def test_celu(self):
     if legacy_opset_pre_ver(12):
-      raise unittest.SkipTest("ONNX version {} doesn't support Celu.".format(
-          defs.onnx_opset_version()))
+      raise unittest.SkipTest(
+          "ONNX version {} doesn't support Celu.".format(
+              defs.onnx_opset_version()))
     alpha = 2.0
     node_def = helper.make_node("Celu", ["X"], ["Y"], alpha=alpha)
-    x = np.array([[[-1.0763247, 0.98948643, 0.22292195],
-                   [0.1751388, -1.39814249, 1.44396422]]],
-                 dtype=np.float32)
+    x =  np.array([[[-1.0763247,   0.98948643,  0.22292195],
+                   [ 0.1751388,   -1.39814249,  1.44396422]]], dtype=np.float32)
     output = run_node(node_def, [x])
     positive_input = np.maximum(0, x)
     negative_input = np.minimum(0, alpha * (np.exp(x / alpha) - 1))
@@ -322,10 +303,9 @@ class TestNode(unittest.TestCase):
       a = helper.make_sparse_tensor(values, indices, [3, 4])
       node_def = helper.make_node("Constant", [], ["Y"], sparse_value=a)
       output = run_node(node_def, [])
-      b = tf.sparse.SparseTensor(output["Y"].indices, output["Y"].values,
-                                 output["Y"].dense_shape)
-      b = tf.sparse.to_dense(b)
-      result = b.numpy()
+      b = tf.sparse_to_dense(output["Y"].indices, output["Y"].dense_shape,
+                             output["Y"].values)
+      result = b.eval(session=tf.Session())
       np.testing.assert_equal(result, expected)
 
     if not legacy_opset_pre_ver(12):
@@ -656,7 +636,7 @@ class TestNode(unittest.TestCase):
       y = x  # output is same is input i.e. nothing is dropped
       output = run_node(node_def, [x])
       np.testing.assert_equal(output["Y"], y)
-    else:  # for Opset 12, 13
+    else:  # for Opset 12
       # Inference mode tests
       #   training_mode is false by default
       #   ratio is ignored
@@ -783,7 +763,8 @@ class TestNode(unittest.TestCase):
 
     x = np.arange(8).reshape((2, 2, 2)).astype(np.uint64)
     y = np.arange(8).reshape((2, 2, 2)).astype(np.uint64)
-    self.assertRaises(RuntimeError, run_node, node_def, [x, y])
+    with np.testing.assert_raises(RuntimeError):
+      output = run_node(node_def, [x, y])
 
   def test_erf(self):
     if legacy_opset_pre_ver(9):
@@ -804,7 +785,7 @@ class TestNode(unittest.TestCase):
 
   def test_expand(self):
     node_def = helper.make_node("Expand", ["X", "shape"], ["Y"])
-    x = np.array([[True], [False], [True]])
+    x = [[True], [False], [True]]
     shape = [2, 1, 6]
     y = x * np.ones(shape, dtype=np.bool)
     output = run_node(node_def, [x, shape])
@@ -839,7 +820,7 @@ class TestNode(unittest.TestCase):
   def test_gather(self):
     node_def = helper.make_node("Gather", ["X", "Y"], ["Z"])
     x = self._get_rnd_float32(shape=[10, 10])
-    y = np.array([[0, 1], [1, 2]])
+    y = [[0, 1], [1, 2]]
     output = run_node(node_def, [x, y])
     test_output = np.zeros((2, 2, 10))
     for i in range(0, 2):
@@ -851,11 +832,11 @@ class TestNode(unittest.TestCase):
     np.testing.assert_almost_equal(output["Z"], test_output)
     if defs.onnx_opset_version() >= 11:
       # test negative indices
-      y = np.array([[-10, -9], [1, -8]])
+      y = [[-10, -9], [1, -8]]
       output = run_node(node_def, [x, y])
       np.testing.assert_almost_equal(output["Z"], test_output)
       # test out of bound indices
-      for y in (np.array([[-10, 11], [1, -8]]), np.array([[-10, -11], [1, -8]])):
+      for y in ([[-10, 11], [1, -8]], [[-10, -11], [1, -8]]):
         try:
           output = run_node(node_def, [x, y])
           np.testing.assert_almost_equal(output["Z"], test_output)
@@ -1004,13 +985,6 @@ class TestNode(unittest.TestCase):
     test_output = np.matmul(x, y) + z
     np.testing.assert_almost_equal(output["Y"], test_output)
 
-    # sys_config.auto_cast=False and x,y,z dtype=uint64 should throw exception
-    self.assertRaises(
-        RuntimeError, run_node, node_def,
-        [x.astype(np.uint64),
-         y.astype(np.uint64),
-         z.astype(np.uint64)])
-
   def test_global_average_pool(self):
     #   Image case:  (N x C x H x W), where N is the batch size,
     # C is the number of channels, and H and W are the height
@@ -1065,21 +1039,11 @@ class TestNode(unittest.TestCase):
     for axis in range(-len(shape), len(shape)):
       node_def = helper.make_node("Hardmax", ["X"], ["Y"], axis=axis)
       output = run_node(node_def, [x])
-
-      axis = axis if axis >= 0 else len(np.shape(x)) + axis
-      if axis == len(np.shape(x)) - 1:
-        np.testing.assert_almost_equal(output["Y"], tfa.seq2seq.hardmax(x))
-      else:
-        if not legacy_opset_pre_ver(13):
-          y = hardmax.hardmax(x, axis)
-          np.testing.assert_almost_equal(output["Y"], y)
-        else:
-          shape_in_2d = (np.prod(shape[0:axis]).astype(int),
-                         np.prod(shape[axis:len(shape)]))
-          x_in_2d = np.reshape(x, shape_in_2d)
-          y = np.eye(x_in_2d.shape[1], dtype=x.dtype)[np.argmax(x_in_2d,
-                                                                axis=1)]
-          np.testing.assert_almost_equal(output["Y"], np.reshape(y, shape))
+      shape_in_2d = (np.prod(shape[0:axis]).astype(int),
+                     np.prod(shape[axis:len(shape)]))
+      x_in_2d = np.reshape(x, shape_in_2d)
+      y = np.eye(x_in_2d.shape[1], dtype=x.dtype)[np.argmax(x_in_2d, axis=1)]
+      np.testing.assert_almost_equal(output["Y"], np.reshape(y, shape))
 
   def test_if(self):
     true_val = helper.make_tensor(name='true_tensor',
@@ -1115,9 +1079,9 @@ class TestNode(unittest.TestCase):
                                 then_branch=true_graph,
                                 else_branch=false_graph)
 
-    for cond, exp in [[True, np.int64(1)], [False, np.int64(0)]]:
+    for cond, exp in [[True, true_val], [False, false_val]]:
       output = run_node(node_def, [cond])
-      np.testing.assert_equal(output['outputs'], exp)
+      np.testing.assert_equal(output['outputs'], exp.int64_data)
 
     x = self._get_rnd_int(low=-50, high=50, dtype=np.int64)
     y = self._get_rnd_int(low=-50, high=50, dtype=np.int64)
@@ -1162,32 +1126,24 @@ class TestNode(unittest.TestCase):
     less_node = helper.make_node('Less', inputs=['x', 'y'], outputs=['cond'])
     if_node = helper.make_node('If',
                                inputs=['cond'],
-                               outputs=['result1', 'result2'],
+                               outputs=['result'],
                                then_branch=true_graph,
                                else_branch=false_graph)
 
-    result1_out = helper.make_tensor_value_info('result1', TensorProto.INT64,
-                                                [])
-    result2_out = helper.make_tensor_value_info('result2', TensorProto.INT64,
-                                                [])
+    result_out = helper.make_tensor_value_info('result', TensorProto.INT64, [])
 
     graph = helper.make_graph(
         nodes=[x_node, y_node, z_node, less_node, if_node],
         name="test_if",
         inputs=[],
-        outputs=[result1_out, result2_out])
+        outputs=[result_out])
 
     tf_rep = onnx_graph_to_tensorflow_rep(graph)
     output = tf_rep.run({})
     expected = [x + y, (x + y) * z] if x < y else [x - y, (x - y) * z]
-    np.testing.assert_equal(output['result1'], expected[0])
-    np.testing.assert_equal(output['result2'], expected[1])
+    np.testing.assert_equal(output['result'], expected)
 
-  def test_image_scaler(self):
-    if not legacy_opset_pre_ver(9):
-      raise unittest.SkipTest(
-          "ONNX version {} doesn't support ImageScaler.".format(
-              defs.onnx_opset_version()))
+  def test_image_sacler(self):
     # Input:  (N x C x H x W), where N is the batch size,
     # C is the number of channels, and H and W are the height
     # and the width of the data
@@ -1286,14 +1242,6 @@ class TestNode(unittest.TestCase):
         test_output[i1][i2][0][0] = max
     np.testing.assert_almost_equal(output["Y"], test_output)
 
-  def test_greater(self):
-    node_def = helper.make_node("Greater", ["X", "Y"], ["Z"])
-    x = self._get_rnd_float32(shape=[5, 3, 3, 2])
-    y = self._get_rnd_float32(shape=[3, 3, 1])
-    output = run_node(node_def, [x, y])
-    np.testing.assert_equal(output["Z"],
-                            np.greater(x, np.reshape(y, [1, 3, 3, 1])))
-
   def test_less(self):
     node_def = helper.make_node("Less", ["X", "Y"], ["Z"])
     x = self._get_rnd_float32(shape=[5, 3, 3, 2])
@@ -1310,11 +1258,11 @@ class TestNode(unittest.TestCase):
     node_def = helper.make_node('LessOrEqual', ['X', 'Y'], ['Z'])
     shape = [2, 3, 4, 5]
     x = self._get_rnd_int(
-        np.iinfo(np.int64).min,
-        np.iinfo(np.int64).max, shape, np.int64)
+        np.iinfo(np.uint64).min,
+        np.iinfo(np.uint64).max, shape, np.uint64)
     y = self._get_rnd_int(
-        np.iinfo(np.int64).min,
-        np.iinfo(np.int64).max, shape, np.int64)
+        np.iinfo(np.uint64).min,
+        np.iinfo(np.uint64).max, shape, np.uint64)
     output = run_node(node_def, [x, y])
     np.testing.assert_equal(output['Z'], np.less_equal(x, y))
     # test with broadcast
@@ -1327,22 +1275,6 @@ class TestNode(unittest.TestCase):
         np.finfo(np.float16).max, shape2).astype(np.float16)
     output = run_node(node_def, [x, y])
     np.testing.assert_equal(output['Z'], np.less_equal(x, y))
-    # test data types that are not natively supported by Tensorflow
-    x = self._get_rnd_int(
-        np.iinfo(np.uint32).min,
-        np.iinfo(np.uint32).max, shape, np.uint32)
-    y = self._get_rnd_int(
-        np.iinfo(np.uint32).min,
-        np.iinfo(np.uint32).max, shape, np.uint32)
-    output = run_node(node_def, [x, y])
-    np.testing.assert_equal(output['Z'], np.less_equal(x, y))
-    x = self._get_rnd_int(
-        np.iinfo(np.uint64).min,
-        np.iinfo(np.uint64).max, shape, np.uint64)
-    y = self._get_rnd_int(
-        np.iinfo(np.uint64).min,
-        np.iinfo(np.uint64).max, shape, np.uint64)
-    self.assertRaises(RuntimeError, run_node, node_def, [x, y])
 
   def test_lp_normalization(self):
     for ordr in range(1, 3):
@@ -1413,23 +1345,22 @@ class TestNode(unittest.TestCase):
     np.testing.assert_almost_equal(output["Y"], np.log(x))
 
   def test_loop(self):
-    # here is the loop testcase
-    # while x < y:
-    #   x = x + x (v_1)
-    #   y = y - x (v_2)
-    #   z = x * y (scan_output)
-    add_node = helper.make_node('Add', inputs=['x', 'x'], outputs=['sum'])
-    sub_node = helper.make_node('Sub', inputs=['y', 'sum'], outputs=['diff'])
-    mul_node = helper.make_node('Mul', inputs=['sum', 'diff'], outputs=['prod'])
+    add1_node = helper.make_node('Add', inputs=['x', 'x'], outputs=['sum1'])
+    neg_node = helper.make_node('Neg', inputs=['sum1'], outputs=['neg_sum1'])
+    add2_node = helper.make_node('Add',
+                                 inputs=['y', 'neg_sum1'],
+                                 outputs=['sum2'])
+    add3_node = helper.make_node('Add',
+                                 inputs=['sum1', 'sum2'],
+                                 outputs=['sum3'])
     less_node = helper.make_node('Less',
-                                 inputs=['sum', 'diff'],
+                                 inputs=['sum1', 'sum2'],
                                  outputs=['new_cond'])
     greater_node = helper.make_node('Greater',
-                                    inputs=['sum', 'diff'],
+                                    inputs=['sum1', 'sum2'],
                                     outputs=['new_cond'])
 
-    iter_count_in = helper.make_tensor_value_info('iter_count',
-                                                  TensorProto.INT64, [])
+    m_in = helper.make_tensor_value_info('M', TensorProto.INT64, [])
     cond_in = helper.make_tensor_value_info('cond', TensorProto.BOOL, [])
     cond_int_in = helper.make_tensor_value_info('cond', TensorProto.INT32, [])
     x_in = helper.make_tensor_value_info('x', TensorProto.INT32, [None])
@@ -1438,160 +1369,161 @@ class TestNode(unittest.TestCase):
     cond_out = helper.make_tensor_value_info('cond', TensorProto.BOOL, [])
     new_cond_out = helper.make_tensor_value_info('new_cond', TensorProto.BOOL,
                                                  [])
-    sum_out = helper.make_tensor_value_info('sum', TensorProto.INT32, [None])
-    diff_out = helper.make_tensor_value_info('diff', TensorProto.INT32, [None])
-    prod_out = helper.make_tensor_value_info('prod', TensorProto.INT32, [None])
+    sum1_out = helper.make_tensor_value_info('sum1', TensorProto.INT32, [None])
+    sum2_out = helper.make_tensor_value_info('sum2', TensorProto.INT32, [None])
+    sum3_out = helper.make_tensor_value_info('sum3', TensorProto.INT32, [None])
 
     v1_initial = np.array([1, 1], dtype=np.int32)
     v2_initial = np.array([100, 100], dtype=np.int32)
 
     # test for loop
-    M = np.array(5, dtype=np.int64)
-    cond = np.array(
-        True, dtype=np.bool
-    )  # value will be ignore because optional "cond" input will be skip
-    graph = helper.make_graph(nodes=[add_node, sub_node, mul_node],
+    M = np.int64(10)
+    cond = True  # value will be ignore because optional "cond" input will be skip
+    graph = helper.make_graph(nodes=[add1_node, neg_node, add2_node, add3_node],
                               name="for_loop_graph",
-                              inputs=[iter_count_in, cond_in, x_in, y_in],
-                              outputs=[cond_out, sum_out, diff_out, prod_out])
+                              inputs=[m_in, cond_in, x_in, y_in],
+                              outputs=[cond_out, sum1_out, sum2_out, sum3_out])
     node_def = helper.make_node('Loop', ['M', '', 'v1_initial', 'v2_initial'],
-                                ['v1_final', 'v2_final', 'scan_output'],
+                                ['v_final', 'scan_outputs'],
                                 body=graph)
     output = run_node(node_def, [M, cond, v1_initial, v2_initial])
-    v1_final = np.array([32, 32], dtype=np.int32)
-    v2_final = np.array([38, 38], dtype=np.int32)
-    scan_output = np.array(
-        [[196, 196], [376, 376], [688, 688], [1120, 1120], [1216, 1216]],
-        dtype=np.int32)
-    np.testing.assert_almost_equal(output['v1_final'], v1_final)
-    np.testing.assert_almost_equal(output['v2_final'], v2_final)
-    np.testing.assert_almost_equal(output['scan_output'], scan_output)
+    v_final = [
+        np.array([1024, 1024], dtype=np.int32),
+        np.array([-1946, -1946], dtype=np.int32)
+    ]
+    scan_outputs = [
+        np.array([[100, 100], [98, 98], [94, 94], [86, 86], [70, 70], [38, 38],
+                  [-26, -26], [-154, -154], [-410, -410], [-922, -922]],
+                 dtype=np.int32)
+    ]
+    np.testing.assert_almost_equal(output['v_final'], v_final)
+    np.testing.assert_almost_equal(output['scan_outputs'], scan_outputs)
 
     # test while loop
-    M = np.array(
-        0, dtype=np.int64
-    )  # value will be ignore because optional "M" input will be skip
-    cond = np.array(np.all(v1_initial < v2_initial), dtype=np.bool)
+    M = 0  # value will be ignore because optional "M" input will be skip
+    cond = v1_initial < v2_initial
     graph = helper.make_graph(
-        nodes=[add_node, sub_node, mul_node, less_node],
+        nodes=[add1_node, neg_node, add2_node, add3_node, less_node],
         name="while_loop_graph",
-        inputs=[iter_count_in, cond_in, x_in, y_in],
-        outputs=[new_cond_out, sum_out, diff_out, prod_out])
+        inputs=[m_in, cond_in, x_in, y_in],
+        outputs=[new_cond_out, sum1_out, sum2_out, sum3_out])
     node_def = helper.make_node('Loop',
                                 ['', 'cond', 'v1_initial', 'v2_initial'],
-                                ['v1_final', 'v2_final', 'scan_output'],
+                                ['v_final', 'scan_outputs'],
                                 body=graph)
     output = run_node(node_def, [M, cond, v1_initial, v2_initial])
-    v1_final = np.array([64, 64], dtype=np.int32)
-    v2_final = np.array([-26, -26], dtype=np.int32)
-    scan_output = np.array([[196, 196], [376, 376], [688, 688], [1120, 1120],
-                            [1216, 1216], [-1664, -1664]],
-                           dtype=np.int32)
-    np.testing.assert_almost_equal(output['v1_final'], v1_final)
-    np.testing.assert_almost_equal(output['v2_final'], v2_final)
-    np.testing.assert_almost_equal(output['scan_output'], scan_output)
+    v_final = [
+        np.array([64, 64], dtype=np.int32),
+        np.array([-26, -26], dtype=np.int32)
+    ]
+    scan_outputs = [
+        np.array([[100, 100], [98, 98], [94, 94], [86, 86], [70, 70], [38, 38]],
+                 dtype=np.int32)
+    ]
+    np.testing.assert_almost_equal(output['v_final'], v_final)
+    np.testing.assert_almost_equal(output['scan_outputs'], scan_outputs)
 
     # test do-while loop
-    M = np.array(
-        0, dtype=np.int64
-    )  # value will be ignore because optional "M" input will be skip
-    cond = np.array(1, dtype=np.int32)
+    M = 0  # value will be ignore because optional "M" input will be skip
+    cond = 1
     graph = helper.make_graph(
-        nodes=[add_node, sub_node, mul_node, greater_node],
+        nodes=[add1_node, neg_node, add2_node, add3_node, greater_node],
         name="do_while_loop_graph",
-        inputs=[iter_count_in, cond_int_in, x_in, y_in],
-        outputs=[new_cond_out, sum_out, diff_out, prod_out])
+        inputs=[m_in, cond_int_in, x_in, y_in],
+        outputs=[new_cond_out, sum1_out, sum2_out, sum3_out])
     node_def = helper.make_node('Loop',
                                 ['', 'cond', 'v1_initial', 'v2_initial'],
-                                ['v1_final', 'v2_final', 'scan_output'],
+                                ['v_final', 'scan_outputs'],
                                 body=graph)
     output = run_node(node_def, [M, cond, v1_initial, v2_initial])
-    v1_final = np.array([2, 2], dtype=np.int32)
-    v2_final = np.array([98, 98], dtype=np.int32)
-    scan_output = np.array([[196, 196]], dtype=np.int32)
-    np.testing.assert_almost_equal(output['v1_final'], v1_final)
-    np.testing.assert_almost_equal(output['v2_final'], v2_final)
-    np.testing.assert_almost_equal(output['scan_output'], scan_output)
+    v_final = [
+        np.array([2, 2], dtype=np.int32),
+        np.array([98, 98], dtype=np.int32)
+    ]
+    scan_outputs = [np.array([[100, 100]], dtype=np.int32)]
+    np.testing.assert_almost_equal(output['v_final'], v_final)
+    np.testing.assert_almost_equal(output['scan_outputs'], scan_outputs)
 
     # test for loop and while loop conbine
-    M = np.array(4, dtype=np.int64)
-    cond = np.array(np.all(v1_initial < v2_initial), dtype=np.bool)
+    M = np.int64(4)
+    cond = v1_initial < v2_initial
     graph = helper.make_graph(
-        nodes=[add_node, sub_node, mul_node, less_node],
+        nodes=[add1_node, neg_node, add2_node, add3_node, less_node],
         name="for_and_while_loop_graph",
-        inputs=[iter_count_in, cond_in, x_in, y_in],
-        outputs=[new_cond_out, sum_out, diff_out, prod_out])
+        inputs=[m_in, cond_in, x_in, y_in],
+        outputs=[new_cond_out, sum1_out, sum2_out, sum3_out])
     node_def = helper.make_node('Loop',
                                 ['M', 'cond', 'v1_initial', 'v2_initial'],
-                                ['v1_final', 'v2_final', 'scan_output'],
+                                ['v_final', 'scan_outputs'],
                                 body=graph)
     output = run_node(node_def, [M, cond, v1_initial, v2_initial])
-    v1_final = np.array([16, 16], dtype=np.int32)
-    v2_final = np.array([70, 70], dtype=np.int32)
-    scan_output = np.array([[196, 196], [376, 376], [688, 688], [1120, 1120]],
-                           dtype=np.int32)
-    np.testing.assert_almost_equal(output['v1_final'], v1_final)
-    np.testing.assert_almost_equal(output['v2_final'], v2_final)
-    np.testing.assert_almost_equal(output['scan_output'], scan_output)
+    v_final = [
+        np.array([16, 16], dtype=np.int32),
+        np.array([70, 70], dtype=np.int32)
+    ]
+    scan_outputs = [
+        np.array([[100, 100], [98, 98], [94, 94], [86, 86]], dtype=np.int32)
+    ]
+    np.testing.assert_almost_equal(output['v_final'], v_final)
+    np.testing.assert_almost_equal(output['scan_outputs'], scan_outputs)
 
     # test for loop that doesn't run at all (M = 0)
-    M = np.array(0, dtype=np.int64)
-    cond = np.array(
-        True, dtype=np.bool
-    )  # value will be ignore because optional "cond" input will be skip
-    graph = helper.make_graph(nodes=[add_node, sub_node, mul_node],
+    M = np.int64(0)
+    cond = True  # value will be ignore because optional "cond" input will be skip
+    graph = helper.make_graph(nodes=[add1_node, neg_node, add2_node, add3_node],
                               name="for_loop_graph",
-                              inputs=[iter_count_in, cond_in, x_in, y_in],
-                              outputs=[cond_out, sum_out, diff_out, prod_out])
+                              inputs=[m_in, cond_in, x_in, y_in],
+                              outputs=[cond_out, sum1_out, sum2_out, sum3_out])
     node_def = helper.make_node('Loop', ['M', '', 'v1_initial', 'v2_initial'],
-                                ['v1_final', 'v2_final', 'scan_output'],
+                                ['v_final', 'scan_outputs'],
                                 body=graph)
     output = run_node(node_def, [M, cond, v1_initial, v2_initial])
-    v1_final = np.array([1, 1], dtype=np.int32)
-    v2_final = np.array([100, 100], dtype=np.int32)
-    scan_output = np.array([], dtype=np.int32).reshape([0, 0])
-    np.testing.assert_almost_equal(output['v1_final'], v1_final)
-    np.testing.assert_almost_equal(output['v2_final'], v2_final)
-    np.testing.assert_equal(output['scan_output'], scan_output)
+    v_final = [
+        np.array([1, 1], dtype=np.int32),
+        np.array([100, 100], dtype=np.int32)
+    ]
+    scan_outputs = np.array([], dtype=np.int32).reshape(1, 0, 2)
+    np.testing.assert_almost_equal(output['v_final'], v_final)
+    np.testing.assert_almost_equal(output['scan_outputs'], scan_outputs)
 
     # test while loop that doesn't run at all (cond = False)
-    M = np.array(
-        0, dtype=np.int64
-    )  # value will be ignore because optional "M" input will be skip
-    cond = np.array(False, dtype=np.bool)
+    M = 0  # value will be ignore because optional "M" input will be skip
+    cond = False
     graph = helper.make_graph(
-        nodes=[add_node, sub_node, mul_node, less_node],
+        nodes=[add1_node, neg_node, add2_node, add3_node, less_node],
         name="while_loop_graph",
-        inputs=[iter_count_in, cond_in, x_in, y_in],
-        outputs=[new_cond_out, sum_out, diff_out, prod_out])
+        inputs=[m_in, cond_in, x_in, y_in],
+        outputs=[new_cond_out, sum1_out, sum2_out, sum3_out])
     node_def = helper.make_node('Loop',
                                 ['', 'cond', 'v1_initial', 'v2_initial'],
-                                ['v1_final', 'v2_final', 'scan_output'],
+                                ['v_final', 'scan_outputs'],
                                 body=graph)
     output = run_node(node_def, [M, cond, v1_initial, v2_initial])
-    v1_final = np.array([1, 1], dtype=np.int32)
-    v2_final = np.array([100, 100], dtype=np.int32)
-    scan_output = np.array([], dtype=np.int32).reshape([0, 0])
-    np.testing.assert_almost_equal(output['v1_final'], v1_final)
-    np.testing.assert_almost_equal(output['v2_final'], v2_final)
-    np.testing.assert_almost_equal(output['scan_output'], scan_output)
+    v_final = [
+        np.array([1, 1], dtype=np.int32),
+        np.array([100, 100], dtype=np.int32)
+    ]
+    scan_outputs = np.array([], dtype=np.int32).reshape(1, 0, 2)
+    np.testing.assert_almost_equal(output['v_final'], v_final)
+    np.testing.assert_almost_equal(output['scan_outputs'], scan_outputs)
 
     # test while loop that doesn't have any scan_outputs
-    M = np.array(4, dtype=np.int64)
-    cond = np.array(np.all(v1_initial < v2_initial), dtype=np.bool)
-    graph = helper.make_graph(nodes=[add_node, sub_node, mul_node, less_node],
+    M = np.int64(4)
+    cond = v1_initial < v2_initial
+    graph = helper.make_graph(nodes=[add1_node, neg_node, add2_node, less_node],
                               name="while_loop_graph",
-                              inputs=[iter_count_in, cond_in, x_in, y_in],
-                              outputs=[new_cond_out, sum_out, diff_out])
+                              inputs=[m_in, cond_in, x_in, y_in],
+                              outputs=[new_cond_out, sum1_out, sum2_out])
     node_def = helper.make_node('Loop',
                                 ['M', 'cond', 'v1_initial', 'v2_initial'],
-                                ['v1_final', 'v2_final'],
+                                ['v_final'],
                                 body=graph)
     output = run_node(node_def, [M, cond, v1_initial, v2_initial])
-    v1_final = np.array([16, 16], dtype=np.int32)
-    v2_final = np.array([70, 70], dtype=np.int32)
-    np.testing.assert_almost_equal(output['v1_final'], v1_final)
-    np.testing.assert_almost_equal(output['v2_final'], v2_final)
+    v_final = [
+        np.array([16, 16], dtype=np.int32),
+        np.array([70, 70], dtype=np.int32)
+    ]
+    np.testing.assert_almost_equal(output['v_final'], v_final)
 
     # test for loop that doesn't run at all (M = 0)
     # and the scan_outputs shape is not the same as the inputs
@@ -1602,42 +1534,38 @@ class TestNode(unittest.TestCase):
                                    outputs=['product'])
     x_in = helper.make_tensor_value_info('x', TensorProto.INT32, [None, None])
     z_in = helper.make_tensor_value_info('z', TensorProto.INT32, [None, None])
-    sum_out = helper.make_tensor_value_info('sum', TensorProto.INT32,
-                                            [None, None])
+    sum1_out = helper.make_tensor_value_info('sum1', TensorProto.INT32,
+                                             [None, None])
     z_out = helper.make_tensor_value_info('z', TensorProto.INT32, [None, None])
     product_out = helper.make_tensor_value_info('product', TensorProto.INT32,
                                                 [None, None])
 
-    M = np.array(0, dtype=np.int64)
-    cond = np.array(
-        True, dtype=np.bool
-    )  # value will be ignore because optional "cond" input will be skip
-    graph = helper.make_graph(nodes=[add_node, matmul_node],
+    M = np.int64(0)
+    cond = True  # value will be ignore because optional "cond" input will be skip
+    graph = helper.make_graph(nodes=[add1_node, matmul_node],
                               name="for_loop_graph",
-                              inputs=[iter_count_in, cond_in, x_in, z_in],
-                              outputs=[cond_out, sum_out, z_out, product_out])
+                              inputs=[m_in, cond_in, x_in, z_in],
+                              outputs=[cond_out, sum1_out, z_out, product_out])
     node_def = helper.make_node('Loop', ['M', '', 'v1_initial', 'v3_initial'],
-                                ['v1_final', 'v3_final', 'scan_output'],
+                                ['v_final', 'scan_outputs'],
                                 body=graph)
-    scan_output = np.array([], dtype=np.int32).reshape([0, 0, 0])
     output = run_node(node_def, [M, cond, v1_initial, v3_initial])
-    np.testing.assert_almost_equal(output['v1_final'], v1_initial)
-    np.testing.assert_almost_equal(output['v3_final'], v3_initial)
-    np.testing.assert_almost_equal(output['scan_output'], scan_output)
+    v_final = [v1_initial, v3_initial]
+    scan_outputs = np.array([], dtype=np.int32).reshape(1, 0, 2, 2)
+    for i in range(len(output['v_final'])):
+      np.testing.assert_almost_equal(output['v_final'][i], v_final[i])
+    np.testing.assert_almost_equal(output['scan_outputs'], scan_outputs)
 
     # verify infinite loop will get exception
-    M = np.array(
-        0, dtype=np.int64
-    )  # value will be ignore because optional "M" input will be skip
-    cond = np.array(
-        True, dtype=np.bool
-    )  # value will be ignore because optional "cond" input will be skip
-    graph = helper.make_graph(nodes=[add_node, sub_node, mul_node, less_node],
-                              name="while_loop_graph",
-                              inputs=[iter_count_in, cond_in, x_in, y_in],
-                              outputs=[cond_out, sum_out, diff_out, prod_out])
+    M = 0  # value will be ignore because optional "M" input will be skip
+    cond = True  # value will be ignore because optional "cond" input will be skip
+    graph = helper.make_graph(
+        nodes=[add1_node, neg_node, add2_node, add3_node, less_node],
+        name="while_loop_graph",
+        inputs=[m_in, cond_in, x_in, y_in],
+        outputs=[cond_out, sum1_out, sum2_out, sum3_out])
     node_def = helper.make_node('Loop', ['', '', 'v1_initial', 'v2_initial'],
-                                ['v1_final', 'v2_final', 'scan_output'],
+                                ['v_final', 'scan_outputs'],
                                 body=graph)
     try:
       run_node(node_def, [M, cond, v1_initial, v2_initial])
@@ -1651,18 +1579,12 @@ class TestNode(unittest.TestCase):
     a = self._get_rnd_float32(shape=[5, 6])
     b = self._get_rnd_float32(shape=[6, 5])
     output = run_node(node_def, [a, b])
-    np.testing.assert_allclose(output["Y"],
-                               np.matmul(a, b),
-                               rtol=1e-6,
-                               atol=1e-6)
+    np.testing.assert_almost_equal(output["Y"], np.matmul(a, b), decimal=6)
     # test data types that are not natively supported by Tensorflow
     a = self._get_rnd_int(0, 1000, [10, 10], np.uint32)
     b = self._get_rnd_int(0, 1000, [10, 10], np.uint32)
     output = run_node(node_def, [a, b])
-    np.testing.assert_allclose(output["Y"],
-                               np.matmul(a, b),
-                               rtol=1e-6,
-                               atol=1e-6)
+    np.testing.assert_almost_equal(output["Y"], np.matmul(a, b))
     # sys_config.auto_cast=False and a or b dtype=uint64 should throw exception
     self.assertRaises(
         RuntimeError, run_node, node_def,
@@ -1979,7 +1901,7 @@ class TestNode(unittest.TestCase):
     kernel_shape = [3, 3]
     strides = [2, 2]
     dilations = [3, 3]
-    auto_pad = "same_lower"
+    auto_pad = "SAME_LOWER"
 
     input_shape = [10, 3, 24, 24]
     self._test_pooling(input_shape=input_shape,
@@ -2108,6 +2030,7 @@ class TestNode(unittest.TestCase):
       raise unittest.SkipTest(
           "ONNX version {} doesn't support dilations nor ceil mode.".format(
               defs.onnx_opset_version()))
+
     for device in self._get_device_list():
       kernel_shape = [3, 3]
       strides = [2, 2]
@@ -2390,17 +2313,6 @@ class TestNode(unittest.TestCase):
     node_def = helper.make_node("Mod", ["X", "Y"], ["Z"], fmod=0)
     output = run_node(node_def, [x, y])
     np.testing.assert_almost_equal(output["Z"], np.mod(x, y))
-
-  def test_multinomial(self):
-    node_def = helper.make_node("Multinomial", ["X"], ["Y"],
-                                sample_size=5,
-                                dtype=TensorProto.INT64)
-    x = np.array([[math.log(0.5), math.log(0.5)]], dtype=np.float32)
-    output = run_node(node_def, [x])
-    # the output shape should be [1, 5]
-    np.testing.assert_equal(output["Y"].shape, [1, 5])
-    # the output dtype should be int64
-    np.testing.assert_equal(output["Y"].dtype, np.int64)
 
   def test_neg(self):
     node_def = helper.make_node("Neg", ["X"], ["Y"])
@@ -3029,7 +2941,7 @@ class TestNode(unittest.TestCase):
         mode='linear',
         coordinate_transformation_mode='tf_crop_and_resize',
         extrapolation_value=20.0)
-    roi = np.array([0, 0, 0.4, 0.6, 1, 1, 1.2, 1.7], dtype=np.float64)
+    roi = np.array([0, 0, 0.4, 0.6, 1, 1, 1.2, 1.7], dtype=np.float32)
     scales = np.array([1.0, 1.0, 0.8, 0.8], dtype=np.float32)
     expected = np.array(
         [[[[42.4, 43.814285, 45.228573, 20., 20., 20., 20., 20.],
@@ -3041,6 +2953,9 @@ class TestNode(unittest.TestCase):
            [20., 20., 20., 20., 20., 20., 20., 20.],
            [20., 20., 20., 20., 20., 20., 20., 20.]]]],
         dtype=np.float32)  # expected value is calculated by onnx-runtime
+    output = run_node(node_def, [data, roi, scales])
+    np.testing.assert_allclose(output["Y"], expected, rtol=1e-6, atol=1e-6)
+
     # sys_config.auto_cast=False and roi_dtype=float64 should throw exception
     self.assertRaises(RuntimeError, run_node, node_def,
                       [data, roi.astype(np.float64), scales])
@@ -3145,7 +3060,7 @@ class TestNode(unittest.TestCase):
     node_def = helper.make_node("Relu", ["X"], ["Y"])
     x = self._get_rnd_float32(shape=[1000])
     output = run_node(node_def, [x])
-    np.testing.assert_almost_equal(output["Y"], np.maximum(x, 0))
+    np.testing.assert_almost_equal(output["Y"], np.maximum(x, 0), decimal=5)
 
   def test_pad(self):
     x = self._get_rnd_float32(shape=[100, 100])
@@ -3166,7 +3081,7 @@ class TestNode(unittest.TestCase):
         output = run_node(node_def, [x])
         y = np.pad(x, ((1, 1), (1, 1)), mode)
         np.testing.assert_almost_equal(output["Y"], y)
-    else:  # for opset >= 11
+    else:  # for opset = 11
       # mode = constant
       node_def = helper.make_node("Pad", ["X", "pads", "constant_values"],
                                   ["Y"],
@@ -3182,56 +3097,13 @@ class TestNode(unittest.TestCase):
         output = run_node(node_def, [x, pads])
         y = np.pad(x, ((1, 1), (1, 1)), mode)
         np.testing.assert_almost_equal(output["Y"], y)
-      # negative pads
-      node_def = helper.make_node("Pad", ["X", "pads"], ["Y"], mode="constant")
-      pads = np.array([-2, -2, -2, -2], dtype=np.int64)
-      x = np.array([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]).reshape((3, 4))
-      y = x
-      x = np.pad(x, ((2, 2), (2, 2)), 'constant')
-      output = run_node(node_def, [x, pads])
-      np.testing.assert_almost_equal(output["Y"], y)
-
-      # negative pads with 3 dimensions
-      node_def = helper.make_node("Pad", ["X", "pads"], ["Y"], mode="constant")
-      pads = np.array([-1, 0, 0, 0, -1, 0], dtype=np.int64)
-      x = np.array([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]).reshape((2, 3, 2))
-      y = np.array([7, 8, 9, 10]).reshape((1, 2, 2))
-      output = run_node(node_def, [x, pads])
-      np.testing.assert_almost_equal(output["Y"], y)
-
-      if legacy_opset_pre_ver(13) is False:  # for opset = 13
-        # data type = string, with specific constant_value
-        node_def = helper.make_node("Pad", ["X", "pads", "constant_values"],
-                                    ["Y"],
-                                    mode="constant")
-        x = np.chararray((10, 10), itemsize=2)
-        a1 = 'a1'
-        b1 = 'b1'
-        blank = ''
-        x[:] = a1.encode('UTF-8')
-        pads = np.array([1, 1, 1, 1], dtype=np.int64)
-        constant_values = b1.encode('UTF-8')
-        y = np.pad(x, ((1, 1), (1, 1)),
-                   'constant',
-                   constant_values=(b1.encode('UTF-8'), b1.encode('UTF-8')))
-        output = run_node(node_def, [x, pads, constant_values])
-        np.testing.assert_array_equal(output["Y"], y)
-
-        # data type = string, with default constant_value
-        node_def = helper.make_node("Pad", ["X", "pads"], ["Y"],
-                                    mode="constant")
-        y = np.pad(x, ((1, 1), (1, 1)),
-                   'constant',
-                   constant_values=(blank.encode('UTF-8'),
-                                    blank.encode('UTF-8')))
-        output = run_node(node_def, [x, pads])
-        np.testing.assert_array_equal(output["Y"], y)
 
   def test_qlinearconv(self):
     if legacy_opset_pre_ver(10):
       raise unittest.SkipTest(
           "ONNX version {} doesn't support QLinearConv.".format(
               defs.onnx_opset_version()))
+
     for device in self._get_device_list():
       # Test w_scale and w_zero_point as scalar
       node_def = helper.make_node("QLinearConv",
@@ -3386,14 +3258,12 @@ class TestNode(unittest.TestCase):
                                rtol=1e-3)
 
   def test_reduce_sum(self):
+    node_def = helper.make_node("ReduceSum", ["X"], ["Y"], axes=[1, 2])
     x = self._get_rnd_float32(shape=[5, 10, 10, 3])
-    axes = np.array([1, 2], dtype=np.int64)
-    if legacy_opset_pre_ver(13):  # for opset 1 to 12
-      node_def = helper.make_node("ReduceSum", ["X"], ["Y"], axes=axes)
-      output = run_node(node_def, [x])
-      np.testing.assert_allclose(output["Y"],
-                                 np.sum(x, (1, 2), keepdims=True),
-                                 rtol=1e-3)
+    output = run_node(node_def, [x])
+    np.testing.assert_allclose(output["Y"],
+                               np.sum(x, (1, 2), keepdims=True),
+                               rtol=1e-3)
 
   def test_reduce_sum_square(self):
     node_def = helper.make_node("ReduceSumSquare", ["X"], ["Y"], axes=[1, 2])
@@ -3713,11 +3583,6 @@ class TestNode(unittest.TestCase):
       output = run_node(node_def, [data, indices, updates])
       np.testing.assert_almost_equal(output["outputs"], ref_output)
 
-      # test data types that are not natively supported by Tensorflow
-      self.assertRaises(RuntimeError, run_node, node_def,
-                        [np.complex64(data), indices,
-                         np.complex64(updates)])
-
   def test_scatter_elements2(self):
     data = np.array([
         [0.0, 0.0, 0.0],
@@ -3847,12 +3712,6 @@ class TestNode(unittest.TestCase):
     output = run_node(node_def, [x])
     np.testing.assert_almost_equal(output["Y"], np.sign(x))
 
-    # test to drive data cast code path
-    node_def = helper.make_node("Sign", ["X"], ["Y"])
-    x = np.array([[-10, 5, 3], [8, -6, 7], [8, 6, -7]]).astype(np.int16)
-    output = run_node(node_def, [x])
-    np.testing.assert_almost_equal(output["Y"], np.sign(x))
-
   def test_sinh(self):
     if legacy_opset_pre_ver(9):
       raise unittest.SkipTest("ONNX version {} doesn't support Sinh.".format(
@@ -3870,10 +3729,10 @@ class TestNode(unittest.TestCase):
 
   def test_slice(self):
     # test case 1 with normal inputs
-    axes = np.array([0, 1, 2])
-    starts = np.array([0, 0, 0])
-    ends = np.array([2, 2, 2])
-    steps = np.array([1, 1, 1])
+    axes = [0, 1, 2]
+    starts = [0, 0, 0]
+    ends = [2, 2, 2]
+    steps = [1, 1, 1]
 
     if legacy_opset_pre_ver(10):
       node_def = helper.make_node("Slice", ["X"], ["S"],
@@ -3892,9 +3751,9 @@ class TestNode(unittest.TestCase):
       np.testing.assert_almost_equal(output["S"], x[0:2, 0:2, 0:2])
 
     # test case 2 with negative, out-of-bound and default inputs
-    axes = np.array([0, 2])
-    starts = np.array([0, -7])
-    ends = np.array([-8, 20])
+    axes = [0, 2]
+    starts = [0, -7]
+    ends = [-8, 20]
 
     if legacy_opset_pre_ver(10):
       node_def = helper.make_node("Slice", ["X"], ["S"],
@@ -3912,10 +3771,10 @@ class TestNode(unittest.TestCase):
       np.testing.assert_almost_equal(output["S"], x[0:-8, :, -7:20])
 
     # test case 3 with non-default steps
-    axes = np.array([0, 1, 2])
-    starts = np.array([0, 0, 0])
-    ends = np.array([2, 2, 2])
-    steps = np.array([2, -2, -1])
+    axes = [0, 1, 2]
+    starts = [0, 0, 0]
+    ends = [2, 2, 2]
+    steps = [2, -2, -1]
 
     if legacy_opset_pre_ver(10) == False:
       node_def = helper.make_node("Slice",
@@ -3924,23 +3783,6 @@ class TestNode(unittest.TestCase):
       x = self._get_rnd_float32(shape=[1000]).reshape([10, 10, 10])
       output = run_node(node_def, [x, starts, ends, axes, steps])
       np.testing.assert_almost_equal(output["S"], x[0:2:2, 0:2:-2, 0:2:-1])
-
-  def test_softmax(self):
-    node_def = helper.make_node("Softmax", ["X"], ["Y"], axis=0)
-    x = self._get_rnd_float32(shape=[3, 4, 5])
-    output = run_node(node_def, [x])
-    if legacy_opset_pre_ver(13):  # opset 1 & 11
-      x = x.reshape(1, 60)
-      max_x = np.max(x, axis=1).reshape((-1, 1))
-      exp_x = np.exp(x - max_x)
-      y = exp_x / np.sum(exp_x, axis=1).reshape((-1, 1))
-      y = y.reshape(3, 4, 5)
-    else:  # opset 13
-      x_max = np.max(x, axis=0, keepdims=True)
-      tmp = np.exp(x - x_max)
-      s = np.sum(tmp, axis=0, keepdims=True)
-      y = tmp / s
-    np.testing.assert_almost_equal(output["Y"], y)
 
   def test_softplus(self):
     node_def = helper.make_node("Softplus", ["X"], ["Y"])
@@ -3967,44 +3809,26 @@ class TestNode(unittest.TestCase):
                      (1, 1, 1, 12))
       y = np.transpose(y, (0, 3, 1, 2))
       np.testing.assert_allclose(output["Y"], y, rtol=1e-3)
-      # test data type that is not natively supported by Tensorflow GPU
-      x = self._get_rnd_float32(shape=x_shape).astype(np.float64)
-      output = run_node(node_def, [x], device=device)
-      x = np.transpose(x, (0, 2, 3, 1))
-      y = np.reshape(np.swapaxes(x.reshape(1, 1, 1, 1, 1, 12), 2, 3),
-                     (1, 1, 1, 12))
-      y = np.transpose(y, (0, 3, 1, 2))
-      np.testing.assert_allclose(output["Y"], y, rtol=1e-3)
 
   def test_split(self):
-    split = np.array([3, 3, 4]).astype(np.int64)
+    split = [3, 3, 4]
+    node_def = helper.make_node("Split", ["X"],
+                                ["Z%i" % i for i in range(len(split))],
+                                axis=0,
+                                split=split)
     x = self._get_rnd_float32(shape=[100]).reshape([10, 10])
-    if legacy_opset_pre_ver(13):  # for opset 1 to 12
-      node_def = helper.make_node("Split", ["X"],
-                                  ["Z%i" % i for i in range(len(split))],
-                                  axis=0,
-                                  split=split)
-      output = run_node(node_def, [x])
-    else:  # for opset 13 or above
-      node_def = helper.make_node("Split", ["X", "split"],
-                                  ["Z%i" % i for i in range(len(split))],
-                                  axis=0)
-      output = run_node(node_def, [x, split])
+
+    output = run_node(node_def, [x])
     for a, b in zip(list(output), np.split(x, np.cumsum(split))[:-1]):
       np.testing.assert_almost_equal(a, b)
 
     # test axis out of bound
-    if legacy_opset_pre_ver(13):  # for opset 1 to 12
-      node_def = helper.make_node("Split", ["X"],
-                                  ["Z%i" % i for i in range(len(split))],
-                                  axis=3,
-                                  split=split)
-      self.assertRaises(ValueError, run_node, node_def, [x])
-    else:  # for opset 13 or above
-      node_def = helper.make_node("Split", ["X", "split"],
-                                  ["Z%i" % i for i in range(len(split))],
-                                  axis=3)
-      self.assertRaises(ValueError, run_node, node_def, [x, split])
+    node_def = helper.make_node("Split", ["X"],
+                                ["Z%i" % i for i in range(len(split))],
+                                axis=3,
+                                split=split)
+    with np.testing.assert_raises(ValueError):
+      output = run_node(node_def, [x])
 
   def test_sqrt(self):
     node_def = helper.make_node("Sqrt", ["X"], ["Y"])
@@ -4013,12 +3837,10 @@ class TestNode(unittest.TestCase):
     np.testing.assert_almost_equal(output["Y"], np.sqrt(x), decimal=5)
 
   def test_squeeze(self):
+    node_def = helper.make_node("Squeeze", ["X"], ["Y"], axes=[2])
     x = np.array([[[0], [1], [2]]])
-    axes = np.array([2], dtype=np.int64)
-    if legacy_opset_pre_ver(13):  # for opset 1 to 12
-      node_def = helper.make_node("Squeeze", ["X"], ["Y"], axes=axes)
-      output = run_node(node_def, [x])
-      np.testing.assert_almost_equal(output["Y"], np.squeeze(x, axis=2))
+    output = run_node(node_def, [x])
+    np.testing.assert_almost_equal(output["Y"], np.squeeze(x, axis=2))
 
   def test_sub(self):
     node_def = helper.make_node("Sub", ["X", "Y"], ["Z"])
@@ -4152,10 +3974,6 @@ class TestNode(unittest.TestCase):
     repeats = [1, 1, 2, 1]
     output = run_node(node_def, [x, repeats])
     np.testing.assert_allclose(output["Z"], np.tile(x, repeats), rtol=1e-3)
-    # test data types that are not natively supported by Tensorflow
-    x = self._get_rnd_int(0, 100, shape=[3, 5, 5, 3], dtype=np.uint16)
-    output = run_node(node_def, [x, repeats])
-    np.testing.assert_allclose(output["Z"], np.tile(x, repeats), rtol=1e-3)
 
   def test_transpose(self):
     node_def = helper.make_node("Transpose", ["X"], ["Y"], perm=[0, 2, 1])
@@ -4177,12 +3995,12 @@ class TestNode(unittest.TestCase):
     else:  # for opset = 11
       x = np.array([[3, 2, 5, 10, 7], [12, 15, 10, 7, 20], [21, 16, 5, 3, 6]],
                    dtype=np.float32)
-      values = np.array([[2, 3], [7, 10], [3, 5]], dtype=np.float32)
-      indices = np.array([[1, 0], [3, 2], [3, 2]], dtype=np.int64)
+      values = np.array([[3, 2], [10, 7], [5, 3]], dtype=np.float32)
+      indices = np.array([[0, 1], [2, 3], [2, 3]], dtype=np.int64)
       k = np.array([2], dtype=np.int64)
       node_def = helper.make_node("TopK", ["x", "k"], ["values", "indices"],
                                   largest=0,
-                                  sorted=1)
+                                  sorted=0)
       output = run_node(node_def, [x, k])
     np.testing.assert_almost_equal(output["values"], values)
     np.testing.assert_almost_equal(output["indices"], indices)
@@ -4201,4 +4019,3 @@ class TestNode(unittest.TestCase):
 
 if __name__ == '__main__':
   unittest.main()
-

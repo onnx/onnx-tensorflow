@@ -28,9 +28,6 @@ def tf2onnx(dtype):
   if tf_dype is tf.string:
     return TensorProto.STRING
 
-  if tf_dype is tf.bfloat16:
-    return TensorProto.BFLOAT16
-
   onnx_dtype = None
   try:
     onnx_dtype = mapping.NP_TYPE_TO_TENSOR_TYPE[np.dtype(
@@ -45,11 +42,6 @@ def tf2onnx(dtype):
 
 
 def onnx2tf(dtype):
-  # The onnx2tf is done by going to a np type first. However,
-  # given that there is no bfloat16 in np at this time, we need
-  # to go directly to tf bfloat16 for now.
-  if dtype == int(TensorProto.BFLOAT16):
-    return tf.as_dtype("bfloat16")
   return tf.as_dtype(mapping.TENSOR_TYPE_TO_NP_TYPE[_onnx_dtype(dtype)])
 
 
@@ -82,42 +74,8 @@ def any_dtype_to_onnx_dtype(np_dtype=None, tf_dtype=None, onnx_dtype=None):
   return onnx_dtype
 
 
-def is_safe_cast(from_dtype, to_dtype):
-  safe_cast_map = {
-      tf.bfloat16: [tf.float32, tf.float64, tf.complex64, tf.complex128],
-      tf.float16: [tf.float32, tf.float64, tf.complex64, tf.complex128],
-      tf.float32: [tf.float64, tf.complex128],
-      tf.float64: [tf.complex128],
-      tf.int8: [
-          tf.bfloat16, tf.float16, tf.float32, tf.float64, tf.int16, tf.int32,
-          tf.int64, tf.complex64, tf.complex128
-      ],
-      tf.int16: [
-          tf.float32, tf.float64, tf.int32, tf.int64, tf.complex64,
-          tf.complex128
-      ],
-      tf.int32: [tf.float64, tf.int64, tf.complex128],
-      tf.int64: [],
-      tf.uint8: [
-          tf.float16, tf.float32, tf.float64, tf.int16, tf.int32, tf.int64,
-          tf.complex64, tf.complex128
-      ],
-      tf.uint16: [
-          tf.float32, tf.float64, tf.int32, tf.int64, tf.complex64,
-          tf.complex128
-      ],
-      tf.uint32: [tf.float64, tf.int64, tf.complex128],
-      tf.uint64: [],
-      tf.complex64: [tf.complex128],
-      tf.complex128: []
-  }
-  return to_dtype in safe_cast_map[from_dtype]
-
-
 def tf_to_np_str(from_type):
-  return mapping.TENSOR_TYPE_TO_NP_TYPE[int(
-      tf2onnx(from_type))].name if from_type != tf.bfloat16 else 'bfloat16'
-
+  return mapping.TENSOR_TYPE_TO_NP_TYPE[int(tf2onnx(from_type))].name
 
 def tf_to_np_str_list(from_list):
   return [tf_to_np_str(from_list[i]) for i in range(len(from_list))]

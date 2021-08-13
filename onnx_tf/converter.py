@@ -5,7 +5,6 @@ import os
 import shutil
 
 import onnx
-from onnx.external_data_helper import load_external_data_for_model
 import tensorflow as tf
 from tensorflow.core.framework import graph_pb2
 from tensorflow.python.tools import freeze_graph
@@ -32,7 +31,10 @@ def parse_args(args):
           ")", "]") else values[1:-1]
       res = []
       for value in values.split(","):
-        res.append(int(value) if value.isdigit() else value)
+        if value.isdigit():
+          res.append(int(value))
+        else:
+          res.append(value)
       setattr(namespace, self.dest, res)
 
   class OpsetAction(argparse.Action):
@@ -93,11 +95,8 @@ def parse_args(args):
 
   # required two args, source and destination path
   parser.add_argument("--infile", "-i", help="Input file path.", required=True)
-  parser.add_argument("--outdir", "-o", help="Output directory.", required=True)
-  parser.add_argument("--extdatadir",
-                      "-e",
-                      help="External input data file directory.",
-                      required=False)
+  parser.add_argument(
+      "--outfile", "-o", help="Output file path.", required=True)
 
   def add_argument_group(parser, group_name, funcs):
     group = parser.add_argument_group(group_name)
@@ -111,38 +110,29 @@ def parse_args(args):
                      [(backend.prepare, {
                          "device": {},
                          "strict": {},
-                         "logging_level": {},
-                         "auto_cast": {}
+                         "logging_level": {}
                      })])
 
   return parser.parse_args(args)
 
 
-def convert(infile, outdir, **kwargs):
+def convert(infile, outfile, **kwargs):
   """Convert pb.
 
   Args:
     infile: Input path.
-    outdir: Output path.
+    outfile: Output path.
     **kwargs: Other args for converting.
 
   Returns:
     None.
   """
   logging_level = kwargs.get("logging_level", "INFO")
-  ext_data_dir = kwargs.get("extdatadir")
-
   common.logger.setLevel(logging_level)
   common.logger.handlers[0].setLevel(logging_level)
-  common.logger.info("Start converting onnx pb to tf saved model")
 
-  # load external data if the file directory is provided
-  if ext_data_dir:
-    onnx_model = onnx.load(infile, load_external_data=False)
-    load_external_data_for_model(onnx_model, ext_data_dir)
-  else:
-    onnx_model = onnx.load(infile)
-
+  common.logger.info("Start converting onnx pb to tf pb:")
+  onnx_model = onnx.load(infile)
   tf_rep = backend.prepare(onnx_model, **kwargs)
-  tf_rep.export_graph(outdir)
+  tf_rep.export_graph(outfile)
   common.logger.info("Converting completes successfully.")

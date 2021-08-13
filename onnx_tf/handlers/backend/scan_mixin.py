@@ -7,7 +7,6 @@ from onnx_tf.common import data_type
 class ScanMixin(object):
 
   @classmethod
-  @tf.autograph.experimental.do_not_convert()
   def scan(cls, node, input_dict, strict):
     current_opset = [make_opsetid(cls.DOMAIN, cls.VERSION)]
 
@@ -22,12 +21,13 @@ class ScanMixin(object):
     num_state_vars = len(node_inputs) - num_scan_inputs
     # K = num_outputs - N
     num_scan_outputs = len(node.outputs) - num_state_vars
+
     """
         Function to run subgraph used with tf.scan
     """
 
     def run_subgraph(a, b):
-      input_values = dict(input_dict)
+      input_values = {}
       # set the input values for the subgraph
       # set the values for the state variables
       for i in range(num_state_vars):
@@ -37,13 +37,14 @@ class ScanMixin(object):
         input_values[body.input[i + num_state_vars].name] = b[i]
 
       # get the tensor operations for the onnx graph
-      input_values = onnx_tf.backend.onnx_graph_to_tensorflow_ops(
+      subgraph_tensor_dict = onnx_tf.backend.onnx_graph_to_tensorflow_ops(
           subgraph=body,
-          tensor_dict=input_values,
+          input_values=input_values,
+          tensor_dict=input_dict,
           opset=current_opset,
           strict=strict)
       # return sequence of tensors for every subgraph output
-      outputs = [input_values[output.name] for output in body.output]
+      outputs = [subgraph_tensor_dict[output.name] for output in body.output]
       return outputs
 
     scan_input_axes = node.attrs.get("scan_input_axes", [0] * num_scan_inputs)

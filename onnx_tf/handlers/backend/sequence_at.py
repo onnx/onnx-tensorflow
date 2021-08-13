@@ -19,9 +19,9 @@ class SequenceAt(BackendHandler):
 
     :return: True if position is in-bounds or input length is dynamic.
     """
-    seq_length = input_seq.shape[0]
-
-    if seq_length is None: return True
+    seq_length = input_seq.shape[0].value
+    if seq_length is None:
+      return True
 
     seq_length = tf.cast(seq_length, pos.dtype)
 

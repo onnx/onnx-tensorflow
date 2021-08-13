@@ -36,7 +36,6 @@ class OneHot(BackendHandler):
       tf.float32: tf.int32,
       tf.float64: tf.int32
   }
-
   @classmethod
   def args_check(cls, node, **kwargs):
     # update cast_map base on auto_cast flag
@@ -76,9 +75,12 @@ class OneHot(BackendHandler):
     tensor_dict = kwargs["tensor_dict"]
     indices = tensor_dict[node.inputs[0]]
     depth = tensor_dict[node.inputs[1]]
+    off_value = tensor_dict[node.inputs[2]][0]
+    on_value = tensor_dict[node.inputs[2]][1]
+    attrs["dtype"] = on_value.dtype
     axis = attrs.get("axis", -1)
 
-    # poocess negative axis
+    # process negative axis
     axis = axis if axis >= 0 else len(tf_shape(indices)) + axis + 1
 
     # process tf.one_hot unsupported datatype for indices
@@ -97,10 +99,8 @@ class OneHot(BackendHandler):
     # process negative indices
     indices = cls.process_neg_indices(depth, indices)
 
-    off_value = tensor_dict[node.inputs[2]][0]
-    on_value = tensor_dict[node.inputs[2]][1]
-    attrs["dtype"] = on_value.dtype
     attrs["axis"] = axis
+
     return [
         cls.make_tensor_from_onnx_node(
             node,
@@ -115,4 +115,4 @@ class OneHot(BackendHandler):
 
   @classmethod
   def version_11(cls, node, **kwargs):
-    return cls._common(node, **kwargs)
+      return cls._common(node, **kwargs)

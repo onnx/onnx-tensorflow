@@ -6,7 +6,7 @@ from onnx_tf.handlers.handler import tf_func
 
 
 @onnx_op("RandomNormal")
-@tf_func(tf.random.normal)
+@tf_func(tf.random_normal)
 class RandomNormal(BackendHandler):
 
   @classmethod

@@ -21,11 +21,3 @@ class Mul(ArithmeticMixin, BackendHandler):
   @classmethod
   def version_7(cls, node, **kwargs):
     return [cls.make_tensor_from_onnx_node(node, **kwargs)]
-
-  @classmethod
-  def version_13(cls, node, **kwargs):
-    return [cls.make_tensor_from_onnx_node(node, **kwargs)]
-
-  @classmethod
-  def version_14(cls, node, **kwargs):
-    return [cls.make_tensor_from_onnx_node(node, **kwargs)]

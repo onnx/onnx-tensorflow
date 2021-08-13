@@ -35,24 +35,20 @@ class InstanceNormalization(BackendHandler):
     inputs_rank = inputs.shape.ndims
 
     moments_axes = list(range(inputs_rank))[2:]
-    channel_size = inputs_shape[
-        1] if inputs_shape[1] is not None else gamma.shape[0]
-    params_shape_broadcast = list([1, channel_size] +
+    params_shape_broadcast = list([1, inputs_shape[1].value] +
                                   [1 for _ in range(2, inputs_rank)])
 
     beta = tf.reshape(beta, params_shape_broadcast)
     gamma = tf.reshape(gamma, params_shape_broadcast)
 
     # Calculate the moments (instance activations).
-    mean, variance = tf.nn.moments(inputs, moments_axes, keepdims=True)
+    mean, variance = tf.nn.moments(inputs, moments_axes, keep_dims=True)
 
     # Compute instance normalization.
     inputs = [inputs, mean, variance, beta, gamma]
     return [
-        cls.make_tensor_from_onnx_node(node,
-                                       inputs=inputs,
-                                       name="instancenorm",
-                                       **kwargs)
+        cls.make_tensor_from_onnx_node(
+            node, inputs=inputs, name="instancenorm", **kwargs)
     ]
 
   @classmethod

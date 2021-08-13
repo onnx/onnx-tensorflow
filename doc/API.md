@@ -33,10 +33,6 @@ Currently, the strict flag only affects the behavior of MaxPool and AveragePool 
 to see more conversion details or to WARNING to see less
 
 
-`auto_cast` : Whether to auto cast data types that might lose precision for the tensors
-with types not natively supported by Tensorflow, default is False
-
-
 _returns_:
 
 A TensorflowRep class object representing the ONNX model

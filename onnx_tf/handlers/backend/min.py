@@ -9,9 +9,7 @@ from onnx_tf.handlers.handler import onnx_op
 
 @onnx_op("Min")
 class Min(BackendHandler):
-  supported_types = [
-      tf.bfloat16, tf.float16, tf.float32, tf.float64, tf.int32, tf.int64
-  ]
+  supported_types = [tf.float16, tf.float32, tf.float64, tf.int32, tf.int64]
   cast_map = {
       tf.uint8: tf.int32,
       tf.uint16: tf.int32,
@@ -22,11 +20,10 @@ class Min(BackendHandler):
 
   @classmethod
   def args_check(cls, node, **kwargs):
-    # update cast map based on the auto_cast config option
+    # update cast_map base on auto_cast flag
     cls.cast_map[tf.uint64] = tf.int64 if sys_config.auto_cast else None
 
     inp_dtype = kwargs["tensor_dict"][node.inputs[0]].dtype
-
     if inp_dtype in cls.cast_map and cls.cast_map[inp_dtype] is None:
       exception.DTYPE_NOT_CAST_EXCEPT(
           "Min input " + node.inputs[0] + " with data type '" +
@@ -58,8 +55,4 @@ class Min(BackendHandler):
 
   @classmethod
   def version_12(cls, node, **kwargs):
-    return cls._common(node, **kwargs)
-
-  @classmethod
-  def version_13(cls, node, **kwargs):
     return cls._common(node, **kwargs)

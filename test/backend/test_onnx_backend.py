@@ -16,10 +16,8 @@ from onnx_tf.backend import TensorflowBackend
 from onnx_tf.common.legacy import legacy_onnx_pre_ver
 from onnx_tf.common.legacy import legacy_opset_pre_ver
 
-
 def get_onnxtf_supported_ops():
   return opset_version.backend_opset_version
-
 
 def get_onnx_supported_ops():
   onnx_ops_dict = {}
@@ -30,11 +28,10 @@ def get_onnx_supported_ops():
     }
   return onnx_ops_dict
 
-
 # This is a pytest magic variable to load extra plugins
 pytest_plugins = 'onnx.backend.test.report',
 
-backend_test = onnx.backend.test.runner.Runner(TensorflowBackend, __name__)
+backend_test = onnx.backend.test.BackendTest(TensorflowBackend, __name__)
 
 # The test cases excluded below should be considered permanent restrictions
 # based on the TensorFlow implementation. Unimplemented operators will raise
@@ -61,26 +58,25 @@ backend_test.exclude(r'[a-z,_]*PReLU_[0-9]d_multiparam[a-z,_]*')
 backend_test.exclude(r'test_mod_[a-z,_]*uint[0-9]+')
 backend_test.exclude(r'test_mod_[a-z,_]*int(8|(16))+')
 
+# TF only support uint8, int32, int64 for indices and int32 for depth in
+# tf.one_hot
+backend_test.exclude(r'test_onehot_[a-z,_]*')
+
 # TF doesn't support most of the attributes in resize op
 # test_node.py will cover the test
 backend_test.exclude(r'test_resize_[a-z,_]*')
 
 # range is using loop in the model test but all the outputs datatype are
 # missing in the body attribute of the loop
-backend_test.exclude(r'test_range_float_type_positive_delta_expanded[a-z,_]*')
-backend_test.exclude(r'test_range_int32_type_negative_delta_expanded[a-z,_]*')
+backend_test.exclude(
+    r'test_range_float_type_positive_delta_expanded[a-z,_]*')
+backend_test.exclude(
+    r'test_range_int32_type_negative_delta_expanded[a-z,_]*')
 
 # skip all the cumsum testcases because all the axis in the testcases
 # are created as a 1-D 1 element tensor, but the spec clearly state
 # that axis should be a 0-D tensor(scalar)
-if legacy_opset_pre_ver(13):
-  backend_test.exclude(r'test_cumsum_[a-z,_]*')
-
-# Currently ONNX's backend test runner does not support sequence as input/output
-backend_test.exclude(r'test_if_seq[a-z,_]*')
-
-# TF session run does not support sequence/RaggedTensor as model inputs
-backend_test.exclude(r'test_loop13_seq[a-z,_]*')
+backend_test.exclude(r'test_cumsum_[a-z,_]*')
 
 # TF minimum/maximum do not support uint64 when auto-cast is False (default)
 backend_test.exclude(r'test_min_uint64_[a-z,_]*')
@@ -118,14 +114,19 @@ if not legacy_opset_pre_ver(10):
 # Concat from sequence with new_axis=1 not supported
 backend_test.exclude(r'test_sequence_model5_[a-z,_]*')
 
-# Fails rounding tolerance
-backend_test.exclude(r'test_gru_seq_length_[a-z,_]*')
+# TF session run does not support sequence/RaggedTensor as model inputs
+backend_test.exclude(r'test_sequence_insert+_[a-z,_]*')
+
+# some NLL test cases do not use the `NegativeLogLikelihoodLoss` operator
+# however they use the `where` operator which has some restrictions in TF 1.x
+# (x,y tensors must have same shape, broadcastable shapes not supported)
+backend_test.exclude(r'test_negative_log_likelihood_loss_[a-z,_]*')
+
+# TF 1.15 return error for this testcase but fixed in TF 2.x
+backend_test.exclude(r'test_einsum_batch_diagonal_[a-z,_]*')
 
 # TF pow does not support uint64 when auto-cast is False (default)
 backend_test.exclude(r'test_pow_types_float[0-9]+_uint64+_[a-z,_]*')
-
-# TF session run does not support sequence/RaggedTensor as model inputs
-backend_test.exclude(r'test_sequence_insert+_[a-z,_]*')
 
 # Exclude tests for Dropout training that have randomness dependent on
 # the different implementations
@@ -133,29 +134,6 @@ backend_test.exclude('test_training_dropout_default_[a-z,_]*')
 backend_test.exclude('test_training_dropout_[a-z,_]*')
 backend_test.exclude('test_training_dropout_default_mask_[a-z,_]*')
 backend_test.exclude('test_training_dropout_mask_[a-z,_]*')
-
-# TF module can't run gru, lstm, rnn in one session using custom variables
-backend_test.exclude(r'test_gru_[a-z,_]*')
-backend_test.exclude(r'test_lstm_[a-z,_]*')
-backend_test.exclude(r'test_rnn_[a-z,_]*')
-backend_test.exclude(r'test_simple_rnn_[a-z,_]*')
-
-# TF doesn't support auto_pad=SAME_LOWER for Conv and ConvTranspose
-backend_test.exclude(r'test_conv_with_autopad_same_[a-z,_]*')
-backend_test.exclude(r'test_convtranspose_autopad_same_[a-z,_]*')
-
-# Exclude non-deterministic tests
-backend_test.exclude(r'test_bernoulli_expanded[a-z,_]*')
-backend_test.exclude(r'test_bernoulli_double_expanded[a-z,_]*')
-backend_test.exclude(r'test_bernoulli_seed_expanded[a-z,_]*')
-
-# Exclude optional_get_element, test_optional_has_element tests
-backend_test.exclude(r'test_optional_get_element[a-z,_]*')
-backend_test.exclude(r'test_optional_has_element[a-z,_]*')
-
-# Exclude BatchNormalization with training_mode=1 tests
-backend_test.exclude(r'test_batchnorm_epsilon_training_mode[a-z,_]*')
-backend_test.exclude(r'test_batchnorm_example_training_mode[a-z,_]*')
 
 # import all test cases at global scope to make them visible to python.unittest
 globals().update(backend_test.enable_report().test_cases)

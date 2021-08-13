@@ -6,6 +6,7 @@ from tensorflow.python.ops import array_ops
 
 from onnx_tf.common import exception
 
+
 class RNNMixin(object):
 
   ONNX_ACTIVATION_MAPPING = {
@@ -25,27 +26,23 @@ class RNNMixin(object):
       "thresholded_relu": tf.keras.layers.ThresholdedReLU,
   }
 
-  rnn_cell = None
-
   @classmethod
   def rnn(cls, x, cell_class, cell_kwargs, rnn_kwargs, activations, direction):
     cell_kwargs["activation"] = activations[0]
 
-    if cls.rnn_cell is None:
-      cls.rnn_cell = [cell_class(**cell_kwargs)]
-    rnn_cell = cls.rnn_cell
-    cell_fw = tf.compat.v1.nn.rnn_cell.MultiRNNCell(rnn_cell)
+    rnn_cell = [cell_class(**cell_kwargs)]
+    cell_fw = tf.nn.rnn_cell.MultiRNNCell(rnn_cell)
 
     if direction == "bidirectional":
       cell_kwargs["activation"] = activations[1]
       rnn_cell_bw = [cell_class(**cell_kwargs)]
-      cell_bw = tf.compat.v1.nn.rnn_cell.MultiRNNCell(rnn_cell_bw)
+      cell_bw = tf.nn.rnn_cell.MultiRNNCell(rnn_cell_bw)
 
     if direction == "forward":
-      outputs, states = tf.compat.v1.nn.dynamic_rnn(cell_fw, x, **rnn_kwargs)
+      outputs, states = tf.nn.dynamic_rnn(cell_fw, x, **rnn_kwargs)
     elif direction == "bidirectional":
-      outputs, states = tf.compat.v1.nn.bidirectional_dynamic_rnn(
-          cell_fw, cell_bw, x, **rnn_kwargs)
+      outputs, states = tf.nn.bidirectional_dynamic_rnn(cell_fw, cell_bw, x,
+                                                        **rnn_kwargs)
     elif direction == "reverse":
 
       def _reverse(input_, seq_dim):
@@ -53,8 +50,7 @@ class RNNMixin(object):
 
       time_dim = 0
       inputs_reverse = _reverse(x, time_dim)
-      outputs, states = tf.compat.v1.nn.dynamic_rnn(cell_fw, inputs_reverse,
-                                                    **rnn_kwargs)
+      outputs, states = tf.nn.dynamic_rnn(cell_fw, inputs_reverse, **rnn_kwargs)
       outputs = _reverse(outputs, time_dim)
 
     return outputs, states
@@ -62,8 +58,9 @@ class RNNMixin(object):
   @classmethod
   def rnn_get_activation(cls, name, alpha, beta):
     if name not in cls.ONNX_ACTIVATION_MAPPING:
-      exception.OP_UNSUPPORTED_EXCEPT("Activation function {} for {}".format(
-          name, cls.__name__), "Tensorflow")
+      exception.OP_UNSUPPORTED_EXCEPT(
+          "Activation function {} for {}".format(name, cls.__name__),
+          "Tensorflow")
     activation = cls.ONNX_ACTIVATION_MAPPING[name]
     kwargs = {}
     if name == "affine":

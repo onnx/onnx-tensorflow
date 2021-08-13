@@ -7,7 +7,7 @@ from .math_mixin import BasicMathMixin
 
 
 @onnx_op("Log")
-@tf_func(tf.math.log)
+@tf_func(tf.log)
 class Log(BasicMathMixin, BackendHandler):
 
   @classmethod
@@ -16,8 +16,4 @@ class Log(BasicMathMixin, BackendHandler):
 
   @classmethod
   def version_6(cls, node, **kwargs):
-    return [cls.make_tensor_from_onnx_node(node, **kwargs)]
-
-  @classmethod
-  def version_13(cls, node, **kwargs):
     return [cls.make_tensor_from_onnx_node(node, **kwargs)]

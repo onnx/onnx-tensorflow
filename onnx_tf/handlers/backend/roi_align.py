@@ -35,41 +35,35 @@ def crop_and_resize(image,
         if not adaptive_ratio:
             crop_shape = (crop_size[0] * sampling_ratio,
                           crop_size[1] * sampling_ratio)
-            spacing_w = (x1 - x0) / tf.cast(crop_shape[1], dtype=tf.float32)
-            spacing_h = (y1 - y0) / tf.cast(crop_shape[0], dtype=tf.float32)
+            spacing_w = (x1 - x0) / tf.to_float(crop_shape[1])
+            spacing_h = (y1 - y0) / tf.to_float(crop_shape[0])
 
-            nx0 = (x0 + spacing_w / 2) / tf.cast(image_shape[1] - 1,
-                                                 dtype=tf.float32)
-            ny0 = (y0 + spacing_h / 2) / tf.cast(image_shape[0] - 1,
-                                                 dtype=tf.float32)
+            nx0 = (x0 + spacing_w / 2) / tf.to_float(image_shape[1] - 1)
+            ny0 = (y0 + spacing_h / 2) / tf.to_float(image_shape[0] - 1)
 
-            nw = spacing_w * tf.cast(crop_shape[1] - 1,
-                                     dtype=tf.float32) / tf.cast(
-                                         image_shape[1] - 1, dtype=tf.float32)
-            nh = spacing_h * tf.cast(crop_shape[0] - 1,
-                                     dtype=tf.float32) / tf.cast(
-                                         image_shape[0] - 1, dtype=tf.float32)
+            nw = spacing_w * tf.to_float(crop_shape[1] -
+                                         1) / tf.to_float(image_shape[1] - 1)
+            nh = spacing_h * tf.to_float(crop_shape[0] -
+                                         1) / tf.to_float(image_shape[0] - 1)
         else:
 
             # TODO: find a better method when adaptive_ratio=True
             roi_width = x1 - x0
             roi_height = y1 - y0
-            nx0 = x0 / tf.cast(image_shape[1] - 1, dtype=tf.float32)
-            ny0 = y0 / tf.cast(image_shape[0] - 1, dtype=tf.float32)
-            nw = (roi_width - 1) / tf.cast(image_shape[1] - 1,
-                                           dtype=tf.float32)
-            nh = (roi_height - 1) / tf.cast(image_shape[0] - 1,
-                                            dtype=tf.float32)
+            nx0 = x0 / tf.to_float(image_shape[1] - 1)
+            ny0 = y0 / tf.to_float(image_shape[0] - 1)
+            nw = (roi_width - 1) / tf.to_float(image_shape[1] - 1)
+            nh = (roi_height - 1) / tf.to_float(image_shape[0] - 1)
 
         return tf.concat([ny0, nx0, ny0 + nh, nx0 + nw], axis=1)
 
     image_shape = tf.shape(image)[1:3]
     boxes = transform_fpcoor_for_tf(boxes, image_shape, crop_size,
                                     sampling_ratio, adaptive_ratio)
-    ret = tf.image.crop_and_resize(
+    ret = tf.compat.v1.image.crop_and_resize(
         image,
         boxes,
-        tf.cast(box_ind, dtype=tf.int32),
+        tf.to_int32(box_ind),
         crop_size=(crop_size[0] * sampling_ratio,
                    crop_size[1] * sampling_ratio),
     )
@@ -94,7 +88,8 @@ class RoiAlign(BackendHandler):
         if sampling_ratio <= 0:
             sampling_ratio = int((output_height + output_width) / 2)
             adaptive_ratio = True
-            logger.warning("Do not fully support sampling_ratio <= 0.")
+            logger.warning("Do not fully support sampling_ratio <= 0.",
+                           UserWarning)
 
         boxes = boxes * spatial_scale
 

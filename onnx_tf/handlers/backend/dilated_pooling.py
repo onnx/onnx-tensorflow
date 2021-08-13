@@ -366,7 +366,7 @@ class DilatedPooling(object):
 
             These are the indices used for gather_nd operation to collect
             the values from the input data.
-    """
+        """
 
     for dim in range(self.spatial_size - 1, -1, -1):
       filter_size = (self.kernel_shape[dim] - 1) * \
@@ -510,7 +510,6 @@ class DilatedPooling(object):
     # padding for the (D)HW dimensions
     for i in range(self.spatial_size):
       tf_paddings += [[pads[i * 2], pads[i * 2 + 1]]]
-
     self.input = tf.pad(self.input,
                         tf_paddings,
                         mode='CONSTANT',
@@ -601,24 +600,27 @@ class DilatedPooling(object):
 
       # if there was padding, recalculate the returned index
       # to exclude the padding
-      if self.is_known_shape:
-        if np.count_nonzero(self.pads) != 0:
-          new_ind = self._calc_argmax_without_padding(new_ind)
-      else:
-        new_ind = tf.where(tf.not_equal(tf.math.count_nonzero(self.pads), 0),
-                           self._calc_argmax_without_padding(new_ind), new_ind)
+      count_nonzero_op = np.count_nonzero if self.is_known_shape else tf.math.count_nonzero
+      if count_nonzero_op(self.pads) != 0:
+        new_ind = self._calc_argmax_without_padding(new_ind)
 
     return (pooled, new_ind)
 
   def _lp_pool(self, input, ksize, strides, padding, data_format):
+    if len(data_format) == 3: # NWC or NCW
+      tf_avg_pool = tf.nn.avg_pool1d
+    elif len(data_format) == 4: # NHWC or NCHW
+      tf_avg_pool = tf.nn.avg_pool
+    else: # NDHWC or NCDHW
+      tf_avg_pool = tf.nn.avg_pool3d
     window_size = np.prod(ksize)
 
     input = tf.math.pow(tf.math.abs(input), self.p) * window_size
-    pooled = tf.nn.avg_pool(input,
-                            ksize=ksize,
-                            strides=strides,
-                            padding=padding,
-                            data_format=data_format)
+    pooled = tf_avg_pool(input,
+                         ksize=ksize,
+                         strides=strides,
+                         padding=padding,
+                         data_format=data_format)
     pooled = tf.math.pow(pooled, 1.0 / self.p)
 
     return pooled
@@ -666,8 +668,7 @@ class DilatedPooling(object):
                                 filters=filter,
                                 strides=strides,
                                 dilations=dilations,
-                                padding=padding_,
-                                data_format="NHWC")
+                                padding=padding_)
     # if spatial_size < 4 and strides == 1 or dilation == 1 use tf.nn.pool
     elif self.spatial_size < 4 and (self.strides == [1] * self.spatial_size or
             self.dilations == [1] * self.spatial_size) and \
@@ -690,9 +691,9 @@ class DilatedPooling(object):
       else:
         # othwerwise check the pooling_type and use the correct op
         if self.pooling_type.startswith("MAX"):
-          op = tf.nn.max_pool
+          op = tf.nn.max_pool_v2
         elif self.pooling_type == "AVG":
-          op = tf.nn.avg_pool
+          op = tf.nn.avg_pool_v2
         elif self.pooling_type == "LP":
           op = self._lp_pool
         else:
@@ -733,7 +734,6 @@ class DilatedPooling(object):
                             padding="VALID",
                             pooling_type=self.pooling_type,
                             data_format=self.compute_format)
-
     return pooled
 
   def is_supported(self):

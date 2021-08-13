@@ -10,6 +10,7 @@ from onnx.backend.test.runner import BackendIsNotSupposedToImplementIt
 
 import onnx_tf.common as common
 
+
 class Handler(object):
   """ This class is base handler class.
   Base backend and frontend base handler class inherit this class.

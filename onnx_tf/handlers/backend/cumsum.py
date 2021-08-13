@@ -1,21 +1,19 @@
 import tensorflow as tf
 
+from onnx_tf.common import exception
 from onnx_tf.handlers.backend_handler import BackendHandler
 from onnx_tf.handlers.handler import onnx_op
 from onnx_tf.handlers.handler import tf_func
 from onnx_tf.common import sys_config
 from onnx_tf.common import exception
 from onnx_tf.common import data_type
-#import onnx_tf.common.data_type as data_type
 
 
 @onnx_op("CumSum")
 @tf_func(tf.math.cumsum)
 class CumSum(BackendHandler):
   cast_map = {tf.uint32: tf.int64}
-  supported_types = [
-      tf.int32, tf.int64, tf.float16, tf.float32, tf.float64, tf.bfloat16
-  ]
+  supported_types = [tf.int32, tf.int64, tf.float32, tf.float64]
 
   @classmethod
   def args_check(cls, node, **kwargs):
@@ -33,7 +31,7 @@ class CumSum(BackendHandler):
           data_type.tf_to_np_str_list(cls.supported_types))
 
   @classmethod
-  def _common(cls, node, **kwargs):
+  def version_11(cls, node, **kwargs):
     x = kwargs["tensor_dict"][node.inputs[0]]
 
     # handle data types that are not natively supported by Tensorflow
@@ -53,11 +51,3 @@ class CumSum(BackendHandler):
 
     result = cls.make_tensor_from_onnx_node(node, inputs=inputs, attrs=attrs)
     return [tf.cast(result, dtype) if dtype in cls.cast_map else result]
-
-  @classmethod
-  def version_11(cls, node, **kwargs):
-    return cls._common(node, **kwargs)
-
-  @classmethod
-  def version_14(cls, node, **kwargs):
-    return cls._common(node, **kwargs)

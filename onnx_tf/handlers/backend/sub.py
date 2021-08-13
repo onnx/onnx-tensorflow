@@ -13,14 +13,16 @@ from .math_mixin import ArithmeticMixin
 @tf_func(tf.subtract)
 class Sub(ArithmeticMixin, BackendHandler):
   supported_types = [
-      tf.bfloat16, tf.float16, tf.float32, tf.float64, tf.int32, tf.int64,
-      tf.uint32, tf.int8, tf.int16, tf.uint8, tf.uint16
+      tf.float16, tf.float32, tf.float64, tf.int32, tf.int64,
+      tf.uint32
   ]
   cast_map = {}
-  cast_map[tf.uint64] = tf.int64 if sys_config.auto_cast else None
 
   @classmethod
   def args_check(cls, node, **kwargs):
+    # update cast_map base on auto_cast flag
+    cls.cast_map[tf.uint64] = tf.int64 if sys_config.auto_cast else None
+
     dtype = kwargs["tensor_dict"][node.inputs[0]].dtype
     if dtype in cls.cast_map and cls.cast_map[dtype] is None:
       exception.DTYPE_NOT_CAST_EXCEPT(
@@ -47,12 +49,4 @@ class Sub(ArithmeticMixin, BackendHandler):
 
   @classmethod
   def version_7(cls, node, **kwargs):
-    return cls._common(node, **kwargs)
-
-  @classmethod
-  def version_13(cls, node, **kwargs):
-    return cls._common(node, **kwargs)
-
-  @classmethod
-  def version_14(cls, node, **kwargs):
     return cls._common(node, **kwargs)

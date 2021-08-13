@@ -1,30 +1,11 @@
 import tensorflow as tf
 
-from onnx_tf.common import get_variable_name
-from onnx_tf.common.tf_helper import tf_shape
 from onnx_tf.handlers.backend_handler import BackendHandler
 from onnx_tf.handlers.handler import onnx_op
 
 
 @onnx_op("NonMaxSuppression")
 class NonMaxSuppression(BackendHandler):
-  var_name = 'result'
-
-  @classmethod
-  def get_req_vars_template(cls, node, init_dict):
-    """ Get required variables template, which is a
-    dictionary of variable names with initial value and
-    shape.
-    :param node: OnnxNode object.
-    :param init_dict: initializer dictionary of the graph.
-    :return: template dictionary.
-    """
-    return {
-        cls.var_name: [
-            tf.constant([[0, 0, 0]], dtype=tf.int64),
-            tf.TensorShape([None, 3])
-        ]
-    }
 
   @classmethod
   def _common(cls, node, **kwargs):
@@ -68,45 +49,31 @@ class NonMaxSuppression(BackendHandler):
       boxes_t = tf.concat([y1, x1, y2, x2], 1)
       boxes = tf.transpose(boxes_t, perm=[0, 2, 1])
 
-    def create_nodes(boxes, scores, max_output_boxes_per_class, iou_threshold,
-                     score_threshold, result):
-      # get number of batches in boxes
-      num_batches = tf_shape(boxes)[0]
-      for batch_i in tf.range(num_batches):
-        # get boxes in batch_i only
-        tf_boxes = tf.squeeze(tf.gather(boxes, [batch_i]), axis=0)
-        # get scores of all classes in batch_i only
-        batch_i_scores = tf.squeeze(tf.gather(scores, [batch_i]), axis=0)
-        # get number of classess in batch_i only
-        num_classes = tf_shape(batch_i_scores)[0]
-        for class_j in tf.range(num_classes):
-          # get scores in class_j for batch_i only
-          tf_scores = tf.squeeze(tf.gather(batch_i_scores, [class_j]), axis=0)
-          # get the selected boxes indices
-          selected_indices = tf.image.non_max_suppression(
-              tf_boxes, tf_scores, max_output_boxes_per_class, iou_threshold,
-              score_threshold)
-          # add batch and class information into the indices
-          output = tf.transpose([tf.cast(selected_indices, dtype=tf.int64)])
-          paddings = tf.constant([[0, 0], [1, 0]])
-          output = tf.pad(output,
-                          paddings,
-                          constant_values=tf.cast(class_j, dtype=tf.int64))
-          output = tf.pad(output,
-                          paddings,
-                          constant_values=tf.cast(batch_i, dtype=tf.int64))
-          # tf.function will auto convert "result" from variable to placeholder
-          # therefore don't need to use assign here
-          result = output if tf.equal(batch_i, 0) and tf.equal(
-              class_j, 0) else tf.concat([result, output], 0)
+    # get number of batches in boxes
+    num_batches = boxes.shape[0]
+    for batch_i in range(num_batches):
+      # get boxes in batch_i only
+      tf_boxes = tf.squeeze(tf.gather(boxes, [batch_i]), axis=0)
+      # get scores of all classes in batch_i only
+      batch_i_scores = tf.squeeze(tf.gather(scores, [batch_i]), axis=0)
+      # get number of classess in batch_i only
+      num_classes = batch_i_scores.shape[0]
+      for class_j in range(num_classes):
+        # get scores in class_j for batch_i only
+        tf_scores = tf.squeeze(tf.gather(batch_i_scores, [class_j]), axis=0)
+        # get the selected boxes indices
+        selected_indices = tf.image.non_max_suppression(
+            tf_boxes, tf_scores, max_output_boxes_per_class, iou_threshold,
+            score_threshold)
+        # add batch and class information into the indices
+        output = tf.transpose([tf.cast(selected_indices, dtype=tf.int64)])
+        paddings = tf.constant([[0, 0], [1, 0]])
+        output = tf.pad(output, paddings, constant_values=class_j)
+        output = tf.pad(output, paddings, constant_values=batch_i)
+        result = tf.concat([result, output],
+                           0) if 'result' in locals() else output
 
-      return result
-
-    result = tensor_dict[get_variable_name(node, cls.var_name)]
-    return [
-        create_nodes(boxes, scores, max_output_boxes_per_class, iou_threshold,
-                     score_threshold, result)
-    ]
+    return [result]
 
   @classmethod
   def version_10(cls, node, **kwargs):

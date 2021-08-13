@@ -1,13 +1,10 @@
 from onnx import defs
 
+import onnx_tf.common as common
 from onnx_tf.handlers.backend import *  # noqa
 from onnx_tf.handlers.backend_handler import BackendHandler
-import onnx_tf.common as common
 
-def common_logging(handler, version):
-  common.logger.debug("Fail to get since_version of {} in domain `{}` "
-                      "with max_inclusive_version={}. Set to 1.".format(
-                          handler.ONNX_OP, handler.DOMAIN, version))
+import onnx_tf.common as common
 
 def get_all_backend_handlers(opset_dict):
   """ Get a dict of all backend handler classes.
@@ -32,11 +29,9 @@ def get_all_backend_handlers(opset_dict):
             domain=handler.DOMAIN,
             max_inclusive_version=version).since_version
       except RuntimeError:
-        # ONNX throws RuntimeError up to 1.8
-        common_logging(handler, version)
-      except defs.SchemaError:
-        # ONNX changed to defs.SchemaError since 1.9
-        common_logging(handler, version)
+        common.logger.debug("Fail to get since_version of {} in domain `{}` "
+                      "with max_inclusive_version={}. Set to 1.".format(
+                          handler.ONNX_OP, handler.DOMAIN, version))
     else:
       common.logger.debug("Unknown op {} in domain `{}`.".format(
           handler.ONNX_OP, handler.DOMAIN or "ai.onnx"))

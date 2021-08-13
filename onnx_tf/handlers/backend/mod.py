@@ -15,11 +15,10 @@ class Mod(ArithmeticMixin, BackendHandler):
       tf.uint16: tf.int32,
       tf.uint32: tf.int64,
       tf.int8: tf.int32,
-      tf.int16: tf.int32,
-      tf.float16: tf.float32
+      tf.int16: tf.int32
   }
   supported_types = [
-      tf.int32, tf.int64, tf.float32, tf.float64, tf.bfloat16
+      tf.int32, tf.int64, tf.float16, tf.float32, tf.float64, tf.bfloat16
   ]
 
   @classmethod
@@ -42,7 +41,6 @@ class Mod(ArithmeticMixin, BackendHandler):
     if x.dtype != y.dtype:
       exception.OP_UNSUPPORTED_EXCEPT("Mod with inputs in different data types",
                                       "Tensorflow")
-
   @classmethod
   def _common(cls, node, **kwargs):
     x = kwargs["tensor_dict"][node.inputs[0]]
@@ -67,8 +65,4 @@ class Mod(ArithmeticMixin, BackendHandler):
 
   @classmethod
   def version_10(cls, node, **kwargs):
-    return cls._common(node, **kwargs)
-
-  @classmethod
-  def version_13(cls, node, **kwargs):
     return cls._common(node, **kwargs)

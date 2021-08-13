@@ -31,6 +31,7 @@ class SysConfig:
     self.device = 'CPU'
 
 
+
 sys_config = SysConfig()
 
 
@@ -170,6 +171,7 @@ def get_data_format(x_rank):
 
 def supports_device(device):
   """ Check if support target device.
+
   :param device: CUDA or CPU.
   :return: If supports.
   """
@@ -182,14 +184,21 @@ def supports_device(device):
   return False
 
 
-def get_variable_name(node, var_name):
-  """ Get variable name.
-  :param node: ONNX NodeProto object
-  :param var_name: name of the variable
-  :return: unique variable name
+@deprecated("onnx_tf.common.get_outputs_names is deprecated.{} {}".format(
+    deprecated.MSG_WILL_REMOVE,
+    "Use TensorflowGraph.get_outputs_names instead."))
+def get_output_node_names(graph_def):
+  """Get output node names from GraphDef.
+  Args:
+    graph_def: GraphDef object.
+  Returns:
+    List of output node names.
   """
-  v_name = node.op_type.lower() + '_' + var_name
-  return v_name + '_' + node.name.lower() if node.name else v_name
+  nodes, input_names = dict(), set()
+  for node in graph_def.node:
+    nodes[node.name] = node
+    input_names.update(set(node.input))
+  return list(set(nodes) - input_names)
 
 
 CONST_MINUS_ONE_INT32 = "_onnx_tf_internal_minus_one_int32"

@@ -12,7 +12,7 @@ from onnx_tf.common import data_type
 @onnx_op("Pow")
 @tf_func(tf.pow)
 class Pow(BasicMathMixin, BackendHandler):
-  x_cast_map = {tf.bfloat16: tf.float32}
+  x_cast_map = {}
   y_cast_map = {
       tf.uint8: tf.int16,
       tf.uint16: tf.int32,
@@ -72,8 +72,4 @@ class Pow(BasicMathMixin, BackendHandler):
 
   @classmethod
   def version_12(cls, node, **kwargs):
-    return cls._common(node, **kwargs)
-
-  @classmethod
-  def version_13(cls, node, **kwargs):
     return cls._common(node, **kwargs)

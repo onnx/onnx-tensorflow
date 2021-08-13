@@ -2,8 +2,8 @@
 |||
 |-:|:-|
 |ONNX-Tensorflow Version|v1.7.0|
-|ONNX Version|1.7.0|
-|Tensorflow Version|v2.3.1|
+|ONNX Version|v1.7.0|
+|Tensorflow Version|v1.15.4|
 
 Notes:
 * Values that are new or updated from a previous opset version are in bold.
@@ -182,12 +182,12 @@ Notes:
 ONNX-TF Supported Operators / ONNX Operators: 156 / 162
 
 Notes:
-1. Cast: Cast string to data types other than float32/float64/int32/int64 is not supported in Tensorflow
+1. Cast: Cast string to float32/float64/int32/int64 are not supported in Tensorflow.
 2. ConcatFromSequence: new_axis=1 not supported in Tensorflow.
 3. ConvTranspose: ConvTranspose with dilations != 1, or transposed convolution for 4D or higher are not supported in Tensorflow.
 4. GRU: GRU with clip or GRU with linear_before_reset, or GRU not using sigmoid for z and r, or GRU using Elu as the activation function with alpha != 1, or GRU using HardSigmoid as the activation function with alpha != 0.2 or beta != 0.5 are not supported in TensorFlow.
 5. LSTM: LSTM not using sigmoid for `f`, or LSTM not using the same activation for `g` and `h` are not supported in Tensorflow.
-6. MaxPool: MaxPoolWithArgmax with pad is None or incompatible mode, or MaxPoolWithArgmax with 4D or higher input, or MaxPoolWithArgmax with column major are not supported in Tensorflow.
+6. MaxPool: MaxPoolWithArgmax with pad is None or incompatible mode, or MaxPoolWithArgmax with 4D or higher input, orMaxPoolWithArgmax with column major are not supported in Tensorflow.
 7. RNN: RNN with clip is not supported in Tensorflow.
 8. Resize: Resize required 4D input in Tensorflow. For opset 11, only the following attributes and inputs conbination are supported in Tensorflow:
 	1. mode=nearest, coordinate_transformation_mode=align_corners, nearest_mode=round_prefer_ceil, can use scales(*) or sizes.

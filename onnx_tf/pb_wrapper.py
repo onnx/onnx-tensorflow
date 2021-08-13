@@ -24,6 +24,7 @@ from onnx_tf.common import IS_PYTHON3
 from onnx_tf.common import logger
 from onnx_tf.common.data_type import any_dtype_to_onnx_dtype
 
+
 class TensorflowNode(object):
 
   def __init__(self,

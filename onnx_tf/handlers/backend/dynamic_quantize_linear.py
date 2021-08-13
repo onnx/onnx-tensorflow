@@ -36,3 +36,4 @@ class DynamicQuantizeLinear(BackendHandler):
         dtype)
 
     return [y, y_scale, tf.cast(y_zero_point, dtype)]
+

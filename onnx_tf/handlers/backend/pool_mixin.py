@@ -10,11 +10,9 @@ from onnx_tf.common.pooling_helper import calc_output_shape
 from onnx_tf.common.tf_helper import tf_shape
 from .dilated_pooling import DilatedPooling
 
-
 class PoolMixin(object):
 
   @classmethod
-  @tf.autograph.experimental.do_not_convert()
   def pool(cls, node, input_dict, pooling_type, strict=True):
     x = input_dict[node.inputs[0]]
 
@@ -35,7 +33,7 @@ class PoolMixin(object):
       # In case shape is fully defined, check if pads match
       # SAME padding in Tensorflow
       if x.shape.is_fully_defined() and pads != [0] * spatial_size * 2:
-        in_shape = x.get_shape()
+        in_shape = x.get_shape().as_list()
         same_paddings = calc_pads_same(in_shape[1:x_rank - 1], kernel_shape,
                                        strides, dilations, "SAME_UPPER")
         if pads == same_paddings:
@@ -84,13 +82,13 @@ class PoolMixin(object):
         logger.warning("Using the pooling op in compatibility mode. "
                        "This means your graph cannot be serialized.")
 
-        result = tf.numpy_function(py_pool, [
+        result = tf.py_func(py_pool, [
             x, kernel_shape, strides, dilations, pads, ceil_mode, pooling_type,
             False
         ], x.dtype)
 
         if x.shape.is_fully_defined():
-          shape = x.get_shape()
+          shape = [int(x.shape[d]) for d in range(x_rank)]
           output_shape = shape[0:2] + calc_output_shape(
               shape[2:x_rank], kernel_shape, strides, dilations, pads,
               ceil_mode)
@@ -102,9 +100,6 @@ class PoolMixin(object):
         exception.OP_UNSUPPORTED_EXCEPT(
             "strict == 0 and " + pooling_name + " arguments not compatible",
             "Tensorflow")
-
-    from absl import logging
-    logging.set_verbosity(logging.INFO)
 
     def dilated_pool():
       return (dp.dilated_pool(), None)

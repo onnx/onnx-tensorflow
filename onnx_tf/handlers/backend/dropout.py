@@ -24,7 +24,7 @@ class Dropout(BackendHandler):
       # at inference mode, is_test attribute is always set to 1
       # dropout at inference mode is a no-op
       return [x]
-    else: # for Opset 12, 13
+    else: # for Opset 12
       # ratio and training_mode are optional and passed as inputs
       ratio = 0.5 # default ratio
       if len(node.inputs) > 1:
@@ -69,8 +69,4 @@ class Dropout(BackendHandler):
 
   @classmethod
   def version_12(cls, node, **kwargs):
-    return cls._common(node, **kwargs)
-
-  @classmethod
-  def version_13(cls, node, **kwargs):
     return cls._common(node, **kwargs)

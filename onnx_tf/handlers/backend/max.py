@@ -9,9 +9,7 @@ from onnx_tf.handlers.handler import onnx_op
 
 @onnx_op("Max")
 class Max(BackendHandler):
-  supported_types = [
-      tf.bfloat16, tf.float16, tf.float32, tf.float64, tf.int32, tf.int64
-  ]
+  supported_types = [tf.float16, tf.float32, tf.float64, tf.int32, tf.int64]
   cast_map = {
       tf.uint8: tf.int32,
       tf.uint16: tf.int32,
@@ -19,10 +17,12 @@ class Max(BackendHandler):
       tf.int8: tf.int32,
       tf.int16: tf.int32
   }
-  cast_map[tf.uint64] = tf.int64 if sys_config.auto_cast else None
 
   @classmethod
   def args_check(cls, node, **kwargs):
+    # update cast_map base on auto_cast flag
+    cls.cast_map[tf.uint64] = tf.int64 if sys_config.auto_cast else None
+
     dtype = kwargs["tensor_dict"][node.inputs[0]].dtype
     if dtype in cls.cast_map and cls.cast_map[dtype] is None:
       exception.DTYPE_NOT_CAST_EXCEPT(
@@ -55,8 +55,4 @@ class Max(BackendHandler):
 
   @classmethod
   def version_12(cls, node, **kwargs):
-    return cls._common(node, **kwargs)
-
-  @classmethod
-  def version_13(cls, node, **kwargs):
     return cls._common(node, **kwargs)

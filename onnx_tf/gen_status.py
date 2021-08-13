@@ -98,7 +98,7 @@ def gen_support_status(docs_dir, onnx_version, onnx_tf_release_build):
       status_file.write(
           '|ONNX Version|Master ( commit id: {} )|\n'.format(onnx_commit_id))
     else:
-      status_file.write('|ONNX Version|{}|\n'.format(onnx_version))
+      status_file.write('|ONNX Version|v{}|\n'.format(onnx_version))
 
     # get tf_version
     status_file.write('|Tensorflow Version|v{}|\n\n'.format(tf.__version__))

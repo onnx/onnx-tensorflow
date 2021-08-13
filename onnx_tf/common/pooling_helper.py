@@ -154,7 +154,7 @@ def py_pool(input, kernel_shape, strides=None, dilations=None,
         input_dtype_min = np.finfo(input_dtype).min
 
     if pooling_type == "LP":
-      rootN = (1.0 / p)
+        rootN = (1.0 / p)
 
     def _loop_over_output(batch, channel):
         dims = [range(output_sp_shape[d]) for d in range(spatial_size)]
@@ -192,6 +192,7 @@ def py_pool(input, kernel_shape, strides=None, dilations=None,
                 else:
                     if val > maxval:
                         maxval = val
+                        ind = 0
                         # batch_offset = batch * C * image_size
                         # channel_offset = channel * image_size
                         # ind = batch_offset + channel_offset
@@ -229,6 +230,9 @@ def py_pool(input, kernel_shape, strides=None, dilations=None,
         padding = padding.decode()
 
     if type(padding) is not list and type(padding) is not np.ndarray:
+        if type(padding) is not str:
+            padding = padding.decode("UTF-8")
+
         if padding.lower().startswith("same"):
             padding = calc_pads_same(inp_sp_shape, kernel_shape, strides,
                                      dilations, padding)

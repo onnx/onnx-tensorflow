@@ -13,7 +13,7 @@ from onnx_tf.handlers.handler import tf_func
 class LRN(BackendHandler):
 
   @classmethod
-  def _common(cls, node, **kwargs):
+  def version_1(cls, node, **kwargs):
     attrs = copy.deepcopy(node.attrs)
     alpha = attrs.get("alpha", 1e-4)
     attrs.setdefault("beta", 0.75)
@@ -27,11 +27,3 @@ class LRN(BackendHandler):
         cls.make_tensor_from_onnx_node(
             node, attrs=attrs, c_last_only=True, **kwargs)
     ]
-
-  @classmethod
-  def version_1(cls, node, **kwargs):
-    return cls._common(node, **kwargs)
-
-  @classmethod
-  def version_13(cls, node, **kwargs):
-    return cls._common(node, **kwargs)
