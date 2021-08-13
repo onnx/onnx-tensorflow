@@ -14,11 +14,12 @@ backend_opset_version = {
     'Atan': [7],
     'Atanh': [9],
     'AveragePool': [1, 7, 10, 11],
-    'BatchNormalization': [1, 6, 7, 9],
+    'BatchNormalization': [1, 6, 7, 9, 14],
     'Bernoulli': [],
     'Binarizer': [],
     'BitShift': [11],
     'Cast': [1, 6, 9, 13],
+    'CastLike': [],
     'CastMap': [],
     'CategoryMapper': [],
     'Ceil': [1, 6, 13],
@@ -108,6 +109,9 @@ backend_opset_version = {
     'Not': [1],
     'OneHot': [9, 11],
     'OneHotEncoder': [],
+    'Optional': [],
+    'OptionalGetElement': [],
+    'OptionalHasElement': [],
     'Or': [1, 7],
     'PRelu': [1, 6, 7, 9],
     'Pad': [1, 2, 11, 13],
@@ -191,6 +195,8 @@ backend_opset_version = {
 }
 
 backend_partial_support = {
+    'BatchNormalization': 'BatchNormalization with training_mode=1 is not '
+                          'supported in Tensorflow converte.',
     'Cast': 'Cast string to data types other than float32/float64/int32/int64 '
             'is not supported in Tensorflow',
     'ConcatFromSequence': 'new_axis=1 not supported in Tensorflow.',

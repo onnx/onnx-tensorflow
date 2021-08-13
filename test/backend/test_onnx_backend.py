@@ -153,6 +153,10 @@ backend_test.exclude(r'test_bernoulli_seed_expanded[a-z,_]*')
 backend_test.exclude(r'test_optional_get_element[a-z,_]*')
 backend_test.exclude(r'test_optional_has_element[a-z,_]*')
 
+# Exclude BatchNormalization with training_mode=1 tests
+backend_test.exclude(r'test_batchnorm_epsilon_training_mode[a-z,_]*')
+backend_test.exclude(r'test_batchnorm_example_training_mode[a-z,_]*')
+
 # import all test cases at global scope to make them visible to python.unittest
 globals().update(backend_test.enable_report().test_cases)
 

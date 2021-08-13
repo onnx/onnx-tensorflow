@@ -1,8 +1,8 @@
 # ONNX-Tensorflow Support Status
 |||
 |-:|:-|
-|ONNX-Tensorflow Version|Master ( commit id: 59997c924845f66202f8d0fef000f1ab369f96bf )|
-|ONNX Version|Master ( commit id: 3c857c57826cf434626cb8c99f0b9517efb62451 )|
+|ONNX-Tensorflow Version|Master ( commit id: 9ab9b934c2c8494b6309d20f15acabcb3abd126d )|
+|ONNX Version|Master ( commit id: 1f63dcb7fcc3a8bf5c3c8e326867ecd6f5c43f35 )|
 |Tensorflow Version|v2.5.0|
 
 Notes:
@@ -28,10 +28,11 @@ Notes:
 |Atan|-|-|-|-|-|-|**7**|7|7|7|7|7|7|7|7|Atan|
 |Atanh|-|-|-|-|-|-|-|-|**9**|9|9|9|9|9|9|Atanh|
 |AveragePool|**1**|1|1|1|1|1|**7**|7|7|**10**|**11**|11|11|11|11|AveragePool|
-|BatchNormalization|**1**|1|1|1|1|**6**|**7**|7|**9**|9|9|9|9|**14**:small_red_triangle:|14:small_red_triangle:|BatchNormalization|
+|BatchNormalization|**1**:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|**6**:small_orange_diamond:|**7**:small_orange_diamond:|7:small_orange_diamond:|**9**:small_orange_diamond:|9:small_orange_diamond:|9:small_orange_diamond:|9:small_orange_diamond:|9:small_orange_diamond:|**14**:small_orange_diamond:|**15**:small_red_triangle:|BatchNormalization|
 |Bernoulli|-|-|-|-|-|-|-|-|-|-|-|-|-|-|**15**:small_red_triangle:|Bernoulli|
 |BitShift|-|-|-|-|-|-|-|-|-|-|**11**|11|11|11|11|BitShift|
 |Cast|**1**:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|**6**:small_orange_diamond:|6:small_orange_diamond:|6:small_orange_diamond:|**9**:small_orange_diamond:|9:small_orange_diamond:|9:small_orange_diamond:|9:small_orange_diamond:|**13**:small_orange_diamond:|13:small_orange_diamond:|13:small_orange_diamond:|Cast|
+|CastLike|-|-|-|-|-|-|-|-|-|-|-|-|-|-|**15**:small_red_triangle:|CastLike|
 |Ceil|**1**|1|1|1|1|**6**|6|6|6|6|6|6|**13**|13|13|Ceil|
 |Celu|-|-|-|-|-|-|-|-|-|-|-|**12**|12|12|12|Celu|
 |Clip|**1**|1|1|1|1|**6**|6|6|6|6|**11**|**12**|**13**|13|13|Clip|
@@ -74,7 +75,7 @@ Notes:
 |HardSigmoid|**1**|1|1|1|1|**6**|6|6|6|6|6|6|6|6|6|HardSigmoid|
 |HardSwish|-|-|-|-|-|-|-|-|-|-|-|-|-|**14**|14|HardSwish|
 |Hardmax|**1**|1|1|1|1|1|1|1|1|1|**11**|11|**13**|13|13|Hardmax|
-|Identity|**1**:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|**13**:small_orange_diamond:|**14**:small_red_triangle:|14:small_red_triangle:|Identity|
+|Identity|**1**|1|1|1|1|1|1|1|1|1|1|1|**13**|**14**|14|Identity|
 |If|**1**|1|1|1|1|1|1|1|1|1|**11**|11|**13**|13|13|If|
 |InstanceNormalization|**1**|1|1|1|1|**6**|6|6|6|6|6|6|6|6|6|InstanceNormalization|
 |IsInf|-|-|-|-|-|-|-|-|-|**10**|10|10|10|10|10|IsInf|
@@ -107,6 +108,9 @@ Notes:
 |NonZero|-|-|-|-|-|-|-|-|**9**|9|9|9|**13**|13|13|NonZero|
 |Not|**1**|1|1|1|1|1|1|1|1|1|1|1|1|1|1|Not|
 |OneHot|-|-|-|-|-|-|-|-|**9**|9|**11**|11|11|11|11|OneHot|
+|Optional|-|-|-|-|-|-|-|-|-|-|-|-|-|-|**15**:small_red_triangle:|Optional|
+|OptionalGetElement|-|-|-|-|-|-|-|-|-|-|-|-|-|-|**15**:small_red_triangle:|OptionalGetElement|
+|OptionalHasElement|-|-|-|-|-|-|-|-|-|-|-|-|-|-|**15**:small_red_triangle:|OptionalHasElement|
 |Or|**1**|1|1|1|1|1|**7**|7|7|7|7|7|7|7|7|Or|
 |PRelu|**1**|1|1|1|1|**6**|**7**|7|**9**|9|9|9|9|9|9|PRelu|
 |Pad|**1**|**2**|2|2|2|2|2|2|2|2|**11**|11|**13**|13|13|Pad|
@@ -148,7 +152,7 @@ Notes:
 |SequenceErase|-|-|-|-|-|-|-|-|-|-|**11**|11|11|11|11|SequenceErase|
 |SequenceInsert|-|-|-|-|-|-|-|-|-|-|**11**|11|11|11|11|SequenceInsert|
 |SequenceLength|-|-|-|-|-|-|-|-|-|-|**11**|11|11|11|11|SequenceLength|
-|Shape|**1**|1|1|1|1|1|1|1|1|1|1|1|**13**|13|13|Shape|
+|Shape|**1**|1|1|1|1|1|1|1|1|1|1|1|**13**|13|**15**:small_red_triangle:|Shape|
 |Shrink|-|-|-|-|-|-|-|-|**9**|9|9|9|9|9|9|Shrink|
 |Sigmoid|**1**|1|1|1|1|**6**|6|6|6|6|6|6|**13**|13|13|Sigmoid|
 |Sign|-|-|-|-|-|-|-|-|**9**|9|9|9|**13**|13|13|Sign|
@@ -182,14 +186,14 @@ Notes:
 |Where|-|-|-|-|-|-|-|-|**9**|9|9|9|9|9|9|Where|
 |Xor|**1**|1|1|1|1|1|**7**|7|7|7|7|7|7|7|7|Xor|
 
-ONNX-TF Supported Operators / ONNX Operators: 151 / 165
+ONNX-TF Supported Operators / ONNX Operators: 151 / 169
 
 Notes:
-1. Cast: Cast string to data types other than float32/float64/int32/int64 is not supported in Tensorflow
-2. ConcatFromSequence: new_axis=1 not supported in Tensorflow.
-3. ConvTranspose: ConvTranspose with dilations != 1, or transposed convolution for 4D or higher are not supported in Tensorflow.
-4. GRU: GRU with clip or GRU with linear_before_reset, or GRU not using sigmoid for z and r, or GRU using Elu as the activation function with alpha != 1, or GRU using HardSigmoid as the activation function with alpha != 0.2 or beta != 0.5 are not supported in TensorFlow.
-5. Identity: Identity with sequence type is not supported in Tensorflow
+1. BatchNormalization: BatchNormalization with training_mode=1 is not supported in Tensorflow converte.
+2. Cast: Cast string to data types other than float32/float64/int32/int64 is not supported in Tensorflow
+3. ConcatFromSequence: new_axis=1 not supported in Tensorflow.
+4. ConvTranspose: ConvTranspose with dilations != 1, or transposed convolution for 4D or higher are not supported in Tensorflow.
+5. GRU: GRU with clip or GRU with linear_before_reset, or GRU not using sigmoid for z and r, or GRU using Elu as the activation function with alpha != 1, or GRU using HardSigmoid as the activation function with alpha != 0.2 or beta != 0.5 are not supported in TensorFlow.
 6. LSTM: LSTM not using sigmoid for `f`, or LSTM not using the same activation for `g` and `h` are not supported in Tensorflow.
 7. MaxPool: MaxPoolWithArgmax with pad is None or incompatible mode, or MaxPoolWithArgmax with 4D or higher input, or MaxPoolWithArgmax with column major are not supported in Tensorflow.
 8. RNN: RNN with clip is not supported in Tensorflow.
