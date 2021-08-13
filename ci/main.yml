@@ -1,0 +1,100 @@
+# Minimal Build pipeline
+# This allow us to generate wheels and upload that to a feed.
+
+name: $(BuildDefinitionName)_$(SourceBranchName)_$(BuildID)
+stages:
+  - stage: Build
+    jobs:
+      - job: TeachDeepRLwheels
+        timeoutInMinutes: 60
+        cancelTimeoutInMinutes: 5
+        strategy:
+          matrix:
+            linux_python36:
+              imageName: 'ubuntu-16.04'
+              python.version: '3.6'
+              WHEELS_PATH: '/dist/*.whl'
+            # macos1015_python36:
+            #   imageName: 'macOS-10.15'
+            #   python.version: '3.6'
+            #   WHEELS_PATH: '/dist/*.whl'
+            # win2019_python36:
+            #   imageName: 'windows-2019'
+            #   python.version: '3.6'
+            #   WHEELS_PATH: '\dist\*.whl'
+        displayName: TeachDeepRL Wheels
+        pool:
+          vmImage: $(imageName)
+        steps:
+          - task: UsePythonVersion@0
+            inputs:
+              versionSpec: '$(python.version)'
+            displayName: 'Use Python $(python.version)'
+          - bash: |
+              python -m pip install --upgrade pip
+              python -m pip install --upgrade setuptools
+              python -m pip install --upgrade wheel
+              python -m pip install --upgrade twine
+            displayName: 'Install dependencies'
+          - task: TwineAuthenticate@1
+            displayName: 'Twine Authenticate'
+            inputs:
+              artifactFeed: ray-feed
+          - bash: |
+              # Cause the script to exit if a single command fails.
+              set -e
+              # Show explicitly which commands are currently running.
+              set -x
+              echo "BUILD_BUILDID: $BUILD_BUILDID"
+              VERSION_SUFIX="$(echo $BUILD_BUILDID | sed -E 's/[- ]/_/g')"
+              echo "VERSION_SUFIX: $VERSION_SUFIX"
+              VERSION_FILE="$BUILD_SOURCESDIRECTORY/setup.py"
+              if [[ "$BUILD_SOURCEBRANCH" == *"master"* ]] || [[ "$BUILD_SOURCEBRANCH" == *"releases/"* ]]; then
+                VERSION_SUFIX=".${VERSION_SUFIX}"
+                echo "Release generation detected. The VERSION_SUFIX will be directly appended."
+              else
+                VERSION_SUFIX=".dev${VERSION_SUFIX}"
+                echo "Dev Release generation detected. The VERSION_SUFIX will be prefixed with the dev tag."
+              fi
+              if [[ $AGENT_OS == "Darwin" ]]; then
+                sed -i -e -E "s+version=(['\"])([0-9]{1}\.[0-9]{1}\.[0-9]{1})(\.dev)?[^'\"]*(['\"])+version=\1\2$VERSION_SUFIX\4+1" $VERSION_FILE
+              else
+                sed -ier "s+version=\(['\"]\)\([0-9]\{1\}\.[0-9]\{1\}\.[0-9]\{1\}\)\(\.dev\)\?[^'\"]*\(['\"]\)+version=\1\2$VERSION_SUFIX\4+1" $VERSION_FILE
+              fi
+              cat $VERSION_FILE | grep "version="
+              echo "Version used:"
+              cat $BUILD_SOURCESDIRECTORY/setup.py | grep "version"
+              echo $PYPIRC_PATH
+              cat $PYPIRC_PATH
+            displayName: 'Change version'
+          - bash: |
+              python setup.py bdist_wheel
+            displayName: 'Generate Wheels'
+          - bash: |
+              # Cause the script to exit if a single command fails.
+              set -e
+              # Show explicitly which commands are currently running.
+              set -x
+              if [[ $AGENT_OS == "Darwin" ]] || [[ $AGENT_OS == "Linux" ]]; then
+                sed -i -e 's+repository=.*+repository=https://bizair.pkgs.visualstudio.com/ccf3fa37-3b57-498c-8b43-231e00d92672/_packaging/ray-feed/pypi/upload+g' $PYPIRC_PATH
+              else
+                sed -i -e "s\repository=.*\repository=https://bizair.pkgs.visualstudio.com/ccf3fa37-3b57-498c-8b43-231e00d92672/_packaging/ray-feed/pypi/upload\g" $PYPIRC_PATH
+              fi
+              cat $PYPIRC_PATH
+              UPLOAD_OUTPUT=$(python -m twine upload -r "ray-feed" --config-file $(PYPIRC_PATH) $BUILD_SOURCESDIRECTORY$WHEELS_PATH)
+              echo $UPLOAD_OUTPUT
+              if [[ $UPLOAD_OUTPUT == *"HTTPError"* ]]; then
+                echo "Error detected after upload."
+                exit 1
+              fi
+            displayName: 'Upload to ray-feed'
+trigger:
+  branches:
+    include:
+      - master
+      - releases/*
+pr:
+  branches:
+    include:
+      - master
+      - releases/*
