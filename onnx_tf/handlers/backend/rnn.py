@@ -104,6 +104,11 @@ class RNN(RNNMixin, BackendHandler):
     direction = node.attrs.get("direction", "forward")
     num_directions = 2 if direction == "bidirectional" else 1
     output_sequence = node.attrs.get("output_sequence", 0)
+    layout = node.attrs.get("layout", 0)
+
+    # Need transpose for batchwise
+    if layout == 1:
+      x = tf.transpose(x, perm=[1, 0, 2])
 
     # TODO(fumihwh): check if prev node is one of RNN
     # process input if it comes from other previous cell
@@ -145,6 +150,9 @@ class RNN(RNNMixin, BackendHandler):
       if input_size == 6:
         initial_h = tensor_dict.get(node.inputs[5], None)
         if initial_h is not None:
+          # Need transpose for batchwise
+          if layout == 1:
+            initial_h = tf.transpose(initial_h, perm=[1, 0, 2])
           initial_state = (initial_h[0],)
           if num_directions == 2:
             initial_state_bw = (initial_h[1],)
@@ -179,6 +187,11 @@ class RNN(RNNMixin, BackendHandler):
       output_bw = tf.expand_dims(output_bw, 1)
       output = tf.concat((output_fw, output_bw), axis=1)
 
+    # Need transpose for batchwise
+    if layout == 1:
+      output = tf.transpose(output, perm=[2, 0, 1, 3])
+      h = tf.transpose(h, perm=[1, 0, 2])
+
     return [output, h] if output_sequence == 0 else [h]
 
   @classmethod
@@ -187,4 +200,8 @@ class RNN(RNNMixin, BackendHandler):
 
   @classmethod
   def version_7(cls, node, **kwargs):
+    return cls._common(node, **kwargs)
+
+  @classmethod
+  def version_14(cls, node, **kwargs):
     return cls._common(node, **kwargs)

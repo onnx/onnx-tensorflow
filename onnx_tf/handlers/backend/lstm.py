@@ -168,6 +168,11 @@ class LSTM(RNNMixin, BackendHandler):
     hidden_size = node.attrs["hidden_size"]
     direction = node.attrs.get("direction", "forward")
     num_directions = 2 if direction == "bidirectional" else 1
+    layout = node.attrs.get("layout", 0)
+
+    # Need transpose for batchwise
+    if layout == 1:
+      x = tf.transpose(x, perm=[1, 0, 2])
 
     # removed from version 7, default is 0
     output_sequence = node.attrs.get("output_sequence", 0)
@@ -220,6 +225,10 @@ class LSTM(RNNMixin, BackendHandler):
         initial_c = tensor_dict.get(
             node.inputs[6],
             None) if input_size >= 7 else tf.zeros_like(initial_h)
+        # Need transpose for batchwise
+        if layout == 1:
+            initial_h = tf.transpose(initial_h, perm=[1, 0, 2])
+            initial_c = tf.transpose(initial_c, perm=[1, 0, 2])
         if initial_h is not None and initial_c is not None:
           initial_state = (tf.compat.v1.nn.rnn_cell.LSTMStateTuple(
               initial_c[0], initial_h[0]),)
@@ -261,6 +270,12 @@ class LSTM(RNNMixin, BackendHandler):
       output_bw = tf.expand_dims(output_bw, 1)
       output = tf.concat((output_fw, output_bw), axis=1)
 
+    # Need transpose for batchwise
+    if layout == 1:
+      output = tf.transpose(output, perm=[2, 0, 1, 3])
+      h = tf.transpose(h, perm=[1, 0, 2])
+      c = tf.transpose(c, perm=[1, 0, 2])
+
     return [output, h, c] if output_sequence == 0 else [h, c]
 
   @classmethod
@@ -269,4 +284,8 @@ class LSTM(RNNMixin, BackendHandler):
 
   @classmethod
   def version_7(cls, node, **kwargs):
+    return cls._common(node, **kwargs)
+
+  @classmethod
+  def version_14(cls, node, **kwargs):
     return cls._common(node, **kwargs)

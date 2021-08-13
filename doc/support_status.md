@@ -1,7 +1,7 @@
 # ONNX-Tensorflow Support Status
 |||
 |-:|:-|
-|ONNX-Tensorflow Version|Master ( commit id: 9ab9b934c2c8494b6309d20f15acabcb3abd126d )|
+|ONNX-Tensorflow Version|Master ( commit id: a1005fbd2a95699a34f83d5d25fe20d5213860d3 )|
 |ONNX Version|Master ( commit id: 1f63dcb7fcc3a8bf5c3c8e326867ecd6f5c43f35 )|
 |Tensorflow Version|v2.5.0|
 
@@ -62,7 +62,7 @@ Notes:
 |EyeLike|-|-|-|-|-|-|-|-|**9**|9|9|9|9|9|9|EyeLike|
 |Flatten|**1**|1|1|1|1|1|1|1|**9**|9|**11**|11|**13**|13|13|Flatten|
 |Floor|**1**|1|1|1|1|**6**|6|6|6|6|6|6|**13**|13|13|Floor|
-|GRU|**1**:small_orange_diamond:|1:small_orange_diamond:|**3**:small_orange_diamond:|3:small_orange_diamond:|3:small_orange_diamond:|3:small_orange_diamond:|**7**:small_orange_diamond:|7:small_orange_diamond:|7:small_orange_diamond:|7:small_orange_diamond:|7:small_orange_diamond:|7:small_orange_diamond:|7:small_orange_diamond:|**14**:small_red_triangle:|14:small_red_triangle:|GRU|
+|GRU|**1**:small_orange_diamond:|1:small_orange_diamond:|**3**:small_orange_diamond:|3:small_orange_diamond:|3:small_orange_diamond:|3:small_orange_diamond:|**7**:small_orange_diamond:|7:small_orange_diamond:|7:small_orange_diamond:|7:small_orange_diamond:|7:small_orange_diamond:|7:small_orange_diamond:|7:small_orange_diamond:|**14**:small_orange_diamond:|14:small_orange_diamond:|GRU|
 |Gather|**1**|1|1|1|1|1|1|1|1|1|**11**|11|**13**|13|13|Gather|
 |GatherElements|-|-|-|-|-|-|-|-|-|-|**11**|11|**13**|13|13|GatherElements|
 |GatherND|-|-|-|-|-|-|-|-|-|-|**11**|**12**|**13**|13|13|GatherND|
@@ -81,7 +81,7 @@ Notes:
 |IsInf|-|-|-|-|-|-|-|-|-|**10**|10|10|10|10|10|IsInf|
 |IsNaN|-|-|-|-|-|-|-|-|**9**|9|9|9|**13**|13|13|IsNaN|
 |LRN|**1**|1|1|1|1|1|1|1|1|1|1|1|**13**|13|13|LRN|
-|LSTM|**1**:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|**7**:small_orange_diamond:|7:small_orange_diamond:|7:small_orange_diamond:|7:small_orange_diamond:|7:small_orange_diamond:|7:small_orange_diamond:|7:small_orange_diamond:|**14**:small_red_triangle:|14:small_red_triangle:|LSTM|
+|LSTM|**1**:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|**7**:small_orange_diamond:|7:small_orange_diamond:|7:small_orange_diamond:|7:small_orange_diamond:|7:small_orange_diamond:|7:small_orange_diamond:|7:small_orange_diamond:|**14**:small_orange_diamond:|14:small_orange_diamond:|LSTM|
 |LeakyRelu|**1**|1|1|1|1|**6**|6|6|6|6|6|6|6|6|6|LeakyRelu|
 |Less|**1**|1|1|1|1|1|**7**|7|**9**|9|9|9|**13**|13|13|Less|
 |LessOrEqual|-|-|-|-|-|-|-|-|-|-|-|**12**|12|12|12|LessOrEqual|
@@ -118,7 +118,7 @@ Notes:
 |QLinearConv|-|-|-|-|-|-|-|-|-|**10**|10|10|10|10|10|QLinearConv|
 |QLinearMatMul|-|-|-|-|-|-|-|-|-|**10**|10|10|10|10|10|QLinearMatMul|
 |QuantizeLinear|-|-|-|-|-|-|-|-|-|**10**|10|10|**13**|13|13|QuantizeLinear|
-|RNN|**1**:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|**7**:small_orange_diamond:|7:small_orange_diamond:|7:small_orange_diamond:|7:small_orange_diamond:|7:small_orange_diamond:|7:small_orange_diamond:|7:small_orange_diamond:|**14**:small_red_triangle:|14:small_red_triangle:|RNN|
+|RNN|**1**:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|**7**:small_orange_diamond:|7:small_orange_diamond:|7:small_orange_diamond:|7:small_orange_diamond:|7:small_orange_diamond:|7:small_orange_diamond:|7:small_orange_diamond:|**14**:small_orange_diamond:|14:small_orange_diamond:|RNN|
 |RandomNormal|**1**|1|1|1|1|1|1|1|1|1|1|1|1|1|1|RandomNormal|
 |RandomNormalLike|**1**|1|1|1|1|1|1|1|1|1|1|1|1|1|1|RandomNormalLike|
 |RandomUniform|**1**|1|1|1|1|1|1|1|1|1|1|1|1|1|1|RandomUniform|
@@ -186,7 +186,7 @@ Notes:
 |Where|-|-|-|-|-|-|-|-|**9**|9|9|9|9|9|9|Where|
 |Xor|**1**|1|1|1|1|1|**7**|7|7|7|7|7|7|7|7|Xor|
 
-ONNX-TF Supported Operators / ONNX Operators: 151 / 169
+ONNX-TF Supported Operators / ONNX Operators: 154 / 169
 
 Notes:
 1. BatchNormalization: BatchNormalization with training_mode=1 is not supported in Tensorflow converte.
