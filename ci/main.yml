@@ -5,7 +5,7 @@ name: $(BuildDefinitionName)_$(SourceBranchName)_$(BuildID)
 stages:
   - stage: Build
     jobs:
-      - job: TeachDeepRLwheels
+      - job: OnnxToTFwheels
         timeoutInMinutes: 60
         cancelTimeoutInMinutes: 5
         strategy:
@@ -22,7 +22,7 @@ stages:
             #   imageName: 'windows-2019'
             #   python.version: '3.6'
             #   WHEELS_PATH: '\dist\*.whl'
-        displayName: TeachDeepRL Wheels
+        displayName: OnnxToTF Wheels
         pool:
           vmImage: $(imageName)
         steps:
