@@ -48,22 +48,24 @@ stages:
               echo "BUILD_BUILDID: $BUILD_BUILDID"
               VERSION_SUFIX="$(echo $BUILD_BUILDID | sed -E 's/[- ]/_/g')"
               echo "VERSION_SUFIX: $VERSION_SUFIX"
-              VERSION_FILE="$BUILD_SOURCESDIRECTORY/setup.py"
-              if [[ "$BUILD_SOURCEBRANCH" == *"master"* ]] || [[ "$BUILD_SOURCEBRANCH" == *"releases/"* ]]; then
+              VERSION_FILE1="$BUILD_SOURCESDIRECTORY/VERSION_NUMBER"
+              VERSION_FILE2="$BUILD_SOURCESDIRECTORY/ONNX_VERSION_NUMBER"
+              if [[ "$BUILD_SOURCEBRANCH" == *"master"* ]] || [[ "$BUILD_SOURCEBRANCH" == *"releases/"* ]] || [[ "$BUILD_SOURCEBRANCH" == *"development"* ]]; then
                 VERSION_SUFIX=".${VERSION_SUFIX}"
                 echo "Release generation detected. The VERSION_SUFIX will be directly appended."
               else
                 VERSION_SUFIX=".dev${VERSION_SUFIX}"
                 echo "Dev Release generation detected. The VERSION_SUFIX will be prefixed with the dev tag."
               fi
-              if [[ $AGENT_OS == "Darwin" ]]; then
-                sed -i -e -E "s+version=(['\"])([0-9]{1}\.[0-9]{1}\.[0-9]{1})(\.dev)?[^'\"]*(['\"])+version=\1\2$VERSION_SUFIX\4+1" $VERSION_FILE
-              else
-                sed -ier "s+version=\(['\"]\)\([0-9]\{1\}\.[0-9]\{1\}\.[0-9]\{1\}\)\(\.dev\)\?[^'\"]*\(['\"]\)+version=\1\2$VERSION_SUFIX\4+1" $VERSION_FILE
-              fi
-              cat $VERSION_FILE | grep "version="
+              VERSION_FILE1_CONTENT=$(cat $VERSION_FILE1 | awk '{$1=$1};1')
+              VERSION_FILE1_CONTENT=${VERSION_FILE1_CONTENT}${VERSION_SUFIX}
+              echo "$VERSION_FILE1_CONTENT" > $VERSION_FILE1
+              VERSION_FILE2_CONTENT=$(cat $VERSION_FILE2 | awk '{$1=$1};1')
+              VERSION_FILE2_CONTENT=${VERSION_FILE2_CONTENT}${VERSION_SUFIX}
+              echo "$VERSION_FILE2_CONTENT" > $VERSION_FILE2
               echo "Version used:"
-              cat $BUILD_SOURCESDIRECTORY/setup.py | grep "version"
+              cat $VERSION_FILE1
+              cat $VERSION_FILE2
               echo $PYPIRC_PATH
               cat $PYPIRC_PATH
             displayName: 'Change version'
@@ -93,8 +95,10 @@ trigger:
     include:
       - master
       - releases/*
+      - development
 pr:
   branches:
     include:
       - master
       - releases/*
+      - development
