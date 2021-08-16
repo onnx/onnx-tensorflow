@@ -90,6 +90,14 @@ stages:
                 exit 1
               fi
             displayName: 'Upload to ray-feed'
+          - task: ComponentGovernanceComponentDetection@0
+            inputs:
+              scanType: 'Register'
+              verbosity: 'Verbose'
+              dockerImagesToScan: ''
+              alertWarningLevel: 'Critical'
+              failOnAlert: false
+              ignoreDirectories: ''
 trigger:
   branches:
     include:
