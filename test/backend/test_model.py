@@ -331,14 +331,14 @@ class TestModel(unittest.TestCase):
     b_in = helper.make_tensor_value_info('b', onnx.TensorProto.FLOAT, [1, 1, 2])
     c_in = helper.make_tensor_value_info('c', onnx.TensorProto.FLOAT, [3, 1, 2])
     cond_in = helper.make_tensor_value_info('cond', TensorProto.BOOL, [])
-    s_in = helper.make_tensor_sequence_value_info('S', TensorProto.FLOAT,
+    s_in = helper.make_sequence_value_info('S', TensorProto.FLOAT,
                                                   [None, None, None, None])
 
-    sb_out = helper.make_tensor_sequence_value_info('Sb', TensorProto.FLOAT,
+    sb_out = helper.make_sequence_value_info('Sb', TensorProto.FLOAT,
                                                     [None, None, None, None])
-    sc_out = helper.make_tensor_sequence_value_info('Sc', TensorProto.FLOAT,
+    sc_out = helper.make_sequence_value_info('Sc', TensorProto.FLOAT,
                                                     [None, None, None, None])
-    s_final_out = helper.make_tensor_sequence_value_info(
+    s_final_out = helper.make_sequence_value_info(
         'S_final', TensorProto.FLOAT, [None, None, None, None])
 
     then_graph = helper.make_graph(nodes=[seq_insert_node1],
@@ -437,14 +437,14 @@ class TestModel(unittest.TestCase):
     iter_count_in = helper.make_tensor_value_info('iter_count',
                                                   TensorProto.INT64, [])
     cond_in = helper.make_tensor_value_info('cond', TensorProto.BOOL, [])
-    s_in = helper.make_tensor_sequence_value_info('S', TensorProto.FLOAT,
+    s_in = helper.make_sequence_value_info('S', TensorProto.FLOAT,
                                                   [None, None, None, None])
 
     cond_out = helper.make_tensor_value_info('cond', TensorProto.BOOL, [])
-    s_out = helper.make_tensor_sequence_value_info('Updated_S',
+    s_out = helper.make_sequence_value_info('Updated_S',
                                                    TensorProto.FLOAT,
                                                    [None, None, None, None])
-    s_final_out = helper.make_tensor_sequence_value_info(
+    s_final_out = helper.make_sequence_value_info(
         'S_final', TensorProto.FLOAT, [None, None, None, None])
 
     body_graph = helper.make_graph(nodes=[seq_insert_node],
