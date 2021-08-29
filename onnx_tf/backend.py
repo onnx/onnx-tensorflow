@@ -128,7 +128,10 @@ class TensorflowBackend(Backend):
 
     module = BackendTFModule(handlers, opset, strict, graph_def, cls)
     signatures = dict()
-    tf_rep_graph = tf.Graph()
+    if training_mode:
+      tf_rep_graph = kwargs['graph'] if 'graph' in kwargs else tf.Graph()
+    else:
+      tf_rep_graph = tf.Graph()
     with tf_rep_graph.as_default():
       for value_info in graph_def.input:
         if value_info.name in initialized or not value_info.type.HasField(
