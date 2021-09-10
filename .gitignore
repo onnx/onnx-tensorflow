@@ -112,3 +112,9 @@ wiki/
 
 *.cf
 *.tf
+.idea/inspectionProfiles/profiles_settings.xml
+.idea/misc.xml
+.idea/modules.xml
+.idea/onnx-tensorflow.iml
+.idea/vcs.xml
+.idea/workspace.xml
