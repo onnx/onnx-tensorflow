@@ -1,8 +1,8 @@
 # ONNX-Tensorflow Support Status
 |||
 |-:|:-|
-|ONNX-Tensorflow Version|Master ( commit id: 9d0eb58fc283037a0dc2cfd7a2346355f6798d62 )|
-|ONNX Version|Master ( commit id: c24cd429c4ab47d2b057da8174788c39c60f8760 )|
+|ONNX-Tensorflow Version|Master ( commit id: d2549204e22728744484a0b607e0993009bdfbb4 )|
+|ONNX Version|Master ( commit id: f3843b26e23c1e660e2990c3b74fda5bf6ba4c8c )|
 |Tensorflow Version|v2.6.0|
 
 Notes:
@@ -75,8 +75,8 @@ Notes:
 |HardSigmoid|**1**|1|1|1|1|**6**|6|6|6|6|6|6|6|6|6|6|HardSigmoid|
 |HardSwish|-|-|-|-|-|-|-|-|-|-|-|-|-|**14**|14|14|HardSwish|
 |Hardmax|**1**|1|1|1|1|1|1|1|1|1|**11**|11|**13**|13|13|13|Hardmax|
-|Identity|**1**|1|1|1|1|1|1|1|1|1|1|1|**13**|**14**|14|14|Identity|
-|If|**1**|1|1|1|1|1|1|1|1|1|**11**|11|**13**|13|13|13|If|
+|Identity|**1**|1|1|1|1|1|1|1|1|1|1|1|**13**|**14**|14|**16**:small_red_triangle:|Identity|
+|If|**1**|1|1|1|1|1|1|1|1|1|**11**|11|**13**|13|13|**16**:small_red_triangle:|If|
 |InstanceNormalization|**1**|1|1|1|1|**6**|6|6|6|6|6|6|6|6|6|6|InstanceNormalization|
 |IsInf|-|-|-|-|-|-|-|-|-|**10**|10|10|10|10|10|10|IsInf|
 |IsNaN|-|-|-|-|-|-|-|-|**9**|9|9|9|**13**|13|13|13|IsNaN|
@@ -87,7 +87,7 @@ Notes:
 |LessOrEqual|-|-|-|-|-|-|-|-|-|-|-|**12**|12|12|12|12|LessOrEqual|
 |Log|**1**|1|1|1|1|**6**|6|6|6|6|6|6|**13**|13|13|13|Log|
 |LogSoftmax|**1**|1|1|1|1|1|1|1|1|1|**11**|11|**13**|13|13|13|LogSoftmax|
-|Loop|**1**|1|1|1|1|1|1|1|1|1|**11**|11|**13**|13|13|13|Loop|
+|Loop|**1**|1|1|1|1|1|1|1|1|1|**11**|11|**13**|13|13|**16**:small_red_triangle:|Loop|
 |LpNormalization|**1**|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|LpNormalization|
 |LpPool|**1**|**2**|2|2|2|2|2|2|2|2|**11**|11|11|11|11|11|LpPool|
 |MatMul|**1**|1|1|1|1|1|1|1|**9**|9|9|9|**13**|13|13|13|MatMul|
@@ -114,7 +114,7 @@ Notes:
 |Or|**1**|1|1|1|1|1|**7**|7|7|7|7|7|7|7|7|7|Or|
 |PRelu|**1**|1|1|1|1|**6**|**7**|7|**9**|9|9|9|9|9|9|9|PRelu|
 |Pad|**1**|**2**|2|2|2|2|2|2|2|2|**11**|11|**13**|13|13|13|Pad|
-|Pow|**1**|1|1|1|1|1|**7**|7|7|7|7|**12**|**13**|13|**15**:small_red_triangle:|15:small_red_triangle:|Pow|
+|Pow|**1**|1|1|1|1|1|**7**|7|7|7|7|**12**|**13**|13|**15**|15|Pow|
 |QLinearConv|-|-|-|-|-|-|-|-|-|**10**|10|10|10|10|10|10|QLinearConv|
 |QLinearMatMul|-|-|-|-|-|-|-|-|-|**10**|10|10|10|10|10|10|QLinearMatMul|
 |QuantizeLinear|-|-|-|-|-|-|-|-|-|**10**|10|10|**13**|13|13|13|QuantizeLinear|
@@ -143,8 +143,8 @@ Notes:
 |Round|-|-|-|-|-|-|-|-|-|-|**11**|11|11|11|11|11|Round|
 |Scan|-|-|-|-|-|-|-|**8**|**9**|9|**11**|11|11|11|11|11|Scan|
 |Scatter|-|-|-|-|-|-|-|-|**9**|9|**11**\*|11\*|11\*|11\*|11\*|11\*|Scatter|
-|ScatterElements|-|-|-|-|-|-|-|-|-|-|**11**|11|**13**|13|13|13|ScatterElements|
-|ScatterND|-|-|-|-|-|-|-|-|-|-|**11**|11|**13**|13|13|13|ScatterND|
+|ScatterElements|-|-|-|-|-|-|-|-|-|-|**11**|11|**13**|13|13|**16**:small_red_triangle:|ScatterElements|
+|ScatterND|-|-|-|-|-|-|-|-|-|-|**11**|11|**13**|13|13|**16**:small_red_triangle:|ScatterND|
 |Selu|**1**|1|1|1|1|**6**|6|6|6|6|6|6|6|6|6|6|Selu|
 |SequenceAt|-|-|-|-|-|-|-|-|-|-|**11**|11|11|11|11|11|SequenceAt|
 |SequenceConstruct|-|-|-|-|-|-|-|-|-|-|**11**|11|11|11|11|11|SequenceConstruct|
@@ -186,7 +186,7 @@ Notes:
 |Where|-|-|-|-|-|-|-|-|**9**|9|9|9|9|9|9|9|Where|
 |Xor|**1**|1|1|1|1|1|**7**|7|7|7|7|7|7|7|7|7|Xor|
 
-ONNX-TF Supported Operators / ONNX Operators: 153 / 169
+ONNX-TF Supported Operators / ONNX Operators: 149 / 169
 
 Notes:
 1. BatchNormalization: BatchNormalization with training_mode=1 is not supported in Tensorflow converte.

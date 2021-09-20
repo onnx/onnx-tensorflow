@@ -158,7 +158,13 @@ backend_test.exclude(r'test_batchnorm_epsilon_training_mode[a-z,_]*')
 backend_test.exclude(r'test_batchnorm_example_training_mode[a-z,_]*')
 
 # ONNX 1.9.0 test case does not support sequence
-backend_test.exclude(r'[a-z,_]*identity_sequence_[a-z,_]*')
+if legacy_opset_pre_ver(15):
+  backend_test.exclude(r'[a-z,_]*identity_sequence_[a-z,_]*')
+
+# Exclude tests with optional inputs
+backend_test.exclude(r'[a-z,_]*identity_opt_[a-z,_]*')
+backend_test.exclude(r'[a-z,_]*if_opt_[a-z,_]*')
+backend_test.exclude(r'[a-z,_]*loop16_seq_none_[a-z,_]*')
 
 # import all test cases at global scope to make them visible to python.unittest
 globals().update(backend_test.enable_report().test_cases)
