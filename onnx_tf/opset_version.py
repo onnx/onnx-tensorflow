@@ -156,7 +156,7 @@ backend_opset_version = {
     'SequenceErase': [11],
     'SequenceInsert': [11],
     'SequenceLength': [11],
-    'Shape': [1, 13],
+    'Shape': [1, 13, 15],
     'Shrink': [9],
     'Sigmoid': [1, 6, 13],
     'Sign': [9, 13],
