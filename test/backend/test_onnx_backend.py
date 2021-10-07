@@ -163,6 +163,9 @@ if legacy_opset_pre_ver(15):
 if legacy_opset_pre_ver(16):
   backend_test.exclude(r'[a-z,_]*identity_opt_[a-z,_]*')
 
+if legacy_opset_pre_ver(16):
+  backend_test.exclude(r'test_if_seq[a-z,_]*')
+
 backend_test.exclude(r'[a-z,_]*if_opt_[a-z,_]*')
 backend_test.exclude(r'[a-z,_]*loop16_seq_none_[a-z,_]*')
 
