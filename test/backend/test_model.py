@@ -364,16 +364,16 @@ class TestModel(unittest.TestCase):
         'c': c,
         'cond': np.array(True, dtype=np.bool)
     })
-    np.testing.assert_almost_equal(output['S_final'].values[:2], a)
-    np.testing.assert_almost_equal(output['S_final'].values[2:], b)
+    np.testing.assert_almost_equal(output['S_final'][0], a)
+    np.testing.assert_almost_equal(output['S_final'][1], b)
     output = tf_rep.run({
         'a': a,
         'b': b,
         'c': c,
         'cond': np.array(False, dtype=np.bool)
     })
-    np.testing.assert_almost_equal(output['S_final'].values[:2], a)
-    np.testing.assert_almost_equal(output['S_final'].values[2:], c)
+    np.testing.assert_almost_equal(output['S_final'][0], a)
+    np.testing.assert_almost_equal(output['S_final'][1], c)
 
   def test_initializer(self):
     if legacy_onnx_pre_ver(1, 2):
@@ -460,10 +460,10 @@ class TestModel(unittest.TestCase):
                                   outputs=[s_final_out])
     tf_rep = prepare(helper.make_model(graph_def))
     output = tf_rep.run({'a': a, 'b': b, 'M': M, 'cond_init': cond})
-    np.testing.assert_almost_equal(output['S_final'].values[:2], a)
-    np.testing.assert_almost_equal(output['S_final'].values[2:3], b)
-    np.testing.assert_almost_equal(output['S_final'].values[3:4], b)
-    np.testing.assert_almost_equal(output['S_final'].values[4:5], b)
+    np.testing.assert_almost_equal(output['S_final'][0], a)
+    np.testing.assert_almost_equal(output['S_final'][1], b)
+    np.testing.assert_almost_equal(output['S_final'][2], b)
+    np.testing.assert_almost_equal(output['S_final'][3], b)
 
   def test_pow_bfloat16(self):
     X1 = np.array([1, 2, 3]).astype(np.float32)
