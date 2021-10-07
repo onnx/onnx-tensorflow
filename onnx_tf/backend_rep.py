@@ -78,6 +78,7 @@ class TensorflowRep(BackendRep):
     if isinstance(inputs, dict):
       feed_dict = inputs
     elif isinstance(inputs, list) or isinstance(inputs, tuple):
+      #to do: handle input is seq(optional) and optional element is empty(if/loop opset 16)
       if len(self.inputs) != len(inputs):
         raise RuntimeError('Expected {} values for uninitialized '
                            'graph inputs ({}), but got {}.'.format(
@@ -91,7 +92,15 @@ class TensorflowRep(BackendRep):
     input_dict = {}
     for k, v in feed_dict.items():
       if isinstance(v, list):
-        input_dict[k] = [tf.constant(x) for x in v]
+        list_input = []
+        for x in v:
+          if x is None:
+            list_input.append(x)
+          else:
+            list_input.append(tf.constant(x))
+        input_dict[k] = list_input
+      elif v is None:  # keep None for empty optional data
+        input_dict[k] = v
       else:
         input_dict[k] = tf.constant(v)
 
@@ -109,6 +118,8 @@ class TensorflowRep(BackendRep):
         o_values.append(v_list)
       elif isinstance(output_values[o_name], tf.Tensor):
         o_values.append(output_values[o_name].numpy())
+      elif isinstance(output_values[o_name], tf.RaggedTensor):
+        o_values.append([i for i in output_values[o_name].numpy()])
       else:
         o_values.append(output_values[o_name])
 

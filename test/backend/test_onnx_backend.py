@@ -76,9 +76,6 @@ backend_test.exclude(r'test_range_int32_type_negative_delta_expanded[a-z,_]*')
 if legacy_opset_pre_ver(13):
   backend_test.exclude(r'test_cumsum_[a-z,_]*')
 
-# Currently ONNX's backend test runner does not support sequence as input/output
-backend_test.exclude(r'test_if_seq[a-z,_]*')
-
 # TF session run does not support sequence/RaggedTensor as model inputs
 backend_test.exclude(r'test_loop13_seq[a-z,_]*')
 
@@ -149,9 +146,10 @@ backend_test.exclude(r'test_bernoulli_expanded[a-z,_]*')
 backend_test.exclude(r'test_bernoulli_double_expanded[a-z,_]*')
 backend_test.exclude(r'test_bernoulli_seed_expanded[a-z,_]*')
 
-# Exclude optional_get_element, test_optional_has_element tests
-backend_test.exclude(r'test_optional_get_element[a-z,_]*')
-backend_test.exclude(r'test_optional_has_element[a-z,_]*')
+# # onnx backend test support seq from 1.11 #3731
+if legacy_opset_pre_ver(16):
+  backend_test.exclude(r'test_optional_get_element[a-z,_]*')
+  backend_test.exclude(r'test_optional_has_element[a-z,_]*')
 
 # Exclude BatchNormalization with training_mode=1 tests
 backend_test.exclude(r'test_batchnorm_epsilon_training_mode[a-z,_]*')
@@ -161,8 +159,10 @@ backend_test.exclude(r'test_batchnorm_example_training_mode[a-z,_]*')
 if legacy_opset_pre_ver(15):
   backend_test.exclude(r'[a-z,_]*identity_sequence_[a-z,_]*')
 
-# Exclude tests with optional inputs
-backend_test.exclude(r'[a-z,_]*identity_opt_[a-z,_]*')
+# onnx backend test support seq from 1.11 #3731
+if legacy_opset_pre_ver(16):
+  backend_test.exclude(r'[a-z,_]*identity_opt_[a-z,_]*')
+
 backend_test.exclude(r'[a-z,_]*if_opt_[a-z,_]*')
 backend_test.exclude(r'[a-z,_]*loop16_seq_none_[a-z,_]*')
 

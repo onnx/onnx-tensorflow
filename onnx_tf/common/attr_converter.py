@@ -71,6 +71,8 @@ def __convert_onnx_attribute_proto(attr_proto):
     return attr_proto.t  # this is a proto!
   elif attr_proto.HasField('g'):
     return attr_proto.g
+  elif attr_proto.HasField('tp'):
+    return attr_proto.tp
   elif attr_proto.floats:
     return list(attr_proto.floats)
   elif attr_proto.ints:

@@ -4198,7 +4198,22 @@ class TestNode(unittest.TestCase):
     output = run_node(node_def, [c, x, y])
     np.testing.assert_almost_equal(output["Z"], np.where(c, x, y))
 
+  def test_optional(self):
+    ten_in_tp = helper.make_tensor_type_proto(TensorProto.FLOAT, shape=[5])
+    opt_in_tp = helper.make_optional_type_proto(ten_in_tp)
+    node_def = helper.make_node("Optional", ["X"], ["Y"], type=opt_in_tp)
+    x = self._get_rnd_float32(-3.0, 3.0, [5])
+    output = run_node(node_def, [x])
+    np.testing.assert_almost_equal(output["Y"], x)
 
+  def test_optional_empty(self):
+    ten_in_tp = helper.make_tensor_type_proto(TensorProto.FLOAT, shape=[5])
+    opt_in_tp = helper.make_optional_type_proto(ten_in_tp)
+    node_def = helper.make_node("Optional", ["X"], ["Y"], type=opt_in_tp)
+    x = None
+    output = run_node(node_def, [x])
+    np.testing.assert_equal(output["Y"], x)
+    
 if __name__ == '__main__':
   unittest.main()
 
