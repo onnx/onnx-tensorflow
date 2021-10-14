@@ -1,4 +1,5 @@
 from onnx_tf.common import IS_PYTHON3
+from onnx_tf.common.legacy import legacy_opset_pre_ver
 
 
 def convert_tf(attr):
@@ -82,5 +83,7 @@ def __convert_onnx_attribute_proto(attr_proto):
     return str_list
   elif attr_proto.HasField('sparse_tensor'):
     return attr_proto.sparse_tensor
+  elif not legacy_opset_pre_ver(15) and attr_proto.HasField('tp'):
+    return attr_proto.tp
   else:
     raise ValueError("Unsupported ONNX attribute: {}".format(attr_proto))
