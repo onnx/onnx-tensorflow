@@ -1,7 +1,7 @@
 # ONNX-Tensorflow Support Status
 |||
 |-:|:-|
-|ONNX-Tensorflow Version|Master ( commit id: 0ed5557f40664860fadfb83737e2def2881eda15 )|
+|ONNX-Tensorflow Version|Master ( commit id: 724ab80bbbca03f4eee5ba0e059a7cfd3e856690 )|
 |ONNX Version|Master ( commit id: 767f752829f83dbc9bd0a364d6138890f667fc38 )|
 |Tensorflow Version|v2.6.0|
 
@@ -75,7 +75,7 @@ Notes:
 |HardSigmoid|**1**|1|1|1|1|**6**|6|6|6|6|6|6|6|6|6|6|HardSigmoid|
 |HardSwish|-|-|-|-|-|-|-|-|-|-|-|-|-|**14**|14|14|HardSwish|
 |Hardmax|**1**|1|1|1|1|1|1|1|1|1|**11**|11|**13**|13|13|13|Hardmax|
-|Identity|**1**|1|1|1|1|1|1|1|1|1|1|1|**13**|**14**|14|**16**:small_red_triangle:|Identity|
+|Identity|**1**|1|1|1|1|1|1|1|1|1|1|1|**13**|**14**|14|**16**|Identity|
 |If|**1**|1|1|1|1|1|1|1|1|1|**11**|11|**13**|13|13|**16**:small_red_triangle:|If|
 |InstanceNormalization|**1**|1|1|1|1|**6**|6|6|6|6|6|6|6|6|6|6|InstanceNormalization|
 |IsInf|-|-|-|-|-|-|-|-|-|**10**|10|10|10|10|10|10|IsInf|
@@ -186,7 +186,7 @@ Notes:
 |Where|-|-|-|-|-|-|-|-|**9**|9|9|9|9|9|9|**16**:small_red_triangle:|Where|
 |Xor|**1**|1|1|1|1|1|**7**|7|7|7|7|7|7|7|7|7|Xor|
 
-ONNX-TF Supported Operators / ONNX Operators: 152 / 169
+ONNX-TF Supported Operators / ONNX Operators: 153 / 169
 
 Notes:
 1. BatchNormalization: BatchNormalization with training_mode=1 is not supported in Tensorflow converte.
