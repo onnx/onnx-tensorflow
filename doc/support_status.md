@@ -1,8 +1,8 @@
 # ONNX-Tensorflow Support Status
 |||
 |-:|:-|
-|ONNX-Tensorflow Version|Master ( commit id: 724ab80bbbca03f4eee5ba0e059a7cfd3e856690 )|
-|ONNX Version|Master ( commit id: 767f752829f83dbc9bd0a364d6138890f667fc38 )|
+|ONNX-Tensorflow Version|Master ( commit id: 843cb4fd370e62dbe3449700173927773225aa87 )|
+|ONNX Version|Master ( commit id: d0151d78c2ba53c3c71d05608b1d892ada20507d )|
 |Tensorflow Version|v2.6.0|
 
 Notes:
@@ -32,7 +32,7 @@ Notes:
 |Bernoulli|-|-|-|-|-|-|-|-|-|-|-|-|-|-|**15**:small_red_triangle:|15:small_red_triangle:|Bernoulli|
 |BitShift|-|-|-|-|-|-|-|-|-|-|**11**|11|11|11|11|11|BitShift|
 |Cast|**1**:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|**6**:small_orange_diamond:|6:small_orange_diamond:|6:small_orange_diamond:|**9**:small_orange_diamond:|9:small_orange_diamond:|9:small_orange_diamond:|9:small_orange_diamond:|**13**:small_orange_diamond:|13:small_orange_diamond:|13:small_orange_diamond:|13:small_orange_diamond:|Cast|
-|CastLike|-|-|-|-|-|-|-|-|-|-|-|-|-|-|**15**:small_red_triangle:|15:small_red_triangle:|CastLike|
+|CastLike|-|-|-|-|-|-|-|-|-|-|-|-|-|-|**15**:small_orange_diamond:|15:small_orange_diamond:|CastLike|
 |Ceil|**1**|1|1|1|1|**6**|6|6|6|6|6|6|**13**|13|13|13|Ceil|
 |Celu|-|-|-|-|-|-|-|-|-|-|-|**12**|12|12|12|12|Celu|
 |Clip|**1**|1|1|1|1|**6**|6|6|6|6|**11**|**12**|**13**|13|13|13|Clip|
@@ -186,18 +186,19 @@ Notes:
 |Where|-|-|-|-|-|-|-|-|**9**|9|9|9|9|9|9|**16**:small_red_triangle:|Where|
 |Xor|**1**|1|1|1|1|1|**7**|7|7|7|7|7|7|7|7|7|Xor|
 
-ONNX-TF Supported Operators / ONNX Operators: 153 / 169
+ONNX-TF Supported Operators / ONNX Operators: 154 / 169
 
 Notes:
 1. BatchNormalization: BatchNormalization with training_mode=1 is not supported in Tensorflow converte.
 2. Cast: Cast string to data types other than float32/float64/int32/int64 is not supported in Tensorflow
-3. ConcatFromSequence: new_axis=1 not supported in Tensorflow.
-4. ConvTranspose: ConvTranspose with dilations != 1, or transposed convolution for 4D or higher are not supported in Tensorflow.
-5. GRU: GRU with clip or GRU with linear_before_reset, or GRU not using sigmoid for z and r, or GRU using Elu as the activation function with alpha != 1, or GRU using HardSigmoid as the activation function with alpha != 0.2 or beta != 0.5 are not supported in TensorFlow.
-6. LSTM: LSTM not using sigmoid for `f`, or LSTM not using the same activation for `g` and `h` are not supported in Tensorflow.
-7. MaxPool: MaxPoolWithArgmax with pad is None or incompatible mode, or MaxPoolWithArgmax with 4D or higher input, or MaxPoolWithArgmax with column major are not supported in Tensorflow.
-8. RNN: RNN with clip is not supported in Tensorflow.
-9. Resize: Resize required 4D input in Tensorflow. For opset 11, only the following attributes and inputs conbination are supported in Tensorflow:
+3. CastLike: CastLike string to data types other than float32/float64/int32/int64 is not supported in Tensorflow
+4. ConcatFromSequence: new_axis=1 not supported in Tensorflow.
+5. ConvTranspose: ConvTranspose with dilations != 1, or transposed convolution for 4D or higher are not supported in Tensorflow.
+6. GRU: GRU with clip or GRU with linear_before_reset, or GRU not using sigmoid for z and r, or GRU using Elu as the activation function with alpha != 1, or GRU using HardSigmoid as the activation function with alpha != 0.2 or beta != 0.5 are not supported in TensorFlow.
+7. LSTM: LSTM not using sigmoid for `f`, or LSTM not using the same activation for `g` and `h` are not supported in Tensorflow.
+8. MaxPool: MaxPoolWithArgmax with pad is None or incompatible mode, or MaxPoolWithArgmax with 4D or higher input, or MaxPoolWithArgmax with column major are not supported in Tensorflow.
+9. RNN: RNN with clip is not supported in Tensorflow.
+10. Resize: Resize required 4D input in Tensorflow. For opset 11, only the following attributes and inputs conbination are supported in Tensorflow:
 	1. mode=nearest, coordinate_transformation_mode=align_corners, nearest_mode=round_prefer_ceil, can use scales(*) or sizes.
 	2. mode=nearest, coordinate_transformation_mode=asymmetric, nearest_mode=floor, can use scales(*) or sizes.
 	3. mode=nearest, coordinate_transformation_mode=tf_half_pixel_for_nn, nearest_mode=floor, can use scales(*) or sizes.
@@ -210,6 +211,6 @@ Notes:
 	10. mode=nearest, coordinate_transformation_mode=tf_crop_and_resize, extrapolation_value=any_float_value, nearest_mode=round_prefer_ceil, can use scales or sizes.
 	11. mode=linear, coordinate_transformation_mode=tf_crop_and_resize, extrapolation_value=any_float_value, can use scales or sizes.
 	- Note (*): The accuracy of your model will go down, if the height and the width of the new sizes(scales * origial sizes) are not in whole numbers.
-10. RoiAlign: sampling_ratio <= 0 is not fully supported.
-11. SplitToSequence: Scalar as the split input not supported.
-12. Upsample: Upsample required 4D input in Tensorflow.
+11. RoiAlign: sampling_ratio <= 0 is not fully supported.
+12. SplitToSequence: Scalar as the split input not supported.
+13. Upsample: Upsample required 4D input in Tensorflow.
