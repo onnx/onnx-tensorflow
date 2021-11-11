@@ -19,7 +19,7 @@ backend_opset_version = {
     'Binarizer': [],
     'BitShift': [11],
     'Cast': [1, 6, 9, 13],
-    'CastLike': [],
+    'CastLike': [15],
     'CastMap': [],
     'CategoryMapper': [],
     'Ceil': [1, 6, 13],
@@ -199,6 +199,8 @@ backend_partial_support = {
                           'supported in Tensorflow converte.',
     'Cast': 'Cast string to data types other than float32/float64/int32/int64 '
             'is not supported in Tensorflow',
+    'CastLike': 'CastLike string to data types other than '
+                'float32/float64/int32/int64 is not supported in Tensorflow',
     'ConcatFromSequence': 'new_axis=1 not supported in Tensorflow.',
     'ConvTranspose': 'ConvTranspose with dilations != 1, or transposed '
                      'convolution for 4D or higher are not supported in '
