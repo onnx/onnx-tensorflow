@@ -198,15 +198,15 @@ class Resize(BackendHandler):
     x = tensor_dict[node.inputs[0]]
     x_shape = tf_shape(x)
     x_dtype = x.dtype
-    roi = tensor_dict[node.inputs[1]]
-    roi_dtype = roi.dtype
-    scales = tensor_dict[node.inputs[2]]
+    scales = tensor_dict[node.inputs[2]] if node.inputs[2] != "" else None
     sizes = tensor_dict[node.inputs[3]] if len(
         node.inputs) == 4 else tf.constant([], dtype=tf.int64)
     coordinate_transformation_mode = node.attrs.get(
         "coordinate_transformation_mode", "half_pixel")
     extrapolation_value = node.attrs.get("extrapolation_value", 0.0)
     mode = node.attrs.get("mode", "nearest")
+    roi = tensor_dict[node.inputs[1]] if node.inputs[1] != "" else None
+    roi_dtype = roi.dtype if node.inputs[1] != "" else None
 
     if mode.lower() == "linear":
       mode = tf.image.ResizeMethod.BILINEAR
