@@ -16,21 +16,21 @@ jobs:
         os: [ubuntu-latest, windows-latest, macos-latest]
         python-version: [3.8, 3.9]
         onnx-version: ['onnx==1.9.0']
-        tensorflow-version: ['tensorflow==2.6.2 tensorflow-addons==0.14.0 tensorflow_probability==0.15.0']
+        tensorflow-version: ['tensorflow==2.6.2 tensorflow-addons==0.14.0 tensorflow_probability==0.14.0']
         include:
           - # Test previous versions on Linux only (regression)
             # - use pinned versions for previous onnx-tf release
             os: ubuntu-latest
             python-version: 3.8
             onnx-version: 'onnx==1.9.0'
-            tensorflow-version: 'tensorflow==2.6.2 tensorflow-addons==0.14.0 tensorflow_probability==0.15.0'
+            tensorflow-version: 'tensorflow==2.6.2 tensorflow-addons==0.14.0 tensorflow_probability==0.14.0'
           - # Test development versions on Linux only
             # - latest development versions
             # - allow failure via GitHub branch protection rule
             os: ubuntu-latest
             python-version: 3.9
             onnx-version: 'development'
-            tensorflow-version: 'tensorflow tensorflow-addons tensorflow_probability'
+            tensorflow-version: 'tensorflow tensorflow-addons tensorflow_probability==0.14.0'
 
     steps:
     - name: Checkout ONNX-TF
