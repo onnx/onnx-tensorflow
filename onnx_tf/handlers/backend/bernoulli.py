@@ -3,7 +3,6 @@ from tensorflow_probability import distributions as tfd
 
 from onnx_tf.handlers.backend_handler import BackendHandler
 from onnx_tf.handlers.handler import onnx_op
-from onnx_tf.common import data_type
 from onnx_tf.handlers.handler import partial_support
 from onnx_tf.handlers.handler import ps_description
 
