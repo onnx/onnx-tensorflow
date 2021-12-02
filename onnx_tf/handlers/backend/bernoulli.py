@@ -16,9 +16,7 @@ class Bernoulli(BackendHandler):
   @classmethod
   def _common(cls, node, **kwargs):
     x = kwargs["tensor_dict"][node.inputs[0]]
-    dtype = x.dtype
-    if 'dtype' in node.attrs:
-      dtype = node.attrs.get('dtype')
+    dtype = node.attrs.get("dtype", x.dtype)
     dist = tfd.Bernoulli(probs=x, dtype=dtype)
     if 'seed' in node.attrs:
       ret = dist.sample(seed=int(node.attrs.get('seed')))
