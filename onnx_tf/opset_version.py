@@ -15,7 +15,7 @@ backend_opset_version = {
     'Atanh': [9],
     'AveragePool': [1, 7, 10, 11],
     'BatchNormalization': [1, 6, 7, 9, 14],
-    'Bernoulli': [],
+    'Bernoulli': [15],
     'Binarizer': [],
     'BitShift': [11],
     'Cast': [1, 6, 9, 13],
@@ -197,6 +197,8 @@ backend_opset_version = {
 backend_partial_support = {
     'BatchNormalization': 'BatchNormalization with training_mode=1 is not '
                           'supported in Tensorflow converte.',
+    'Bernoulli': 'Bernoulli with float type seed will be converted to int type '
+                 'seed',
     'Cast': 'Cast string to data types other than float32/float64/int32/int64 '
             'is not supported in Tensorflow',
     'CastLike': 'CastLike string to data types other than '

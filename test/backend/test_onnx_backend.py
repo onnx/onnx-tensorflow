@@ -142,9 +142,7 @@ backend_test.exclude(r'test_conv_with_autopad_same_[a-z,_]*')
 backend_test.exclude(r'test_convtranspose_autopad_same_[a-z,_]*')
 
 # Exclude non-deterministic tests
-backend_test.exclude(r'test_bernoulli_expanded[a-z,_]*')
-backend_test.exclude(r'test_bernoulli_double_expanded[a-z,_]*')
-backend_test.exclude(r'test_bernoulli_seed_expanded[a-z,_]*')
+backend_test.exclude(r'test_bernoulli_[a-z,_]*')
 
 # # onnx backend test support seq from 1.11 #3731
 if legacy_opset_pre_ver(16):
@@ -168,6 +166,8 @@ if legacy_opset_pre_ver(16):
 
 backend_test.exclude(r'[a-z,_]*if_opt_[a-z,_]*')
 backend_test.exclude(r'[a-z,_]*loop16_seq_none_[a-z,_]*')
+
+backend_test.exclude(r'test_gridsample_[a-z,_]*')
 
 # import all test cases at global scope to make them visible to python.unittest
 globals().update(backend_test.enable_report().test_cases)
