@@ -4199,7 +4199,7 @@ class TestNode(unittest.TestCase):
     np.testing.assert_almost_equal(output["Z"], np.where(c, x, y))
 
   def test_optional(self):
-    if legacy_opset_pre_ver(16):
+    if legacy_opset_pre_ver(15):
       raise unittest.SkipTest("ONNX version {} doesn't support Optional.".format(
           defs.onnx_opset_version()))
     ten_in_tp = helper.make_tensor_type_proto(TensorProto.FLOAT, shape=[5])
@@ -4210,13 +4210,25 @@ class TestNode(unittest.TestCase):
     np.testing.assert_almost_equal(output["Y"], x)
 
   def test_optional_empty(self):
-    if legacy_opset_pre_ver(16):
+    if legacy_opset_pre_ver(15):
       raise unittest.SkipTest("ONNX version {} doesn't support Optional.".format(
           defs.onnx_opset_version()))
     ten_in_tp = helper.make_tensor_type_proto(TensorProto.FLOAT, shape=[5])
     opt_in_tp = helper.make_optional_type_proto(ten_in_tp)
     node_def = helper.make_node("Optional", ["X"], ["Y"], type=opt_in_tp)
     x = None
+    output = run_node(node_def, [x])
+    np.testing.assert_equal(output["Y"], x)
+
+  def test_optional_sequence_empty(self):
+    if legacy_opset_pre_ver(15):
+      raise unittest.SkipTest("ONNX version {} doesn't support Optional.".format(
+          defs.onnx_opset_version()))
+    ten_in_tp = helper.make_tensor_type_proto(TensorProto.FLOAT, shape=[5])
+    seq_in_tp = helper.make_sequence_type_proto(ten_in_tp)
+    opt_in_tp = helper.make_optional_type_proto(seq_in_tp)
+    node_def = helper.make_node("Optional", ["X"], ["Y"], type=opt_in_tp)
+    x = []
     output = run_node(node_def, [x])
     np.testing.assert_equal(output["Y"], x)
     
