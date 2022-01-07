@@ -10,4 +10,8 @@ class Optional(BackendHandler):
     if len(node.inputs) > 0:
         return [kwargs["tensor_dict"][node.inputs[0]]]
     else:
-        return [None]
+        if node.attrs.get('type').optional_type.elem_type.HasField('tensor_type'):
+            return [None]
+        else:
+            return [[]]
+
