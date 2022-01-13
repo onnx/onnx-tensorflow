@@ -219,6 +219,9 @@ class TestNode(unittest.TestCase):
     return (x * inv + (bias - mean * inv if bias is not None else -mean * inv)).astype(x.dtype)
 
   def test_batch_normalization_15(self):
+    if legacy_opset_pre_ver(15):
+      raise unittest.SkipTest("ONNX version {} doesn't support BatchNormalization with different type.".format(
+          defs.onnx_opset_version()))
     node_def = helper.make_node("BatchNormalization",
                                 ["X", "scale", "bias", "mean", "var"], ["Y"],
                                 epsilon=0.001)
