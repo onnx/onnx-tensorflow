@@ -1,8 +1,8 @@
 # ONNX-Tensorflow Support Status
 |||
 |-:|:-|
-|ONNX-Tensorflow Version|Master ( commit id: 752d8ceab0f5c96f4ecf52b12ae7ee6beea40db6 )|
-|ONNX Version|Master ( commit id: d0151d78c2ba53c3c71d05608b1d892ada20507d )|
+|ONNX-Tensorflow Version|Master ( commit id: 3847bb0975ce2047d9915af6a35fc6f6a87eed25 )|
+|ONNX Version|Master ( commit id: 65974860e20b311d14b642ce22b5a56b8c176ca5 )|
 |Tensorflow Version|v2.7.0|
 
 Notes:
@@ -28,7 +28,7 @@ Notes:
 |Atan|-|-|-|-|-|-|**7**|7|7|7|7|7|7|7|7|7|Atan|
 |Atanh|-|-|-|-|-|-|-|-|**9**|9|9|9|9|9|9|9|Atanh|
 |AveragePool|**1**|1|1|1|1|1|**7**|7|7|**10**|**11**|11|11|11|11|11|AveragePool|
-|BatchNormalization|**1**:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|**6**:small_orange_diamond:|**7**:small_orange_diamond:|7:small_orange_diamond:|**9**:small_orange_diamond:|9:small_orange_diamond:|9:small_orange_diamond:|9:small_orange_diamond:|9:small_orange_diamond:|**14**:small_orange_diamond:|**15**:small_red_triangle:|15:small_red_triangle:|BatchNormalization|
+|BatchNormalization|**1**:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|**6**:small_orange_diamond:|**7**:small_orange_diamond:|7:small_orange_diamond:|**9**:small_orange_diamond:|9:small_orange_diamond:|9:small_orange_diamond:|9:small_orange_diamond:|9:small_orange_diamond:|**14**:small_orange_diamond:|**15**:small_orange_diamond:|15:small_orange_diamond:|BatchNormalization|
 |Bernoulli|-|-|-|-|-|-|-|-|-|-|-|-|-|-|**15**:small_orange_diamond:|15:small_orange_diamond:|Bernoulli|
 |BitShift|-|-|-|-|-|-|-|-|-|-|**11**|11|11|11|11|11|BitShift|
 |Cast|**1**:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|1:small_orange_diamond:|**6**:small_orange_diamond:|6:small_orange_diamond:|6:small_orange_diamond:|**9**:small_orange_diamond:|9:small_orange_diamond:|9:small_orange_diamond:|9:small_orange_diamond:|**13**:small_orange_diamond:|13:small_orange_diamond:|13:small_orange_diamond:|13:small_orange_diamond:|Cast|
@@ -72,6 +72,7 @@ Notes:
 |GlobalMaxPool|**1**|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|GlobalMaxPool|
 |Greater|**1**|1|1|1|1|1|**7**|7|**9**|9|9|9|**13**|13|13|13|Greater|
 |GreaterOrEqual|-|-|-|-|-|-|-|-|-|-|-|**12**|12|12|12|12|GreaterOrEqual|
+|GridSample|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|**16**:small_red_triangle:|GridSample|
 |HardSigmoid|**1**|1|1|1|1|**6**|6|6|6|6|6|6|6|6|6|6|HardSigmoid|
 |HardSwish|-|-|-|-|-|-|-|-|-|-|-|-|-|**14**|14|14|HardSwish|
 |Hardmax|**1**|1|1|1|1|1|1|1|1|1|**11**|11|**13**|13|13|13|Hardmax|
@@ -186,7 +187,7 @@ Notes:
 |Where|-|-|-|-|-|-|-|-|**9**|9|9|9|9|9|9|**16**:small_red_triangle:|Where|
 |Xor|**1**|1|1|1|1|1|**7**|7|7|7|7|7|7|7|7|7|Xor|
 
-ONNX-TF Supported Operators / ONNX Operators: 155 / 169
+ONNX-TF Supported Operators / ONNX Operators: 156 / 170
 
 Notes:
 1. BatchNormalization: BatchNormalization with training_mode=1 is not supported in Tensorflow converte.
