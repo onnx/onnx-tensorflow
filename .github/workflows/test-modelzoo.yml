@@ -31,7 +31,7 @@ jobs:
         python-version: '3.8'
     - name: Install dependencies
       run: |
-        pip install onnx==1.9.0 tensorflow==2.6.2 tensorflow-addons==0.14.0 tensorflow_probability==0.14.0
+        pip install onnx==1.10.2 tensorflow==2.8.0 tensorflow-addons==0.16.1 tensorflow_probability==0.16.0
         pip install -e .
     - name: Run ModelZoo tests
       run: |
