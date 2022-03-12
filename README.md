@@ -6,6 +6,10 @@
 
 TensorFlow Backend for ONNX makes it possible to use ONNX models as input for [TensorFlow](https://www.tensorflow.org). The ONNX model is first converted to a TensorFlow model and then delegated for execution on TensorFlow to produce the output.
 
+This is one of the two TensorFlow converter projects which serve different purposes in the ONNX community:
+- [onnx-tensorflow](https://github.com/onnx/onnx-tensorflow) converts ONNX models to Tensorflow
+- [tf2onnx](https://github.com/onnx/tensorflow-onnx) converts Tensorflow models to ONNX
+
 ## Converting Models from ONNX to TensorFlow
 
 ### Use CLI
