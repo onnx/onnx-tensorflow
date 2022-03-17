@@ -292,8 +292,8 @@ class TensorflowBackend(Backend):
       return numpy_helper.to_array(onnx_tensor).flatten().tolist()
 
     def validate_initializer_name(name):
-      # Prepend a unique suffix if leading charater is "_"
-      name = get_unique_suffix() + name if name[0] is "_" else name
+      # Prepend a unique suffix if leading character is "_"
+      name = get_unique_suffix() + name if name[0] == "_" else name
 
       # Replace ":" with "_tf_" and append a unique suffix for
       # traceability
