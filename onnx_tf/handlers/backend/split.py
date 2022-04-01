@@ -15,8 +15,9 @@ class Split(BackendHandler):
   @classmethod
   def args_check(cls, node, **kwargs):
     axis = node.attrs.get("axis", 0)
-    x_rank =  len(kwargs["tensor_dict"][node.inputs[0]].get_shape().as_list())
-    if axis > x_rank - 1 or axis < -x_rank:
+    if kwargs["tensor_dict"][node.inputs[0]].get_shape().rank is not None:
+      x_rank =  len(kwargs["tensor_dict"][node.inputs[0]].get_shape().as_list())
+      if axis > x_rank - 1 or axis < -x_rank:
         raise ValueError("Axis is out of bound")
 
   @classmethod
