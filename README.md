@@ -6,6 +6,10 @@
 
 TensorFlow Backend for ONNX makes it possible to use ONNX models as input for [TensorFlow](https://www.tensorflow.org). The ONNX model is first converted to a TensorFlow model and then delegated for execution on TensorFlow to produce the output.
 
+This is one of the two TensorFlow converter projects which serve different purposes in the ONNX community:
+- [onnx-tensorflow](https://github.com/onnx/onnx-tensorflow) converts ONNX models to Tensorflow
+- [tf2onnx](https://github.com/onnx/tensorflow-onnx) converts Tensorflow models to ONNX
+
 ## Converting Models from ONNX to TensorFlow
 
 ### Use CLI
@@ -41,7 +45,7 @@ The specific ONNX release version that we support in the master branch of ONNX-T
 
 To install the latest version of ONNX-TF via pip, run `pip install onnx-tf`.
 
-Because users often have their own preferences for which variant of TensorFlow to install (i.e., a GPU version instead of a CPU version), we do not explicitly require tensorflow in the installation script. It is therefore users' responsibility to ensure that the proper variant of TensorFlow is available to ONNX-TF. Moreover, we require TensorFlow version == 2.6.0.
+Because users often have their own preferences for which variant of TensorFlow to install (i.e., a GPU version instead of a CPU version), we do not explicitly require tensorflow in the installation script. It is therefore users' responsibility to ensure that the proper variant of TensorFlow is available to ONNX-TF. Moreover, we require TensorFlow version == 2.8.0.
 
 ## Development
 
@@ -53,7 +57,7 @@ Because users often have their own preferences for which variant of TensorFlow t
 
 ### Installation
 - Install ONNX master branch from source.
-- Install TensorFlow >= 2.6.0 and tensorflow-addons. (Note TensorFlow 1.x is no longer supported)
+- Install TensorFlow >= 2.8.0, tensorflow-probability and tensorflow-addons. (Note TensorFlow 1.x is no longer supported)
 - Run `git clone https://github.com/onnx/onnx-tensorflow.git && cd onnx-tensorflow`.
 - Run `pip install -e .`.
 

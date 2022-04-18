@@ -37,6 +37,13 @@ class TestNode(unittest.TestCase):
     else:
       return output.astype(np.float32)
 
+  def _get_rnd_float16(self, low=-1.0, high=1.0, shape=None):
+    output = np.random.uniform(low, high, shape)
+    if shape is None:
+      return np.float16(output)
+    else:
+      return output.astype(np.float16)
+
   def _get_rnd_int(self, low, high=None, shape=None, dtype=np.int32):
     return np.random.randint(low, high, size=shape, dtype=dtype)
 
@@ -204,6 +211,36 @@ class TestNode(unittest.TestCase):
     output = run_node(node_def, [x, scale, bias, m, v])
     np.testing.assert_almost_equal(output["Y"], golden, decimal=5)
 
+  def _batch_normalization_15(self, x, mean, variance, bias, scale,
+                           variance_epsilon):
+    inv = np.reciprocal(np.sqrt(variance + variance_epsilon))
+    if scale is not None:
+      inv *= scale
+    return (x * inv + (bias - mean * inv if bias is not None else -mean * inv)).astype(x.dtype)
+
+  def test_batch_normalization_15(self):
+    if legacy_opset_pre_ver(15):
+      raise unittest.SkipTest("ONNX version {} doesn't support BatchNormalization with different type.".format(
+          defs.onnx_opset_version()))
+    node_def = helper.make_node("BatchNormalization",
+                                ["X", "scale", "bias", "mean", "var"], ["Y"],
+                                epsilon=0.001)
+    x_shape = [3, 5, 4, 2]
+    param_shape = [5]
+    _param_shape = [1, 5, 1, 1]
+    x = self._get_rnd_float16(0, 1, shape=x_shape)
+    m = self._get_rnd_float32(0, 1, shape=param_shape)
+    _m = m.reshape(_param_shape)
+    v = self._get_rnd_float32(0, 1, shape=param_shape)
+    _v = v.reshape(_param_shape)
+    scale = self._get_rnd_float32(0, 1, shape=param_shape)
+    _scale = scale.reshape(_param_shape)
+    bias = self._get_rnd_float32(0, 1, shape=param_shape)
+    _bias = bias.reshape(_param_shape)
+    golden = self._batch_normalization_15(x, _m, _v, _bias, _scale, 0.001)
+    output = run_node(node_def, [x, scale, bias, m, v])
+    np.testing.assert_almost_equal(output["Y"], golden, decimal=1)
+    
   def test_cast(self):
     if legacy_onnx_pre_ver(1, 2) or legacy_opset_pre_ver(6):
       test_cases = [("FLOAT", tf.float32), ("UINT8", tf.uint8),
@@ -578,7 +615,7 @@ class TestNode(unittest.TestCase):
     node_def = helper.make_node("Cosh", ["X"], ["Y"])
     x = self._get_rnd_float32(shape=[3, 4, 5])
     output = run_node(node_def, [x])
-    np.testing.assert_almost_equal(output["Y"], np.cosh(x))
+    np.testing.assert_almost_equal(output["Y"], np.cosh(x),decimal=5)
 
   def test_cumsum(self):
     if legacy_opset_pre_ver(11):
@@ -4198,7 +4235,40 @@ class TestNode(unittest.TestCase):
     output = run_node(node_def, [c, x, y])
     np.testing.assert_almost_equal(output["Z"], np.where(c, x, y))
 
+  def test_optional(self):
+    if legacy_opset_pre_ver(15):
+      raise unittest.SkipTest("ONNX version {} doesn't support Optional.".format(
+          defs.onnx_opset_version()))
+    ten_in_tp = helper.make_tensor_type_proto(TensorProto.FLOAT, shape=[5])
+    opt_in_tp = helper.make_optional_type_proto(ten_in_tp)
+    node_def = helper.make_node("Optional", ["X"], ["Y"], type=opt_in_tp)
+    x = self._get_rnd_float32(-3.0, 3.0, [5])
+    output = run_node(node_def, [x])
+    np.testing.assert_almost_equal(output["Y"], x)
 
+  def test_optional_empty(self):
+    if legacy_opset_pre_ver(15):
+      raise unittest.SkipTest("ONNX version {} doesn't support Optional.".format(
+          defs.onnx_opset_version()))
+    ten_in_tp = helper.make_tensor_type_proto(TensorProto.FLOAT, shape=[5])
+    opt_in_tp = helper.make_optional_type_proto(ten_in_tp)
+    node_def = helper.make_node("Optional", ["X"], ["Y"], type=opt_in_tp)
+    x = None
+    output = run_node(node_def, [x])
+    np.testing.assert_equal(output["Y"], x)
+
+  def test_optional_sequence_empty(self):
+    if legacy_opset_pre_ver(15):
+      raise unittest.SkipTest("ONNX version {} doesn't support Optional.".format(
+          defs.onnx_opset_version()))
+    ten_in_tp = helper.make_tensor_type_proto(TensorProto.FLOAT, shape=[5])
+    seq_in_tp = helper.make_sequence_type_proto(ten_in_tp)
+    opt_in_tp = helper.make_optional_type_proto(seq_in_tp)
+    node_def = helper.make_node("Optional", ["X"], ["Y"], type=opt_in_tp)
+    x = []
+    output = run_node(node_def, [x])
+    np.testing.assert_equal(output["Y"], x)
+    
 if __name__ == '__main__':
   unittest.main()
 

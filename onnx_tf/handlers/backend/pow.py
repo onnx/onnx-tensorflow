@@ -18,7 +18,8 @@ class Pow(BasicMathMixin, BackendHandler):
       tf.uint16: tf.int32,
       tf.uint32: tf.int64,
       tf.int8: tf.int16,
-      tf.int16: tf.int32
+      tf.int16: tf.int32,
+      tf.bfloat16: tf.float32
   }
   supported_types = [tf.int32, tf.int64, tf.float16, tf.float32, tf.float64]
 
@@ -76,4 +77,8 @@ class Pow(BasicMathMixin, BackendHandler):
 
   @classmethod
   def version_13(cls, node, **kwargs):
+    return cls._common(node, **kwargs)
+
+  @classmethod
+  def version_15(cls, node, **kwargs):
     return cls._common(node, **kwargs)
