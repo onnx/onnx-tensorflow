@@ -10,8 +10,6 @@ tf.config.run_functions_eagerly(True)
 
 
 @onnx_op("Unique")
-@tf_func(tf.unique_with_counts)
-@tf_func(tf.sort)
 class Unique(BackendHandler):
 
   @classmethod
