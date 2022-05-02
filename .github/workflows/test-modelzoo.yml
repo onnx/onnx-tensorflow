@@ -38,7 +38,7 @@ jobs:
         # Make sure model and wiki match the checkout paths above
         python test/test_modelzoo.py -m models -o wiki -v
     - name: Update wiki content
-      uses: Andrew-Chen-Wang/github-wiki-action@v2
+      uses: Andrew-Chen-Wang/github-wiki-action@v3
       env:
         # Make sure WIKI_DIR ends with '/' and matches the checkout path above
         WIKI_DIR: wiki/
