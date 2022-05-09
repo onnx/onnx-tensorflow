@@ -29,8 +29,8 @@ jobs:
             # - allow failure via GitHub branch protection rule
             os: ubuntu-latest
             python-version: 3.9
-            onnx-version: 'development'
-            tensorflow-version: 'tensorflow tensorflow-addons tensorflow_probability'
+            onnx-version: 'onnx==1.11.0'
+            tensorflow-version: 'tensorflow==2.8.0 tensorflow-addons==0.16.1 tensorflow_probability==0.16.0'
 
     steps:
     - name: Checkout ONNX-TF

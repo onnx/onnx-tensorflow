@@ -20,3 +20,7 @@ class Identity(BackendHandler):
   @classmethod
   def version_6(cls, node, **kwargs):
     return [cls.make_tensor_from_onnx_node(node, **kwargs)]
+
+  @classmethod
+  def version_16(cls, node, **kwargs):
+    return [cls.make_tensor_from_onnx_node(node, **kwargs)]

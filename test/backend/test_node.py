@@ -843,7 +843,7 @@ class TestNode(unittest.TestCase):
     node_def = helper.make_node("Expand", ["X", "shape"], ["Y"])
     x = np.array([[True], [False], [True]])
     shape = [2, 1, 6]
-    y = x * np.ones(shape, dtype=np.bool)
+    y = x * np.ones(shape, dtype=bool)
     output = run_node(node_def, [x, shape])
     np.testing.assert_almost_equal(output["Y"], y)
 
@@ -1485,7 +1485,7 @@ class TestNode(unittest.TestCase):
     # test for loop
     M = np.array(5, dtype=np.int64)
     cond = np.array(
-        True, dtype=np.bool
+        True, dtype=bool
     )  # value will be ignore because optional "cond" input will be skip
     graph = helper.make_graph(nodes=[add_node, sub_node, mul_node],
                               name="for_loop_graph",
@@ -1508,7 +1508,7 @@ class TestNode(unittest.TestCase):
     M = np.array(
         0, dtype=np.int64
     )  # value will be ignore because optional "M" input will be skip
-    cond = np.array(np.all(v1_initial < v2_initial), dtype=np.bool)
+    cond = np.array(np.all(v1_initial < v2_initial), dtype=bool)
     graph = helper.make_graph(
         nodes=[add_node, sub_node, mul_node, less_node],
         name="while_loop_graph",
@@ -1552,7 +1552,7 @@ class TestNode(unittest.TestCase):
 
     # test for loop and while loop conbine
     M = np.array(4, dtype=np.int64)
-    cond = np.array(np.all(v1_initial < v2_initial), dtype=np.bool)
+    cond = np.array(np.all(v1_initial < v2_initial), dtype=bool)
     graph = helper.make_graph(
         nodes=[add_node, sub_node, mul_node, less_node],
         name="for_and_while_loop_graph",
@@ -1574,7 +1574,7 @@ class TestNode(unittest.TestCase):
     # test for loop that doesn't run at all (M = 0)
     M = np.array(0, dtype=np.int64)
     cond = np.array(
-        True, dtype=np.bool
+        True, dtype=bool
     )  # value will be ignore because optional "cond" input will be skip
     graph = helper.make_graph(nodes=[add_node, sub_node, mul_node],
                               name="for_loop_graph",
@@ -1595,7 +1595,7 @@ class TestNode(unittest.TestCase):
     M = np.array(
         0, dtype=np.int64
     )  # value will be ignore because optional "M" input will be skip
-    cond = np.array(False, dtype=np.bool)
+    cond = np.array(False, dtype=bool)
     graph = helper.make_graph(
         nodes=[add_node, sub_node, mul_node, less_node],
         name="while_loop_graph",
@@ -1615,7 +1615,7 @@ class TestNode(unittest.TestCase):
 
     # test while loop that doesn't have any scan_outputs
     M = np.array(4, dtype=np.int64)
-    cond = np.array(np.all(v1_initial < v2_initial), dtype=np.bool)
+    cond = np.array(np.all(v1_initial < v2_initial), dtype=bool)
     graph = helper.make_graph(nodes=[add_node, sub_node, mul_node, less_node],
                               name="while_loop_graph",
                               inputs=[iter_count_in, cond_in, x_in, y_in],
@@ -1647,7 +1647,7 @@ class TestNode(unittest.TestCase):
 
     M = np.array(0, dtype=np.int64)
     cond = np.array(
-        True, dtype=np.bool
+        True, dtype=bool
     )  # value will be ignore because optional "cond" input will be skip
     graph = helper.make_graph(nodes=[add_node, matmul_node],
                               name="for_loop_graph",
@@ -1667,7 +1667,7 @@ class TestNode(unittest.TestCase):
         0, dtype=np.int64
     )  # value will be ignore because optional "M" input will be skip
     cond = np.array(
-        True, dtype=np.bool
+        True, dtype=bool
     )  # value will be ignore because optional "cond" input will be skip
     graph = helper.make_graph(nodes=[add_node, sub_node, mul_node, less_node],
                               name="while_loop_graph",
@@ -3341,7 +3341,7 @@ class TestNode(unittest.TestCase):
     node_def = helper.make_node("Reciprocal", ["X"], ["Y"])
     x = self._get_rnd_float32(shape=[1000])
     output = run_node(node_def, [x])
-    np.testing.assert_almost_equal(output["Y"], 1.0 / x)
+    np.testing.assert_almost_equal(output["Y"], 1.0 / x, decimal=4)
 
   def test_reduce_l1(self):
     node_def = helper.make_node("ReduceL1", ["X"], ["Y"], axes=[1, 2])
@@ -4229,7 +4229,7 @@ class TestNode(unittest.TestCase):
       raise unittest.SkipTest("ONNX version {} doesn't support Where.".format(
           defs.onnx_opset_version()))
     node_def = helper.make_node("Where", ["C", "X", "Y"], ["Z"])
-    c = np.array([[1, 0], [1, 1]], dtype=np.bool)
+    c = np.array([[1, 0], [1, 1]], dtype=bool)
     x = np.array([[1, 2], [3, 4]], dtype=np.float32)
     y = np.array([[9, 8], [7, 6]], dtype=np.float32)
     output = run_node(node_def, [c, x, y])

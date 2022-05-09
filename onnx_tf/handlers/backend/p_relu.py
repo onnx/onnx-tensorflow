@@ -36,3 +36,7 @@ class PRelu(BackendHandler):
   @classmethod
   def version_9(cls, node, **kwargs):
     return cls._common(node, **kwargs)
+
+  @classmethod
+  def version_16(cls, node, **kwargs):
+    return cls._common(node, **kwargs)
