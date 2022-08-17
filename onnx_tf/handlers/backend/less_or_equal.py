@@ -40,7 +40,7 @@ class LessOrEqual(ComparisonMixin, BackendHandler):
           data_type.tf_to_np_str_list(cls.supported_types))
 
   @classmethod
-  def version_12(cls, node, **kwargs):
+  def _common(cls, node, **kwargs):
     def dtype_cast(x):
       return tf.cast(x, cls.cast_map[x.dtype]) if x.dtype in cls.cast_map else x
 
@@ -49,3 +49,11 @@ class LessOrEqual(ComparisonMixin, BackendHandler):
     y = dtype_cast(kwargs["tensor_dict"][node.inputs[1]])
 
     return [cls.make_tensor_from_onnx_node(node, inputs=[x, y])]
+
+  @classmethod
+  def version_12(cls, node, **kwargs):
+    return cls._common(node, **kwargs)
+
+  @classmethod
+  def version_16(cls, node, **kwargs):
+    return cls._common(node, **kwargs)

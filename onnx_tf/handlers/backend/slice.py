@@ -124,7 +124,7 @@ class Slice(BackendHandler):
           dense_steps,
           default_value=tf.constant(1, dtype=tensor_dict[node.inputs[4]].dtype))
     else:
-      dense_steps = tf.ones(input_tensor_shape.shape, ends.dtype)
+      dense_steps = tf.ones(tf.shape(input_tensor_shape), ends.dtype)
 
     return [
         cls.make_tensor_from_onnx_node(node,

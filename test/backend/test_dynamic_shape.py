@@ -176,7 +176,7 @@ class TestDynamicShape(unittest.TestCase):
                                           [None, None, None])
         ])
     x = self._get_rnd_float32(shape=[5, 5, 5])
-    cond = np.array([1, 0, 1]).astype(np.bool)
+    cond = np.array([1, 0, 1]).astype(bool)
     tf_rep = onnx_graph_to_tensorflow_rep(graph_def)
     # export to tf.saved_model
     model_path = 'test_dynamic_shape/compress'

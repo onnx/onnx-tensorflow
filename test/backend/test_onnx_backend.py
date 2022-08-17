@@ -169,6 +169,9 @@ backend_test.exclude(r'[a-z,_]*loop16_seq_none_[a-z,_]*')
 
 backend_test.exclude(r'test_gridsample_[a-z,_]*')
 
+#Opened ticket- https://github.com/onnx/onnx-tensorflow/issues/1027 to track the issue
+backend_test.exclude(r'test_sequence_map_[a-z,_]*')
+
 # import all test cases at global scope to make them visible to python.unittest
 globals().update(backend_test.enable_report().test_cases)
 
