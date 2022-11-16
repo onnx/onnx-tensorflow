@@ -2,6 +2,8 @@
 ![Backend Test Status](https://github.com/onnx/onnx-tensorflow/workflows/Backend%20test/badge.svg)
 ![ModelZoo Test Status](https://github.com/onnx/onnx-tensorflow/workflows/ModelZoo%20test/badge.svg)
 
+### Note this repo is not actively maintained and will be deprecated. If you are interested in becoming the owner, please contact the ONNX Steering Committee (https://github.com/onnx/steering-committee).
+
 [Open Neural Network Exchange (ONNX)](https://onnx.ai) is an open standard format for representing machine learning models. ONNX is supported by a community of partners who have implemented it in many frameworks and tools.
 
 TensorFlow Backend for ONNX makes it possible to use ONNX models as input for [TensorFlow](https://www.tensorflow.org). The ONNX model is first converted to a TensorFlow model and then delegated for execution on TensorFlow to produce the output.
