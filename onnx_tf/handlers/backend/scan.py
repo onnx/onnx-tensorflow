@@ -29,3 +29,7 @@ class Scan(ScanMixin, BackendHandler):
   @classmethod
   def version_11(cls, node, **kwargs):
     return cls._common(node, **kwargs)
+
+  @classmethod
+  def version_16(cls, node, **kwargs):
+    return cls._common(node, **kwargs)

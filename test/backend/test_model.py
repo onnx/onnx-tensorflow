@@ -362,7 +362,7 @@ class TestModel(unittest.TestCase):
         'a': a,
         'b': b,
         'c': c,
-        'cond': np.array(True, dtype=np.bool)
+        'cond': np.array(True, dtype=bool)
     })
     np.testing.assert_almost_equal(output['S_final'][0], a)
     np.testing.assert_almost_equal(output['S_final'][1], b)
@@ -370,7 +370,7 @@ class TestModel(unittest.TestCase):
         'a': a,
         'b': b,
         'c': c,
-        'cond': np.array(False, dtype=np.bool)
+        'cond': np.array(False, dtype=bool)
     })
     np.testing.assert_almost_equal(output['S_final'][0], a)
     np.testing.assert_almost_equal(output['S_final'][1], c)
@@ -424,7 +424,7 @@ class TestModel(unittest.TestCase):
     a = np.random.randn(2, 1, 2).astype(np.float32)
     b = np.random.randn(1, 1, 2).astype(np.float32)
     M = np.array(3, dtype=np.int64)
-    cond = np.array(True, dtype=np.bool)
+    cond = np.array(True, dtype=bool)
     seq_construct_node = helper.make_node('SequenceConstruct', ['a'], ['S'])
     seq_insert_node = helper.make_node('SequenceInsert', ['S', 'b'],
                                        ['Updated_S'])
