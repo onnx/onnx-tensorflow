@@ -3987,6 +3987,16 @@ class TestNode(unittest.TestCase):
                                    np.log(np.exp(x) + 1),
                                    decimal=5)
 
+  def test_softmax_cross_entropy_loss(self):
+    node_def = helper.make_node("SoftmaxCrossEntropyLoss", ["X", "Y"], ["Z"])
+    classes = 10
+    x = self._get_rnd_float32(shape=[1,classes])
+    y = self._get_rnd_int(0, classes-1, [1], np.int32)
+    output = run_node(node_def, [x, y])
+    np.testing.assert_almost_equal(output["Z"],
+                                   -np.log(np.exp(x)[0][y]/np.sum(np.exp(x))),
+                                   decimal=5)
+
   def test_softsign(self):
     node_def = helper.make_node("Softsign", ["X"], ["Y"])
     x = self._get_rnd_float32(shape=[3, 4, 5])
