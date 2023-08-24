@@ -62,34 +62,6 @@ class ConvMixin(BroadcastMixin):
 
     pads = node.attrs.get("pads", [0, 0] * spatial_size)
 
-    # Check auto_pad nonexistent or NOTSET first
-    if "auto_pad" not in node.attrs or node.attrs["auto_pad"] == "NOTSET":
-      if not transpose:
-        if pads != [0, 0] * spatial_size:
-          x = PadMixin.get_padding_as_op(x, pads)
-        pad_mode = "VALID"
-      else:
-        pad_mode = "NOTSET"
-    # Then we use auto_pad to setup pad_mode
-    elif node.attrs["auto_pad"] == "SAME_UPPER":
-      pad_mode = "SAME"
-    elif node.attrs["auto_pad"] == "VALID":
-      pad_mode = "VALID"
-    elif node.attrs["auto_pad"] == "SAME_LOWER":
-      pad_mode = PAD_TF_INCOMPATIBLE
-    else:
-      raise ValueError("Invalid auto_pad attribute: {}".format(
-          node.attrs["auto_pad"]))
-
-    # Currently auto_pad = SAME_LOWER is not supported
-    if pad_mode is PAD_TF_INCOMPATIBLE:
-      if transpose:
-        exception.OP_UNSUPPORTED_EXCEPT(
-            "ConvTranspose with auto_pad `SAME_LOWER`", "Tensorflow")
-      else:
-        exception.OP_UNSUPPORTED_EXCEPT("Conv with auto_pad `SAME_LOWER`",
-                                        "Tensorflow")
-
     group = node.attrs.get("group", 1)
     weight_shape = weights.get_shape().as_list()
     # Is this convolution depthwise we can support?
@@ -133,6 +105,34 @@ class ConvMixin(BroadcastMixin):
           xs = [x]
         else:
           xs = tf.split(x, num_or_size_splits=group, axis=-1)
+
+    # Check auto_pad nonexistent or NOTSET first
+    if "auto_pad" not in node.attrs or node.attrs["auto_pad"] == "NOTSET":
+      if not transpose:
+        if pads != [0, 0] * spatial_size:
+          xs = [PadMixin.get_padding_as_op(x, pads, format=compute_format) for x in xs]
+        pad_mode = "VALID"
+      else:
+        pad_mode = "NOTSET"
+    # Then we use auto_pad to setup pad_mode
+    elif node.attrs["auto_pad"] == "SAME_UPPER":
+      pad_mode = "SAME"
+    elif node.attrs["auto_pad"] == "VALID":
+      pad_mode = "VALID"
+    elif node.attrs["auto_pad"] == "SAME_LOWER":
+      pad_mode = PAD_TF_INCOMPATIBLE
+    else:
+      raise ValueError("Invalid auto_pad attribute: {}".format(
+          node.attrs["auto_pad"]))
+
+    # Currently auto_pad = SAME_LOWER is not supported
+    if pad_mode is PAD_TF_INCOMPATIBLE:
+      if transpose:
+        exception.OP_UNSUPPORTED_EXCEPT(
+            "ConvTranspose with auto_pad `SAME_LOWER`", "Tensorflow")
+      else:
+        exception.OP_UNSUPPORTED_EXCEPT("Conv with auto_pad `SAME_LOWER`",
+                                        "Tensorflow")
 
     if transpose:
       if dilations != [1] * spatial_size:
