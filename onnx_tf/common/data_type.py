@@ -1,7 +1,7 @@
 from numbers import Number
 
 import numpy as np
-from onnx import mapping
+from onnx import helper
 from onnx import TensorProto
 import tensorflow as tf
 
@@ -33,8 +33,8 @@ def tf2onnx(dtype):
 
   onnx_dtype = None
   try:
-    onnx_dtype = mapping.NP_TYPE_TO_TENSOR_TYPE[np.dtype(
-        tf_dype.as_numpy_dtype)]
+    onnx_dtype = helper.np_dtype_to_tensor_dtype(np.dtype(
+        tf_dype.as_numpy_dtype))
   finally:
     if onnx_dtype is None:
       common.logger.warning(
@@ -50,11 +50,11 @@ def onnx2tf(dtype):
   # to go directly to tf bfloat16 for now.
   if dtype == int(TensorProto.BFLOAT16):
     return tf.as_dtype("bfloat16")
-  return tf.as_dtype(mapping.TENSOR_TYPE_TO_NP_TYPE[_onnx_dtype(dtype)])
+  return tf.as_dtype(helper.tensor_dtype_to_np_dtype(_onnx_dtype(dtype)))
 
 
 def onnx2field(dtype):
-  return mapping.STORAGE_TENSOR_TYPE_TO_FIELD[_onnx_dtype(dtype)]
+  return helper.tensor_dtype_to_field(_onnx_dtype(dtype))
 
 
 def _onnx_dtype(dtype):
@@ -75,7 +75,7 @@ def any_dtype_to_onnx_dtype(np_dtype=None, tf_dtype=None, onnx_dtype=None):
       sum(num_type_set))
 
   if np_dtype:
-    onnx_dtype = mapping.NP_TYPE_TO_TENSOR_TYPE[np_dtype]
+    onnx_dtype = helper.np_dtype_to_tensor_dtype(np_dtype)
   if tf_dtype:
     onnx_dtype = tf2onnx(tf_dtype)
 
@@ -115,7 +115,7 @@ def is_safe_cast(from_dtype, to_dtype):
 
 
 def tf_to_np_str(from_type):
-  return mapping.TENSOR_TYPE_TO_NP_TYPE[int(
+  return helper.tensor_dtype_to_np_dtype[int(
       tf2onnx(from_type))].name if from_type != tf.bfloat16 else 'bfloat16'
 
 

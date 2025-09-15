@@ -9,7 +9,8 @@ from onnx import numpy_helper
 from onnx.helper import make_graph
 from onnx.helper import make_tensor
 from onnx.helper import make_tensor_value_info
-from onnx.helper import mapping
+from onnx.helper import tensor_dtype_to_field
+from onnx.helper import tensor_dtype_to_storage_tensor_dtype
 import tensorflow as tf
 from tensorflow.core.framework.attr_value_pb2 import AttrValue
 from tensorflow.core.framework.node_def_pb2 import NodeDef
@@ -426,8 +427,9 @@ class OnnxGraph(object):
       if proto.name in data_type_cast_map:
         new_data_type = data_type_cast_map[proto.name]
         if type(proto) == TensorProto and proto.data_type != new_data_type:
-          field = mapping.STORAGE_TENSOR_TYPE_TO_FIELD[
-              mapping.TENSOR_TYPE_TO_STORAGE_TENSOR_TYPE[proto.data_type]]
+          field = tensor_dtype_to_field(
+            tensor_dtype_to_storage_tensor_dtype(proto.data_type)
+          )
           vals = getattr(proto, field)
           new_proto = make_tensor(
               name=proto.name,
