@@ -49,5 +49,10 @@ This repository does not accept feature requests, bug fixes, or compatibility
 updates. Existing issues and pull requests are retained as historical records.
 See [SECURITY.md](SECURITY.md) for the unsupported-version policy.
 
+If you are interested in reactivating and taking responsibility for maintaining
+ONNX-TF, contact the [ONNX Converters SIG](https://github.com/onnx/sigs) or the
+[ONNX Steering Committee](https://github.com/onnx/steering-committee).
+Reactivation and ownership remain subject to ONNX governance approval.
+
 The project is licensed under Apache License 2.0. See [LICENSE](LICENSE) and
 [NOTICE](NOTICE).
