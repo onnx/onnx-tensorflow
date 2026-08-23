@@ -50,7 +50,7 @@ updates. Existing issues and pull requests are retained as historical records.
 See [SECURITY.md](SECURITY.md) for the unsupported-version policy.
 
 If you are interested in reactivating and taking responsibility for maintaining
-ONNX-TF, contact the [ONNX Converters SIG](https://github.com/onnx/sigs) or the
+ONNX-TF, contact the [ONNX Converter SIG](https://github.com/onnx/sigs) or the
 [ONNX Steering Committee](https://github.com/onnx/steering-committee).
 Reactivation and ownership remain subject to ONNX governance approval.
 
