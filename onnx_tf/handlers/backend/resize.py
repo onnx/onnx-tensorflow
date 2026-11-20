@@ -64,10 +64,11 @@ class Resize(BackendHandler):
     cls.roi_cast_map[tf.float64] = tf.float32 if sys_config.auto_cast else None
 
     x = kwargs["tensor_dict"][node.inputs[0]]
-    x_shape = x.get_shape().as_list()
+    if x.get_shape().rank is not None:
+        x_shape = x.get_shape().as_list()
+        if len(x_shape) != 4:
+            exception.OP_UNSUPPORTED_EXCEPT("Resize required 4D input", "Tensorflow")
     x_dtype = x.dtype
-    if len(x_shape) != 4:
-      exception.OP_UNSUPPORTED_EXCEPT("Resize required 4D input", "Tensorflow")
     if x_dtype in cls.x_cast_map and cls.x_cast_map[x_dtype] is None:
       exception.DTYPE_NOT_CAST_EXCEPT(
           "Resize input " + node.inputs[0] + " with data type '" +
